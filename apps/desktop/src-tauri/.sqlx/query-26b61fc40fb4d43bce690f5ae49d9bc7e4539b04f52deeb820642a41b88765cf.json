@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO folders (id, name, parent_id, color, icon, cover_image_path, description, subject, semester, sort_order, is_locked, is_favorite, is_pinned, is_archived, created_at, updated_at) \n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 12
+    },
+    "nullable": []
+  },
+  "hash": "26b61fc40fb4d43bce690f5ae49d9bc7e4539b04f52deeb820642a41b88765cf"
+}

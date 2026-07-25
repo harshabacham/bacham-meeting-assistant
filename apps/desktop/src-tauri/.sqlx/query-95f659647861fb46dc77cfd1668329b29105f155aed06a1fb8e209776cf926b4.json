@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT title, duration_ms, course FROM lectures WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "title",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_ms",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "course",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "95f659647861fb46dc77cfd1668329b29105f155aed06a1fb8e209776cf926b4"
+}

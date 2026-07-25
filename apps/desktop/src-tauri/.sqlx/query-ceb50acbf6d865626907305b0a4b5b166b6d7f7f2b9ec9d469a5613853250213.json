@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE screenshots SET ocr_status = 'done', ocr_text = ? WHERE file_path = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ceb50acbf6d865626907305b0a4b5b166b6d7f7f2b9ec9d469a5613853250213"
+}

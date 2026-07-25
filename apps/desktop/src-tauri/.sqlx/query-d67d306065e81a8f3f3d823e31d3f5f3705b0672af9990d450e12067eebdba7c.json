@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO timeline_events (id, lecture_id, event_type, timestamp_ms, label, screenshot_id) VALUES (?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "d67d306065e81a8f3f3d823e31d3f5f3705b0672af9990d450e12067eebdba7c"
+}

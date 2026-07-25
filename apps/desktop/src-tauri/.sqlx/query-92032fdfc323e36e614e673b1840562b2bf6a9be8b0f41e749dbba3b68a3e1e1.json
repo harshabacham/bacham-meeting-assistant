@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO recently_viewed (lecture_id, viewed_at) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "92032fdfc323e36e614e673b1840562b2bf6a9be8b0f41e749dbba3b68a3e1e1"
+}

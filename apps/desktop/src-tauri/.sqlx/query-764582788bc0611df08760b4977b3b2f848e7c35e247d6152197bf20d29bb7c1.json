@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT artifact_type, content_json, generated_at, model_used, version FROM lecture_artifacts WHERE lecture_id = ? AND status = 'done' GROUP BY artifact_type HAVING generated_at = MAX(generated_at)",
+  "describe": {
+    "columns": [
+      {
+        "name": "artifact_type",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "content_json",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "generated_at",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "model_used",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "version",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "764582788bc0611df08760b4977b3b2f848e7c35e247d6152197bf20d29bb7c1"
+}

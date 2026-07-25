@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT ease_factor, interval_days FROM flashcards WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "ease_factor",
+        "ordinal": 0,
+        "type_info": "Float"
+      },
+      {
+        "name": "interval_days",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "05e3affaed2fbdf65a038f2e4c91e5de4cc4a99fbf9122e839d079bf2d3131be"
+}

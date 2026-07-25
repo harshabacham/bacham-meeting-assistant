@@ -1,0 +1,309 @@
+pub mod commands;
+pub mod database;
+pub mod storage;
+pub mod logger;
+pub mod native_messaging;
+pub mod config;
+pub mod window;
+pub mod error;
+pub mod services;
+pub mod ai;
+pub mod models;
+
+use tauri::Manager;
+
+pub fn run() {
+    let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
+
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init());
+
+    if !is_native_messaging {
+        builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new()
+            .with_shortcut("CmdOrCtrl+Shift+Space")
+            .unwrap()
+            .with_handler(|app, _shortcut, event| {
+                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    if let Some(window) = app.get_webview_window("copilot") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                }
+            })
+            .build()
+        );
+    }
+
+    builder.setup(move |app| {
+            let handle = app.handle().clone();
+            
+            // Resolve DB Path
+            let docs = handle.path().document_dir().expect("Failed to resolve Documents dir");
+            let bacham_dir = docs.join("BACHAM");
+            let db_path = bacham_dir.join("Data").join("bacham.sqlite");
+            
+            let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
+            
+            // Show window IMMEDIATELY to prevent white flash and block, letting React hydrate while DB connects
+            if !is_native_messaging {
+                let main_window = tauri::webview::WebviewWindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WebviewUrl::App("index.html".into())
+                )
+                .title("appsdesktop")
+                .inner_size(1200.0, 800.0)
+                .visible(false)
+                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .on_new_window(move |_url, _features| {
+                    tauri::webview::NewWindowResponse::Allow
+                })
+                .build()
+                .expect("Failed to build main window");
+                
+                main_window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { .. } = event {
+                        std::process::exit(0);
+                    }
+                });
+                
+                let _ = main_window.show();
+            } else {
+                crate::native_messaging::host::start_listener(handle.clone());
+            }
+            
+            let mut db_pool = None;
+            match tauri::async_runtime::block_on(database::connection::create_pool(db_path)) {
+                Ok(pool) => {
+                    handle.manage(database::DbState { pool: pool.clone() });
+                    eprintln!("Database initialized successfully.");
+                    db_pool = Some(pool);
+                }
+                Err(e) => {
+                    eprintln!("Failed to initialize database: {}", e);
+                }
+            }
+            
+            if !is_native_messaging {
+                if let Some(pool) = db_pool {
+                    let handle_clone = handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        crate::ai::queue_worker::QueueWorker::spawn(handle_clone, pool.clone());
+                        crate::services::search_indexer::SearchIndexer::run_backfill_background(pool.clone());
+                    });
+                }
+            }
+            
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            // System
+            commands::settings::settings_get,
+            commands::settings::settings_update,
+            commands::settings::settings_set_api_key,
+            commands::storage::storage_get_layout,
+            commands::storage::storage_change_location,
+            commands::storage::storage_get_breakdown,
+            commands::storage::storage_delete_video,
+            commands::window::window_minimize,
+            commands::window::window_maximize,
+            commands::window::window_close,
+            commands::native::native_messaging_status,
+            commands::native::fetch_ical_feed,
+            commands::native::fetch_url_with_auth,
+            commands::db_health_check,
+            commands::logger_write,
+            // Lectures
+            commands::lectures::lectures_list,
+            commands::lectures::lectures_get,
+            commands::lectures::lectures_update,
+            commands::lectures::lectures_delete,
+            commands::lectures::lectures_list_trash,
+            commands::lectures::lectures_restore,
+            commands::lectures::lectures_empty_trash,
+            commands::lectures::lectures_hard_delete,
+            commands::lectures::lectures_merge,
+            commands::lectures::lectures_duplicate,
+            commands::lectures::tags_list,
+            commands::lectures::lecture_add_tag,
+            commands::lectures::lecture_remove_tag,
+            commands::folders::folders_list,
+            commands::folders::get_folder_tree,
+            commands::folders::create_folder,
+            commands::folders::update_folder,
+            commands::folders::rename_folder,
+            commands::folders::duplicate_folder,
+            commands::folders::move_folder,
+            commands::folders::reorder_folders,
+            commands::folders::set_folder_favorite,
+            commands::folders::set_folder_pinned,
+            commands::folders::archive_folder,
+            commands::folders::trash_folder,
+            commands::folders::restore_folder,
+            commands::folders::delete_folder_permanently,
+            commands::folders::lock_folder,
+            commands::folders::unlock_folder,
+            commands::folders::remove_folder_lock,
+            commands::folder_stats::get_folder_dashboard,
+            commands::folder_stats::recompute_folder_statistics,
+            commands::folder_notes::get_folder_notes,
+            commands::folder_notes::create_folder_note,
+            commands::folder_notes::update_folder_note,
+            commands::folder_notes::delete_folder_note,
+            commands::folder_transfer::folder_export,
+            commands::folder_transfer::folder_import,
+            // Content
+            commands::content::transcript_get,
+            commands::content::notes_get,
+            commands::content::notes_update,
+            commands::content::note_versions_list,
+            commands::content::note_versions_restore,
+            commands::content::screenshots_get,
+            commands::content::summary_get,
+            commands::content::read_file_as_base64,
+            // AI
+            commands::ai::ai_chat_send,
+            commands::ai::folder_chat_send,
+            ai::context_engine::resolve_scope_lectures,
+            // Chat & Action Commands
+            commands::chat::create_conversation,
+            commands::chat::get_or_create_lecture_conversation,
+            commands::chat::list_conversations,
+            commands::chat::send_message,
+            commands::chat::get_conversation_history,
+            commands::chat::rename_conversation,
+            commands::chat::toggle_conversation_favorite,
+            commands::chat::archive_conversation,
+            commands::chat::delete_conversation,
+            commands::chat::change_conversation_scope,
+            commands::ai::summary_generate,
+            commands::ai::flashcards_generate,
+            commands::ai::quiz_generate,
+            commands::ai::send_tutor_action,
+            commands::ai::suggest_folders_for_lecture,
+            commands::ai::generate_highlight_reel,
+            commands::ai::generate_knowledge_graph,
+            commands::ai::generate_podcast_script,
+            commands::ai::lecture_intelligence_generate,
+            commands::ai::chat_teaching_mode,
+            commands::ai::get_cross_lecture_insights,
+            commands::ai::record_quiz_attempt,
+            commands::ai::save_session_state,
+            commands::ai::get_session_state,
+            commands::ai::get_spaced_repetition_queue,
+            commands::ai::review_spaced_repetition_item,
+            commands::ai::get_learning_analytics,
+            commands::ai::get_daily_learning_plan,
+            commands::ai::get_ai_study_coach_suggestions,
+            commands::ai::reset_learning_history,
+            // Artifacts
+            commands::artifacts::artifacts_get,
+            commands::artifacts::artifacts_list,
+            commands::artifacts::artifacts_regenerate,
+            // Timeline
+            commands::timeline::timeline_get,
+            commands::timeline::timeline_add_bookmark,
+            // Library
+
+            commands::library::recently_viewed_list,
+            commands::library::recently_viewed_add,
+            // Flashcards
+            commands::flashcards::flashcards_list,
+            commands::flashcards::flashcards_review,
+            commands::flashcards::flashcards_due,
+            commands::flashcards::flashcards_create,
+            commands::flashcards::flashcards_update,
+            commands::flashcards::flashcards_delete,
+            // Quiz
+            commands::quiz::quiz_sessions_create,
+            commands::quiz::quiz_sessions_complete,
+            commands::quiz::quiz_sessions_list,
+            commands::quiz::quiz_list,
+            // OCR
+            commands::ocr::ocr_enqueue,
+            commands::ocr::ocr_status,
+            // Search
+            commands::search::search_query,
+            // Export
+            commands::export::export_lecture,
+            commands::export::export_folder_cram_sheet,
+            commands::export::generate_highlights_reel,
+            // Dashboard
+            commands::dashboard::dashboard_summary,
+            // Search
+            commands::search::search_library,
+            commands::search::folder_search,
+            commands::search::universal_search,
+            commands::search::get_search_suggestions,
+            commands::search::record_search_history,
+            commands::search::list_search_history,
+            commands::search::pin_search,
+            commands::search::clear_search_history,
+            commands::search::rebuild_search_index,
+            commands::search::get_index_status,
+            commands::search::summarize_search_results,
+            commands::search::seed_stress_data,
+            // Collections
+            commands::collections::create_collection,
+            commands::collections::list_collections,
+            commands::collections::add_lectures_to_collection,
+            commands::collections::remove_lectures_from_collection,
+            commands::collections::remove_lectures_from_all_collections,
+            commands::collections::delete_collection,
+            // Organization
+            commands::organization::move_lectures,
+            commands::organization::set_favorite,
+            commands::organization::set_pinned,
+            commands::organization::set_archived,
+            // Batch
+            commands::batch::batch_assign_metadata,
+            commands::batch::batch_generate,
+            commands::batch::batch_export,
+            // Undo
+            commands::undo::undo_last_action,
+            commands::undo::get_undoable_action,
+            // Scoped Chat
+            commands::ai::start_scoped_chat,
+            // Study Actions
+            commands::study_actions::run_study_action,
+            commands::study_actions::get_study_action_status,
+            // Prompts
+            commands::prompts::list_prompts,
+            commands::prompts::create_prompt,
+            commands::prompts::update_prompt,
+            commands::prompts::toggle_prompt_favorite,
+            commands::prompts::delete_prompt,
+            // Patterns
+            commands::patterns::detect_patterns,
+            commands::patterns::compare_lectures,
+            // Multimodal Pipeline
+            crate::ai::multimodal_pipeline::analyze_video_scenes,
+            crate::ai::multimodal_pipeline::extract_keyframes,
+            crate::ai::multimodal_pipeline::run_ocr_on_keyframes,
+            crate::ai::multimodal_pipeline::build_lecture_context,
+            crate::ai::multimodal_pipeline::get_processing_status,
+            crate::ai::multimodal_pipeline::get_lecture_intelligence,
+            crate::ai::multimodal_pipeline::generate_lecture_intelligence,
+            // Providers
+            commands::providers::list_providers,
+            commands::providers::save_provider_config,
+            // Workspace Notes
+            commands::workspace_notes::get_workspace_notes,
+            commands::workspace_notes::create_workspace_note,
+            commands::workspace_notes::update_workspace_note,
+            commands::workspace_notes::delete_workspace_note,
+            // Phase 4 Student Productivity Intelligence
+            commands::productivity::get_lecture_skip_segments,
+            commands::productivity::get_auto_bookmarks,
+            commands::productivity::generate_night_before_plan,
+            commands::productivity::predict_exam_questions,
+            commands::productivity::match_assignment_helper,
+            commands::productivity::generate_one_page_cheat_sheet,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

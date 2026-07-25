@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT folder_id, lecture_count, study_hours, storage_bytes, flashcard_count, quiz_count, note_count, completion_pct, computed_at \n         FROM folder_statistics_cache WHERE folder_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "folder_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "lecture_count",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "study_hours",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "storage_bytes",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "flashcard_count",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "quiz_count",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "note_count",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "completion_pct",
+        "ordinal": 7,
+        "type_info": "Float"
+      },
+      {
+        "name": "computed_at",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "7678e7f3b87bcfcb9fbcf3458a0f96742b34cc022ffa563fd6519b1f5cda9159"
+}

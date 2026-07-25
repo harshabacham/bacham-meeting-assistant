@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT artifact_type, MAX(version) as \"version: i64\", MAX(generated_at) as \"generated_at: i64\", status \n             FROM lecture_artifacts \n             WHERE lecture_id = ? \n             GROUP BY artifact_type \n             ORDER BY artifact_type",
+  "describe": {
+    "columns": [
+      {
+        "name": "artifact_type",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "version: i64",
+        "ordinal": 1,
+        "type_info": "Null"
+      },
+      {
+        "name": "generated_at: i64",
+        "ordinal": 2,
+        "type_info": "Null"
+      },
+      {
+        "name": "status",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      null,
+      null,
+      false
+    ]
+  },
+  "hash": "e6bc2cdc2609915e229665c3b055a319b672a885f579c10afe7004f89fde8374"
+}

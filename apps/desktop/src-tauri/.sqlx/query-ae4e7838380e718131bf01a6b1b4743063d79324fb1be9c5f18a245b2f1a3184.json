@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE screenshots SET is_key_frame = 1, phash = ?, change_reason = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "ae4e7838380e718131bf01a6b1b4743063d79324fb1be9c5f18a245b2f1a3184"
+}

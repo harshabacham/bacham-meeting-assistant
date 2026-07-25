@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO screenshots (id, lecture_id, file_path, captured_at) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "06dedb329d07e929e94ef7a0d428aad81a15a0eb0a6803ff5e41021840e28743"
+}

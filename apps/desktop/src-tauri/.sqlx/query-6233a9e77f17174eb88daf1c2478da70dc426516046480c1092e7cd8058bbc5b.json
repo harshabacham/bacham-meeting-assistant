@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM lecture_tags WHERE lecture_id = ? AND tag_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6233a9e77f17174eb88daf1c2478da70dc426516046480c1092e7cd8058bbc5b"
+}

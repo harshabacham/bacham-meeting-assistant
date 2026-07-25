@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+.env
+.env.local
+.DS_Store
+src-tauri/target
+*.log
+coverage
+.turbo
+out
+apps/*/node_modules
+apps/*/dist
+packages/*/node_modules
+packages/*/dist

@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT rv.lecture_id, rv.viewed_at, l.title FROM recently_viewed rv LEFT JOIN lectures l ON l.id = rv.lecture_id WHERE l.deleted_at IS NULL ORDER BY rv.viewed_at DESC LIMIT 20",
+  "describe": {
+    "columns": [
+      {
+        "name": "lecture_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "viewed_at",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "711790d79574dbf3b5cb84e92e96fd119e961eec797e4092df5f5fdda0646897"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO quiz_sessions (id, lecture_id, mode, time_limit_seconds, started_at) VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "a0b53504cac9b5a792e6604b03a6562783fde795a4df1aa7d1dda902ce56e637"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM lectures WHERE folder_id = ? OR folder_id IN (SELECT id FROM folders WHERE parent_id = ?)",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "bc24592b69b3fea5288fcc83643382e17bef4bda8a69626a6419f905e88332c0"
+}

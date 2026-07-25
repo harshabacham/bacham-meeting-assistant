@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO ai_provider_configs (id, provider, enabled, default_model) VALUES (?, 'openrouter', 0, 'anthropic/claude-3-haiku')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "c346143b9a2cdf6c227a7006645f4f75b6ad4946619fee5f4e038d0c4509d13a"
+}

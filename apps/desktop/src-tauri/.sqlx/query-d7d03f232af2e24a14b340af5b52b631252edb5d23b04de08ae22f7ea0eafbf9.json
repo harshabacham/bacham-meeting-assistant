@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO folder_statistics_cache \n         (folder_id, lecture_count, study_hours, storage_bytes, flashcard_count, quiz_count, note_count, completion_pct, computed_at) \n         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n         ON CONFLICT(folder_id) DO UPDATE SET \n         lecture_count=excluded.lecture_count, study_hours=excluded.study_hours, storage_bytes=excluded.storage_bytes, \n         flashcard_count=excluded.flashcard_count, quiz_count=excluded.quiz_count, note_count=excluded.note_count, \n         completion_pct=excluded.completion_pct, computed_at=excluded.computed_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "d7d03f232af2e24a14b340af5b52b631252edb5d23b04de08ae22f7ea0eafbf9"
+}

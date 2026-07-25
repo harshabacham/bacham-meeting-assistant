@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO messages (id, conversation_id, role, content, context_bundle_id, created_at) VALUES (?, ?, 'assistant', ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "9ae35588b2246725e89b5c6c1491ad251bde367eb32a5bb098b0aca86c8b677a"
+}

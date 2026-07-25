@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id FROM timeline_events WHERE lecture_id = ? AND screenshot_id = ? AND event_type = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "a811f351470c9252c4ca47c06f398baa538fc09049548bf28d30cdfbcb8fb768"
+}

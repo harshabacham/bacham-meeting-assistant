@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT generated_at FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = ? AND status = 'done' ORDER BY generated_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "generated_at",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4b7dfba86f3bf1d4ab77d4fc83d0d5fbe4b7aa5d1a1e0138e4672e4578837c14"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO collections (id, name, color, icon, is_smart, smart_rule_json, sort_order, created_at, updated_at)\n        VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?7)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "b34eb86db47b0a17203bc122155d19a84d535ee59b6e8916564e1b317441724a"
+}

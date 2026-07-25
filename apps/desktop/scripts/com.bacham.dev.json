@@ -1,0 +1,9 @@
+{
+  "name": "com.bacham.dev",
+  "description": "BACHAM Desktop Application Native Messaging Host",
+  "path": "C:\\Users\\harsh\\OneDrive\\Desktop\\Meeting\\apps\\desktop\\src-tauri\\target\\debug\\appsdesktop.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://dfgdfahbebfebobomdfepbgjcahpbphk/"
+  ]
+}

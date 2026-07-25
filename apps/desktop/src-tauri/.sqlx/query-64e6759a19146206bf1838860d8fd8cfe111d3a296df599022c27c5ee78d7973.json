@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, lecture_id, question, answer, difficulty, ease_factor, interval_days, next_review_at, created_at, last_reviewed_at FROM flashcards WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "lecture_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "question",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "answer",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "difficulty",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "ease_factor",
+        "ordinal": 5,
+        "type_info": "Float"
+      },
+      {
+        "name": "interval_days",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "next_review_at",
+        "ordinal": 7,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "last_reviewed_at",
+        "ordinal": 9,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "64e6759a19146206bf1838860d8fd8cfe111d3a296df599022c27c5ee78d7973"
+}

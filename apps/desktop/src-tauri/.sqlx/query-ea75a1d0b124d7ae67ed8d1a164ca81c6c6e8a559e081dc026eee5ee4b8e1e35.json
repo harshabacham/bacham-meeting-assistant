@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT phash FROM screenshots WHERE lecture_id = ? AND is_key_frame = 1 AND phash IS NOT NULL ORDER BY captured_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "phash",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "ea75a1d0b124d7ae67ed8d1a164ca81c6c6e8a559e081dc026eee5ee4b8e1e35"
+}

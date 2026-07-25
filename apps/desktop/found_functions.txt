@@ -1,0 +1,258 @@
+Created At: 2026-07-14T06:57:54Z
+Completed At: 2026-07-14T06:57:54Z
+File Path: `file:///c:/Users/harsh/OneDrive/Desktop/Meeting/apps/desktop/src/pages/LibraryPage.tsx`
+Total Lines: 680
+Total Bytes: 33809
+Showing lines 1 to 250
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import { useState, useEffect, useCallback } from 'react';
+2: import { useNavigate } from 'react-router-dom';
+3: import { convertFileSrc } from '@tauri-apps/api/core';
+4: import { TauriClient } from '@/infrastructure/tauri-client';
+5: import { useLectureStore } from '@/shared/stores/lectureStore';
+6: import { MultiSelectBar } from '@/components/library/MultiSelectBar';
+7: import { FilterPanel } from '@/components/library/FilterPanel';
+8: import { FolderSidebar } from '@/components/library/FolderSidebar';
+9: import { LecturePropertiesPanel } from '@/components/library/LecturePropertiesPanel';
+10: import { FilterQuery } from '@/infrastructure/tauri-client';
+11: import {
+12:     Search, Grid3X3, List, Clock, BookOpen, LayoutList, Tag,
+13:     Star, ChevronRight, Trash2, Filter, Archive
+14: } from 'lucide-react';
+15: import { cn } from '@/components';
+16: 
+17: type ViewMode = 'grid' | 'list';
+18: type SortMode = 'recent' | 'title' | 'duration';
+19: 
+20: export function LibraryPage() {
+21:     const { lectures, trash, fetchLectures, fetchTrash, trashLectures, restoreLectures, emptyTrash, setFavorite, setArchived } = useLectureStore();
+22:     const navigate = useNavigate();
+23:     const [viewMode, setViewMode] = useState<ViewMode>('grid');
+24:     const [sortMode, setSortMode] = useState<SortMode>('recent');
+25:     const [query, setQuery] = useState('');
+26:     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+27:     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+28:     const [groupByCourse, setGroupByCourse] = useState(false);
+29:     const [showFilterPanel, setShowFilterPanel] = useState(false);
+30:     const [currentFilter, setCurrentFilter] = useState<FilterQuery | null>(null);
+31:     const [systemView, setSystemView] = useState<'all' | 'trash' | 'archive'>('all');
+32:     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+33:     const [toastMessage, setToastMessage] = useState<{ id: string, message: string, action?: { label: string, onClick: () => void } } | null>(null);
+34:     const [showProperties, setShowProperties] = useState(false);
+35: 
+36:     const showToast = useCallback((message: string, action?: { label: string, onClick: () => void }) => {
+37:         const id = Date.now().toString();
+38:         setToastMessage({ id, message, action });
+39:         setTimeout(() => {
+40:             setToastMessage(prev => prev?.id === id ? null : prev);
+41:         }, 8000);
+42:     }, []);
+43: 
+44:     useEffect(() => { 
+45:         if (systemView === 'all') {
+46:             if (selectedFolderId) {
+47:                 const combinedFilter = currentFilter ? JSON.parse(JSON.stringify(currentFilter)) : { matchType: 'All', conditions: [] };
+48:                 // remove existing folder filters
+49:                 combinedFilter.conditions = combinedFilter.conditions.filter((c: any) => c.field !== 'folderId');
+50:                 combinedFilter.conditions.push({ field: 'folderId', operator: 'equals', value: selectedFolderId });
+51:                 fetchLectures(JSON.stringify(combinedFilter));
+52:             } else {
+53:                 fetchLectures(currentFilter ? JSON.stringify(currentFilter) : undefined); 
+54:             }
+55:         } else if (systemView === 'trash') {
+56:             fetchTrash();
+57:         } else if (systemView === 'archive') {
+58:             fetchLectures(JSON.stringify({ matchType: 'All', conditions: [{ field: 'isArchived', operator: 'is_true', value: true }] }));
+59:         }
+60:     }, [fetchLectures, currentFilter, systemView, selectedFolderId]);
+61: 
+62:     // Filter + sort
+63:     const sourceLectures = systemView === 'trash' ? trash : lectures;
+64:     const filtered = sourceLectures
+65:         .filter(l => {
+66:             if (!query) return true;
+67:             const q = query.toLowerCase();
+68:             return l.title.toLowerCase().includes(q) ||
+69:                    (l.course || '').toLowerCase().includes(q) ||
+70:                    (l.teacher || '').toLowerCase().includes(q);
+71:         })
+72:         .sort((a, b) => {
+73:             if (sortMode === 'title') return a.title.localeCompare(b.title);
+74:             if (sortMode === 'duration') return b.durationMs - a.durationMs;
+75:             return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+76:         });
+77: 
+78:     const toggleSelect = useCallback((id: string, e: React.MouseEvent) => {
+79:         e.preventDefault();
+80:         e.stopPropagation();
+81: 
+82:         if (e.shiftKey && lastSelectedId) {
+83:             const currentIndex = filtered.findIndex(l => l.id === id);
+84:             const lastIndex = filtered.findIndex(l => l.id === lastSelectedId);
+85:             
+86:             if (currentIndex !== -1 && lastIndex !== -1) {
+87:                 const start = Math.min(currentIndex, lastIndex);
+88:                 const end = Math.max(currentIndex, lastIndex);
+89:                 
+90:                 const idsInRange = filtered.slice(start, end + 1).map(l => l.id);
+91:                 
+92:                 setSelectedIds(prev => {
+93:                     const next = new Set(prev);
+94:                     idsInRange.forEach(rangeId => next.add(rangeId));
+95:                     return next;
+96:                 });
+97:                 setLastSelectedId(id);
+98:                 return;
+99:             }
+100:         }
+101: 
+102:         setSelectedIds(prev => {
+103:             const next = new Set(prev);
+104:             if (next.has(id)) next.delete(id);
+105:             else next.add(id);
+106:             if (next.size === 1) setShowProperties(true);
+107:             return next;
+108:         });
+109:         setLastSelectedId(id);
+110:     }, [filtered, lastSelectedId]);
+111: 
+112:     const handleDelete = async () => {
+113:         const idsToDelete = [...selectedIds];
+114:         await trashLectures(idsToDelete);
+115:         setSelectedIds(new Set());
+116:         
+117:         showToast(`${idsToDelete.length} lectures moved to trash.`, {
+118:             label: 'Undo',
+119:             onClick: async () => {
+120:                 await restoreLectures(idsToDelete);
+121:                 setToastMessage(null);
+122:             }
+123:         });
+124:     };
+125: 
+126:     const handleDeleteSingle = async (id: string, e: React.MouseEvent) => {
+127:         e.preventDefault();
+128:         e.stopPropagation();
+129:         
+130:         await trashLectures([id]);
+131:         setSelectedIds(prev => {
+132:             const next = new Set(prev);
+133:             next.delete(id);
+134:             return next;
+135:         });
+136:         
+137:         showToast('Lecture moved to trash.', {
+138:             label: 'Undo',
+139:             onClick: async () => {
+140:                 await restoreLectures([id]);
+141:                 setToastMessage(null);
+142:             }
+143:         });
+144:     };
+145: 
+146:     const handleToggleFavorite = async (lectureId: string, currentFav: boolean, e: React.MouseEvent) => {
+147:         e.preventDefault();
+148:         e.stopPropagation();
+149:         await setFavorite([lectureId], !currentFav);
+150:     };
+151: 
+152:     const handleToggleArchive = async (lectureId: string, currentArchived: boolean, e: React.MouseEvent) => {
+153:         e.preventDefault();
+154:         e.stopPropagation();
+155:         await setArchived([lectureId], !currentArchived);
+156:     };
+157: 
+158:     const handleDuplicate = async () => {
+159:         const [id] = [...selectedIds];
+160:         await TauriClient.duplicateLecture(id);
+161:         setSelectedIds(new Set());
+162:         fetchLectures();
+163:     };
+164: 
+165:     const handleMerge = async () => {
+166:         const [a, b] = [...selectedIds];
+167:         await TauriClient.mergeLectures(a, b);
+168:         setSelectedIds(new Set());
+169:         fetchLectures();
+170:     };
+171: 
+172:     // Group by course if enabled
+173:     const groups = groupByCourse
+174:         ? [...new Set(filtered.map(l => l.course || 'Uncategorized'))].map(course => ({
+175:             label: course,
+176:             items: filtered.filter(l => (l.course || 'Uncategorized') === course),
+177:         }))
+178:         : [{ label: '', items: filtered }];
+179: 
+180:     return (
+181:         <div className="flex flex-row h-full w-full" style={{ background: 'var(--bg)' }}>
+182:             <FolderSidebar 
+183:                 systemView={systemView} 
+184:                 setSystemView={(view) => {
+185:                     setSystemView(view);
+186:                     setSelectedFolderId(null);
+187:                 }}
+188:                 selectedFolderId={selectedFolderId}
+189:                 onSelectFolder={(id) => {
+190:                     setSystemView('all');
+191:                     setSelectedFolderId(id === selectedFolderId ? null : id);
+192:                 }}
+193:             />
+194:             <div className="flex flex-col flex-1 h-full min-w-0" style={{ transition: 'margin-right 0.3s' }}>
+195:                 {/* Toolbar */}
+196:             <div
+197:                 className="flex items-center gap-3 px-6 py-4 border-b"
+198:                 style={{ borderColor: 'var(--border)', flexShrink: 0 }}
+199:             >
+200:                 <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginRight: 8 }}>
+201:                     Library
+202:                 </h1>
+203: 
+204:                 {/* Search */}
+205:                 <div className="flex-1 max-w-md relative">
+206:                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+207:                     <input
+208:                         className="input-field pl-9"
+209:                         placeholder="Search lectures, courses, teachers…"
+210:                         value={query}
+211:                         onChange={e => setQuery(e.target.value)}
+212:                     />
+213:                 </div>
+214: 
+215:                 <div className="flex items-center gap-2 ml-auto">
+216:                     {systemView === 'trash' && (
+217:                         <button
+218:                             onClick={async () => {
+219:                                 if (confirm('Are you sure you want to permanently delete all trashed lectures?')) {
+220:                                     await emptyTrash();
+221:                                 }
+222:                             }}
+223:                             className="btn btn-secondary text-destructive hover:bg-destructive/10"
+224:                             style={{ padding: '6px 10px' }}
+225:                             title="Empty Trash"
+226:                         >
+227:                             <Trash2 size={14} /> Empty Trash
+228:                         </button>
+229:                     )}
+230:                     {/* Filter Toggle */}
+231:                     <button
+232:                         onClick={() => setShowFilterPanel(f => !f)}
+233:                         className={cn('btn', showFilterPanel ? 'btn-primary' : 'btn-secondary', currentFilter && currentFilter.conditions.length > 0 ? 'text-[#A6FF00]' : '')}
+234:                         style={{ padding: '6px 10px' }}
+235:                         title="Smart Filters"
+236:                     >
+237:                         <Filter size={14} />
+238:                     </button>
+239:                     {/* Sort */}
+240:                     <select
+241:                         className="input-field"
+242:                         value={sortMode}
+243:                         onChange={e => setSortMode(e.target.value as SortMode)}
+244:                         style={{ width: 'auto', paddingRight: 28, fontSize: 12 }}
+245:                     >
+246:                         <option value="recent">Recent</option>
+247:                         <option value="title">Title</option>
+248:                         <option value="duration">Duration</option>
+249:                     </select>
+250: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

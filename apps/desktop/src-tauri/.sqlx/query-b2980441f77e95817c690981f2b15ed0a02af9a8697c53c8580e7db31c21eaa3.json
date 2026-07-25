@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO study_action_runs (id, action_type, scope_type, scope_ref_json, status, created_at)\n             VALUES (?, ?, ?, ?, 'running', ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "b2980441f77e95817c690981f2b15ed0a02af9a8697c53c8580e7db31c21eaa3"
+}

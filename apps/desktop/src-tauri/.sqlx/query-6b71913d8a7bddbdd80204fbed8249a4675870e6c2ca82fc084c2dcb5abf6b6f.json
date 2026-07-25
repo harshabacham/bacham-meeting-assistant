@@ -1,0 +1,116 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, parent_id, color, icon, cover_image_path, description, subject, semester, sort_order, is_locked, is_favorite, is_pinned, is_archived, trashed_at, created_at, updated_at FROM folders WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "color",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "icon",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "cover_image_path",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "subject",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "semester",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "sort_order",
+        "ordinal": 9,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_locked",
+        "ordinal": 10,
+        "type_info": "Bool"
+      },
+      {
+        "name": "is_favorite",
+        "ordinal": 11,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_pinned",
+        "ordinal": 12,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_archived",
+        "ordinal": 13,
+        "type_info": "Integer"
+      },
+      {
+        "name": "trashed_at",
+        "ordinal": 14,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 15,
+        "type_info": "Integer"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 16,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6b71913d8a7bddbdd80204fbed8249a4675870e6c2ca82fc084c2dcb5abf6b6f"
+}

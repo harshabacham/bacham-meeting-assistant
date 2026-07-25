@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, version, status) VALUES (?, ?, ?, '{}', ?, 'gemini-3.1-flash-lite', 1, 'pending')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "4e18bb97be40f5b1a991b63dfe9fc69c847b186e82b1f1022fe5b93165b21d01"
+}

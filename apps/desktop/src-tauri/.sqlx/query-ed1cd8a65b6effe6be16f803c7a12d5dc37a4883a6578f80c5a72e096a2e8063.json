@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lectures SET title = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "ed1cd8a65b6effe6be16f803c7a12d5dc37a4883a6578f80c5a72e096a2e8063"
+}

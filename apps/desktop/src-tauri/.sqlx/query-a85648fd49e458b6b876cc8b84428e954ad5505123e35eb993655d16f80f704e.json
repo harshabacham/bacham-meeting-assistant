@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE study_action_runs SET status = ?, result_ref = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a85648fd49e458b6b876cc8b84428e954ad5505123e35eb993655d16f80f704e"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lectures SET folder_id = NULL WHERE folder_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "0accb61f62e0782404406a7f406a08cc7d37069f7ed761242291dff03f054b46"
+}

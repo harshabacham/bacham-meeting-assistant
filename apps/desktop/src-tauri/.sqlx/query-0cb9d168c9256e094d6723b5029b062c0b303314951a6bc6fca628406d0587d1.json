@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, file_path, captured_at, is_key_frame, change_reason FROM screenshots WHERE lecture_id = ? AND is_key_frame = 1 ORDER BY captured_at ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_path",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "captured_at",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_key_frame",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "change_reason",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "0cb9d168c9256e094d6723b5029b062c0b303314951a6bc6fca628406d0587d1"
+}

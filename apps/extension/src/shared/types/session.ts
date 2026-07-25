@@ -1,0 +1,65 @@
+/**
+ * Session state machine states.
+ *
+ * Legal transitions:
+ *   idle → requesting-permission
+ *   idle → connecting
+ *   requesting-permission → idle (permission denied)
+ *   requesting-permission → connecting (permission granted)
+ *   connecting → idle (connection failed, no session started)
+ *   connecting → recording
+ *   recording → paused
+ *   recording → stopping
+ *   paused → recording
+ *   paused → stopping
+ *   stopping → idle
+ *   * → error
+ *   error → idle (reset)
+ */
+export type SessionState =
+  | 'idle'
+  | 'requesting-permission'
+  | 'connecting'
+  | 'recording'
+  | 'paused'
+  | 'stopping'
+  | 'error';
+
+/**
+ * A single recording session.
+ */
+export interface Session {
+  /** Unique identifier — UUID v4. */
+  readonly id: string;
+  /** ISO 8601 timestamp when recording started. */
+  readonly startedAt: string;
+  /** ISO 8601 timestamp when last paused (undefined if never paused). */
+  readonly pausedAt?: string;
+  /** ISO 8601 timestamp when the session ended (undefined if still running). */
+  readonly endedAt?: string;
+  /** Chrome tab ID being captured. */
+  readonly tabId: number;
+  /** Title of the captured tab at session start. */
+  tabTitle: string;
+  /** URL of the captured tab at session start. */
+  tabUrl: string;
+  /** User-supplied label (e.g. course name, lecture title). */
+  courseLabel?: string;
+  /** Current state of this session. */
+  state: SessionState;
+  /** Accumulated paused duration in milliseconds. */
+  pausedDurationMs: number;
+  /** Error message if state is 'error'. */
+  errorMessage?: string;
+}
+
+/**
+ * Intent to start a new session, supplied by the user.
+ */
+export interface StartSessionIntent {
+  courseLabel?: string;
+  captureAudio: boolean;
+  captureVideo: boolean;
+  screenshotIntervalMs?: number;
+  captureMode?: 'tab' | 'screen';
+}

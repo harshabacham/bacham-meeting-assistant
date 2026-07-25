@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE folders SET is_locked = 0, password_hash = NULL, updated_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "29e03a1cd0b7470a88ee30bf1ad55baab40d4d863b622b209a7275fd340356f3"
+}

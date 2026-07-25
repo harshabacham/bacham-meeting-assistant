@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO ai_provider_configs (id, provider, enabled, default_model) VALUES (?, 'openai', 0, 'gpt-4o')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "0fce96e0d6a8dac49669e45f3bb9ebe0bcc9bd595775b367698b4a2cb990d555"
+}

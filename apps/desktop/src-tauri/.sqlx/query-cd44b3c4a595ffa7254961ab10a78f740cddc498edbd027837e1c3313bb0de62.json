@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO ai_provider_configs (id, provider, enabled, default_model, config_json)\n                 VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "cd44b3c4a595ffa7254961ab10a78f740cddc498edbd027837e1c3313bb0de62"
+}

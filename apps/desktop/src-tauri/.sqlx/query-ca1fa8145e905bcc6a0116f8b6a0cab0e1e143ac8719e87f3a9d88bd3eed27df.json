@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.name FROM tags t JOIN lecture_tags lt ON t.id = lt.tag_id WHERE lt.lecture_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ca1fa8145e905bcc6a0116f8b6a0cab0e1e143ac8719e87f3a9d88bd3eed27df"
+}

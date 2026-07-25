@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO smart_collections (id, name, filter_json, created_at) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "30c7feca1d2ef811aa8f067896f84c3a6832878eea84793c07e1a6532bb028c1"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lectures (id, title, course_label, folder_id, duration_ms, source, course, semester, teacher, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "c94ad63270a8fb91596ff9f07847d5d41e5586231ed666105b9f6822be2227d9"
+}

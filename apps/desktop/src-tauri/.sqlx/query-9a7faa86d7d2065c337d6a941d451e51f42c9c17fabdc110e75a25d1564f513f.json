@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO folder_notes (id, folder_id, title, body_md, kind, created_at, updated_at) \n         VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "9a7faa86d7d2065c337d6a941d451e51f42c9c17fabdc110e75a25d1564f513f"
+}

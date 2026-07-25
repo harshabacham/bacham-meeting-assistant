@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT title, course_label, folder_id, source, course, semester, teacher FROM lectures WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "title",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "course_label",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "folder_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "source",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "course",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "semester",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "teacher",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "60ecd807d164bbe567fefcaaac2423bb9e35937c6364b5652a794351eaa3e555"
+}

@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, action_type, scope_type, scope_ref_json, result_ref, status, created_at FROM study_action_runs WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "action_type",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "scope_type",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "scope_ref_json",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "result_ref",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "status",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "e0720fa938fb75f2714436b5fa0c9fa96c76effa58a868c9c79ed94c5633caa7"
+}

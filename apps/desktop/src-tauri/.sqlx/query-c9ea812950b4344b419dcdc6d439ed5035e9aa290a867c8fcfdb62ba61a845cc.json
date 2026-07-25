@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, lecture_id, event_type, timestamp_ms, label, screenshot_id FROM timeline_events WHERE lecture_id = ? ORDER BY timestamp_ms ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "lecture_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "event_type",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "timestamp_ms",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "label",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "screenshot_id",
+        "ordinal": 5,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "c9ea812950b4344b419dcdc6d439ed5035e9aa290a867c8fcfdb62ba61a845cc"
+}

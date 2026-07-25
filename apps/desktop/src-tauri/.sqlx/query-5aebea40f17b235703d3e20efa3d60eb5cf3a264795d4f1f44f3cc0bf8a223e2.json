@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT title, course, semester, teacher FROM lectures WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "title",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "course",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "semester",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "teacher",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5aebea40f17b235703d3e20efa3d60eb5cf3a264795d4f1f44f3cc0bf8a223e2"
+}

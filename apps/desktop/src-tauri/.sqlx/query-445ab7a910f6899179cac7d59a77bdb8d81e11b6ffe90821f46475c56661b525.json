@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT scope_ref_json FROM conversations WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "scope_ref_json",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "445ab7a910f6899179cac7d59a77bdb8d81e11b6ffe90821f46475c56661b525"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO embeddings (id, source_type, source_id, lecture_id, embedding_blob, model, created_at) VALUES (?, ?, ?, ?, ?, 'text-embedding-004', ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "eaeffb8f7111599ffa00cbb53dbd966e8b639fe2af145d0838ed3b6adf79dbc7"
+}

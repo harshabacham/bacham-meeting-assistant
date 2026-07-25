@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM folders WHERE parent_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b818e2acf0a76b64b0b08dcf3d3fdc1c4e8628b81534d9d46c20f0c47afab60d"
+}

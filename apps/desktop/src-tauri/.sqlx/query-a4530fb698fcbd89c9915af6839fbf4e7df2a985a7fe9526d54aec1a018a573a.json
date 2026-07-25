@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE flashcards SET ease_factor = ?, interval_days = ?, next_review_at = ?, last_reviewed_at = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "a4530fb698fcbd89c9915af6839fbf4e7df2a985a7fe9526d54aec1a018a573a"
+}

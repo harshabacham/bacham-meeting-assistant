@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, file_path, captured_at, phash FROM screenshots WHERE lecture_id = ? ORDER BY captured_at ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "file_path",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "captured_at",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "phash",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "18e70a082baa549467e2855fe812a45261ac88c3d8a63ebf5584ab270068eccf"
+}

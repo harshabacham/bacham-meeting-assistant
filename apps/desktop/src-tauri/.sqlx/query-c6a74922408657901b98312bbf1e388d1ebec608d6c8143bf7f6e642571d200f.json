@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT source_id, source_type, lecture_id, embedding_blob FROM embeddings",
+  "describe": {
+    "columns": [
+      {
+        "name": "source_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "source_type",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "lecture_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "embedding_blob",
+        "ordinal": 3,
+        "type_info": "Blob"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "c6a74922408657901b98312bbf1e388d1ebec608d6c8143bf7f6e642571d200f"
+}

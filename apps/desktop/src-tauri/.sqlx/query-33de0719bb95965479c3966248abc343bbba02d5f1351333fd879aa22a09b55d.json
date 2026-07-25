@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE conversations SET is_favorite = NOT is_favorite WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "33de0719bb95965479c3966248abc343bbba02d5f1351333fd879aa22a09b55d"
+}

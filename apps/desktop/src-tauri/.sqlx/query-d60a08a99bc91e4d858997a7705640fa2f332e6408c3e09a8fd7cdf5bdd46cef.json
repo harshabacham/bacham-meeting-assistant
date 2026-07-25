@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO quiz_attempts (id, quiz_id, submitted_answer, is_correct) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "d60a08a99bc91e4d858997a7705640fa2f332e6408c3e09a8fd7cdf5bdd46cef"
+}

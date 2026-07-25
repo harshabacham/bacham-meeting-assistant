@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE lecture_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a1bca4bf5253a6140e96d22cf221e5615f3dd04e569df062f139ce734b5412ab"
+}

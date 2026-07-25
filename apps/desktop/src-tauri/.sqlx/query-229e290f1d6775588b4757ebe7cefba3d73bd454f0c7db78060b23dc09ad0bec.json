@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lectures SET deleted_at = NULL WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "229e290f1d6775588b4757ebe7cefba3d73bd454f0c7db78060b23dc09ad0bec"
+}

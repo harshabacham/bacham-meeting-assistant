@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, lecture_id, mode, time_limit_seconds, started_at, completed_at, score_pct FROM quiz_sessions WHERE lecture_id = ? ORDER BY started_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "lecture_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "mode",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "time_limit_seconds",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "started_at",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "completed_at",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "score_pct",
+        "ordinal": 6,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "058ffe4a439fc56fae936ad5a99d33add4910fd12660d0c48d9013eb9ab716e2"
+}

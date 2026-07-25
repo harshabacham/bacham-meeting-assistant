@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE saved_prompts SET is_favorite = ?1, updated_at = ?2 WHERE id = ?3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "8cfbf321e8683e90dbf41b38c4c65b262ef4173b4c1eb662038daa7a53c17f6f"
+}

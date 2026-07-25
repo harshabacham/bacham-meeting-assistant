@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT answer_key FROM quizzes WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "answer_key",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "9bf02561bf7263f1972472087ab01891f6cae98fe3d33faa92070daf267ac12c"
+}

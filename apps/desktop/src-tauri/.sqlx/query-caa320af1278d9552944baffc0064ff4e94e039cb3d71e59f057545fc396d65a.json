@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO flashcards (id, lecture_id, question, answer, difficulty, ease_factor, interval_days) VALUES (?, ?, ?, ?, ?, 2.5, 1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "caa320af1278d9552944baffc0064ff4e94e039cb3d71e59f057545fc396d65a"
+}

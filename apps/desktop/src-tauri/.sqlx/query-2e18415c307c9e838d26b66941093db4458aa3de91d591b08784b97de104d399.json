@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO saved_prompts (id, name, body, category, is_favorite, is_builtin, created_at, updated_at)\n            VALUES (?1, ?2, ?3, ?4, 0, 0, ?5, ?5)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "2e18415c307c9e838d26b66941093db4458aa3de91d591b08784b97de104d399"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) as c FROM screenshots WHERE lecture_id = ? AND ocr_status IN ('pending', 'processing')",
+  "describe": {
+    "columns": [
+      {
+        "name": "c",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b217fd7999f8fd0b23a86a30921594cece4a764cea9efd8b5432ddeb20f80bf6"
+}

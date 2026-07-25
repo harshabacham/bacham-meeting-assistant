@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO search_index (lecture_id, content, source_type) VALUES (?, ?, 'ocr')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f4334e8390caad8055ca2d8e95ee37478071101af0e0e65fd8d5f9aa30a364cf"
+}

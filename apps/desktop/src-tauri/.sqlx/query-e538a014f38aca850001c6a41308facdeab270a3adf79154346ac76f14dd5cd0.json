@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT ocr_text FROM screenshots WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "ocr_text",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "e538a014f38aca850001c6a41308facdeab270a3adf79154346ac76f14dd5cd0"
+}

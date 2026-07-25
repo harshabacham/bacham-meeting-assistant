@@ -1,0 +1,14 @@
+pub mod frame_selector;
+pub mod context_builder;
+pub mod core_engine;
+pub mod intelligence_engine;
+pub mod queue_worker;
+pub mod context_engine;
+pub mod providers;
+pub mod multimodal_pipeline;
+pub mod pipeline_v2;
+pub mod session_memory;
+pub mod spaced_repetition;
+pub mod learning_analytics;
+pub mod ai_study_coach;
+pub mod productivity;

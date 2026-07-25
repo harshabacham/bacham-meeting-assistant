@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, provider, enabled, default_model, config_json FROM ai_provider_configs",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "provider",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "enabled",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "default_model",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "config_json",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "a6cd3d806c02f9cb8eae26158e91c873db953c2db53152b9884fd95a571552a0"
+}

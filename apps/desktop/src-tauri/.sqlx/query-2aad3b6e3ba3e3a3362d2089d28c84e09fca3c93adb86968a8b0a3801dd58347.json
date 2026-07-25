@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO message_references (id, message_id, lecture_id, ref_type, excerpt, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "2aad3b6e3ba3e3a3362d2089d28c84e09fca3c93adb86968a8b0a3801dd58347"
+}

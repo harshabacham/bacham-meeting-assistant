@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "00e33c8e39f01143d04adcd3a191de37101d55fbe18863cbc372ef7a91c98f62"
+}

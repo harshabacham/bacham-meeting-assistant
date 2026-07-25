@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT status FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence'",
+  "describe": {
+    "columns": [
+      {
+        "name": "status",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "722d095ed39e5b69d2804b4e6005e641aaeeef5994404e7a70d530b85fc02a73"
+}

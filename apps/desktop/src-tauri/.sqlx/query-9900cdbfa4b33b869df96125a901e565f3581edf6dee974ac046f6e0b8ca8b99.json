@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO context_bundles (id, scope_hash, query_hash, assembled_context, truncated, lecture_ids_json, created_at, expires_at)\n         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "9900cdbfa4b33b869df96125a901e565f3581edf6dee974ac046f6e0b8ca8b99"
+}

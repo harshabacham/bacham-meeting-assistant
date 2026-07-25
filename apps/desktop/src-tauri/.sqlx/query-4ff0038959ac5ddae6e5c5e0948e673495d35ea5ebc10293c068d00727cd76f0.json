@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT MAX(sort_order) as max_sort FROM folders WHERE parent_id IS ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "max_sort",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "4ff0038959ac5ddae6e5c5e0948e673495d35ea5ebc10293c068d00727cd76f0"
+}

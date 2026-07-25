@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE quiz_sessions SET completed_at = ?, score_pct = ?, answers_json = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "62356423ab860ff3d9d74586d186c3ec90b25322aed830d8842fe2003a73ea97"
+}

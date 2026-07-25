@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO summaries (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.5-flash')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "75ad8f6713a267dd6573b2c892c383537ad2853c6b582e35c3bfccfaa7f87011"
+}

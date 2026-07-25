@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, captured_at, change_reason FROM screenshots WHERE lecture_id = ? AND is_key_frame = 1 AND change_reason IS NOT NULL ORDER BY captured_at ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "captured_at",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "change_reason",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "d16e557bdb7a4128c6794cd5d259021ca2f6ca50574077ee6db59f58eaa5d5e2"
+}

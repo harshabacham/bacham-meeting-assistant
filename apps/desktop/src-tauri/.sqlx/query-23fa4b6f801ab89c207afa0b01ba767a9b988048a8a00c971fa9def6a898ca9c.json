@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence' AND status = 'done' ORDER BY version DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_json",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "23fa4b6f801ab89c207afa0b01ba767a9b988048a8a00c971fa9def6a898ca9c"
+}
