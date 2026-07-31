@@ -7,6 +7,7 @@ import { useLectureStore } from '@/shared/stores/lectureStore';
 import { TauriClient, Screenshot, TimelineEvent } from '@/infrastructure/tauri-client';
 import { Play, FileText, BrainCircuit, BookOpen, Zap, MessageSquare, ArrowLeft, RefreshCw, Video, ListTree, Loader2, AlertCircle, Clock, Edit2, Heart, Bookmark, Share, MoreVertical, Layers, CheckSquare, Headphones, Film, Mic, BarChart2, Scissors, ExternalLink } from 'lucide-react';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
+import { useModeStore } from '@/shared/stores/modeStore';
 import { PodcastPlayer } from '@/components/library/PodcastPlayer';
 import { OverviewTab } from '@/components/workspace/tabs/OverviewTab';
 import { Toolbar, ToolbarItem } from '@/components/kokonutui/toolbar';
@@ -63,8 +64,7 @@ export function LectureViewerPage() {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [screenshotImages, setScreenshotImages] = useState<Record<string, string>>({});
   const [artifacts, setArtifacts] = useState<Record<string, any>>({});
-  const [artifactProgress, setArtifactProgress] = useState<Record<string, { status: string, error?: string }>>({});
-  
+  const { appMode } = useModeStore();
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   
@@ -307,8 +307,9 @@ export function LectureViewerPage() {
     }
   }, [activeTab, summary, isGeneratingSummary, transcript, screenshots.length, summaryError]);
 
+  // Flashcards generation
   useEffect(() => {
-    if (activeTab === 'flashcards' && !isGeneratingFlashcards && !flashcardError && transcript) {
+    if (appMode === 'student' && activeTab === 'flashcards' && !isGeneratingFlashcards && !flashcardError && transcript) {
       TauriClient.listFlashcards(id!).then(cards => {
         if (cards.length === 0) {
           setIsGeneratingFlashcards(true);
@@ -322,7 +323,9 @@ export function LectureViewerPage() {
         }
       });
     }
-  }, [activeTab, id, transcript, isGeneratingFlashcards, flashcardError]);
+  }, [appMode, activeTab, id, transcript, isGeneratingFlashcards, flashcardError]);
+
+
 
 
   const handleRename = async () => {
@@ -500,31 +503,20 @@ export function LectureViewerPage() {
       <div className="flex items-center w-full shrink-0 border-b border-border/50 bg-background/90 backdrop-blur-md px-4 sm:px-6 py-2 relative z-20 gap-6">
         
         {/* Left: Branding & Title */}
-        <div className="flex items-center gap-3 min-w-0 shrink-0 max-w-[400px]">
-          <button onClick={() => navigate('/lectures')} className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
-            <ArrowLeft size={18} />
+        <div className="flex items-center gap-4 min-w-0 shrink-0 max-w-[500px]">
+          <button onClick={() => navigate('/lectures')} className="text-muted-foreground/60 hover:text-foreground transition-colors shrink-0">
+            <ArrowLeft size={16} strokeWidth={2.5} />
           </button>
           
-          <div className="h-9 w-9 rounded-lg bg-surface border border-border/50 flex items-center justify-center overflow-hidden shrink-0 hidden sm:flex">
-             {screenshots.length > 0 ? (
-               <img src={screenshotImages[screenshots[0].id]} alt="Thumbnail" className="w-full h-full object-cover" />
-             ) : (
-               <Video className="text-muted-foreground/50" size={14} />
-             )}
-          </div>
-          
           <div className="min-w-0 flex flex-col justify-center">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-semibold tracking-tight text-foreground truncate">{lecture.title}</h1>
-              <button onClick={handleRename} className="text-muted-foreground hover:text-foreground transition-colors shrink-0"><Edit2 size={12} /></button>
+            <div className="flex items-center gap-3">
+              <h1 className="text-base font-semibold tracking-tight text-foreground truncate">{lecture.title}</h1>
+              <button onClick={handleRename} className="text-muted-foreground/40 hover:text-foreground transition-colors shrink-0 opacity-0 group-hover:opacity-100"><Edit2 size={12} /></button>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground truncate mt-0.5">
-              <span className="text-[var(--accent)] font-medium bg-[var(--accent-dim)] px-1.5 py-0 rounded-full border border-[var(--border-accent)] truncate">
-                {lecture.courseLabel || 'Uncategorized'}
-              </span>
-              <span>•</span>
-              <Clock size={10} />
-              <span>{Math.round(lecture.durationMs / 60000)}m</span>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 truncate mt-0.5 font-medium">
+              <span>{Math.round(lecture.durationMs / 60000)} min</span>
+              <span className="opacity-40">•</span>
+              <span className="truncate">{lecture.courseLabel || 'Uncategorized'}</span>
             </div>
           </div>
         </div>
@@ -537,14 +529,23 @@ export function LectureViewerPage() {
               { id: 'summary', title: 'Intelligence', icon: BrainCircuit },
               { id: 'transcript', title: 'Transcript', icon: FileText },
               { id: 'analytics', title: 'Analytics', icon: BarChart2 },
-              ...(artifacts['formula_sheet']?.formulas?.length ? [{ id: 'formula_sheet', title: 'Formulas', icon: ListTree }] : []),
-              ...(artifacts['important_code']?.code_blocks?.length ? [{ id: 'code', title: 'Code', icon: Zap }] : []),
-              { id: 'screenshots', title: 'Screenshots', icon: Video },
+              
+              // Only add these tabs in student mode
+              ...(appMode === 'student' ? [
+                  ...(artifacts['formula_sheet']?.formulas?.length ? [{ id: 'formula_sheet', title: 'Formulas', icon: ListTree }] : []),
+                  ...(artifacts['important_code']?.code_blocks?.length ? [{ id: 'code', title: 'Code', icon: Zap }] : []),
+              ] : []),
+
               { id: 'notes', title: 'Notes', icon: BookOpen },
               { id: 'soundbites', title: 'Clips', icon: Scissors },
-              { id: 'flashcards', title: 'Flashcards', icon: Layers },
-              { id: 'quiz', title: 'Quiz', icon: CheckSquare },
-              { id: 'grill', title: 'Grill Me', icon: Mic },
+              { id: 'screenshots', title: 'Screenshots', icon: Video },
+              
+              ...(appMode === 'student' ? [
+                  { id: 'flashcards', title: 'Flashcards', icon: Layers },
+                  { id: 'quiz', title: 'Quiz', icon: CheckSquare },
+                  { id: 'grill', title: 'Grill Me', icon: Mic },
+              ] : []),
+
               ...(videoSrc ? [{ id: 'video', title: 'Video', icon: Play }] : []),
             ] as ToolbarItem[];
 
@@ -560,74 +561,36 @@ export function LectureViewerPage() {
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1 shrink-0 ml-auto">
-          <div className="flex items-center gap-1.5 mr-2">
-            {isPipelineRunning && (
-              <span className="text-primary flex items-center gap-1 text-[10px] font-medium bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 hidden lg:flex">
-                <Loader2 size={10} className="animate-spin" />
-                {pipelineStatus!.message}
-              </span>
-            )}
-            {artifactProgress['lecture_intelligence'] && artifactProgress['lecture_intelligence'].status !== 'done' && (
-              <span className={`hidden lg:flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border ${
-                artifactProgress['lecture_intelligence'].status === 'waiting_for_quota' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                artifactProgress['lecture_intelligence'].status === 'failed' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                artifactProgress['lecture_intelligence'].status === 'retry_scheduled' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                'bg-primary/10 text-primary border-primary/20'
-              }`}>
-                {(artifactProgress['lecture_intelligence'].status === 'pending' || artifactProgress['lecture_intelligence'].status === 'generating') && <Loader2 size={10} className="animate-spin" />}
-                {artifactProgress['lecture_intelligence'].status === 'waiting_for_quota' && <Clock size={10} />}
-                {artifactProgress['lecture_intelligence'].status === 'retry_scheduled' && <RefreshCw size={10} />}
-                {artifactProgress['lecture_intelligence'].status === 'failed' && <Zap size={10} />}
-                {artifactProgress['lecture_intelligence'].status.replace(/_/g, ' ')}
-              </span>
-            )}
-            {isPipelineError && (
-              <span className="text-destructive flex items-center gap-1 text-[10px] font-medium bg-destructive/10 px-2 py-0.5 rounded-full border border-destructive/20 hidden lg:flex">
-                <AlertCircle size={10} />
-                {pipelineStatus!.message}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+          {isPipelineRunning && (
+            <span className="text-primary flex items-center gap-1.5 text-[11px] font-medium px-3 py-1 rounded-full border border-primary/20 bg-primary/5 hidden lg:flex">
+              <Loader2 size={12} className="animate-spin" />
+              {pipelineStatus!.message}
+            </span>
+          )}
           
-          <button onClick={refreshAllData} disabled={isPollingData} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors disabled:opacity-50">
+          <button onClick={refreshAllData} disabled={isPollingData} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50">
             <RefreshCw size={14} className={isPollingData ? 'animate-spin' : ''} />
           </button>
-          <div className="w-px h-4 bg-border/50 mx-0.5" />
-          <button onClick={handleToggleFavorite} className={`p-1.5 rounded-md transition-colors ${lecture.isFavorite ? 'text-red-500 hover:text-red-400' : 'text-muted-foreground hover:text-foreground hover:bg-surface'}`}>
-             <Heart size={14} className={lecture.isFavorite ? "fill-current" : ""} />
-          </button>
-          <button onClick={handleAddGlobalBookmark} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors">
-             <Bookmark size={14} />
-          </button>
-          <button onClick={handleGenerateHighlightsReel} className="p-1.5 rounded-md text-muted-foreground hover:text-[color:var(--accent)] hover:bg-surface transition-colors" title="Generate Highlights Reel">
-             <Film size={14} />
-          </button>
-          <button 
-              onClick={() => setShowPodcastPlayer(!showPodcastPlayer)} 
-              className={`p-1.5 rounded-md transition-colors ${showPodcastPlayer ? 'text-purple-500 bg-purple-500/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface'}`}
-              title="Listen as Podcast"
-          >
-             <Headphones size={14} />
-          </button>
-          <button onClick={handleShare} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors" title="Share & Export">
+          <div className="w-px h-4 bg-white/10 mx-1" />
+          
+          <button onClick={handleShare} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors" title="Share">
              <Share size={14} />
           </button>
-          <button onClick={() => setIsExportOpen(true)} className="p-1.5 rounded-md text-muted-foreground hover:text-[color:var(--accent)] hover:bg-surface transition-colors" title="Push to CRM / Export">
+          <button onClick={() => setIsExportOpen(true)} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors" title="Export">
              <ExternalLink size={14} />
           </button>
-          <div className="w-px h-4 bg-border/50 mx-0.5" />
+          
+          <div className="w-px h-4 bg-white/10 mx-1" />
           
           {/* Wingman Toggle */}
           <button 
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 font-medium text-[12px] ${isChatOpen ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'text-muted-foreground hover:text-foreground hover:bg-surface'}`}
+            className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-2 font-medium text-[12px] shadow-sm ${isChatOpen ? 'bg-primary text-primary-foreground shadow-lime' : 'bg-surface border border-white/5 text-foreground hover:border-white/10'}`}
           >
-             <MessageSquare size={14} />
+             <BrainCircuit size={14} className={isChatOpen ? 'text-primary-foreground' : 'text-primary'} />
              Wingman
           </button>
-          
-          <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"><MoreVertical size={14} /></button>
         </div>
       </div>
 
@@ -636,7 +599,8 @@ export function LectureViewerPage() {
           <div className="flex-1 h-full relative">
             <ProgressiveBlur position="top" height="24px" blurAmount="4px" />
              <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
-                {visitedTabs.has('grill') && (
+
+                {appMode === 'student' && visitedTabs.has('grill') && (
                   <div className={`absolute inset-0 bg-background ${activeTab === 'grill' ? 'block' : 'hidden'}`}>
                     <GrillMeTab lectureId={lecture.id} />
                   </div>
@@ -731,31 +695,37 @@ export function LectureViewerPage() {
                  />
                </div>
              )}
-             {visitedTabs.has('formula_sheet') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'formula_sheet' ? 'block' : 'hidden'}`}>
-                 <FormulaSheetTab lectureId={lecture.id} formulas={artifacts['formula_sheet']?.formulas} />
-               </div>
+
+             {appMode === 'student' && (
+                 <>
+                     {visitedTabs.has('formula_sheet') && (
+                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'formula_sheet' ? 'block' : 'hidden'}`}>
+                         <FormulaSheetTab lectureId={lecture.id} formulas={artifacts['formula_sheet']?.formulas} />
+                       </div>
+                     )}
+                     {visitedTabs.has('flashcards') && (
+                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'flashcards' ? 'block' : 'hidden'}`}>
+                         <FlashcardsTab lectureId={lecture.id} transcript={transcript} />
+                       </div>
+                     )}
+                     {visitedTabs.has('quiz') && (
+                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'quiz' ? 'block' : 'hidden'}`}>
+                         <QuizTab lectureId={lecture.id} transcript={transcript} />
+                       </div>
+                     )}
+                     {visitedTabs.has('code') && (
+                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'code' ? 'block' : 'hidden'}`}>
+                         <CodeViewerTab lectureId={lecture.id} codeBlocks={artifacts['important_code']?.code_blocks} />
+                       </div>
+                     )}
+                     {visitedTabs.has('diagrams') && (
+                       <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'diagrams' ? 'block' : 'hidden'}`}>
+                         <DiagramsTab />
+                       </div>
+                     )}
+                 </>
              )}
-             {visitedTabs.has('flashcards') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'flashcards' ? 'block' : 'hidden'}`}>
-                 <FlashcardsTab lectureId={lecture.id} transcript={transcript} />
-               </div>
-             )}
-             {visitedTabs.has('quiz') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'quiz' ? 'block' : 'hidden'}`}>
-                 <QuizTab lectureId={lecture.id} transcript={transcript} />
-               </div>
-             )}
-             {visitedTabs.has('code') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'code' ? 'block' : 'hidden'}`}>
-                 <CodeViewerTab lectureId={lecture.id} codeBlocks={artifacts['important_code']?.code_blocks} />
-               </div>
-             )}
-             {visitedTabs.has('diagrams') && (
-               <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'diagrams' ? 'block' : 'hidden'}`}>
-                 <DiagramsTab />
-               </div>
-             )}
+
              {visitedTabs.has('timeline') && (
                <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'timeline' ? 'block' : 'hidden'}`}>
                  <TimelineTab 

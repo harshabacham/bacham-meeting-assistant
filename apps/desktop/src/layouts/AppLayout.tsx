@@ -3,6 +3,7 @@ import { useAppStore } from '@/shared/stores/appStore';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useAuthStore } from '@/shared/stores/authStore';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
+import { useModeStore } from '@/shared/stores/modeStore';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
@@ -20,13 +21,20 @@ import { InlineAIToolbar } from '@/components/command_center/InlineAIToolbar';
 import { GlobalQuickLookModal } from '@/components/command_center/GlobalQuickLookModal';
 import { LiveWingman } from '@/components/ui/LiveWingman';
 
-const MAIN_NAV_ITEMS = [
+const STUDENT_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/lectures', label: 'Library', icon: Library },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-    { path: '/live', label: 'Live Meeting', icon: Radio },
 ];
+
+const PRO_NAV_ITEMS = [
+    { path: '/', label: 'Home', icon: Home },
+    { path: '/lectures', label: 'Meetings', icon: Library },
+    { path: '/notes', label: 'Notes', icon: Edit3 },
+    { path: '/tasks', label: 'Action Items', icon: CheckSquare },
+];
+
 
 const SETTINGS_NAV_ITEMS = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -49,6 +57,9 @@ export function AppLayout() {
     const isSettingsRoute = location.pathname.startsWith('/settings');
     const [isFoldersOpen, setIsFoldersOpen] = useState(true);
     const activeSettingsTab = searchParams.get('tab') || 'profile';
+    const { appMode, setAppMode } = useModeStore();
+    
+    const MAIN_NAV_ITEMS = appMode === 'student' ? STUDENT_NAV_ITEMS : PRO_NAV_ITEMS;
 
     useEffect(() => {
         const handleResize = () => {
@@ -126,7 +137,7 @@ export function AppLayout() {
                         animate={{ width: 240, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 350, damping: 38, mass: 0.8 }}
-                        className="bg-surface/80 shrink-0 flex flex-col z-20 relative overflow-hidden border-r border-border/50 backdrop-blur-xl h-full"
+                        className="bg-background/95 shrink-0 flex flex-col z-20 relative overflow-hidden border-r border-white/5 backdrop-blur-2xl h-full"
                     >
                         {/* Content Area (Contextual) */}
                         <div className="flex-1 overflow-y-auto flex flex-col relative px-3 py-4 scrollbar-hide">
@@ -140,12 +151,19 @@ export function AppLayout() {
                                     <Sidebar size={14} strokeWidth={2.5} />
                                 </button>
                                 
-                                {isSettingsRoute && (
+                                {isSettingsRoute ? (
                                     <button 
                                         onClick={() => navigate('/')}
                                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-foreground transition-colors bg-surface shadow-sm border border-border"
                                     >
                                         <ChevronLeft size={12} /> Home
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setAppMode(appMode === 'student' ? 'professional' : 'student')}
+                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold text-foreground transition-all bg-surface/50 hover:bg-surface shadow-sm border border-white/5 uppercase tracking-wider"
+                                    >
+                                        {appMode === 'student' ? '🎓 Student Mode' : '💼 Pro Mode'}
                                     </button>
                                 )}
                             </div>
@@ -246,9 +264,11 @@ export function AppLayout() {
                                             ))}
                                         </nav>
                                         
-                                        <div className="h-px bg-border/30 mx-2 my-1" />
+                                        <div className="h-px bg-white/5 mx-2 my-1" />
 
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50 px-3 mb-1 select-none">Library</p>
+                                        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/40 px-3 mb-1 mt-2 select-none">
+                                            {appMode === 'student' ? 'Library' : 'Meetings'}
+                                        </p>
 
                                         <nav className="space-y-0.5">
                                             {[
@@ -348,7 +368,7 @@ export function AppLayout() {
 
             {/* Collapsed Sidebar Handle */}
             {!isSidebarOpen && (
-                <div className="flex flex-col items-center py-3 shrink-0 w-14 transition-all z-20 border-r border-border/50 bg-surface/80 backdrop-blur-xl">
+                <div className="flex flex-col items-center py-3 shrink-0 w-14 transition-all z-20 border-r border-white/5 bg-background/95 backdrop-blur-2xl">
                     <button
                         className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-[var(--overlay-hover)] transition-all duration-150 mb-3"
                         onClick={() => setIsSidebarOpen(true)}
