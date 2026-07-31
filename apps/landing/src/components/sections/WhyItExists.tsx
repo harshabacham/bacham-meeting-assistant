@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Brain, Clock, Zap } from "lucide-react";
 
 export default function WhyItExists() {
-  const container = {
+  const container: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -12,7 +12,7 @@ export default function WhyItExists() {
     }
   };
 
-  const item = {
+  const item: any = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
   };

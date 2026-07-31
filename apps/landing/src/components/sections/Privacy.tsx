@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 
 export default function Privacy() {
-  const lineVariants = {
+  const lineVariants: any = {
     hidden: { pathLength: 0, opacity: 0 },
     show: { 
       pathLength: 1, 
@@ -12,7 +12,7 @@ export default function Privacy() {
     }
   };
 
-  const nodeVariants = {
+  const nodeVariants: any = {
     hidden: { scale: 0, opacity: 0 },
     show: { scale: 1, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
   };

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Download, MonitorPlay, Send, BrainCircuit, PackageOpen } from "lucide-react";
 
 export default function HowItWorks() {
-  const container = {
+  const container: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -12,7 +12,7 @@ export default function HowItWorks() {
     }
   };
 
-  const item = {
+  const item: any = {
     hidden: { opacity: 0, y: 20, scale: 0.95 },
     show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
   };

@@ -30,7 +30,7 @@ export function LayeredText({
   className = "",
 }: LayeredTextProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const timelineRef = useRef<gsap.core.Timeline>()
+  const timelineRef = useRef<gsap.core.Timeline | null>(null)
 
   const calculateTranslateX = (index: number) => {
     const baseOffset = 35
