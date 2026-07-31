@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT workspace_type FROM lectures WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "workspace_type",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "477399d89bdf3e612345a3cc8ee966f833ece833d97914302aeb5a458239285b"
+}

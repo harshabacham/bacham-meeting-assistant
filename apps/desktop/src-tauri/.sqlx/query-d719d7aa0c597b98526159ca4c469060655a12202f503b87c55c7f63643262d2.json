@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT question, answer FROM flashcards WHERE lecture_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "question",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "answer",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d719d7aa0c597b98526159ca4c469060655a12202f503b87c55c7f63643262d2"
+}

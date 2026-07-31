@@ -1,0 +1,1 @@
+ALTER TABLE lectures ADD COLUMN workspace_type TEXT DEFAULT 'lecture';

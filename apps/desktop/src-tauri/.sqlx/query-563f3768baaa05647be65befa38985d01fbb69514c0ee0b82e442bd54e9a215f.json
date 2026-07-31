@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE conversations SET scope_type = ?, scope_ref_json = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "563f3768baaa05647be65befa38985d01fbb69514c0ee0b82e442bd54e9a215f"
+}

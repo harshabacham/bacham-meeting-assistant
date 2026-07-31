@@ -58,6 +58,8 @@ export enum MessageType {
   SEND_RENAME_LECTURE = 'SEND_RENAME_LECTURE',
   /** Internal: content script triggers an immediate screenshot based on DOM observation. */
   TRIGGER_SNAPSHOT = 'TRIGGER_SNAPSHOT',
+  /** Internal: popup requests a live catch-me-up AI summary of recent captions. Payload: none. */
+  CATCHUP_REQUEST = 'CATCHUP_REQUEST',
 }
 
 // ---------------------------------------------------------------------------

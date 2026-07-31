@@ -298,3 +298,73 @@ pub async fn seed_stress_data(state: State<'_, DbState>) -> AppResult<String> {
     let duration = start.elapsed();
     Ok(format!("Seeded 10,000 lectures in {} ms", duration.as_millis()))
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SemanticSearchResult {
+    pub answer: String,
+    pub lecture_id: Option<String>,
+    pub timestamp_ms: Option<u32>,
+}
+
+#[tauri::command]
+pub async fn semantic_search(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, crate::database::DbState>,
+    query: String,
+) -> crate::error::AppResult<SemanticSearchResult> {
+    use crate::ai::providers::{ProviderEngine, GenerationRequest};
+    use crate::services::gemini_service::ChatMessage;
+
+    let clean_query = query.replace("\"", "").replace("'", "");
+    let fts_query = format!("\"{}*\"", clean_query);
+
+    let rows = sqlx::query!(
+        "SELECT l.id, l.title, a.content_json
+         FROM lectures l
+         JOIN lecture_artifacts a ON l.id = a.lecture_id
+         JOIN lectures_fts f ON l.rowid = f.rowid
+         WHERE a.artifact_type = 'transcript_blocks' AND a.status = 'done'
+           AND lectures_fts MATCH ?
+         ORDER BY rank LIMIT 5",
+         fts_query
+    )
+    .fetch_all(&state.pool)
+    .await?;
+
+    if rows.is_empty() {
+        return Ok(SemanticSearchResult {
+            answer: "No relevant meetings found for your query.".to_string(),
+            lecture_id: None,
+            timestamp_ms: None,
+        });
+    }
+
+    let mut context_text = String::new();
+    for row in &rows {
+        let id_str = row.id.clone().unwrap_or_else(|| "unknown".to_string());
+        context_text.push_str(&format!("--- Meeting: {} (ID: {}) ---\n{}\n\n", row.title, id_str, row.content_json));
+    }
+
+    let provider = ProviderEngine::get_provider(&app).await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    
+    let request = GenerationRequest {
+        system_instruction: "You are a semantic search AI. Find the exact answer to the query from the meeting transcripts. Output ONLY a raw JSON object (no markdown, no quotes) with format: {\"answer\": \"detailed answer\", \"lecture_id\": \"<id>\", \"timestamp_ms\": 12345}".to_string(),
+        history: vec![
+            ChatMessage {
+                role: "user".to_string(),
+                content: format!("Transcripts:\n{}\n\nQuery: {}", context_text, query),
+            }
+        ],
+        prompt: "Extract answer".to_string(),
+    };
+
+    let response = provider.generate_stream(&app, request, "semantic_search_chunk").await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    let result_str = response.text;
+    
+    if let Ok(res) = serde_json::from_str::<SemanticSearchResult>(&result_str) {
+        return Ok(res);
+    }
+    
+    Ok(SemanticSearchResult { answer: result_str, lecture_id: None, timestamp_ms: None })
+}
+

@@ -17,9 +17,12 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage").then(m => ({ defa
 const TrashPage = lazy(() => import("./pages/TrashPage").then(m => ({ default: m.TrashPage })));
 const AiWorkspacePage = lazy(() => import("./features/ai_workspace/AiWorkspacePage").then(m => ({ default: m.AiWorkspacePage })));
 const NotesWorkspacePage = lazy(() => import("./features/notes_workspace/NotesWorkspacePage").then(m => ({ default: m.NotesWorkspacePage })));
+const TasksPage = lazy(() => import("./pages/TasksPage").then(m => ({ default: m.TasksPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
 const TermsPage = lazy(() => import("./pages/TermsPage").then(m => ({ default: m.TermsPage })));
+
+const LiveWorkspacePage = lazy(() => import("./pages/LiveWorkspacePage").then(m => ({ default: m.LiveWorkspacePage })));
 
 const CopilotWindow = lazy(() => import("./pages/CopilotWindow").then(m => ({ default: m.CopilotWindow })));
 
@@ -72,10 +75,11 @@ function App() {
                     <Route path="lectures/:id" element={<LectureViewerPage />} />
                     <Route path="ai" element={<AiWorkspacePage />} />
                     <Route path="notes" element={<NotesWorkspacePage />} />
-
+                    <Route path="tasks" element={<TasksPage />} />
                     <Route path="trash" element={<TrashPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="terms" element={<TermsPage />} />
+                    <Route path="live" element={<LiveWorkspacePage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Routes>

@@ -1,3 +1,7 @@
+use std::process::Command;
+use std::fs;
+use std::path::PathBuf;
+use serde::Deserialize;
 use tauri::State;
 use crate::error::AppResult;
 use crate::database::DbState;
@@ -114,4 +118,84 @@ pub async fn lecture_remove_tag(lecture_id: String, tag_name: String, state: Sta
             .execute(&state.pool).await?;
     }
     Ok(())
+}
+
+#[derive(Deserialize)]
+pub struct TrimSegment {
+    pub start_ms: i64,
+    pub end_ms: i64,
+}
+
+#[tauri::command]
+pub async fn trim_video_by_timestamps(lecture_id: String, exclude_segments: Vec<TrimSegment>, state: State<'_, DbState>) -> AppResult<String> {
+    let pool = &state.pool;
+    let row = sqlx::query!("SELECT video_path, duration_ms FROM lectures WHERE id = ?", lecture_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(r) = row {
+        if let Some(video_path) = r.video_path {
+            let path = PathBuf::from(&video_path);
+            if !path.exists() {
+                return Err(crate::error::AppError::Internal("Video file not found".to_string()));
+            }
+
+            let duration = r.duration_ms; // fallback 1 hour
+            
+            // Build inclusion segments by inverting exclude_segments
+            let mut includes = Vec::new();
+            let mut current = 0;
+            
+            let mut sorted_excludes = exclude_segments;
+            sorted_excludes.sort_by_key(|s| s.start_ms);
+            
+            for ex in &sorted_excludes {
+                if ex.start_ms > current {
+                    includes.push((current, ex.start_ms));
+                }
+                current = current.max(ex.end_ms);
+            }
+            if current < duration {
+                includes.push((current, duration));
+            }
+
+            // Create concat text file
+            let mut concat_content = String::new();
+            for (start, end) in includes {
+                concat_content.push_str(&format!("file '{}'\n", video_path.replace("\\", "/")));
+                concat_content.push_str(&format!("inpoint {:.3}\n", start as f64 / 1000.0));
+                concat_content.push_str(&format!("outpoint {:.3}\n", end as f64 / 1000.0));
+            }
+            
+            let concat_path = path.with_extension("concat.txt");
+            fs::write(&concat_path, concat_content).unwrap_or_default();
+
+            let out_path = path.with_file_name(format!("{}_trimmed.webm", lecture_id));
+            
+            // Run FFmpeg
+            let status = Command::new("ffmpeg")
+                .arg("-y")
+                .arg("-f").arg("concat")
+                .arg("-safe").arg("0")
+                .arg("-i").arg(&concat_path)
+                .arg("-c").arg("copy")
+                .arg(&out_path)
+                .status();
+
+            // Cleanup concat txt
+            let _ = fs::remove_file(&concat_path);
+
+            if let Ok(st) = status {
+                if st.success() {
+                    let out_path_str = out_path.to_string_lossy().to_string();
+                    sqlx::query!("UPDATE lectures SET video_path = ? WHERE id = ?", out_path_str, lecture_id)
+                        .execute(pool)
+                        .await?;
+                    
+                    return Ok(out_path_str);
+                }
+            }
+        }
+    }
+    Err(crate::error::AppError::Internal("Failed to trim video".to_string()))
 }

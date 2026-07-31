@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, filter_json, created_at FROM smart_collections ORDER BY created_at DESC",
+  "query": "SELECT id, title, subject, tags_flat, folder_id FROM lectures",
   "describe": {
     "columns": [
       {
@@ -9,19 +9,24 @@
         "type_info": "Text"
       },
       {
-        "name": "name",
+        "name": "title",
         "ordinal": 1,
         "type_info": "Text"
       },
       {
-        "name": "filter_json",
+        "name": "subject",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "created_at",
+        "name": "tags_flat",
         "ordinal": 3,
-        "type_info": "Integer"
+        "type_info": "Text"
+      },
+      {
+        "name": "folder_id",
+        "ordinal": 4,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -30,9 +35,10 @@
     "nullable": [
       true,
       false,
-      false,
-      false
+      true,
+      true,
+      true
     ]
   },
-  "hash": "a7295501cf3efb5b34b2af756d18c2cce4d7787a2e75c3b9e2fa410264f89bce"
+  "hash": "aade84d121151ef218ed0bce66a6881536181a5733223aff699e447ac128767d"
 }

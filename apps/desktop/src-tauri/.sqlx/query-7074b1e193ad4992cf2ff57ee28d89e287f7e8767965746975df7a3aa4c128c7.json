@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content FROM transcripts WHERE lecture_id = ? ORDER BY generated_at ASC LIMIT 5",
+  "describe": {
+    "columns": [
+      {
+        "name": "content",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7074b1e193ad4992cf2ff57ee28d89e287f7e8767965746975df7a3aa4c128c7"
+}

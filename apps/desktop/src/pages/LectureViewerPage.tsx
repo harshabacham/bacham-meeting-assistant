@@ -5,7 +5,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { TauriClient, Screenshot, TimelineEvent } from '@/infrastructure/tauri-client';
-import { Play, FileText, BrainCircuit, BookOpen, Zap, MessageSquare, ArrowLeft, RefreshCw, Video, ListTree, Loader2, AlertCircle, Clock, Edit2, Heart, Bookmark, Share, MoreVertical, Layers, CheckSquare, Headphones, Film } from 'lucide-react';
+import { Play, FileText, BrainCircuit, BookOpen, Zap, MessageSquare, ArrowLeft, RefreshCw, Video, ListTree, Loader2, AlertCircle, Clock, Edit2, Heart, Bookmark, Share, MoreVertical, Layers, CheckSquare, Headphones, Film, Mic, BarChart2, Scissors, ExternalLink } from 'lucide-react';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
 import { PodcastPlayer } from '@/components/library/PodcastPlayer';
 import { OverviewTab } from '@/components/workspace/tabs/OverviewTab';
@@ -24,9 +24,13 @@ import { AiChatTab } from '@/components/workspace/tabs/AiChatTab';
 import { TimelineTab } from '@/components/workspace/tabs/TimelineTab';
 import { FlashcardsTab } from '@/components/workspace/tabs/FlashcardsTab';
 import { QuizTab } from '@/components/workspace/tabs/QuizTab';
+import { GrillMeTab } from '@/components/workspace/tabs/GrillMeTab';
 import { SmartSkipTimeline } from '@/components/study/SmartSkipTimeline';
 import { useLectureShortcuts } from '@/shared/hooks/useLectureShortcuts';
 import { useLearningContext } from '@/shared/hooks/useLearningContext';
+import { AnalyticsTab } from '@/components/workspace/tabs/AnalyticsTab';
+import { SoundbitesTab } from '@/components/workspace/tabs/SoundbitesTab';
+import { ExportPushDialog } from '@/components/workspace/ExportPushDialog';
 
 export function LectureViewerPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +44,7 @@ export function LectureViewerPage() {
   
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   useLearningContext({
     type: activeTab === 'code' ? 'code' : activeTab === 'formula' ? 'formula' : activeTab === 'notes' ? 'notes' : 'lecture',
@@ -131,6 +136,8 @@ export function LectureViewerPage() {
           }
         }
       }
+      setArtifacts(newArtifacts);
+      
       // Load saved session state (Phase 2 Session Memory)
       const session = await TauriClient.getSessionState(id).catch(() => null);
       if (session) {
@@ -242,6 +249,13 @@ export function LectureViewerPage() {
       }
     });
 
+    // Listen for live transcript updates (from live captions during recording)
+    const unlistenTranscript = TauriClient.onTranscriptUpdate((data) => {
+      if (data.lectureId === id && data.content) {
+        setTranscript(data.content);
+      }
+    });
+
     return () => {
       isMounted = false;
       unlistenChat.then(f => f()); 
@@ -249,6 +263,7 @@ export function LectureViewerPage() {
       unlistenProgress.then(f => f());
       unlistenArtifacts.then(f => f());
       unlistenRefresh.then(f => f());
+      unlistenTranscript.then(f => f());
     };
   }, [id, activeConversationId, refreshAllData]);
 
@@ -349,10 +364,25 @@ export function LectureViewerPage() {
     }
   };
 
-  const handleShare = () => {
-    if (!lecture) return;
-    navigator.clipboard.writeText(`Lecture: ${lecture.title}\nCourse: ${lecture.courseLabel || 'Uncategorized'}`);
-    alert('Lecture info copied to clipboard!');
+  const handleShare = async () => {
+    if (!lecture || !id) return;
+    try {
+      const { desktopDir, join } = await import('@tauri-apps/api/path');
+      const desktop = await desktopDir();
+      const safeTitle = lecture.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'meeting';
+      const dest = await join(desktop, `magic_link_${safeTitle}.html`);
+      
+      await TauriClient.generateMagicLinkHtml(id, dest);
+      
+      // Optionally open the file using shell
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(dest).catch(() => {});
+      
+      alert(`Magic Link generated!\nSaved to Desktop: magic_link_${safeTitle}.html`);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to generate Magic Link. Check console for details.');
+    }
   };
 
   const handleSendChat = async (persona?: string) => {
@@ -408,13 +438,20 @@ export function LectureViewerPage() {
     setIsGeneratingSummary(true);
     setSummaryError(null);
     try {
-      // The backend summary_generate command already uses multimodal (transcript + key frame images)
-      const result = await TauriClient.generateSummary(id, transcript || "");
-      setSummary(result);
+      if (artifacts['lecture_intelligence']) {
+        // This runs asynchronously in the background. The spinner state will be managed
+        // by checking the artifactProgress state.
+        await TauriClient.generateIntelligence(id);
+        setIsGeneratingSummary(false); // Can unset immediately, the artifactProgress listener will take over the loading state
+      } else {
+        // The backend summary_generate command already uses multimodal (transcript + key frame images)
+        const result = await TauriClient.generateSummary(id, transcript || "");
+        setSummary(result);
+        setIsGeneratingSummary(false);
+      }
       await refreshAllData();
     } catch (e) {
       setSummaryError(`Summary generation failed: ${String(e)}`);
-    } finally {
       setIsGeneratingSummary(false);
     }
   };
@@ -499,12 +536,15 @@ export function LectureViewerPage() {
               { id: 'overview', title: 'Overview', icon: BookOpen },
               { id: 'summary', title: 'Intelligence', icon: BrainCircuit },
               { id: 'transcript', title: 'Transcript', icon: FileText },
+              { id: 'analytics', title: 'Analytics', icon: BarChart2 },
               ...(artifacts['formula_sheet']?.formulas?.length ? [{ id: 'formula_sheet', title: 'Formulas', icon: ListTree }] : []),
               ...(artifacts['important_code']?.code_blocks?.length ? [{ id: 'code', title: 'Code', icon: Zap }] : []),
               { id: 'screenshots', title: 'Screenshots', icon: Video },
               { id: 'notes', title: 'Notes', icon: BookOpen },
+              { id: 'soundbites', title: 'Clips', icon: Scissors },
               { id: 'flashcards', title: 'Flashcards', icon: Layers },
               { id: 'quiz', title: 'Quiz', icon: CheckSquare },
+              { id: 'grill', title: 'Grill Me', icon: Mic },
               ...(videoSrc ? [{ id: 'video', title: 'Video', icon: Play }] : []),
             ] as ToolbarItem[];
 
@@ -570,8 +610,11 @@ export function LectureViewerPage() {
           >
              <Headphones size={14} />
           </button>
-          <button onClick={handleShare} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors">
+          <button onClick={handleShare} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface transition-colors" title="Share & Export">
              <Share size={14} />
+          </button>
+          <button onClick={() => setIsExportOpen(true)} className="p-1.5 rounded-md text-muted-foreground hover:text-[color:var(--accent)] hover:bg-surface transition-colors" title="Push to CRM / Export">
+             <ExternalLink size={14} />
           </button>
           <div className="w-px h-4 bg-border/50 mx-0.5" />
           
@@ -592,7 +635,12 @@ export function LectureViewerPage() {
         <div className="flex-1 h-full relative flex flex-col min-w-0">
           <div className="flex-1 h-full relative">
             <ProgressiveBlur position="top" height="24px" blurAmount="4px" />
-            <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
+             <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
+                {visitedTabs.has('grill') && (
+                  <div className={`absolute inset-0 bg-background ${activeTab === 'grill' ? 'block' : 'hidden'}`}>
+                    <GrillMeTab lectureId={lecture.id} />
+                  </div>
+                )}
                {visitedTabs.has('overview') && (
                <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'overview' ? 'block' : 'hidden'}`}>
                  <OverviewTab 
@@ -632,32 +680,47 @@ export function LectureViewerPage() {
                    artifacts={artifacts}
                    summary={summary}
                    summaryError={summaryError}
-                   isGeneratingSummary={isGeneratingSummary}
+                   isGeneratingSummary={isGeneratingSummary || artifactProgress['lecture_intelligence']?.status === 'generating'}
                    transcript={transcript}
                    hasVisuals={screenshots.length > 0}
                    isPipelineRunning={isPipelineRunning}
                    onGenerateSummary={handleGenerateSummary}
+                   workspaceType={lecture.workspaceType || 'lecture'}
                  />
                </div>
              )}
-             {visitedTabs.has('transcript') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'transcript' ? 'block' : 'hidden'}`}>
-                 <TranscriptTab 
-                   transcriptBlocks={transcriptBlocks}
-                   isPipelineError={isPipelineError}
-                   isPipelineRunning={isPipelineRunning}
-                   pipelineStatusMessage={pipelineStatus?.message}
-                   transcriptVirtualizer={transcriptVirtualizer}
-                   onRefresh={() => {}}
-                   scrollRef={transcriptScrollRef}
-                 />
-               </div>
-             )}
-             {visitedTabs.has('notes') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'notes' ? 'block' : 'hidden'}`}>
-                 <NotesTab lectureId={lecture.id} />
-               </div>
-             )}
+                {visitedTabs.has('transcript') && (
+                <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'transcript' ? 'block' : 'hidden'}`}>
+                  <TranscriptTab 
+                    lectureId={lecture.id}
+                    transcriptBlocks={transcriptBlocks}
+                    isPipelineError={isPipelineError}
+                    isPipelineRunning={isPipelineRunning}
+                    pipelineStatusMessage={pipelineStatus?.message}
+                    transcriptVirtualizer={transcriptVirtualizer}
+                    onRefresh={() => {}}
+                    scrollRef={transcriptScrollRef}
+                    screenshots={screenshots}
+                    onJumpToTime={jumpToTime}
+                    durationMs={lecture.durationMs}
+                  />
+                </div>
+              )}
+              {visitedTabs.has('analytics') && (
+                <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'analytics' ? 'block' : 'hidden'}`}>
+                  <AnalyticsTab lectureId={lecture.id} transcript={transcript} />
+                </div>
+              )}
+              {visitedTabs.has('notes') && (
+                <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'notes' ? 'block' : 'hidden'}`}>
+                  <NotesTab lectureId={lecture.id} templateType={lecture.workspaceType || 'general'} />
+                </div>
+              )}
+              {visitedTabs.has('soundbites') && (
+                <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'soundbites' ? 'block' : 'hidden'}`}>
+                  <SoundbitesTab lectureId={lecture.id} onJumpToTime={jumpToTime} />
+                </div>
+              )}
              {visitedTabs.has('screenshots') && (
                <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'screenshots' ? 'block' : 'hidden'}`}>
                  <ScreenshotsTab 
@@ -729,14 +792,24 @@ export function LectureViewerPage() {
              />
           </div>
         )}
-      </div>
-        {/* Global Podcast Player */}
+    </div>
+
+      {/* Global Podcast Player */}
       {showPodcastPlayer && lecture && (
           <PodcastPlayer 
               lectureId={lecture.id} 
               onClose={() => setShowPodcastPlayer(false)} 
           />
       )}
+
+      {/* Export / Push Dialog */}
+      <ExportPushDialog
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        lectureTitle={lecture.title || 'Untitled'}
+        summary={summary}
+        artifacts={artifacts}
+      />
     </div>
   );
 }

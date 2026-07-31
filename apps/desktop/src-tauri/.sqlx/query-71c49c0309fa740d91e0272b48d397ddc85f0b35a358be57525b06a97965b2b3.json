@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT duration_ms FROM lectures WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "duration_ms",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "71c49c0309fa740d91e0272b48d397ddc85f0b35a358be57525b06a97965b2b3"
+}

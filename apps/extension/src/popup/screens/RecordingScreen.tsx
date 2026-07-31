@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Session } from '@/shared/types';
-import { Square, Pause, Wifi, WifiOff } from 'lucide-react';
+import { Square, Pause, Wifi, WifiOff, Sparkles, Loader2, X, ChevronDown } from 'lucide-react';
 import { useConnection } from '@/shared/hooks/useConnection';
+import { MessageType } from '@/shared/types';
 import logo from '@/assets/logo.png';
 
 interface RecordingScreenProps {
@@ -23,12 +24,18 @@ function formatTime(ms: number): string {
 
 const bars = [0, 0.12, 0.24, 0.18, 0.06, 0.3, 0.12, 0.22, 0.08];
 
+type CatchUpState = 'idle' | 'loading' | 'done' | 'error';
+
 export function RecordingScreen({ session, onPause, onStop, isLoading, optimisticStart }: RecordingScreenProps): React.ReactElement {
   const { connectionStatus } = useConnection();
   const isConnected = connectionStatus === 'connected';
 
   const startMs = optimisticStart ?? new Date(session.startedAt).getTime();
   const [elapsed, setElapsed] = useState(() => Math.max(0, Date.now() - startMs - session.pausedDurationMs));
+  const [catchUpState, setCatchUpState] = useState<CatchUpState>('idle');
+  const [catchUpSummary, setCatchUpSummary] = useState<string | null>(null);
+  const [catchUpError, setCatchUpError] = useState<string | null>(null);
+  const [showCatchUp, setShowCatchUp] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -36,6 +43,37 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
     }, 1000);
     return () => clearInterval(interval);
   }, [startMs, session.pausedDurationMs]);
+
+  const handleCatchUp = async () => {
+    setCatchUpState('loading');
+    setCatchUpSummary(null);
+    setCatchUpError(null);
+    setShowCatchUp(true);
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MessageType.CATCHUP_REQUEST,
+      }) as { success: boolean; data?: { summary: string }; error?: string };
+
+      if (response.success && response.data?.summary) {
+        setCatchUpSummary(response.data.summary);
+        setCatchUpState('done');
+      } else {
+        setCatchUpError(response.error ?? 'Unknown error');
+        setCatchUpState('error');
+      }
+    } catch (e) {
+      setCatchUpError(String(e));
+      setCatchUpState('error');
+    }
+  };
+
+  const closeCatchUp = () => {
+    setShowCatchUp(false);
+    setCatchUpState('idle');
+    setCatchUpSummary(null);
+    setCatchUpError(null);
+  };
 
   return (
     <div className="flex flex-col bg-[var(--bg)] min-h-[480px]">
@@ -62,11 +100,11 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
       </div>
 
       {/* Body */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 px-5 py-6">
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 px-5 py-5">
         {/* Timer */}
         <div className="text-center flex flex-col items-center">
           <div className="font-mono font-bold tabular-nums text-[var(--text-primary)]" style={{
-            fontSize: 56,
+            fontSize: 52,
             letterSpacing: '-0.04em',
             lineHeight: 1,
           }}>
@@ -78,7 +116,7 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
         </div>
 
         {/* Waveform */}
-        <div className="flex items-center gap-1 h-8 my-2">
+        <div className="flex items-center gap-1 h-8">
           {bars.map((delay, i) => (
             <div key={i} style={{
               width: 4,
@@ -106,6 +144,137 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
             {session.tabUrl || "Entire Desktop"}
           </p>
         </div>
+
+        {/* ⚡ Catch Me Up Button */}
+        <button
+          onClick={() => void handleCatchUp()}
+          disabled={catchUpState === 'loading'}
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            borderRadius: 12,
+            border: '1px solid rgba(139, 92, 246, 0.35)',
+            background: catchUpState === 'loading'
+              ? 'rgba(139, 92, 246, 0.08)'
+              : 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
+            color: '#a78bfa',
+            cursor: catchUpState === 'loading' ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            fontSize: 13,
+            fontWeight: 700,
+            transition: 'all 0.2s ease',
+            backdropFilter: 'blur(8px)',
+          }}
+          onMouseOver={e => {
+            if (catchUpState !== 'loading') {
+              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(99, 102, 241, 0.25) 100%)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139, 92, 246, 0.6)';
+            }
+          }}
+          onMouseOut={e => {
+            if (catchUpState !== 'loading') {
+              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139, 92, 246, 0.35)';
+            }
+          }}
+        >
+          {catchUpState === 'loading' ? (
+            <>
+              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+              Analyzing conversation...
+            </>
+          ) : (
+            <>
+              <Sparkles size={14} />
+              ⚡ Catch Me Up
+            </>
+          )}
+        </button>
+
+        {/* Catch Me Up Result Card */}
+        {showCatchUp && catchUpState !== 'idle' && catchUpState !== 'loading' && (
+          <div style={{
+            width: '100%',
+            borderRadius: 12,
+            border: catchUpState === 'error'
+              ? '1px solid rgba(239, 68, 68, 0.3)'
+              : '1px solid rgba(139, 92, 246, 0.3)',
+            background: catchUpState === 'error'
+              ? 'rgba(239, 68, 68, 0.06)'
+              : 'rgba(139, 92, 246, 0.06)',
+            overflow: 'hidden',
+            animation: 'fadeSlideIn 0.3s ease',
+          }}>
+            {/* Card header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderBottom: '1px solid rgba(139, 92, 246, 0.15)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sparkles size={12} style={{ color: '#a78bfa' }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Meeting Summary
+                </span>
+              </div>
+              <button
+                onClick={closeCatchUp}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+
+            {/* Card body */}
+            <div style={{ padding: '12px 14px' }}>
+              {catchUpState === 'error' ? (
+                <p style={{ fontSize: 12, color: '#f87171', lineHeight: 1.6, margin: 0 }}>
+                  {catchUpError}
+                </p>
+              ) : (
+                <p style={{
+                  fontSize: 12,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.7,
+                  margin: 0,
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {catchUpSummary}
+                </p>
+              )}
+            </div>
+
+            {/* Refresh button */}
+            {catchUpState === 'done' && (
+              <div style={{ padding: '0 14px 10px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => void handleCatchUp()}
+                  style={{
+                    background: 'rgba(139, 92, 246, 0.1)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    borderRadius: 8,
+                    color: '#a78bfa',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <ChevronDown size={10} />
+                  Update
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -133,6 +302,17 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
           )}
         </button>
       </div>
+
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -30,6 +30,7 @@ pub struct Lecture {
     pub subject: Option<String>,
     pub is_archived: bool,
     pub description: Option<String>,
+    pub workspace_type: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -48,6 +49,7 @@ pub struct UpdateLectureInput {
     pub subject: Option<String>,
     pub is_archived: Option<bool>,
     pub description: Option<String>,
+    pub workspace_type: Option<String>,
 }
 
 pub struct LectureService;
@@ -76,13 +78,14 @@ impl LectureService {
             subject: row.try_get("subject").unwrap_or(None),
             is_archived: row.try_get("is_archived").unwrap_or_default(),
             description: row.try_get("description").unwrap_or(None),
+            workspace_type: row.try_get("workspace_type").unwrap_or(None),
         }
     }
 
     pub async fn list_lectures(pool: &SqlitePool) -> AppResult<Vec<Lecture>> {
         let rows = sqlx::query(
             "SELECT id, title, course_label, folder_id, created_at, updated_at, duration_ms, \
-             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description \
+             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description, workspace_type \
              FROM lectures WHERE deleted_at IS NULL ORDER BY updated_at DESC"
         ).fetch_all(pool).await?;
 
@@ -100,7 +103,7 @@ impl LectureService {
     pub async fn search_lectures(pool: &SqlitePool, filter_json: Option<String>) -> AppResult<Vec<Lecture>> {
         let mut query = sqlx::QueryBuilder::new(
             "SELECT id, title, course_label, folder_id, created_at, updated_at, duration_ms, \
-             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description \
+             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description, workspace_type \
              FROM lectures WHERE deleted_at IS NULL"
         );
 
@@ -128,7 +131,7 @@ impl LectureService {
     pub async fn list_trashed(pool: &SqlitePool) -> AppResult<Vec<Lecture>> {
         let rows = sqlx::query(
             "SELECT id, title, course_label, folder_id, created_at, updated_at, duration_ms, \
-             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description \
+             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description, workspace_type \
              FROM lectures WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
         ).fetch_all(pool).await?;
 
@@ -146,7 +149,7 @@ impl LectureService {
     pub async fn get_lecture(pool: &SqlitePool, id: &str) -> AppResult<Option<Lecture>> {
         let row_opt = sqlx::query(
             "SELECT id, title, course_label, folder_id, created_at, updated_at, duration_ms, \
-             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description \
+             source, is_favorite, is_pinned, video_path, deleted_at, color_label, course, semester, teacher, subject, is_archived, description, workspace_type \
              FROM lectures WHERE id = ?"
         )
         .bind(id)
@@ -219,6 +222,10 @@ impl LectureService {
         if let Some(description) = input.description {
             query_builder.push(", description = ");
             query_builder.push_bind(description);
+        }
+        if let Some(workspace_type) = input.workspace_type {
+            query_builder.push(", workspace_type = ");
+            query_builder.push_bind(workspace_type);
         }
         
         query_builder.push(" WHERE id = ");

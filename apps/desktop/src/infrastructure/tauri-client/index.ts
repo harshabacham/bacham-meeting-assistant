@@ -238,6 +238,14 @@ export const TauriClient = {
     getStorageBreakdown: () => invoke<StorageBreakdown>('storage_get_breakdown'),
     deleteVideoAsset: (id: string) => invoke<void>('storage_delete_video', { id }),
 
+    // Native Capture
+    startNativeRecording: () => invoke<boolean>('start_native_recording'),
+    stopNativeRecording: () => invoke<boolean>('stop_native_recording'),
+    
+    // Integrations
+    pushTaskToNotion: (input: { token: string, pageId: string, title: string, content: string }) => 
+        invoke<boolean>('push_task_to_notion', { input }),
+
     // ── Lectures ───────────────────────────────────────────────────────────
     listLectures: (filterJson?: string) => invoke<Lecture[]>('lectures_list', { filterJson }),
     getLecture: (id: string) => invoke<Lecture | null>('lectures_get', { id }),
@@ -400,6 +408,8 @@ export const TauriClient = {
         invoke<void>('export_lecture', { lectureId, format, dest }),
     exportFolderCramSheet: (folderId: string, dest: string) =>
         invoke<void>('export_folder_cram_sheet', { folderId, dest }),
+    generateMagicLinkHtml: (lectureId: string, dest: string) =>
+        invoke<void>('generate_magic_link_html', { lectureId, dest }),
 
     // ── Collections ────────────────────────────────────────────────────────
     createCollection: (input: CreateCollectionInput) => invoke<Collection>('create_collection', { input }),
@@ -431,6 +441,7 @@ export const TauriClient = {
     rebuildSearchIndex: (full: boolean) => invoke<IndexRebuildResult>('rebuild_search_index', { full }),
     getIndexStatus: () => invoke<IndexStatus>('get_index_status'),
     summarizeSearchResults: (query: string, results: any[]) => invoke<void>('summarize_search_results', { query, results }),
+    semanticSearch: (query: string) => invoke<{ answer: string, lectureId: string | null, timestampMs: number | null }>('semantic_search', { query }),
 
     // ── Workspace Notes ────────────────────────────────────────────────────────
     getWorkspaceNotes: () => invoke<any[]>('get_workspace_notes'),
@@ -440,6 +451,13 @@ export const TauriClient = {
     deleteWorkspaceNote: (id: string) => invoke<void>('delete_workspace_note', { id }),
 
     // ── Multimodal Teaching & Cross-Lecture Engine ────────────────────────
+    transcriptCommentsList: (lectureId: string) => invoke<any[]>('transcript_comments_list', { lectureId }),
+    transcriptCommentsAdd: (lectureId: string, timestampMs: number, blockIndex: number, text: string, author: string) => 
+        invoke<void>('transcript_comments_add', { lectureId, timestampMs, blockIndex, text, author }),
+    transcriptCommentsDelete: (id: string) => invoke<void>('transcript_comments_delete', { id }),
+    analyzeConversation: (lectureId: string) => invoke<any>('analyze_conversation', { lectureId }),
+    notesAiAugment: (lectureId: string, userDraft: string) => invoke<string>('notes_ai_augment', { lectureId, userDraft }),
+    globalAskAi: (query: string) => invoke<string>('global_ask_ai', { query }),
     chatTeachingMode: (lectureId: string, prompt: string, persona: string) =>
         invoke<{ answer: string; confidence: string; citations: any[]; persona: string }>('chat_teaching_mode', { lectureId, prompt, persona }),
     getCrossLectureInsights: (courseLabel: string) =>
@@ -512,6 +530,11 @@ export const TauriClient = {
     },
     onSystemNotification: (callback: (data: { title: string; body: string }) => void) => {
         return listen<{ title: string; body: string }>('system_notification', (event) => {
+            callback(event.payload);
+        });
+    },
+    onTranscriptUpdate: (callback: (data: { lectureId: string; content: string }) => void) => {
+        return listen<{ lectureId: string; content: string }>('live_caption_received', (event) => {
             callback(event.payload);
         });
     },

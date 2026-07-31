@@ -8,6 +8,7 @@ export interface Settings {
   aiProvider: string;
   aiMaxRetries: number;
   workspacePanelSizes: number[];
+  speakerMapping: Record<string, string>;
 }
 
 export interface UpdateSettingsInput {
@@ -53,6 +54,7 @@ export interface Lecture {
     trashedAt?: string | null;
     customSortOrder?: number | null;
     lastOpenedAt?: string | null;
+    workspaceType?: 'lecture' | 'meeting' | 'interview' | 'podcast' | null;
     lastStudiedAt?: string | null;
     status?: string;
     startTime?: string;

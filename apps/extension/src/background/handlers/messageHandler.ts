@@ -408,7 +408,69 @@ export function createMessageHandler(
           timestamp: Date.now(),
         };
         messagingClient.send(nativeMsg);
+
+        // Also buffer caption for Catch Me Up feature (keep last 200 entries)
+        try {
+          const stored = await chrome.storage.session.get(['captionBuffer']) as { captionBuffer?: Array<{text: string; ts: number}> };
+          const buffer: Array<{text: string; ts: number}> = stored.captionBuffer ?? [];
+          buffer.push({ text: payload.text, ts: payload.timestamp });
+          // Keep only last 200 captions (~last 10–15 mins)
+          if (buffer.length > 200) buffer.splice(0, buffer.length - 200);
+          await chrome.storage.session.set({ captionBuffer: buffer });
+        } catch (_e) {
+          // session storage may not be available — ignore
+        }
         return { success: true };
+      }
+
+      case MessageType.CATCHUP_REQUEST: {
+        // Fetch buffered captions
+        let captionText = '';
+        try {
+          const stored = await chrome.storage.session.get(['captionBuffer']) as { captionBuffer?: Array<{text: string; ts: number}> };
+          const buffer = stored.captionBuffer ?? [];
+          if (buffer.length === 0) {
+            return { success: true, data: { summary: 'No conversation captured yet. Make sure captions are enabled on your meeting platform.' } };
+          }
+          captionText = buffer.map(c => c.text).join(' ');
+        } catch (_e) {
+          return { success: false, error: 'Could not read caption buffer.' };
+        }
+
+        // Get Gemini API key from storage (raw access since it's outside the schema)
+        let apiKey = '';
+        try {
+          const raw = await chrome.storage.local.get(['geminiApiKey']) as { geminiApiKey?: string };
+          apiKey = raw.geminiApiKey ?? '';
+        } catch (_e) {}
+
+        if (!apiKey) {
+          return { success: false, error: 'Gemini API key not configured. Please add it in extension Settings.' };
+        }
+
+        // Call Gemini
+        try {
+          const prompt = `You are a live meeting assistant. The following is a transcript of what has been said so far in the meeting:\n\n"${captionText.slice(-6000)}"\n\nGive a crisp, helpful summary of:\n1. What has been discussed (2-3 bullet points max)\n2. Any key decisions or action items mentioned\n3. The current topic being discussed\n\nKeep it under 120 words. Be direct and practical.`;
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { maxOutputTokens: 300, temperature: 0.3 }
+              })
+            }
+          );
+
+          const json = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+          const summary = json.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Could not generate summary. Please try again.';
+          return { success: true, data: { summary } };
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          return { success: false, error: `Gemini API error: ${errMsg}` };
+        }
       }
 
       default:

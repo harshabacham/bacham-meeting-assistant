@@ -15,12 +15,12 @@ import {
     RotateCcw,
     ChevronRight,
     Bookmark,
-    User,
-    FileText
 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import NumberFlow from "@number-flow/react";
+import { GlobalAskAI } from "@/components/dashboard/GlobalAskAI";
+import { PreMeetingBriefWidget } from "@/components/dashboard/PreMeetingBriefWidget";
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -245,6 +245,10 @@ export function DashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                <div className="w-80 shrink-0 flex flex-col gap-6">
+                    <PreMeetingBriefWidget />
+                </div>
             </div>
         );
     }
@@ -252,6 +256,33 @@ export function DashboardPage() {
     return (
         <div className="flex-1 overflow-y-auto h-full bg-[var(--bg)]">
             <div className="w-full max-w-[1040px] mx-auto px-8 py-10 flex flex-col gap-8">
+                {/* ── Active Recording Banner ─────────────────────────────────── */}
+                <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-center bg-surface/50 p-6 rounded-2xl border border-border">
+                        <div>
+                            <h2 className="text-sm font-semibold text-foreground">Native Desktop Capture</h2>
+                            <p className="text-xs text-muted-foreground mt-1">Record your screen and audio directly without the Chrome extension.</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    TauriClient.startNativeRecording();
+                                    navigate('/live');
+                                }}
+                                className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                                Start Recording
+                            </button>
+                            <button
+                                onClick={() => TauriClient.stopNativeRecording()}
+                                className="px-4 py-2 bg-surface-hover hover:bg-red-500/10 text-muted-foreground hover:text-red-500 text-xs font-semibold rounded-lg transition-colors border border-border"
+                            >
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 {/* ── Active Recording Banner ─────────────────────────────────── */}
                 {recordingSession && (
@@ -563,6 +594,8 @@ export function DashboardPage() {
                 
 
             </div>
+            
+            <GlobalAskAI />
         </div>
     );
 }

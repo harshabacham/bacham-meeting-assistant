@@ -11,13 +11,21 @@ interface LiveCaption {
   platform: string;
 }
 
+interface CoachingInsight {
+  sessionId: string;
+  insightType: string;
+  message: string;
+  timestamp: number;
+}
+
 export function LiveWingman() {
   const [captions, setCaptions] = useState<LiveCaption[]>([]);
+  const [insights, setInsights] = useState<CoachingInsight[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
-    const unlisten = listen<LiveCaption>('live_caption_received', (event) => {
+    const unlistenCaption = listen<LiveCaption>('live_caption_received', (event) => {
       setCaptions((prev) => {
         const newCaptions = [...prev, event.payload];
         if (newCaptions.length > 5) newCaptions.shift();
@@ -27,8 +35,24 @@ export function LiveWingman() {
       setIsRecording(true);
     });
 
+    const unlistenInsight = listen<CoachingInsight>('live_coaching_insight', (event) => {
+      setInsights((prev) => {
+        const newInsights = [...prev, event.payload];
+        if (newInsights.length > 3) newInsights.shift();
+        return newInsights;
+      });
+      setIsOpen(true);
+      setIsRecording(true);
+      
+      // Auto dismiss insights after 15 seconds to prevent clutter
+      setTimeout(() => {
+        setInsights((prev) => prev.filter(i => i.timestamp !== event.payload.timestamp));
+      }, 15000);
+    });
+
     return () => {
-      unlisten.then((u) => u());
+      unlistenCaption.then((u) => u());
+      unlistenInsight.then((u) => u());
     };
   }, []);
 
@@ -57,21 +81,42 @@ export function LiveWingman() {
               </button>
             </div>
             
-            <div className="p-3 max-h-60 overflow-y-auto flex flex-col gap-2 scrollbar-hide">
-              {captions.length === 0 ? (
+            <div className="p-3 max-h-80 overflow-y-auto flex flex-col gap-2 scrollbar-hide">
+              {captions.length === 0 && insights.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic text-center py-4">Listening to meeting...</p>
               ) : (
-                captions.map((cap, idx) => (
-                  <motion.div 
-                    key={cap.timestamp + idx} 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-background/60 p-2.5 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed shadow-sm flex gap-2 items-start"
-                  >
-                    <MessageSquare size={14} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <span>{cap.text}</span>
-                  </motion.div>
-                ))
+                <>
+                  {captions.map((cap, idx) => (
+                    <motion.div 
+                      key={cap.timestamp + idx} 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-background/60 p-2.5 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed shadow-sm flex gap-2 items-start"
+                    >
+                      <MessageSquare size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                      <span>{cap.text}</span>
+                    </motion.div>
+                  ))}
+                  
+                  {insights.map((insight, idx) => (
+                    <motion.div 
+                      key={'insight-' + insight.timestamp + idx} 
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="bg-primary/5 p-3 rounded-xl border border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.15)] flex flex-col gap-1.5 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                      <div className="flex items-center gap-1.5 text-primary text-[10px] uppercase tracking-wider font-bold">
+                        <Bot size={12} className="animate-pulse" />
+                        {insight.insightType}
+                      </div>
+                      <span className="text-[13px] text-foreground font-medium leading-relaxed">
+                        {insight.message}
+                      </span>
+                    </motion.div>
+                  ))}
+                </>
               )}
             </div>
             

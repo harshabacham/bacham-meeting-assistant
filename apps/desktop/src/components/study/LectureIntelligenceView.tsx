@@ -1,10 +1,60 @@
 import React, { useState } from 'react';
 import { Markdown as ReactMarkdown } from '@/components/ui/markdown';
-import { ChevronDown, ChevronRight, BookOpen, Code, Zap, FileText, CheckCircle, Clock, Info, BrainCircuit, Activity, Target, Briefcase } from 'lucide-react';
+import { ChevronDown, ChevronRight, BookOpen, Code, Zap, FileText, CheckCircle, Clock, Info, BrainCircuit, Activity, Target, Briefcase, Sparkles, Loader2 } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 
 interface Props {
   data: any;
 }
+
+const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  const handleExecute = async () => {
+    setIsExecuting(true);
+    try {
+      const url = await invoke<string>('execute_agentic_action', { 
+        task: item.task,
+        context: context || ""
+      });
+      if (url && url.length > 5) {
+        await open(url);
+      }
+    } catch (e) {
+      console.error("Execution failed:", e);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col bg-background/50 p-3 rounded border border-border/50 group hover:border-primary/30 transition-colors">
+      <div className="flex justify-between items-start gap-2">
+        <span className="text-sm text-foreground font-medium leading-relaxed">{item.task}</span>
+        <button 
+          onClick={handleExecute}
+          disabled={isExecuting}
+          className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+          title="Execute with AI"
+        >
+          {isExecuting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          {isExecuting ? 'Thinking...' : 'Execute'}
+        </button>
+      </div>
+      <div className="flex justify-between items-center mt-3 text-xs">
+        <span className="text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border/50">Owner: {item.owner || 'Unassigned'}</span>
+        <span className={`px-2 py-0.5 rounded uppercase tracking-wider font-bold ${
+          item.priority === 'high' ? 'text-red-400 bg-red-400/10' :
+          item.priority === 'medium' ? 'text-yellow-400 bg-yellow-400/10' :
+          'text-blue-400 bg-blue-400/10'
+        }`}>
+          {item.priority}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -118,19 +168,7 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
                     </h3>
                     <div className="space-y-3">
                       {data.crm_metadata.action_items.map((item: any, i: number) => (
-                        <div key={i} className="flex flex-col bg-background/50 p-3 rounded border border-border/50">
-                          <span className="text-sm text-foreground font-medium">{item.task}</span>
-                          <div className="flex justify-between items-center mt-2 text-xs">
-                            <span className="text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border/50">Owner: {item.owner || 'Unassigned'}</span>
-                            <span className={`px-2 py-0.5 rounded uppercase tracking-wider font-bold ${
-                              item.priority === 'high' ? 'text-red-400 bg-red-400/10' :
-                              item.priority === 'medium' ? 'text-yellow-400 bg-yellow-400/10' :
-                              'text-blue-400 bg-blue-400/10'
-                            }`}>
-                              {item.priority}
-                            </span>
-                          </div>
-                        </div>
+                        <ActionItemCard key={i} item={item} context={data.executive_summary} />
                       ))}
                     </div>
                   </div>

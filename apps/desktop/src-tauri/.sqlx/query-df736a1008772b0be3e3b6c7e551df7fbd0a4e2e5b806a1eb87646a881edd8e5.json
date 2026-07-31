@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM transcripts WHERE lecture_id = ? AND model_used = 'live_captions'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "df736a1008772b0be3e3b6c7e551df7fbd0a4e2e5b806a1eb87646a881edd8e5"
+}

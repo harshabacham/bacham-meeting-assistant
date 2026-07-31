@@ -23,6 +23,8 @@ pub mod collections;
 pub mod organization;
 pub mod batch;
 pub mod undo;
+pub mod capture;
+pub mod integrations;
 use tauri::State;
 use serde::Serialize;
 use crate::error::AppResult;

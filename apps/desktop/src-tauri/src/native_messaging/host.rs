@@ -249,6 +249,12 @@ impl NativeHost {
                                             }
 
                                             let t_id = uuid::Uuid::new_v4().to_string();
+                                            // Remove any live_captions placeholder before inserting the
+                                            // authoritative AI-generated transcript to avoid duplicates.
+                                            let _ = sqlx::query!(
+                                                "DELETE FROM transcripts WHERE lecture_id = ? AND model_used = 'live_captions'",
+                                                session_id_clone
+                                            ).execute(&pool).await;
                                             let _ = sqlx::query!(
                                                 "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.1-flash-lite')",
                                                 t_id, session_id_clone, text
@@ -428,24 +434,75 @@ impl NativeHost {
                     if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
                         let _ = writeln!(log_file, "Received LiveCaption: {} (Platform: {})", payload.text, payload.platform);
                     }
-                    
-                    // Emit event to frontend for UI updates (e.g., Live Agentic Wingman side-panel)
+
                     let app_clone = self.app.clone();
                     let session_id_clone = session_id.clone();
+                    let pool = self.app.state::<crate::database::DbState>().pool.clone();
+
                     tauri::async_runtime::spawn(async move {
+                        // ── Persist live caption text to transcripts table ──────────────────
+                        // We accumulate captions into a single "live_captions" transcript row
+                        // so the Transcript tab can display content immediately during/after recording.
+                        let existing = sqlx::query!(
+                            "SELECT id, content FROM transcripts WHERE lecture_id = ? AND model_used = 'live_captions' LIMIT 1",
+                            session_id_clone
+                        )
+                        .fetch_optional(&pool)
+                        .await;
+
+                        match existing {
+                            Ok(Some(row)) => {
+                                // Append new caption text to existing row
+                                let new_content = format!("{}\n{}", row.content, payload.text);
+                                let _ = sqlx::query!(
+                                    "UPDATE transcripts SET content = ? WHERE id = ?",
+                                    new_content,
+                                    row.id
+                                )
+                                .execute(&pool)
+                                .await;
+                            }
+                            Ok(None) => {
+                                // Insert first caption as a new transcript row
+                                let t_id = Uuid::new_v4().to_string();
+                                let _ = sqlx::query!(
+                                    "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'live_captions')",
+                                    t_id, session_id_clone, payload.text
+                                )
+                                .execute(&pool)
+                                .await;
+                            }
+                            Err(_) => {}
+                        }
+
+                        // ── Emit live_caption_received for the Wingman overlay ──────────────
                         let _ = app_clone.emit("live_caption_received", serde_json::json!({
                             "sessionId": session_id_clone,
                             "text": payload.text,
                             "timestamp": payload.timestamp,
                             "platform": payload.platform,
                         }));
-                        
-                        // NOTE: Here is where the "Agentic RAG" pipeline would be triggered.
-                        // For example:
-                        // if payload.text.contains("?") {
-                        //     let answer = crate::ai::rag_engine::query(&pool, &payload.text).await;
-                        //     let _ = app_clone.emit("agent_response", answer);
-                        // }
+
+                        // ── Emit transcript_update so the Transcript tab updates live ───────
+                        let full = sqlx::query!(
+                            "SELECT content FROM transcripts WHERE lecture_id = ? ORDER BY generated_at ASC",
+                            session_id_clone
+                        )
+                        .fetch_all(&pool)
+                        .await
+                        .ok()
+                        .map(|rows| {
+                            rows.into_iter()
+                                .map(|r| r.content)
+                                .collect::<Vec<_>>()
+                                .join("\n\n")
+                        })
+                        .unwrap_or_default();
+
+                        let _ = app_clone.emit("transcript_update", serde_json::json!({
+                            "lectureId": session_id_clone,
+                            "content": full,
+                        }));
                     });
                 }
             }

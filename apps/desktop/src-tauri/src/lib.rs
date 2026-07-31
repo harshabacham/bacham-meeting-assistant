@@ -16,7 +16,8 @@ pub fn run() {
     let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
 
     let mut builder = tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init());
 
     if !is_native_messaging {
         builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new()
@@ -80,6 +81,7 @@ pub fn run() {
             match tauri::async_runtime::block_on(database::connection::create_pool(db_path)) {
                 Ok(pool) => {
                     handle.manage(database::DbState { pool: pool.clone() });
+                    handle.manage(commands::capture::CaptureState::default());
                     eprintln!("Database initialized successfully.");
                     db_pool = Some(pool);
                 }
@@ -131,6 +133,7 @@ pub fn run() {
             commands::lectures::tags_list,
             commands::lectures::lecture_add_tag,
             commands::lectures::lecture_remove_tag,
+            commands::lectures::trim_video_by_timestamps,
             commands::folders::folders_list,
             commands::folders::get_folder_tree,
             commands::folders::create_folder,
@@ -168,6 +171,7 @@ pub fn run() {
             // AI
             commands::ai::ai_chat_send,
             commands::ai::folder_chat_send,
+            commands::ai::global_memory_chat_send,
             ai::context_engine::resolve_scope_lectures,
             // Chat & Action Commands
             commands::chat::create_conversation,
@@ -182,7 +186,17 @@ pub fn run() {
             commands::chat::change_conversation_scope,
             commands::ai::summary_generate,
             commands::ai::flashcards_generate,
+            commands::ai::grill_me_interaction,
+            commands::ai::start_scoped_chat,
             commands::ai::quiz_generate,
+            commands::ai::analyze_conversation,
+            commands::ai::notes_ai_augment,
+            commands::ai::soundbites_list,
+            commands::ai::soundbites_create,
+            commands::ai::soundbites_delete,
+            commands::ai::transcript_comments_list,
+            commands::ai::transcript_comments_add,
+            commands::ai::transcript_comments_delete,
             commands::ai::send_tutor_action,
             commands::ai::suggest_folders_for_lecture,
             commands::ai::generate_highlight_reel,
@@ -200,6 +214,18 @@ pub fn run() {
             commands::ai::get_daily_learning_plan,
             commands::ai::get_ai_study_coach_suggestions,
             commands::ai::reset_learning_history,
+            commands::ai::simulate_live_meeting,
+            commands::ai::execute_agentic_action,
+            commands::ai::get_all_action_items,
+            commands::ai::update_action_item_status,
+            commands::ai::global_ask_ai,
+            commands::ai::translate_transcript,
+            commands::ai::generate_pre_meeting_brief,
+            // Capture
+            commands::capture::start_native_recording,
+            commands::capture::stop_native_recording,
+            // Integrations
+            commands::integrations::push_task_to_notion,
             // Artifacts
             commands::artifacts::artifacts_get,
             commands::artifacts::artifacts_list,
@@ -232,6 +258,7 @@ pub fn run() {
             commands::export::export_lecture,
             commands::export::export_folder_cram_sheet,
             commands::export::generate_highlights_reel,
+            commands::export::generate_magic_link_html,
             // Dashboard
             commands::dashboard::dashboard_summary,
             // Search
@@ -240,9 +267,10 @@ pub fn run() {
             commands::search::universal_search,
             commands::search::get_search_suggestions,
             commands::search::record_search_history,
-            commands::search::list_search_history,
             commands::search::pin_search,
             commands::search::clear_search_history,
+            commands::search::summarize_search_results,
+            commands::search::semantic_search,
             commands::search::rebuild_search_index,
             commands::search::get_index_status,
             commands::search::summarize_search_results,

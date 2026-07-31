@@ -7,7 +7,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, Sparkles
+    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, Sparkles, CheckSquare, Radio
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
@@ -16,9 +16,7 @@ import { FolderSidebar } from '@/components/library/FolderSidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useSearchStore } from '@/features/search/searchStore';
-import { FloatingCommandCenter } from '@/components/command_center/FloatingCommandCenter';
 import { InlineAIToolbar } from '@/components/command_center/InlineAIToolbar';
-import { useAiCommandCenterStore } from '@/shared/stores/aiCommandCenterStore';
 import { GlobalQuickLookModal } from '@/components/command_center/GlobalQuickLookModal';
 import { LiveWingman } from '@/components/ui/LiveWingman';
 
@@ -26,11 +24,14 @@ const MAIN_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/lectures', label: 'Library', icon: Library },
     { path: '/notes', label: 'Notes', icon: Edit3 },
+    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+    { path: '/live', label: 'Live Meeting', icon: Radio },
 ];
 
 const SETTINGS_NAV_ITEMS = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'integrations', label: 'Integrations', icon: BrainCircuit },
     { id: 'storage', label: 'Storage', icon: Database },
 ];
 
@@ -45,9 +46,8 @@ export function AppLayout() {
     const openSearch = useSearchStore(state => state.open);
     
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 900);
-    const [isFoldersOpen, setIsFoldersOpen] = useState(true);
-
     const isSettingsRoute = location.pathname.startsWith('/settings');
+    const [isFoldersOpen, setIsFoldersOpen] = useState(true);
     const activeSettingsTab = searchParams.get('tab') || 'profile';
 
     useEffect(() => {
@@ -244,18 +244,6 @@ export function AppLayout() {
                                                     </div>
                                                 </Link>
                                             ))}
-                                            <button
-                                                onClick={() => {
-                                                    useAiCommandCenterStore.getState().toggleDockExpanded();
-                                                }}
-                                                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all duration-150 outline-none group text-[12.5px] font-medium text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground mt-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring border border-transparent"
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <Sparkles size={14} />
-                                                    <span>Ask AI Assistant</span>
-                                                </div>
-                                                <kbd className="text-[10px] font-mono text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded border border-border/50">Ctrl+J</kbd>
-                                            </button>
                                         </nav>
                                         
                                         <div className="h-px bg-border/30 mx-2 my-1" />
@@ -403,12 +391,11 @@ export function AppLayout() {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 min-w-0 h-full relative bg-background overflow-y-auto">
+            <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10 transition-all duration-300">
                 <Outlet />
             </main>
 
             {/* AI Learning Command Center Components */}
-            <FloatingCommandCenter />
             <InlineAIToolbar />
             <GlobalQuickLookModal />
             <LiveWingman />

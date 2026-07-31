@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT video_path FROM lectures WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "video_path",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "101e1bdb8f5df78dbe23c96b05486499807c8023a622b3ceacb2edf6b3155d8d"
+}

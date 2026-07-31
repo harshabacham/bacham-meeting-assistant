@@ -13,6 +13,7 @@ interface LectureIntelligenceTabProps {
   hasVisuals: boolean;
   isPipelineRunning: boolean;
   onGenerateSummary: () => void;
+  workspaceType?: string;
 }
 
 export function LectureIntelligenceTab({
@@ -23,7 +24,8 @@ export function LectureIntelligenceTab({
   transcript,
   hasVisuals,
   isPipelineRunning,
-  onGenerateSummary
+  onGenerateSummary,
+  workspaceType = 'lecture'
 }: LectureIntelligenceTabProps) {
   const [summaryTier, setSummaryTier] = useState<'quick' | 'standard' | 'deep' | 'textbook'>('standard');
 
@@ -34,16 +36,16 @@ export function LectureIntelligenceTab({
       <div className="space-y-6">
         <div className="flex p-1 bg-surface-raised border border-border/50 rounded-xl overflow-hidden shadow-sm">
           <button onClick={() => setSummaryTier('quick')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'quick' ? 'bg-indigo-500/10 text-indigo-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <Clock size={14} /> Quick (30s)
+            <Clock size={14} /> {workspaceType === 'meeting' ? 'Key Decisions' : 'Quick (30s)'}
           </button>
           <button onClick={() => setSummaryTier('standard')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'standard' ? 'bg-blue-500/10 text-blue-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <BookOpen size={14} /> Standard (5m)
+            <BookOpen size={14} /> {workspaceType === 'meeting' ? 'Executive Overview' : 'Standard (5m)'}
           </button>
           <button onClick={() => setSummaryTier('deep')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'deep' ? 'bg-purple-500/10 text-purple-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <Layers size={14} /> Deep Notes (15m)
+            <Layers size={14} /> {workspaceType === 'meeting' ? 'Debates & Context' : 'Deep Notes (15m)'}
           </button>
           <button onClick={() => setSummaryTier('textbook')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'textbook' ? 'bg-amber-500/10 text-amber-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <Book size={14} /> Textbook
+            <Book size={14} /> {workspaceType === 'meeting' ? 'Full Minutes & Actions' : 'Textbook'}
           </button>
         </div>
 
@@ -69,6 +71,7 @@ export function LectureIntelligenceTab({
               {isGeneratingSummary ? <><Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />Regenerating...</> : <><Zap className="h-3.5 w-3.5 mr-2 text-[color:var(--accent)]" />Regenerate</>}
             </Button>
           </div>
+          {summaryError && <p className="text-destructive text-sm p-3 bg-destructive/10 rounded-lg mb-4">{summaryError}</p>}
           <LectureIntelligenceView data={artifacts['lecture_intelligence']} />
         </>
       ) : summary ? (

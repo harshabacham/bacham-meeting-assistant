@@ -106,6 +106,7 @@ export function SettingsPage() {
                         {[
                             { id: 'profile', label: 'My Profile', icon: Shield },
                             { id: 'general', label: 'AI & General', icon: Key },
+                            { id: 'integrations', label: 'Integrations', icon: Settings },
                             { id: 'storage', label: 'Storage & Data', icon: Database },
                         ].map((tab) => (
                             <button
@@ -365,6 +366,93 @@ export function SettingsPage() {
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'integrations' && (
+                                <div className="space-y-8">
+                                    <div>
+                                        <h2 className="text-2xl font-bold tracking-tight text-foreground">Integrations</h2>
+                                        <p className="text-muted-foreground mt-1 text-sm">Connect Bacham to your favourite tools. Configure webhook URLs to push meeting notes automatically.</p>
+                                    </div>
+
+                                    {/* Slack */}
+                                    <div className="bg-surface/40 border border-border/50 rounded-3xl p-8 shadow-xl shadow-black/5 backdrop-blur-xl space-y-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center">
+                                                <span className="text-white font-bold text-sm">#</span>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-semibold text-foreground">Slack</h3>
+                                                <p className="text-xs text-muted-foreground">Post meeting summaries to a Slack channel via Incoming Webhook</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Incoming Webhook URL</label>
+                                            <input
+                                                type="url"
+                                                placeholder="https://hooks.slack.com/services/..."
+                                                defaultValue={localStorage.getItem('slack_webhook_url') || ''}
+                                                onChange={e => localStorage.setItem('slack_webhook_url', e.target.value)}
+                                                className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                                            />
+                                            <p className="text-[11px] text-muted-foreground">
+                                                Create an Incoming Webhook in your Slack workspace settings and paste the URL here.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Notion */}
+                                    <div className="bg-surface/40 border border-border/50 rounded-3xl p-8 shadow-xl shadow-black/5 backdrop-blur-xl space-y-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-white border border-border flex items-center justify-center">
+                                                <span className="text-black font-bold text-lg font-serif">N</span>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-semibold text-foreground">Notion Native Integration</h3>
+                                                <p className="text-xs text-muted-foreground">Push action items directly to your Notion workspace</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Internal Integration Token</label>
+                                                <input
+                                                    type="password"
+                                                    placeholder="secret_..."
+                                                    defaultValue={localStorage.getItem('notion_api_token') || ''}
+                                                    onChange={e => localStorage.setItem('notion_api_token', e.target.value)}
+                                                    className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Default Database / Page ID</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. 1a2b3c4d5e6f..."
+                                                    defaultValue={localStorage.getItem('notion_page_id') || ''}
+                                                    onChange={e => localStorage.setItem('notion_page_id', e.target.value)}
+                                                    className="w-full bg-background/60 border border-border/50 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Email */}
+                                    <div className="bg-surface/40 border border-border/50 rounded-3xl p-8 shadow-xl shadow-black/5 backdrop-blur-xl space-y-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-600 flex items-center justify-center">
+                                                <span className="text-white font-bold text-sm">@</span>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-base font-semibold text-foreground">Email</h3>
+                                                <p className="text-xs text-muted-foreground">Share notes via email — opens your default email client</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                            <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+                                            <p className="text-sm text-foreground">Email sharing is available on any recording via the <span className="text-primary font-medium">Share & Export</span> button.</p>
                                         </div>
                                     </div>
                                 </div>

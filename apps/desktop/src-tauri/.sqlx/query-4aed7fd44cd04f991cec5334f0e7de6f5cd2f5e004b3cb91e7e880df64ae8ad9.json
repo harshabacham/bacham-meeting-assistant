@@ -1,0 +1,80 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, title, scope_type, scope_ref_json, is_pinned, is_favorite, is_archived, provider, model, created_at, updated_at\n         FROM conversations \n         WHERE scope_type = 'lecture' AND scope_ref_json = ? \n         ORDER BY created_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "scope_type",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "scope_ref_json",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_pinned",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_favorite",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_archived",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "provider",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "model",
+        "ordinal": 8,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 10,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4aed7fd44cd04f991cec5334f0e7de6f5cd2f5e004b3cb91e7e880df64ae8ad9"
+}

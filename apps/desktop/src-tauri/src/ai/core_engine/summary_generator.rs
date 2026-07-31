@@ -34,8 +34,36 @@ pub async fn generate_multi_level_summary(lecture_id: &str, pool: &SqlitePool) -
         }
     }
 
-    // 2. Build massive unified prompt for 4-tier summary
-    let instruction = r#"You are an expert professor and a world-class AI learning assistant attending this lecture.
+    // Fetch workspace_type
+    let workspace_type: String = sqlx::query_scalar!(
+        "SELECT workspace_type FROM lectures WHERE id = ?",
+        lecture_id
+    )
+    .fetch_optional(pool)
+    .await?
+    .flatten()
+    .unwrap_or_else(|| "lecture".to_string());
+
+    // 2. Build massive unified prompt for 4-tier summary based on workspace_type
+    let instruction = if workspace_type == "meeting" {
+        r#"You are an expert AI meeting assistant.
+Your task is to understand the meeting comprehensively from the transcript and visuals.
+Generate a multi-level summary that participants can use as a complete record of the meeting.
+
+You MUST return your response as a valid JSON object matching this schema exactly:
+{
+  "quick_summary": "Markdown text for a 30-second read. Include Key Decisions and Topics Discussed.",
+  "standard_summary": "Markdown text for a 5-minute read. Include Executive Overview, Discussion Points, and Outcomes.",
+  "deep_notes": "Markdown text for a 15-minute read. Include deep explanations of debates, options considered, and nuanced context.",
+  "textbook_notes": "Highly detailed meeting minutes. Include full Action Items with deadlines/owners, Risks, Open Questions, and Follow-ups."
+}
+
+CRITICAL RULES:
+- If a concept refers to a visual diagram or slide, embed markdown image links like ![Slide X](path/to/screenshot) where possible.
+- Do not output generic AI filler. Structure with headings, bold text, bullet points.
+- Return ONLY the raw JSON object. Do not wrap in ```json blocks."#.to_string()
+    } else {
+        r#"You are an expert professor and a world-class AI learning assistant attending this lecture.
 Your task is to understand the lecture comprehensively from the transcript and visuals (slides, whiteboard, diagrams).
 Generate a multi-level summary that students can use as a complete replacement for revisiting the lecture.
 
@@ -50,13 +78,14 @@ You MUST return your response as a valid JSON object matching this schema exactl
 CRITICAL RULES:
 - If a concept refers to a visual diagram or slide, embed markdown image links like ![Slide X](path/to/screenshot) where possible. (Use local placeholders like ![Slide 1](#) if path is unknown, we will replace it later).
 - Do not output generic AI filler. Structure with headings, bold text, bullet points.
-- Return ONLY the raw JSON object. Do not wrap in ```json blocks."#;
+- Return ONLY the raw JSON object. Do not wrap in ```json blocks."#.to_string()
+    };
 
     // 3. Generate content via Gemini
     let content = if image_parts.is_empty() {
-        GeminiService::generate_text(&enriched_transcript, instruction, pool).await?
+        GeminiService::generate_text(&enriched_transcript, &instruction, pool).await?
     } else {
-        GeminiService::generate_multimodal(&enriched_transcript, instruction, &image_parts, pool).await?
+        GeminiService::generate_multimodal(&enriched_transcript, &instruction, &image_parts, pool).await?
     };
 
     // 4. Upsert into summaries table

@@ -229,13 +229,26 @@ export function FloatingCommandCenter() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setDockExpanded(false)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-all active:scale-95"
-                title="Close Companion"
-              >
-                <X size={15} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    import('@tauri-apps/api/core').then(({ invoke }) => {
+                      invoke('simulate_live_meeting');
+                    });
+                  }}
+                  className="px-2 py-1 rounded border border-primary/30 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors"
+                  title="Simulate Live Coaching"
+                >
+                  Simulate Live
+                </button>
+                <button
+                  onClick={() => setDockExpanded(false)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface transition-all active:scale-95"
+                  title="Close Companion"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Content Container */}

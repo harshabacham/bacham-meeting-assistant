@@ -126,10 +126,21 @@ export function CommandPalette() {
 
     const handleAskAi = async () => {
         if (!query.trim()) return;
-        const q = query;
-        close();
-        const { submitQuery } = useAiCommandCenterStore.getState();
-        submitQuery(q, 'Universal Search AI');
+        setAiMode(true);
+        setIsAiLoading(true);
+        setAiResponse('');
+        try {
+            const res = await TauriClient.semanticSearch(query);
+            if (res.lectureId) {
+                setAiResponse(`**Found match!**\n\n${res.answer}\n\n[Open Lecture](#/lectures/${res.lectureId}?t=${res.timestampMs || 0})`);
+            } else {
+                setAiResponse(res.answer);
+            }
+        } catch (e) {
+            setAiResponse("Failed to perform semantic search.");
+        } finally {
+            setIsAiLoading(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -166,8 +177,8 @@ export function CommandPalette() {
                         wrapperClassName="flex-1 max-w-full p-0 bg-transparent rounded-none focus-within:outline-none focus-within:ring-0 shadow-none border-none outline-none ring-0 has-[:focus-visible]:outline-none"
                     />
                     {query.trim().length > 0 && !aiMode && flatResults.length > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-1 rounded cursor-pointer hover:bg-primary/20 transition-colors" onClick={handleAskAi}>
-                            <Sparkles size={12} /> <Command size={12} /> Enter to Ask AI
+                        <div className="flex items-center gap-1 text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-1 rounded cursor-pointer hover:bg-indigo-500/20 transition-colors" onClick={handleAskAi}>
+                            <Sparkles size={12} /> <Command size={12} /> Enter to Smart Search
                         </div>
                     )}
                 </div>

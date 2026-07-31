@@ -20,6 +20,7 @@ pub struct Settings {
     pub ai_provider: String,
     pub ai_max_retries: i32,
     pub workspace_panel_sizes: Vec<f64>,
+    pub speaker_mapping: std::collections::HashMap<String, String>,
 }
 
 #[derive(Deserialize, Default)]
@@ -32,6 +33,7 @@ pub struct UpdateSettingsInput {
     pub ai_provider: Option<String>,
     pub ai_max_retries: Option<i32>,
     pub workspace_panel_sizes: Option<Vec<f64>>,
+    pub speaker_mapping: Option<std::collections::HashMap<String, String>>,
 }
 
 #[tauri::command]
@@ -67,6 +69,11 @@ pub async fn settings_get(state: State<'_, DbState>) -> AppResult<Settings> {
         .map(|r| serde_json::from_str::<Vec<f64>>(&r.get::<String, _>("value")).unwrap_or_else(|_| vec![20.0, 55.0, 25.0]))
         .unwrap_or_else(|| vec![20.0, 55.0, 25.0]);
 
+    let speaker_mapping_row = sqlx::query("SELECT value FROM settings WHERE key = 'speaker_mapping'").fetch_optional(pool).await?;
+    let speaker_mapping = speaker_mapping_row
+        .map(|r| serde_json::from_str::<std::collections::HashMap<String, String>>(&r.get::<String, _>("value")).unwrap_or_default())
+        .unwrap_or_default();
+
     Ok(Settings {
         theme,
         accent_color,
@@ -77,6 +84,7 @@ pub async fn settings_get(state: State<'_, DbState>) -> AppResult<Settings> {
         ai_provider,
         ai_max_retries,
         workspace_panel_sizes,
+        speaker_mapping,
     })
 }
 
@@ -124,6 +132,13 @@ pub async fn settings_update(input: UpdateSettingsInput, state: State<'_, DbStat
     if let Some(sizes) = input.workspace_panel_sizes {
         let val = serde_json::to_string(&sizes).unwrap_or_else(|_| "[20.0, 55.0, 25.0]".to_string());
         sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('workspace_panel_sizes', ?)")
+            .bind(val)
+            .execute(pool).await?;
+    }
+
+    if let Some(mapping) = input.speaker_mapping {
+        let val = serde_json::to_string(&mapping).unwrap_or_else(|_| "{}".to_string());
+        sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('speaker_mapping', ?)")
             .bind(val)
             .execute(pool).await?;
     }
