@@ -5,33 +5,37 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { TauriClient, Screenshot, TimelineEvent } from '@/infrastructure/tauri-client';
-import { Play, FileText, BrainCircuit, BookOpen, Zap, MessageSquare, ArrowLeft, RefreshCw, Video, ListTree, Loader2, AlertCircle, Clock, Edit2, Heart, Bookmark, Share, MoreVertical, Layers, CheckSquare, Headphones, Film, Mic, BarChart2, Scissors, ExternalLink } from 'lucide-react';
+import { Play, FileText, BrainCircuit, BookOpen, Zap, ArrowLeft, RefreshCw, Video, ListTree, Loader2, Edit2, Share, Layers, CheckSquare, ExternalLink } from 'lucide-react';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
 import { useModeStore } from '@/shared/stores/modeStore';
-import { PodcastPlayer } from '@/components/library/PodcastPlayer';
+
 import { OverviewTab } from '@/components/workspace/tabs/OverviewTab';
 import { Toolbar, ToolbarItem } from '@/components/kokonutui/toolbar';
 import { ProgressiveBlur } from '@/components/ui/skiper-ui/skiper41';
 import { LectureIntelligenceTab } from '@/components/workspace/tabs/LectureIntelligenceTab';
+import { ActionsTab } from '@/components/workspace/tabs/ActionsTab';
 import { TranscriptTab } from '@/components/workspace/tabs/TranscriptTab';
 import { ScreenshotsTab } from '@/components/workspace/tabs/ScreenshotsTab';
 import { FormulaSheetTab } from '@/components/workspace/tabs/FormulaSheetTab';
 import { CodeViewerTab } from '@/components/workspace/tabs/CodeViewerTab';
 import { DiagramsTab } from '@/components/workspace/tabs/DiagramsTab';
 import { NotesTab } from '@/components/workspace/tabs/NotesTab';
+import { LiveArtifactsTab } from '@/components/workspace/tabs/LiveArtifactsTab';
 import { BookmarksTab } from '@/components/workspace/tabs/BookmarksTab';
 import { VideoTab } from '@/components/workspace/tabs/VideoTab';
 import { AiChatTab } from '@/components/workspace/tabs/AiChatTab';
 import { TimelineTab } from '@/components/workspace/tabs/TimelineTab';
 import { FlashcardsTab } from '@/components/workspace/tabs/FlashcardsTab';
 import { QuizTab } from '@/components/workspace/tabs/QuizTab';
-import { GrillMeTab } from '@/components/workspace/tabs/GrillMeTab';
-import { SmartSkipTimeline } from '@/components/study/SmartSkipTimeline';
+import { motion } from 'framer-motion';
+import { useToast } from '@/components/ui/ToastProvider';
+
+
 import { useLectureShortcuts } from '@/shared/hooks/useLectureShortcuts';
 import { useLearningContext } from '@/shared/hooks/useLearningContext';
-import { AnalyticsTab } from '@/components/workspace/tabs/AnalyticsTab';
-import { SoundbitesTab } from '@/components/workspace/tabs/SoundbitesTab';
+
 import { ExportPushDialog } from '@/components/workspace/ExportPushDialog';
+import { useLiveSessionWatchdog } from '@/shared/hooks/useLiveSessionWatchdog';
 
 export function LectureViewerPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +50,7 @@ export function LectureViewerPage() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const { showToast } = useToast();
 
   useLearningContext({
     type: activeTab === 'code' ? 'code' : activeTab === 'formula' ? 'formula' : activeTab === 'notes' ? 'notes' : 'lecture',
@@ -55,15 +60,16 @@ export function LectureViewerPage() {
     subtitle: `Viewing Tab: ${activeTab.toUpperCase()}`,
   });
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['overview']));
-  const [showPodcastPlayer, setShowPodcastPlayer] = useState(false);
+
   const [transcript, setTranscript] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [skipSegments, setSkipSegments] = useState<any[]>([]);
-  const [autoSkipEnabled, setAutoSkipEnabled] = useState(true);
+  const [autoSkipEnabled] = useState(true);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [screenshotImages, setScreenshotImages] = useState<Record<string, string>>({});
   const [artifacts, setArtifacts] = useState<Record<string, any>>({});
+  const [artifactProgress, setArtifactProgress] = useState<Record<string, {status: string, error?: string}>>({});
   const { appMode } = useModeStore();
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -143,6 +149,29 @@ export function LectureViewerPage() {
       if (session) {
         if (session.activeTab) setActiveTab(session.activeTab);
       }
+      
+      // Phase 2 Context Pre-fetching
+      if (lec?.title) {
+        setChatHistory(prev => {
+          if (prev.length === 0) {
+            TauriClient.globalAskAi(`Summarize any open action items, key decisions, and unfinished business from my past meetings related to: "${lec.title}". Keep it concise.`)
+              .then(pastContext => {
+                if (pastContext && !pastContext.includes("haven't recorded any yet") && !pastContext.includes("NO recorded meeting")) {
+                  setChatHistory(current => {
+                    if (current.length === 0) {
+                      return [{ role: 'model', content: `**🧠 Pre-fetched Past Context**\n\nHere's what happened previously regarding "${lec.title}":\n\n${pastContext}` }];
+                    }
+                    return current;
+                  });
+                }
+              }).catch(console.error);
+          }
+          return prev;
+        });
+      }
+
+    } catch (error) {
+      console.error('Failed to load lecture data', error);
     } finally {
       setIsPollingData(false);
     }
@@ -336,34 +365,21 @@ export function LectureViewerPage() {
         await TauriClient.updateLecture({ id, title: newTitle.trim() });
         refreshAllData();
       } catch (e) {
-        alert(`Failed to rename lecture: ${e}`);
+        showToast(`Failed to rename lecture: ${e}`, 'error');
       }
     }
   };
 
-  const handleToggleFavorite = async () => {
-    if (!id || !lecture) return;
-    try {
-      await TauriClient.updateLecture({ id, isFavorite: !lecture.isFavorite });
-      refreshAllData();
-    } catch (e) {
-      console.error('Failed to toggle favorite', e);
-    }
-  };
-
-  const handleAddGlobalBookmark = async () => {
-    if (!id) return;
-    try {
-      const label = window.prompt('Enter bookmark label:');
-      if (label && label.trim() !== '') {
-        const { useLectureSyncStore } = await import('@/shared/stores/lectureSyncStore');
-        const currentTimeMs = useLectureSyncStore.getState().currentTimeMs;
-        await TauriClient.addBookmark(id, currentTimeMs, label.trim());
+  const handleDeleteVideo = async () => {
+    if (!id || !lecture?.videoPath) return;
+    if (window.confirm('Are you sure you want to delete the video? This will save storage space but you won\'t be able to re-watch the video (transcript and notes will remain).')) {
+      try {
+        await TauriClient.deleteVideoAsset(id);
         refreshAllData();
-        alert('Bookmark added!');
+        showToast('Video deleted successfully.', 'success');
+      } catch (e: any) {
+        showToast(`Failed to delete video: ${e}`, 'error');
       }
-    } catch (e) {
-      console.error('Failed to add global bookmark', e);
     }
   };
 
@@ -373,18 +389,14 @@ export function LectureViewerPage() {
       const { desktopDir, join } = await import('@tauri-apps/api/path');
       const desktop = await desktopDir();
       const safeTitle = lecture.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'meeting';
-      const dest = await join(desktop, `magic_link_${safeTitle}.html`);
+      const desktopPath = await join(desktop, `magic_link_${safeTitle}.html`);
       
-      await TauriClient.generateMagicLinkHtml(id, dest);
+      await TauriClient.generateMagicLinkHtml(id, desktopPath);
       
-      // Optionally open the file using shell
-      const { open } = await import('@tauri-apps/plugin-shell');
-      await open(dest).catch(() => {});
-      
-      alert(`Magic Link generated!\nSaved to Desktop: magic_link_${safeTitle}.html`);
+      showToast(`Magic Link generated!\nSaved to Desktop: magic_link_${safeTitle}.html`, 'success');
     } catch (e) {
       console.error(e);
-      alert('Failed to generate Magic Link. Check console for details.');
+      showToast('Failed to generate Magic Link. Check console for details.', 'error');
     }
   };
 
@@ -464,30 +476,16 @@ export function LectureViewerPage() {
     seekTo(ms);
   };
 
-  const handleGenerateHighlightsReel = async () => {
-    if (!id) return;
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      // Dummy segments based on timestamp hints if available, else standard first 10 seconds.
-      const segments = [
-        { startMs: 0, endMs: 10000, label: "Intro Snippet" }
-      ];
-      await invoke('generate_highlights_reel', { 
-        lectureId: id,
-        segments,
-        dest: `${lecture?.title || 'Lecture'}_Highlights.txt` 
-      });
-      alert('Highlights reel task simulated successfully! (Saved as Highlights.txt in current folder)');
-    } catch (e) {
-      alert(`Failed to generate highlights reel: ${e}`);
-    }
-  };
+  
 
   const isPipelineRunning = Boolean(pipelineStatus && 
     pipelineStatus.status !== 'complete' && 
     pipelineStatus.status !== 'error');
     
   const isPipelineError = Boolean(pipelineStatus && pipelineStatus.status === 'error');
+
+  // 🔊 Loud Failure Watchdog — alerts when audio stream flatlines during live recording
+  const isAudioSilent = useLiveSessionWatchdog({ active: isPipelineRunning, lectureId: id });
 
   if (!lecture) return (
     <div className="p-10 flex h-full items-center justify-center text-muted-foreground animate-pulse">
@@ -500,7 +498,7 @@ export function LectureViewerPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
       {/* Unified App Bar */}
-      <div className="flex items-center w-full shrink-0 border-b border-border/50 bg-background/90 backdrop-blur-md px-4 sm:px-6 py-2 relative z-20 gap-6">
+      <div className="flex items-center w-full shrink-0 border-b border-border/50 bg-background/90 backdrop-blur-md pl-4 sm:pl-6 pr-[100px] py-2 relative z-20 gap-6">
         
         {/* Left: Branding & Title */}
         <div className="flex items-center gap-4 min-w-0 shrink-0 max-w-[500px]">
@@ -527,8 +525,9 @@ export function LectureViewerPage() {
             const toolbarItems: ToolbarItem[] = [
               { id: 'overview', title: 'Overview', icon: BookOpen },
               { id: 'summary', title: 'Intelligence', icon: BrainCircuit },
+              { id: 'actions', title: 'Execution', icon: CheckSquare },
               { id: 'transcript', title: 'Transcript', icon: FileText },
-              { id: 'analytics', title: 'Analytics', icon: BarChart2 },
+
               
               // Only add these tabs in student mode
               ...(appMode === 'student' ? [
@@ -536,14 +535,14 @@ export function LectureViewerPage() {
                   ...(artifacts['important_code']?.code_blocks?.length ? [{ id: 'code', title: 'Code', icon: Zap }] : []),
               ] : []),
 
-              { id: 'notes', title: 'Notes', icon: BookOpen },
-              { id: 'soundbites', title: 'Clips', icon: Scissors },
+              { id: 'notes', title: 'Jot & Expand', icon: BookOpen },
+              { id: 'artifacts', title: 'Live Artifacts', icon: Layers },
+
               { id: 'screenshots', title: 'Screenshots', icon: Video },
               
               ...(appMode === 'student' ? [
                   { id: 'flashcards', title: 'Flashcards', icon: Layers },
                   { id: 'quiz', title: 'Quiz', icon: CheckSquare },
-                  { id: 'grill', title: 'Grill Me', icon: Mic },
               ] : []),
 
               ...(videoSrc ? [{ id: 'video', title: 'Video', icon: Play }] : []),
@@ -600,32 +599,30 @@ export function LectureViewerPage() {
             <ProgressiveBlur position="top" height="24px" blurAmount="4px" />
              <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
 
-                {appMode === 'student' && visitedTabs.has('grill') && (
-                  <div className={`absolute inset-0 bg-background ${activeTab === 'grill' ? 'block' : 'hidden'}`}>
-                    <GrillMeTab lectureId={lecture.id} />
-                  </div>
-                )}
+
                {visitedTabs.has('overview') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'overview' ? 'block' : 'hidden'}`}>
+               <motion.div 
+                 initial={false}
+                 animate={{ opacity: activeTab === 'overview' ? 1 : 0, y: activeTab === 'overview' ? 0 : 10, scale: activeTab === 'overview' ? 1 : 0.98 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'overview' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+               >
                  <OverviewTab 
                    lecture={lecture}
                    artifacts={artifacts}
                    thumbnailSrc={screenshots.length > 0 ? screenshotImages[screenshots[0].id] : undefined}
                    onJumpToVideo={() => jumpToTime(0)}
                  />
-               </div>
+               </motion.div>
              )}
              {visitedTabs.has('video') && (
-                <div className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${activeTab === 'video' ? 'block' : 'hidden'}`}>
-                  {skipSegments.length > 0 && (
-                     <SmartSkipTimeline
-                       segments={skipSegments}
-                       durationMs={lecture.durationMs}
-                       onSeek={(ms) => jumpToTime(ms / 1000)}
-                       autoSkipEnabled={autoSkipEnabled}
-                       setAutoSkipEnabled={setAutoSkipEnabled}
-                     />
-                   )}
+                <motion.div 
+                  initial={false}
+                  animate={{ opacity: activeTab === 'video' ? 1 : 0, y: activeTab === 'video' ? 0 : 10, scale: activeTab === 'video' ? 1 : 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${activeTab === 'video' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                >
+
                    <VideoTab 
                      lectureId={lecture.id}
                      videoSrc={videoSrc}
@@ -636,10 +633,15 @@ export function LectureViewerPage() {
                      autoSkipEnabled={autoSkipEnabled}
                      skipSegments={skipSegments}
                    />
-                </div>
+                </motion.div>
               )}
              {visitedTabs.has('summary') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'summary' ? 'block' : 'hidden'}`}>
+               <motion.div 
+                 initial={false}
+                 animate={{ opacity: activeTab === 'summary' ? 1 : 0, y: activeTab === 'summary' ? 0 : 10, scale: activeTab === 'summary' ? 1 : 0.98 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'summary' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+               >
                  <LectureIntelligenceTab 
                    artifacts={artifacts}
                    summary={summary}
@@ -651,10 +653,25 @@ export function LectureViewerPage() {
                    onGenerateSummary={handleGenerateSummary}
                    workspaceType={lecture.workspaceType || 'lecture'}
                  />
-               </div>
+               </motion.div>
+             )}
+             {visitedTabs.has('actions') && (
+               <motion.div 
+                 initial={false}
+                 animate={{ opacity: activeTab === 'actions' ? 1 : 0, y: activeTab === 'actions' ? 0 : 10, scale: activeTab === 'actions' ? 1 : 0.98 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'actions' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+               >
+                 <ActionsTab artifacts={artifacts} lectureId={lecture.id} />
+               </motion.div>
              )}
                 {visitedTabs.has('transcript') && (
-                <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'transcript' ? 'block' : 'hidden'}`}>
+                <motion.div 
+                  initial={false}
+                  animate={{ opacity: activeTab === 'transcript' ? 1 : 0, y: activeTab === 'transcript' ? 0 : 10, scale: activeTab === 'transcript' ? 1 : 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'transcript' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                >
                   <TranscriptTab 
                     lectureId={lecture.id}
                     transcriptBlocks={transcriptBlocks}
@@ -667,84 +684,134 @@ export function LectureViewerPage() {
                     screenshots={screenshots}
                     onJumpToTime={jumpToTime}
                     durationMs={lecture.durationMs}
+                    videoPath={lecture.videoPath}
+                    onDeleteVideo={handleDeleteVideo}
                   />
-                </div>
+                </motion.div>
               )}
-              {visitedTabs.has('analytics') && (
-                <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'analytics' ? 'block' : 'hidden'}`}>
-                  <AnalyticsTab lectureId={lecture.id} transcript={transcript} />
-                </div>
-              )}
+
               {visitedTabs.has('notes') && (
-                <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'notes' ? 'block' : 'hidden'}`}>
-                  <NotesTab lectureId={lecture.id} templateType={lecture.workspaceType || 'general'} />
-                </div>
+                <motion.div 
+                  initial={false}
+                  animate={{ opacity: activeTab === 'notes' ? 1 : 0, y: activeTab === 'notes' ? 0 : 10, scale: activeTab === 'notes' ? 1 : 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`absolute inset-0 overflow-hidden ${activeTab === 'notes' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                >
+                  <NotesTab lectureId={lecture.id} templateType={lecture.workspaceType || 'general'} transcript={transcript ?? undefined} isAudioSilent={isAudioSilent} />
+                </motion.div>
               )}
-              {visitedTabs.has('soundbites') && (
-                <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'soundbites' ? 'block' : 'hidden'}`}>
-                  <SoundbitesTab lectureId={lecture.id} onJumpToTime={jumpToTime} />
-                </div>
+
+              {visitedTabs.has('artifacts') && (
+                <motion.div 
+                  initial={false}
+                  animate={{ opacity: activeTab === 'artifacts' ? 1 : 0, y: activeTab === 'artifacts' ? 0 : 10, scale: activeTab === 'artifacts' ? 1 : 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'artifacts' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                >
+                  <LiveArtifactsTab lectureId={lecture.id} transcript={transcript ?? undefined} />
+                </motion.div>
               )}
+
              {visitedTabs.has('screenshots') && (
-               <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'screenshots' ? 'block' : 'hidden'}`}>
+               <motion.div 
+                 initial={false}
+                 animate={{ opacity: activeTab === 'screenshots' ? 1 : 0, y: activeTab === 'screenshots' ? 0 : 10, scale: activeTab === 'screenshots' ? 1 : 0.98 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className={`absolute inset-0 overflow-y-auto ${activeTab === 'screenshots' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+               >
                  <ScreenshotsTab 
                    lectureId={lecture.id}
                    screenshots={screenshots}
                    screenshotImages={screenshotImages}
                    onJumpToTime={jumpToTime}
                  />
-               </div>
+               </motion.div>
              )}
 
              {appMode === 'student' && (
                  <>
                      {visitedTabs.has('formula_sheet') && (
-                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'formula_sheet' ? 'block' : 'hidden'}`}>
+                       <motion.div 
+                         initial={false}
+                         animate={{ opacity: activeTab === 'formula_sheet' ? 1 : 0, y: activeTab === 'formula_sheet' ? 0 : 10, scale: activeTab === 'formula_sheet' ? 1 : 0.98 }}
+                         transition={{ duration: 0.3, ease: 'easeOut' }}
+                         className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'formula_sheet' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                       >
                          <FormulaSheetTab lectureId={lecture.id} formulas={artifacts['formula_sheet']?.formulas} />
-                       </div>
+                       </motion.div>
                      )}
                      {visitedTabs.has('flashcards') && (
-                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'flashcards' ? 'block' : 'hidden'}`}>
+                       <motion.div 
+                         initial={false}
+                         animate={{ opacity: activeTab === 'flashcards' ? 1 : 0, y: activeTab === 'flashcards' ? 0 : 10, scale: activeTab === 'flashcards' ? 1 : 0.98 }}
+                         transition={{ duration: 0.3, ease: 'easeOut' }}
+                         className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'flashcards' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                       >
                          <FlashcardsTab lectureId={lecture.id} transcript={transcript} />
-                       </div>
+                       </motion.div>
                      )}
                      {visitedTabs.has('quiz') && (
-                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'quiz' ? 'block' : 'hidden'}`}>
+                       <motion.div 
+                         initial={false}
+                         animate={{ opacity: activeTab === 'quiz' ? 1 : 0, y: activeTab === 'quiz' ? 0 : 10, scale: activeTab === 'quiz' ? 1 : 0.98 }}
+                         transition={{ duration: 0.3, ease: 'easeOut' }}
+                         className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'quiz' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                       >
                          <QuizTab lectureId={lecture.id} transcript={transcript} />
-                       </div>
+                       </motion.div>
                      )}
                      {visitedTabs.has('code') && (
-                       <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'code' ? 'block' : 'hidden'}`}>
+                       <motion.div 
+                         initial={false}
+                         animate={{ opacity: activeTab === 'code' ? 1 : 0, y: activeTab === 'code' ? 0 : 10, scale: activeTab === 'code' ? 1 : 0.98 }}
+                         transition={{ duration: 0.3, ease: 'easeOut' }}
+                         className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'code' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                       >
                          <CodeViewerTab lectureId={lecture.id} codeBlocks={artifacts['important_code']?.code_blocks} />
-                       </div>
+                       </motion.div>
                      )}
                      {visitedTabs.has('diagrams') && (
-                       <div className={`absolute inset-0 overflow-y-auto ${activeTab === 'diagrams' ? 'block' : 'hidden'}`}>
+                       <motion.div 
+                         initial={false}
+                         animate={{ opacity: activeTab === 'diagrams' ? 1 : 0, y: activeTab === 'diagrams' ? 0 : 10, scale: activeTab === 'diagrams' ? 1 : 0.98 }}
+                         transition={{ duration: 0.3, ease: 'easeOut' }}
+                         className={`absolute inset-0 overflow-y-auto ${activeTab === 'diagrams' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                       >
                          <DiagramsTab />
-                       </div>
+                       </motion.div>
                      )}
                  </>
              )}
 
              {visitedTabs.has('timeline') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'timeline' ? 'block' : 'hidden'}`}>
+               <motion.div 
+                 initial={false}
+                 animate={{ opacity: activeTab === 'timeline' ? 1 : 0, y: activeTab === 'timeline' ? 0 : 10, scale: activeTab === 'timeline' ? 1 : 0.98 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'timeline' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+               >
                  <TimelineTab 
                    timelineEvents={timelineEvents}
                    durationMs={lecture.durationMs}
                    isPipelineRunning={isPipelineRunning}
                    onJumpToTime={jumpToTime}
                  />
-               </div>
+               </motion.div>
              )}
              {visitedTabs.has('bookmarks') && (
-               <div className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'bookmarks' ? 'block' : 'hidden'}`}>
+               <motion.div 
+                 initial={false}
+                 animate={{ opacity: activeTab === 'bookmarks' ? 1 : 0, y: activeTab === 'bookmarks' ? 0 : 10, scale: activeTab === 'bookmarks' ? 1 : 0.98 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'bookmarks' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+               >
                  <BookmarksTab 
                    lectureId={lecture.id} 
                    timelineEvents={timelineEvents}
                    onJumpToTime={jumpToTime}
                    onRefresh={refreshAllData}
                  />
-               </div>
+               </motion.div>
              )}
           </div>
         </div>
@@ -764,13 +831,7 @@ export function LectureViewerPage() {
         )}
     </div>
 
-      {/* Global Podcast Player */}
-      {showPodcastPlayer && lecture && (
-          <PodcastPlayer 
-              lectureId={lecture.id} 
-              onClose={() => setShowPodcastPlayer(false)} 
-          />
-      )}
+
 
       {/* Export / Push Dialog */}
       <ExportPushDialog

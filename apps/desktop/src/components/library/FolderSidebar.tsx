@@ -4,8 +4,10 @@ import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useCollectionStore } from '@/shared/stores/collectionStore';
 import { Folder as FolderIcon, ChevronRight, Plus, MoreVertical, Trash2, Edit2, LayoutList, Archive, Settings, Lock, Upload, Hash, BrainCircuit, Sparkles } from 'lucide-react';
 import { cn, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components';
+import { useToast } from '@/components/ui/ToastProvider';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { FolderSettingsDialog } from './FolderSettingsDialog';
+import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 
 interface FolderSidebarProps {
     systemView: 'all' | 'trash' | 'archive';
@@ -72,6 +74,7 @@ function SystemViewDropZone({
 }
 
 export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onSelectFolder }: FolderSidebarProps) {
+    const { showToast } = useToast();
     const { folderTree, fetchFolders, createFolder } = useFolderStore();
     const { fetchCollections } = useCollectionStore();
     const [isCreating, setIsCreating] = useState(false);
@@ -82,6 +85,12 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
         fetchCollections();
     }, [fetchFolders, fetchCollections]);
 
+    useEffect(() => {
+        const handleCreate = () => setIsCreating(true);
+        window.addEventListener('trigger-create-folder', handleCreate);
+        return () => window.removeEventListener('trigger-create-folder', handleCreate);
+    }, []);
+
     const handleCreateRoot = async () => {
         if (!newName.trim()) {
             setIsCreating(false);
@@ -90,7 +99,7 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
         try {
             await createFolder(newName.trim(), undefined, undefined);
         } catch (err: any) {
-            alert(`Create folder error: ${err.message || err}`);
+            showToast(`Create folder error: ${err.message || err}`, 'error');
             console.error(err);
         }
         setNewName('');
@@ -135,7 +144,7 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
                                 try {
                                     await useFolderStore.getState().importFolder(src);
                                 } catch (err: any) {
-                                    alert(`Import error: ${err.message}`);
+                                    showToast(`Import error: ${err.message}`, 'error');
                                 }
                             }
                         }}
@@ -185,7 +194,7 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
                             const { moveFolder } = useFolderStore.getState();
                             await moveFolder(draggedFolderId, null);
                         } catch (err: any) {
-                            alert(`Root drop folder error: ${err.message || err}`);
+                            showToast(`Root drop folder error: ${err.message || err}`, 'error');
                             console.error(err);
                         }
                     } else if (draggedLectureIds) {
@@ -193,7 +202,7 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
                             const ids = JSON.parse(draggedLectureIds) as string[];
                             await useLectureStore.getState().moveLectures(ids, null);
                         } catch (err: any) {
-                            alert(`Root drop lecture error: ${err.message || err}`);
+                            showToast(`Root drop lecture error: ${err.message || err}`, 'error');
                             console.error(err);
                         }
                     }
@@ -238,6 +247,7 @@ function FolderNode({
     selectedFolderId?: string | null;
     onSelectFolder?: (id: string) => void;
 }) {
+    const { showToast } = useToast();
     const folder = node.folder;
     const children = node.children;
     const [isExpanded, setIsExpanded] = useState(false);
@@ -310,14 +320,14 @@ function FolderNode({
 
         if (draggedFolderId && draggedFolderId !== folder.id) {
             if (depth > 0) {
-                alert("Only one level of folder nesting is permitted.");
+                showToast("Only one level of folder nesting is permitted.", 'error');
                 return;
             }
             try {
                 await moveFolder(draggedFolderId, folder.id);
                 setIsExpanded(true);
             } catch (err: any) {
-                alert(`Folder move error: ${err.message || err}`);
+                showToast(`Folder move error: ${err.message || err}`, 'error');
                 console.error(err);
             }
         } else if (draggedLectureIds) {
@@ -325,7 +335,7 @@ function FolderNode({
                 const ids = JSON.parse(draggedLectureIds) as string[];
                 await useLectureStore.getState().moveLectures(ids, folder.id);
             } catch (err: any) {
-                alert(`Lecture move error: ${err.message || err}`);
+                showToast(`Lecture move error: ${err.message || err}`, 'error');
                 console.error(err);
             }
         }
@@ -340,7 +350,8 @@ function FolderNode({
 
     const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm(`Delete folder "${folder.name}"? Contents will move to parent.`)) {
+        const ok = await useConfirmStore.getState().showConfirm(`Delete folder "${folder.name}"? Contents will move to parent.`);
+        if (ok) {
             await deleteFolder(folder.id);
             fetchLectures();
         }
@@ -413,8 +424,8 @@ function FolderNode({
                                 e.stopPropagation(); 
                                 try {
                                     await TauriClient.runStudyAction("summary", { folder: folder.id });
-                                    alert("Study Guide generation started in background."); 
-                                } catch(err: any) { alert("Error: " + err.message); }
+                                    showToast("Study Guide generation started in background.", 'success'); 
+                                } catch(err: any) { showToast("Error: " + err.message, 'error'); }
                             }}>
                                 <BrainCircuit size={12} /> Study Guide
                             </DropdownMenuItem>
@@ -422,8 +433,8 @@ function FolderNode({
                                 e.stopPropagation(); 
                                 try {
                                     await TauriClient.runStudyAction("cheatSheet", { folder: folder.id });
-                                    alert("Cheat Sheet generation started in background."); 
-                                } catch(err: any) { alert("Error: " + err.message); }
+                                    showToast("Cheat Sheet generation started in background.", 'success'); 
+                                } catch(err: any) { showToast("Error: " + err.message, 'error'); }
                             }}>
                                 <Sparkles size={12} /> Cheat Sheet
                             </DropdownMenuItem>
@@ -468,6 +479,7 @@ function FolderNode({
 export function CollectionNode({ collection, onAddLectures }: { collection: any, onAddLectures: (cId: string, lIds: string[]) => Promise<void> }) {
     const [isDragOver, setIsDragOver] = useState(false);
     const { removeCollection, fetchCollections } = useCollectionStore();
+    const { showToast } = useToast();
 
     // Context menu states
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -509,7 +521,7 @@ export function CollectionNode({ collection, onAddLectures }: { collection: any,
                 const ids = JSON.parse(draggedLectureIds) as string[];
                 await onAddLectures(collection.id, ids);
             } catch (err: any) {
-                alert(`Add to collection error: ${err.message || err}`);
+                showToast(`Add to collection error: ${err.message || err}`, 'error');
                 console.error(err);
             }
         }
@@ -517,7 +529,8 @@ export function CollectionNode({ collection, onAddLectures }: { collection: any,
 
     const handleDelete = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm(`Delete collection "${collection.name}"? Lectures will not be deleted.`)) {
+        const ok = await useConfirmStore.getState().showConfirm(`Delete collection "${collection.name}"? Lectures will not be deleted.`);
+        if (ok) {
             await removeCollection(collection.id);
             fetchCollections();
         }

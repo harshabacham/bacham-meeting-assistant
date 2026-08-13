@@ -146,3 +146,26 @@ pub async fn storage_delete_video(id: String, state: State<'_, DbState>) -> AppR
 
     Ok(())
 }
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupDatabaseInput {
+    pub destination_path: String,
+}
+
+#[tauri::command]
+pub async fn storage_backup_database(input: BackupDatabaseInput, state: State<'_, DbState>) -> AppResult<()> {
+    let pool = &state.pool;
+    
+    // Check if the destination file already exists and remove it (VACUUM INTO requires the target to not exist)
+    let dest = PathBuf::from(&input.destination_path);
+    if dest.exists() {
+        std::fs::remove_file(&dest).map_err(crate::error::AppError::Io)?;
+    }
+
+    // Execute SQLite VACUUM INTO to safely backup the database into a single file
+    let query = format!("VACUUM INTO '{}'", input.destination_path.replace("'", "''"));
+    sqlx::query(&query).execute(pool).await?;
+
+    Ok(())
+}

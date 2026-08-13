@@ -40,7 +40,7 @@ pub async fn run_v2(
             .execute(pool).await;
     } else {
         let id = uuid::Uuid::new_v4().to_string();
-        let _ = sqlx::query("INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, status, content_json, content_hash, generated_at, model_used) VALUES (?, ?, 'lecture_intelligence', 'done', ?, ?, ?, 'gemini-3.1-flash-lite')")
+        let _ = sqlx::query("INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, status, content_json, content_hash, generated_at, model_used) VALUES (?, ?, 'lecture_intelligence', 'done', ?, ?, ?, 'gemini-2.0-flash-lite')")
             .bind(id)
             .bind(lecture_id)
             .bind(content_json.clone())

@@ -69,10 +69,19 @@ impl GeminiService {
         system_instruction: &str,
         pool: &sqlx::SqlitePool,
     ) -> AppResult<String> {
-        Self::generate_text_with_model(prompt, system_instruction, pool, "gemini-3.1-flash-lite").await
+        Self::generate_text_with_model(prompt, system_instruction, pool, "gemini-1.5-flash").await
     }
 
     pub async fn generate_text_with_model(
+        prompt: &str,
+        system_instruction: &str,
+        pool: &sqlx::SqlitePool,
+        _model: &str,
+    ) -> AppResult<String> {
+        crate::services::universal_ai::UniversalAiService::generate_text(prompt, system_instruction, pool).await
+    }
+
+    pub async fn generate_text_with_model_direct(
         prompt: &str,
         system_instruction: &str,
         pool: &sqlx::SqlitePool,
@@ -97,7 +106,7 @@ impl GeminiService {
 
         let key = Self::get_api_key(pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", model, key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", model, key);
         
         let payload = serde_json::json!({
             "systemInstruction": {
@@ -105,24 +114,80 @@ impl GeminiService {
             },
             "contents": [{
                 "parts": [{ "text": prompt }]
-            }],
-            "generationConfig": {
-                "responseMimeType": "application/json"
-            }
+            }]
         });
 
-        let res = client.post(&url)
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|e| AppError::Internal(e.to_string()))?;
+        let retries = 0;
+        let max_retries = 3;
+        
+        let res = loop {
+            let res = client.post(&url)
+                .json(&payload)
+                .send()
+                .await
+                .map_err(|e| AppError::Internal(e.to_string()))?;
 
-        if !res.status().is_success() {
-            let status = res.status();
-            let body = res.text().await.unwrap_or_default();
-            eprintln!("GEMINI TEXT API ERROR {status}: {body}");
-            return Err(AppError::Internal(format!("API Error {status}: {body}")));
-        }
+            if !res.status().is_success() {
+                let status = res.status();
+                let body = res.text().await.unwrap_or_default();
+                eprintln!("GEMINI TEXT API ERROR {status}: {body}");
+                
+                if status.as_u16() == 429 && retries < max_retries {
+                    let mut delay_secs = 30;
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                        if let Some(details) = json.get("error").and_then(|e| e.get("details")).and_then(|d| d.as_array()) {
+                            for detail in details {
+                                if let Some(t) = detail.get("@type").and_then(|t| t.as_str()) {
+                                    if t == "type.googleapis.com/google.rpc.RetryInfo" {
+                                        if let Some(delay_str) = detail.get("retryDelay").and_then(|d| d.as_str()) {
+                                            if let Some(s) = delay_str.strip_suffix('s') {
+                                                if let Ok(s_float) = s.parse::<f64>() {
+                                                    delay_secs = s_float.ceil() as u64 + 1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Rate limit hit (429). Immediately aborting to trigger AI provider fallback.");
+                    return Err(AppError::Internal(format!("API Rate Limit (429) hit. Retry delayed by {} seconds.", delay_secs)));
+                }
+                
+                if status.as_u16() == 404 && body.contains("is not found") {
+                    eprintln!("Attempting dynamic fallback to find available models...");
+                    let list_url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", key);
+                    if let Ok(list_res) = client.get(&list_url).send().await {
+                        if let Ok(list_body) = list_res.json::<serde_json::Value>().await {
+                            if let Some(models) = list_body.get("models").and_then(|m| m.as_array()) {
+                                for m in models {
+                                    if let Some(methods) = m.get("supportedGenerationMethods").and_then(|m| m.as_array()) {
+                                        if methods.iter().any(|method| method.as_str() == Some("generateContent")) {
+                                            if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
+                                                let new_model = name.strip_prefix("models/").unwrap_or(name);
+                                                eprintln!("Found supported model: {}, retrying...", new_model);
+                                                let new_url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", new_model, key);
+                                                if let Ok(retry_res) = client.post(&new_url).json(&payload).send().await {
+                                                    if retry_res.status().is_success() {
+                                                        if let Ok(retry_body) = retry_res.json::<serde_json::Value>().await {
+                                                            let text = retry_body.get("candidates").and_then(|c| c.get(0)).and_then(|c| c.get("content")).and_then(|c| c.get("parts")).and_then(|p| p.get(0)).and_then(|p| p.get("text")).and_then(|t| t.as_str()).unwrap_or_default().to_string();
+                                                            return Ok(text);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return Err(crate::error::AppError::Internal(format!("API Error {status}: {body}")));
+            }
+            break res;
+        };
 
         let body: serde_json::Value = res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
         let text = body.get("candidates")
@@ -154,10 +219,20 @@ impl GeminiService {
         image_parts: &[(String, String)],
         pool: &sqlx::SqlitePool,
     ) -> AppResult<String> {
-        Self::generate_multimodal_with_model(prompt, system_instruction, image_parts, pool, "gemini-3.1-flash-lite").await
+        Self::generate_multimodal_with_model(prompt, system_instruction, image_parts, pool, "gemini-2.0-flash-lite").await
     }
 
     pub async fn generate_multimodal_with_model(
+        prompt: &str,
+        system_instruction: &str,
+        image_parts: &[(String, String)],
+        pool: &sqlx::SqlitePool,
+        _model: &str,
+    ) -> AppResult<String> {
+        crate::services::universal_ai::UniversalAiService::generate_multimodal(prompt, system_instruction, image_parts, pool).await
+    }
+
+    pub async fn generate_multimodal_with_model_direct(
         prompt: &str,
         system_instruction: &str,
         image_parts: &[(String, String)],
@@ -188,40 +263,96 @@ impl GeminiService {
 
         let key = Self::get_api_key(pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", model, key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", model, key);
 
-        let mut parts_json = vec![];
+        let mut content_parts = vec![];
         for (b64, mime) in image_parts {
-            parts_json.push(serde_json::json!({
+            content_parts.push(serde_json::json!({
                 "inlineData": { "mimeType": mime, "data": b64 }
             }));
         }
-        parts_json.push(serde_json::json!({ "text": prompt }));
+        content_parts.push(serde_json::json!({ "text": prompt }));
 
         let payload = serde_json::json!({
             "systemInstruction": {
                 "parts": [{ "text": system_instruction }]
             },
             "contents": [{
-                "parts": parts_json
-            }],
-            "generationConfig": {
-                "responseMimeType": "application/json"
-            }
+                "parts": content_parts
+            }]
         });
 
-        let res = client.post(&url)
-            .json(&payload)
-            .send()
-            .await
-            .map_err(|e| AppError::Internal(e.to_string()))?;
+        let retries = 0;
+        let max_retries = 3;
+        
+        let res = loop {
+            let res = client.post(&url)
+                .json(&payload)
+                .send()
+                .await
+                .map_err(|e| AppError::Internal(e.to_string()))?;
 
-        if !res.status().is_success() {
-            let status = res.status();
-            let body = res.text().await.unwrap_or_default();
-            eprintln!("GEMINI MULTIMODAL API ERROR {status}: {body}");
-            return Err(AppError::Internal(format!("API Error {status}: {body}")));
-        }
+            if !res.status().is_success() {
+                let status = res.status();
+                let body = res.text().await.unwrap_or_default();
+                eprintln!("GEMINI MULTIMODAL API ERROR {status}: {body}");
+
+                if status.as_u16() == 429 && retries < max_retries {
+                    let mut delay_secs = 30;
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                        if let Some(details) = json.get("error").and_then(|e| e.get("details")).and_then(|d| d.as_array()) {
+                            for detail in details {
+                                if let Some(t) = detail.get("@type").and_then(|t| t.as_str()) {
+                                    if t == "type.googleapis.com/google.rpc.RetryInfo" {
+                                        if let Some(delay_str) = detail.get("retryDelay").and_then(|d| d.as_str()) {
+                                            if let Some(s) = delay_str.strip_suffix('s') {
+                                                if let Ok(s_float) = s.parse::<f64>() {
+                                                    delay_secs = s_float.ceil() as u64 + 1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    eprintln!("Rate limit hit (429) multimodal. Immediately aborting to trigger AI provider fallback.");
+                    return Err(AppError::Internal(format!("API Rate Limit (429) hit. Retry delayed by {} seconds.", delay_secs)));
+                }
+
+                if status.as_u16() == 404 && body.contains("is not found") {
+                    eprintln!("Attempting dynamic fallback to find available models for multimodal...");
+                    let list_url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", key);
+                    if let Ok(list_res) = client.get(&list_url).send().await {
+                        if let Ok(list_body) = list_res.json::<serde_json::Value>().await {
+                            if let Some(models) = list_body.get("models").and_then(|m| m.as_array()) {
+                                for m in models {
+                                    if let Some(methods) = m.get("supportedGenerationMethods").and_then(|m| m.as_array()) {
+                                        if methods.iter().any(|method| method.as_str() == Some("generateContent")) {
+                                            if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
+                                                let new_model = name.strip_prefix("models/").unwrap_or(name);
+                                                eprintln!("Found supported model: {}, retrying multimodal...", new_model);
+                                                let new_url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", new_model, key);
+                                                if let Ok(retry_res) = client.post(&new_url).json(&payload).send().await {
+                                                    if retry_res.status().is_success() {
+                                                        if let Ok(retry_body) = retry_res.json::<serde_json::Value>().await {
+                                                            let text = retry_body.get("candidates").and_then(|c| c.get(0)).and_then(|c| c.get("content")).and_then(|c| c.get("parts")).and_then(|p| p.get(0)).and_then(|p| p.get("text")).and_then(|t| t.as_str()).unwrap_or_default().to_string();
+                                                            return Ok(text);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return Err(AppError::Internal(format!("API Error {status}: {body}")));
+            }
+            break res;
+        };
 
         let body: serde_json::Value = res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
         let text = body.get("candidates")
@@ -252,7 +383,7 @@ impl GeminiService {
         let key = Self::get_api_key(pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
         let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={}",
+            "https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key={}",
             key
         );
 
@@ -347,7 +478,7 @@ impl GeminiService {
 
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
         
         let mut contents = Vec::new();
         for msg in history {
@@ -416,6 +547,18 @@ impl GeminiService {
         Ok(references)
     }
 
+    pub fn parse_references_pub(text: &str) -> Vec<ChatReference> {
+        Self::parse_references(text)
+    }
+
+    pub fn strip_references_pub(text: &str) -> String {
+        Self::strip_references(text)
+    }
+
+    pub async fn get_api_key_from_pool(pool: &sqlx::SqlitePool) -> AppResult<String> {
+        Self::get_api_key(pool).await
+    }
+
     /// Parse [REF:type:value] markers from AI response.
     fn parse_references(text: &str) -> Vec<ChatReference> {
         let mut refs = Vec::new();
@@ -456,7 +599,7 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
         
         let mut contents = Vec::new();
         for msg in history {
@@ -528,7 +671,7 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/upload/v1beta/files?uploadType=media&key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/upload/v1/files?uploadType=media&key={}", key);
         
         let file_bytes = tokio::fs::read(file_path).await.map_err(|e| AppError::Internal(e.to_string()))?;
         
@@ -568,7 +711,7 @@ impl GeminiService {
                 return Err(AppError::Internal("Gemini file processing timed out after 5 minutes".into()));
             }
 
-            let get_url = format!("https://generativelanguage.googleapis.com/v1beta/{}?key={}", file_name, key);
+            let get_url = format!("https://generativelanguage.googleapis.com/v1/{}?key={}", file_name, key);
             let get_res = client.get(&get_url).send().await.map_err(|e| AppError::Internal(e.to_string()))?;
             
             if !get_res.status().is_success() {
@@ -606,7 +749,7 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
         
         let payload = serde_json::json!({
             "contents": [{
@@ -731,7 +874,7 @@ impl GeminiService {
 
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
         
         let payload = serde_json::json!({
             "systemInstruction": {
@@ -776,4 +919,13 @@ impl GeminiService {
 
         Ok(text)
     }
+}
+
+#[tokio::test] 
+async fn test_print_models() { 
+ let entry = keyring::Entry::new("bacham", "gemini_api_key").unwrap(); 
+ let key = entry.get_password().unwrap_or_else(|_| std::env::var("GEMINI_API_KEY").unwrap_or_default()); 
+ let url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", key); 
+ let res = reqwest::get(&url).await.unwrap().text().await.unwrap(); 
+ println!("MODELS: {}", res); 
 }

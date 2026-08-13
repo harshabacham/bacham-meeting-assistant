@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Video, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { Button } from '@/components';
@@ -28,6 +29,7 @@ export function VideoTab({
   const { setCurrentTimeMs, setIsPlaying, seekTargetMs, clearSeekTarget } = useLectureSyncStore();
   const [highlights, setHighlights] = useState<{startMs: number, endMs: number, reason: string}[] | null>(null);
   const [isGeneratingHighlights, setIsGeneratingHighlights] = useState(false);
+  const { showToast } = useToast();
   const [isHighlightReelPlaying, setIsHighlightReelPlaying] = useState(false);
   const [currentHighlightIndex, setCurrentHighlightIndex] = useState(0);
 
@@ -100,10 +102,10 @@ export function VideoTab({
           videoRef.current.play().catch(() => {});
         }
       } else {
-        alert("Failed to generate highlights. Please try again.");
+        showToast("Failed to generate highlights. Please try again.", 'error');
       }
     } catch (e: any) {
-      alert("Error generating highlights: " + e.message);
+      showToast("Error generating highlights: " + e.message, 'error');
     } finally {
       setIsGeneratingHighlights(false);
     }

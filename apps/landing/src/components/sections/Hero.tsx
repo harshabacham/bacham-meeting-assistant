@@ -20,7 +20,7 @@ export default function Hero() {
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-[#F5F5F5] max-w-5xl mx-auto mb-6"
             >
-              Your lectures deserve more than transcripts.
+              The Ultimate Local AI <br/> Meeting Wingman.
             </motion.h1>
             
             <motion.p 
@@ -29,7 +29,7 @@ export default function Hero() {
               transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="text-lg md:text-2xl text-[#A0A0A0] max-w-2xl mx-auto mb-12"
             >
-              Transform every online lecture into an AI-powered study workspace.
+              Capture meetings instantly with the Chrome Extension. Get real-time insights with the Universal AI Engine powered by Ollama, OpenAI, or Anthropic. All 100% local.
             </motion.p>
             
             <motion.div 

@@ -40,7 +40,7 @@ export const useFolderStore = create<FolderState>((set, get) => ({
     
     createFolder: async (name, parentId, color, icon, description) => {
         try {
-            await TauriClient.createFolder(name, parentId, color, icon, description);
+            await TauriClient.createFolder(name, parentId, color, icon, undefined, description);
             await get().fetchFolders();
         } catch (e: any) {
             set({ error: e.message });

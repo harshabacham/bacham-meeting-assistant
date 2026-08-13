@@ -15,7 +15,7 @@
 
 import { logger } from '@/infrastructure/logger/logger';
 import { createStorageService } from '@/infrastructure/storage/storageService';
-import { createNativeMessagingClient } from '@/infrastructure/communication/nativeMessagingClient';
+import { createWebSocketClient } from '@/infrastructure/communication/webSocketClient';
 import { createPermissionService } from '@/features/permissions/permissionService';
 import { createSessionService } from '@/features/session/sessionService';
 import { createScreenshotService } from '@/features/capture/screenshotService';
@@ -32,7 +32,7 @@ const MODULE = 'BackgroundSW';
 // ---------------------------------------------------------------------------
 
 const storage = createStorageService(logger);
-const messagingClient = createNativeMessagingClient(logger);
+const messagingClient = createWebSocketClient(logger);
 const permissionService = createPermissionService(logger);
 const sessionService = createSessionService(storage, logger);
 const metadataService = createMetadataService(messagingClient, logger);
@@ -84,6 +84,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return messageHandler.onMessage(message, sender, sendResponse);
 });
 
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    if (
+      tab.url.includes('meet.google.com') || 
+      tab.url.includes('zoom.us/wc') ||
+      tab.url.includes('teams.microsoft.com') ||
+      tab.url.includes('webex.com')
+    ) {
+      logger.info(MODULE, 'Meeting tab detected, auto-starting recording', { url: tab.url });
+      messagingClient.connect();
+      messagingClient.send({ 
+        version: '1.0', 
+        type: 'START_AUTO_RECORD' as any, 
+        timestamp: Date.now(), 
+        payload: {} 
+      });
+      
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: 'Meeting Auto-Record',
+        message: 'Auto-recording started for this meeting.',
+      });
+    }
+  }
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  sessionService.loadSession().then((session) => {
+    if (session && session.tabId === tabId && session.state !== 'idle') {
+      logger.info(MODULE, 'Meeting tab closed, auto-stopping session', { tabId });
+      // Synthesize a STOP_SESSION message to gracefully tear down capture
+      void messageHandler.onMessage({ type: 'STOP_SESSION' }, {}, () => {});
+    }
+  }).catch(err => {
+    logger.error(MODULE, 'Error in tabs.onRemoved handler', { err });
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Rehydrate on every service-worker wake
 // This runs synchronously at module evaluation time — once per wake.
@@ -94,5 +133,19 @@ void lifecycleHandler.rehydrate();
 
 // Attempt to connect to Desktop App on every wake
 messagingClient.connect();
+
+// Forward specific backend messages to the active tab's content script
+messagingClient.onMessage((msg) => {
+  if (msg.type === 'TRANSCRIPT_SEGMENT' || msg.type === 'INTERVIEW_INSIGHT') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+      if (tab && tab.id) {
+        chrome.tabs.sendMessage(tab.id, msg).catch((err) => {
+          logger.warn(MODULE, `Failed to forward ${msg.type} to content script`, { err });
+        });
+      }
+    });
+  }
+});
 
 logger.info(MODULE, 'Service worker initialised');

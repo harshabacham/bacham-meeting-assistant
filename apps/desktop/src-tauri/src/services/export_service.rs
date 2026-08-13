@@ -182,6 +182,47 @@ impl ExportService {
             md.push_str("\n\n");
         }
 
+        let artifacts = sqlx::query!("SELECT artifact_type, content_json FROM lecture_artifacts WHERE lecture_id = ?", lecture_id)
+            .fetch_all(pool).await.unwrap_or_default();
+            
+        if !artifacts.is_empty() {
+            md.push_str("## Artifacts\n\n");
+            for a in artifacts {
+                md.push_str(&format!("### {}\n\n", a.artifact_type.replace('_', " ").to_uppercase()));
+                
+                // If it's a JSON array of strings (e.g., action items), format it as a list
+                if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&a.content_json) {
+                    if let Some(arr) = json_val.as_array() {
+                        for item in arr {
+                            if let Some(s) = item.as_str() {
+                                md.push_str(&format!("- {}\n", s));
+                            } else {
+                                md.push_str(&format!("- {}\n", item));
+                            }
+                        }
+                        md.push('\n');
+                    } else if let Some(obj) = json_val.as_object() {
+                        for (k, v) in obj {
+                            if let Some(s) = v.as_str() {
+                                md.push_str(&format!("**{}**: {}\n\n", k, s));
+                            } else {
+                                md.push_str(&format!("**{}**: {}\n\n", k, v));
+                            }
+                        }
+                    } else if let Some(s) = json_val.as_str() {
+                        md.push_str(s);
+                        md.push_str("\n\n");
+                    } else {
+                        md.push_str(&a.content_json);
+                        md.push_str("\n\n");
+                    }
+                } else {
+                    md.push_str(&a.content_json);
+                    md.push_str("\n\n");
+                }
+            }
+        }
+
         if !transcript.is_empty() {
             md.push_str("## Transcript\n\n");
             md.push_str(&transcript);

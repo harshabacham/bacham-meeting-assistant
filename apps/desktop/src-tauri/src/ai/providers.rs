@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use tauri::{AppHandle, Manager, Emitter};
 use crate::error::{AppError, AppResult};
 use crate::services::gemini_service::{ChatMessage, ChatReference};
+use crate::services::universal_ai::UniversalAiService;
 use crate::services::provider_service::ProviderService;
 
 pub struct GenerationRequest {
@@ -26,12 +27,13 @@ pub struct ProviderEngine;
 impl ProviderEngine {
     pub async fn get_provider(app: &AppHandle) -> AppResult<Box<dyn AiProvider>> {
         let pool = app.state::<crate::database::DbState>().pool.clone();
-        let provider_name = ProviderService::get_active_provider(&pool).await?;
+        let provider_name = UniversalAiService::get_active_provider(&pool).await;
 
         match provider_name.as_str() {
-            "gemini" => Ok(Box::new(GeminiProvider)),
-            "openai" | "openrouter" => Ok(Box::new(OpenAiCompatibleProvider { name: provider_name })),
-            _ => Ok(Box::new(GeminiProvider)), // Fallback
+            "gemini" | "bacham.gemini" => Ok(Box::new(GeminiProvider)),
+            "ollama" | "bacham.ollama" => Ok(Box::new(OllamaProvider { name: provider_name })),
+            "openai" | "bacham.openai" | "openrouter" | "bacham.openrouter" | "lmstudio" | "bacham.lmstudio" | "anthropic" | "bacham.anthropic" => Ok(Box::new(OpenAiCompatibleProvider { name: provider_name })),
+            _ => Ok(Box::new(OpenAiCompatibleProvider { name: provider_name })), // Fallback to OpenAI compatible for all other plugins
         }
     }
 }
@@ -44,7 +46,7 @@ impl AiProvider for GeminiProvider {
         let pool = &app.state::<crate::database::DbState>().pool;
         let key = ProviderService::get_api_key(pool, "gemini").await?;
         let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:streamGenerateContent?alt=sse&key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-lite:streamGenerateContent?alt=sse&key={}", key);
         
         let mut contents = Vec::new();
         for msg in &request.history {
@@ -88,7 +90,41 @@ impl AiProvider for GeminiProvider {
             } else {
                 let status = res.status();
                 let body = res.text().await.unwrap_or_default();
-                return Err(AppError::Internal(format!("Chat API Error {status}: {body}")));
+                
+                // DYNAMIC FALLBACK
+                if status.as_u16() == 404 && body.contains("is not found") {
+                    eprintln!("Attempting dynamic fallback to find available models for streaming...");
+                    let list_url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", key);
+                    if let Ok(list_res) = client.get(&list_url).send().await {
+                        if let Ok(list_body) = list_res.json::<serde_json::Value>().await {
+                            if let Some(models) = list_body.get("models").and_then(|m| m.as_array()) {
+                                let mut found_model = None;
+                                for m in models {
+                                    if let Some(methods) = m.get("supportedGenerationMethods").and_then(|m| m.as_array()) {
+                                        if methods.iter().any(|method| method.as_str() == Some("generateContent")) {
+                                            if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
+                                                found_model = Some(name.strip_prefix("models/").unwrap_or(name).to_string());
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if let Some(new_model) = found_model {
+                                    eprintln!("Found supported model: {}, retrying stream...", new_model);
+                                    let new_url = format!("https://generativelanguage.googleapis.com/v1/models/{}:streamGenerateContent?alt=sse&key={}", new_model, key);
+                                    if let Ok(retry_res) = client.post(&new_url).json(&payload).send().await {
+                                        if retry_res.status().is_success() {
+                                            break retry_res;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return Err(AppError::Internal(format!("API Error {status}: {body}")));
             }
         };
 
@@ -195,25 +231,232 @@ impl AiProvider for GeminiProvider {
     }
 }
 
+pub struct OllamaProvider {
+    pub name: String,
+}
+
+#[async_trait]
+impl AiProvider for OllamaProvider {
+    async fn generate_stream(&self, app: &AppHandle, request: GenerationRequest, event_name: &str) -> AppResult<GenerationResponse> {
+        let pool = &app.state::<crate::database::DbState>().pool;
+        let url = ProviderService::get_api_key(pool, &self.name).await.unwrap_or_else(|_| "http://localhost:11434".to_string());
+        
+        let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
+        
+        let mut messages = Vec::new();
+        if !request.system_instruction.is_empty() {
+            messages.push(serde_json::json!({
+                "role": "system",
+                "content": request.system_instruction
+            }));
+        }
+        
+        for msg in &request.history {
+            messages.push(serde_json::json!({
+                "role": msg.role,
+                "content": msg.content
+            }));
+        }
+        
+        if request.history.last().map(|m| m.role.as_str()) != Some("user") || 
+           request.history.last().map(|m| m.content.as_str()) != Some(&request.prompt) {
+            messages.push(serde_json::json!({
+                "role": "user",
+                "content": request.prompt
+            }));
+        }
+
+        // We try to get the default_model from the database based on the plugin.
+        // We strip "bacham." prefix to query ai_provider_configs correctly
+        let raw_provider = self.name.strip_prefix("bacham.").unwrap_or(&self.name);
+        
+        let model = sqlx::query("SELECT default_model FROM ai_provider_configs WHERE provider = ?")
+            .bind(raw_provider)
+            .fetch_optional(pool)
+            .await.ok().flatten().and_then(|r| sqlx::Row::try_get::<String, _>(&r, "default_model").ok())
+            .unwrap_or_else(|| "llama3".to_string());
+
+        let payload = serde_json::json!({
+            "model": model,
+            "messages": messages,
+            "stream": true
+        });
+
+        let endpoint = format!("{}/api/chat", url.trim_end_matches('/'));
+
+        let res = client.post(&endpoint)
+            .json(&payload)
+            .send()
+            .await
+            .map_err(|e| AppError::Internal(e.to_string()))?;
+
+        if !res.status().is_success() {
+            let status = res.status();
+            let body = res.text().await.unwrap_or_default();
+            return Err(AppError::Internal(format!("Ollama API Error {status}: {body}")));
+        }
+
+        use futures::stream::StreamExt;
+        
+        let mut full_text = String::new();
+        let mut stream = res.bytes_stream();
+        let mut buffer = String::new();
+        let refs = Vec::new();
+
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = chunk_result.map_err(|e| AppError::Internal(e.to_string()))?;
+            let chunk_str = String::from_utf8_lossy(&chunk);
+            buffer.push_str(&chunk_str);
+
+            while let Some(idx) = buffer.find('\n') {
+                let line = buffer[..idx].trim().to_string();
+                buffer.drain(..idx + 1);
+
+                if line.is_empty() { continue; }
+                
+                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&line) {
+                    if let Some(msg) = parsed.get("message") {
+                        if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                            full_text.push_str(content);
+                            let _ = app.emit(event_name, serde_json::json!({ "chunk": content, "references": refs }));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(GenerationResponse {
+            text: full_text.trim().to_string(),
+            references: refs,
+        })
+    }
+
+    fn context_window(&self) -> usize {
+        8_192
+    }
+}
+
 pub struct OpenAiCompatibleProvider {
     pub name: String,
 }
 
 #[async_trait]
 impl AiProvider for OpenAiCompatibleProvider {
-    async fn generate_stream(&self, _app: &AppHandle, _request: GenerationRequest, _event_name: &str) -> AppResult<GenerationResponse> {
-        // Stub implementation for Phase 7
-        // In a real implementation, this would use reqwest to call the OpenAI chat/completions endpoint,
-        // iterate over SSE events, and emit `event_name` to the Tauri frontend.
-        let pool = &_app.state::<crate::database::DbState>().pool;
-        let key = ProviderService::get_api_key(pool, &self.name).await?;
+    async fn generate_stream(&self, app: &AppHandle, request: GenerationRequest, event_name: &str) -> AppResult<GenerationResponse> {
+        let pool = &app.state::<crate::database::DbState>().pool;
+        let key = crate::services::universal_ai::UniversalAiService::get_provider_token(&self.name).await?;
         if key.is_empty() {
             return Err(AppError::Internal(format!("No API key for {}", self.name)));
         }
 
+        let raw_provider = self.name.strip_prefix("bacham.").unwrap_or(&self.name);
+        
+        let (mut url, default_model) = match raw_provider {
+            "openai" => ("https://api.openai.com/v1/chat/completions".to_string(), "gpt-4o"),
+            "openrouter" => ("https://openrouter.ai/api/v1/chat/completions".to_string(), "anthropic/claude-3-haiku"),
+            "lmstudio" => ("http://localhost:1234/v1/chat/completions".to_string(), "local-model"),
+            _ => ("https://api.openai.com/v1/chat/completions".to_string(), "gpt-4o"),
+        };
+
+        if raw_provider == "lmstudio" && key.starts_with("http") {
+            url = format!("{}/v1/chat/completions", key.trim_end_matches('/'));
+        }
+
+        let model = sqlx::query("SELECT default_model FROM ai_provider_configs WHERE provider = ?")
+            .bind(raw_provider)
+            .fetch_optional(pool)
+            .await.ok().flatten().and_then(|r| sqlx::Row::try_get::<String, _>(&r, "default_model").ok())
+            .unwrap_or_else(|| default_model.to_string());
+
+        let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
+        
+        let mut messages = Vec::new();
+        if !request.system_instruction.is_empty() {
+            messages.push(serde_json::json!({
+                "role": "system",
+                "content": request.system_instruction
+            }));
+        }
+        
+        for msg in &request.history {
+            messages.push(serde_json::json!({
+                "role": msg.role,
+                "content": msg.content
+            }));
+        }
+        
+        if request.history.last().map(|m| m.role.as_str()) != Some("user") || 
+           request.history.last().map(|m| m.content.as_str()) != Some(&request.prompt) {
+            messages.push(serde_json::json!({
+                "role": "user",
+                "content": request.prompt
+            }));
+        }
+
+        let payload = serde_json::json!({
+            "model": model,
+            "messages": messages,
+            "stream": true
+        });
+
+        let mut req = client.post(&url).json(&payload).header("Content-Type", "application/json");
+
+        if raw_provider != "lmstudio" {
+            req = req.header("Authorization", format!("Bearer {}", key));
+            
+            if raw_provider == "openrouter" {
+                req = req.header("HTTP-Referer", "https://bacham.com");
+                req = req.header("X-Title", "Bacham Copilot");
+            }
+        }
+
+        let res = req.send().await.map_err(|e| AppError::Internal(e.to_string()))?;
+
+        if !res.status().is_success() {
+            let status = res.status();
+            let body = res.text().await.unwrap_or_default();
+            return Err(AppError::Internal(format!("API Error {status}: {body}")));
+        }
+
+        use futures::stream::StreamExt;
+        
+        let mut full_text = String::new();
+        let mut stream = res.bytes_stream();
+        let mut buffer = String::new();
+        let refs = Vec::new();
+
+        while let Some(chunk_result) = stream.next().await {
+            let chunk = chunk_result.map_err(|e| AppError::Internal(e.to_string()))?;
+            let chunk_str = String::from_utf8_lossy(&chunk);
+            buffer.push_str(&chunk_str);
+
+            while let Some(idx) = buffer.find('\n') {
+                let line = buffer[..idx].trim().to_string();
+                buffer.drain(..idx + 1);
+
+                if line.starts_with("data: ") {
+                    let data = &line["data: ".len()..];
+                    if data == "[DONE]" { continue; }
+                    
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(data) {
+                        if let Some(choices) = parsed.get("choices") {
+                            if let Some(choice) = choices.get(0) {
+                                if let Some(delta) = choice.get("delta") {
+                                    if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
+                                        full_text.push_str(content);
+                                        let _ = app.emit(event_name, serde_json::json!({ "chunk": content, "references": refs }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Ok(GenerationResponse {
-            text: "This is a stub response from an OpenAI-compatible provider.".to_string(),
-            references: vec![],
+            text: full_text.trim().to_string(),
+            references: refs,
         })
     }
 

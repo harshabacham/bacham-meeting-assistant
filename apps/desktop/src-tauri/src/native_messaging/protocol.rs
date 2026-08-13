@@ -15,6 +15,7 @@ pub enum MessageType {
     RenameLecture,
     TriggerSnapshot,
     LiveCaption,
+    ConfirmDecision,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -91,4 +92,10 @@ pub struct LiveCaptionPayload {
     pub speaker_name: Option<String>,
     pub timestamp: i64,
     pub platform: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfirmDecisionPayload {
+    pub decision_text: String,
 }

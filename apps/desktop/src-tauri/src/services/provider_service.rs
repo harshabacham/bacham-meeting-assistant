@@ -171,7 +171,7 @@ impl ProviderService {
     async fn seed_defaults(pool: &SqlitePool) -> AppResult<()> {
         let gemini_id = Uuid::new_v4().to_string();
         sqlx::query!(
-            "INSERT INTO ai_provider_configs (id, provider, enabled, default_model) VALUES (?, 'gemini', 1, 'gemini-3.1-flash-lite')",
+            "INSERT INTO ai_provider_configs (id, provider, enabled, default_model) VALUES (?, 'gemini', 1, 'gemini-2.0-flash-lite')",
             gemini_id
         ).execute(pool).await.map_err(|e| AppError::Internal(e.to_string()))?;
         

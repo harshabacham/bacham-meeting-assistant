@@ -1,64 +1,82 @@
-import { useState } from 'react';
-import { Sparkles, Save, Clock, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { TauriClient } from '@/infrastructure/tauri-client';
+import { listen } from '@tauri-apps/api/event';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export function AiScratchpad() {
   const [notes, setNotes] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Listen for captions to grab the active session ID if we don't have it
+    const unlisten = listen<{ sessionId: string }>('live_caption_received', (event) => {
+      if (!activeSessionId) {
+        setActiveSessionId(event.payload.sessionId);
+      }
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    if (!activeSessionId || !notes.trim()) return;
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    saveTimeoutRef.current = setTimeout(() => {
+      TauriClient.saveLiveScratchpad(activeSessionId, notes).catch(e => {
+        console.error('Failed to autosave scratchpad:', e);
+      });
+    }, 1000); // Debounce 1 second
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [notes, activeSessionId]);
 
   const handleEnhance = async () => {
     if (!notes.trim()) return;
     setIsEnhancing(true);
     try {
-      // Send the current shorthand notes to AI.
-      // We'll use the existing chatTeachingMode as a mock endpoint if there isn't a dedicated one,
-      // or we can just append a generic fleshed out response for the prototype.
-      const prompt = `Flesh out these meeting notes:\n${notes}`;
-      
-      // Attempting to use a generic AI endpoint if it exists in the codebase (using global_ask_ai as mock)
-      // Since global_ask_ai takes a query, we'll use that to flesh it out.
-      const res = await TauriClient.globalAskAi(`I am taking manual shorthand notes in a meeting. Flesh out these bullet points into a professional, well-written paragraph summary based on typical meeting context. Do not include introductory text. Notes:\n${notes}`);
+      const prompt = `I am taking manual shorthand notes in a meeting. Flesh out these bullet points into a professional, well-written paragraph summary based on typical meeting context. Do not include introductory text. Notes:\n${notes}`;
+      const res = await TauriClient.sendGlobalMemoryChat(prompt);
       
       setNotes(res);
-    } catch (e) {
+      showToast('Notes enhanced successfully!', 'success');
+    } catch (e: any) {
       console.error(e);
-      // Fallback
-      setNotes(notes + "\n\n[AI Fleshed out version of your notes based on recent transcript context will appear here.]");
+      showToast(`Failed to enhance notes: ${e.message || e}`, 'error');
     } finally {
       setIsEnhancing(false);
     }
   };
 
   return (
-    <div className="h-full flex flex-col bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between p-4 border-b border-border bg-surface/50">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium">Meeting Scratchpad</h2>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={handleEnhance}
-            disabled={isEnhancing || !notes.trim()}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 disabled:opacity-50 transition-colors text-xs font-semibold"
-          >
-            {isEnhancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            Enhance with AI
-          </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover text-muted-foreground hover:text-foreground transition-colors text-xs font-medium border border-border">
-            <Save className="w-3.5 h-3.5" />
-            Save Notes
-          </button>
-        </div>
-      </div>
-      
+    <div className="h-full flex flex-col w-full max-w-3xl mx-auto relative group">
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Jot down bullet points or shorthand here..."
-        className="flex-1 w-full bg-transparent p-6 text-foreground resize-none focus:outline-none placeholder:text-muted-foreground/50 leading-relaxed text-[15px]"
+        placeholder="Start typing your meeting notes here..."
+        className="flex-1 w-full bg-transparent p-4 text-[var(--text-primary)] resize-none focus:outline-none placeholder:text-[var(--text-secondary)]/40 leading-relaxed text-sm font-medium"
       />
+      
+      {/* Floating AI Enhance Button that appears when there is text */}
+      <div className={`absolute bottom-4 right-4 transition-all duration-300 ${notes.trim() ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+        <button 
+          onClick={handleEnhance}
+          disabled={isEnhancing}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 disabled:opacity-50 transition-all text-xs font-bold"
+        >
+          {isEnhancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          Enhance
+        </button>
+      </div>
     </div>
   );
 }

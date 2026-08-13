@@ -7,7 +7,7 @@ pub struct QuizService;
 impl QuizService {
     pub async fn generate_quiz(pool: &SqlitePool, lecture_id: &str, transcript: &str) -> AppResult<()> {
         let instruction = "Generate a multiple choice quiz from the lecture. Return a JSON array of objects with 'question', 'answer_key', and 'options' (array of strings).";
-        let content = crate::services::gemini_service::GeminiService::generate_text(transcript, instruction, pool).await?;
+        let content = crate::services::universal_ai::UniversalAiService::generate_text(transcript, instruction, pool).await?;
         
         let clean_json = content.trim_start_matches("```json").trim_end_matches("```").trim();
         

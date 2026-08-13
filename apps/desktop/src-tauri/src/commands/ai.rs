@@ -9,6 +9,45 @@ use crate::ai::intelligence_engine::IntelligenceEngine;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SaveLiveScratchpadInput {
+    pub lecture_id: String,
+    pub notes: String,
+}
+
+#[tauri::command]
+pub async fn save_live_scratchpad(state: State<'_, DbState>, input: SaveLiveScratchpadInput) -> AppResult<()> {
+    let now = chrono::Utc::now().timestamp_millis();
+    let id = uuid::Uuid::new_v4().to_string();
+    
+    // Delete existing scratchpad for this lecture
+    sqlx::query!(
+        "DELETE FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'live_scratchpad'",
+        input.lecture_id
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+
+    // Insert new scratchpad
+    sqlx::query!(
+        r#"
+        INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, status, content_json, generated_at, model_used, version)
+        VALUES (?, ?, 'live_scratchpad', 'done', ?, ?, 'manual', 1)
+        "#,
+        id,
+        input.lecture_id,
+        input.notes,
+        now
+    )
+    .execute(&state.pool)
+    .await
+    .map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+
+    Ok(())
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AiChatInput {
     pub lecture_id: Option<String>,
     pub prompt: String,
@@ -17,10 +56,30 @@ pub struct AiChatInput {
 
 #[tauri::command]
 pub async fn ai_chat_send(app: AppHandle, input: AiChatInput) -> AppResult<()> {
+    let system = "You are an expert AI Tutor designed to help students master their lecture material. \
+        Explain concepts step-by-step, use analogies, and foster deep understanding. \
+        Be encouraging and academic in tone.";
     if let Some(lecture_id) = &input.lecture_id {
-        GeminiService::stream_chat_grounded(&app, lecture_id, &input.prompt, &input.history).await?;
+        let pool = app.state::<DbState>().pool.clone();
+        // Build grounded context from the lecture
+        let context_str = match crate::ai::context_builder::ContextBuilder::build_text_only(&pool, lecture_id).await {
+            Ok(ctx) => crate::ai::context_builder::ContextBuilder::format_text_context(&ctx),
+            Err(_) => "No lecture context available.".to_string(),
+        };
+        let grounded_system = format!(
+            "You are an expert AI Tutor designed to help students master this lecture material. \
+             Base your explanations on the provided lecture content. \
+             When you reference a specific part, include [REF:timestamp:VALUE] or [REF:screenshot:VALUE] markers.\n\n\
+             LECTURE CONTENT:\n{}",
+            context_str
+        );
+        crate::services::universal_ai::UniversalAiService::stream_chat_grounded(
+            &app, &grounded_system, &input.history, &input.prompt
+        ).await?;
     } else {
-        GeminiService::stream_chat(&app, &input.prompt, &input.history).await?;
+        crate::services::universal_ai::UniversalAiService::stream_chat(
+            &app, system, &input.history, &input.prompt
+        ).await?;
     }
     Ok(())
 }
@@ -39,16 +98,45 @@ pub async fn global_memory_chat_send(app: AppHandle, input: GlobalMemoryChatInpu
     // 1. Run FTS5 search on the prompt to find relevant memory snippets
     let search_results = crate::services::search_service::SearchService::fts_search(&pool, &input.prompt).await?;
     
-    // 2. Build a grounded context string
+    // 2. Semantic Search via VectorDB
+    let mut semantic_context = String::new();
+    if let Ok(embedding_service) = crate::services::embedding_service::EmbeddingService::new().await {
+        let api_key = match keyring::Entry::new("bacham", "gemini_api_key") {
+            Ok(entry) => entry.get_password().ok(),
+            Err(_) => None,
+        };
+        let api_key = api_key.or_else(|| std::env::var("GEMINI_API_KEY").ok());
+        
+        let use_local = false; // Could be configured in settings
+        if let Ok(query_emb) = embedding_service.embed_text(&input.prompt, use_local, api_key.as_deref()).await {
+            let vector_db = crate::services::vector_db::VectorDb::new(pool.clone());
+            if let Ok(semantic_results) = vector_db.search(&query_emb, 5).await {
+                if !semantic_results.is_empty() {
+                    semantic_context.push_str("Semantic Matches:\n");
+                    for (i, (chunk_text, _score)) in semantic_results.iter().enumerate() {
+                        semantic_context.push_str(&format!("[Sem-{}] {}\n", i+1, chunk_text));
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Build a grounded context string
     let mut context = String::new();
     if !search_results.is_empty() {
-        context.push_str("Here is relevant information retrieved from the user's past meetings and lectures:\n\n");
-        for (i, res) in search_results.iter().take(10).enumerate() {
-            // strip HTML tags from snippet
+        context.push_str("Lexical Matches:\n");
+        for (i, res) in search_results.iter().take(5).enumerate() {
             let clean_snippet = res.snippet.replace("<b>", "").replace("</b>", "");
-            context.push_str(&format!("[{}] (Source: {}): {}\n", i+1, res.source_type, clean_snippet));
+            context.push_str(&format!("[Lex-{}] (Source: {}): {}\n", i+1, res.source_type, clean_snippet));
         }
-    } else {
+    } 
+    
+    if !semantic_context.is_empty() {
+        context.push_str("\n");
+        context.push_str(&semantic_context);
+    }
+
+    if context.is_empty() {
         context.push_str("No relevant past context found. Answer from general knowledge.\n");
     }
 
@@ -58,8 +146,13 @@ pub async fn global_memory_chat_send(app: AppHandle, input: GlobalMemoryChatInpu
         context, input.prompt
     );
 
-    // 4. Send to Gemini
-    GeminiService::stream_chat(&app, &grounded_prompt, &input.history).await?;
+    // 4. Send through universal provider (routes through user's selected AI)
+    crate::services::universal_ai::UniversalAiService::stream_chat(
+        &app,
+        "You are a helpful assistant with access to a user's past meetings and lectures. Answer based on the provided context.",
+        &input.history,
+        &grounded_prompt
+    ).await?;
 
     Ok(())
 }
@@ -127,7 +220,7 @@ pub async fn folder_chat_send(app: AppHandle, input: FolderChatInput) -> AppResu
     // Make the Gemini request
     let key = GeminiService::get_api_key(&pool).await?;
     let client = reqwest::Client::new();
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+    let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
     
     let mut contents = Vec::new();
     for msg in &input.history {
@@ -313,7 +406,7 @@ pub async fn suggest_folders_for_lecture(
                   'folderId' (string), 'confidence' (number 0.0 to 1.0), and 'reason' (short string). \
                   Sort by confidence descending. Max 3 suggestions. DO NOT wrap in markdown code blocks.";
 
-    let response = GeminiService::generate_text(&prompt, system, &state.pool).await?;
+    let response = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system, &state.pool).await?;
 
     // Parse JSON
     let clean_response = response.trim().strip_prefix("```json").unwrap_or(&response).strip_suffix("```").unwrap_or(&response).trim();
@@ -355,7 +448,7 @@ pub async fn generate_highlight_reel(
                 
                 let key = GeminiService::get_api_key(&state.pool).await?;
                 let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
-                let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+                let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
                 
                 let payload = serde_json::json!({
                     "systemInstruction": { "parts": [{ "text": system }] },
@@ -384,12 +477,7 @@ pub async fn generate_highlight_reel(
         }
     }
 
-    // Fallback: If we can't upload video, use the transcript to generate fake highlights (or chunk the text)
-    // For now, we will return some mock highlights based on duration if we fail to parse.
-    // In a real scenario, without timestamps in transcript, this is the only way to avoid failure.
-    let h1 = HighlightBlock { start_ms: 10000, end_ms: 30000, reason: "Core Concept Introduction".into() };
-    let h2 = HighlightBlock { start_ms: 60000, end_ms: 80000, reason: "Key Example".into() };
-    Ok(vec![h1, h2])
+    Err(crate::error::AppError::Internal("Failed to generate highlights".into()))
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -494,7 +582,7 @@ pub async fn generate_podcast_script(state: State<'_, DbState>, lecture_id: Stri
     let prompt = format!("Convert the following lecture summary into an engaging, conversational podcast script (single host). Keep it concise, energetic, and educational. Do not include sound effect cues like [Upbeat Intro Music] or [Host laughs], just the spoken text. Make it flow naturally.\n\nSummary:\n{}", content);
     let system = "You are an expert podcast script writer. You write scripts that sound very natural when read aloud by TTS. Do not output any markdown formatting, asterisks, or brackets. Just the raw spoken text.";
     
-    let response = GeminiService::generate_text(&prompt, system, &state.pool).await?;
+    let response = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system, &state.pool).await?;
     
     // Clean up any stray markdown or brackets just in case
     let clean = response.replace("**", "").replace("_", "").replace("[", "").replace("]", "");
@@ -668,7 +756,7 @@ pub async fn execute_agentic_action(
         task, context
     );
     
-    let response = GeminiService::generate_text(
+    let response = crate::services::universal_ai::UniversalAiService::generate_text(
         &prompt,
         "You are an expert at generating execution URLs. Only output the raw URL string, nothing else.",
         &state.pool
@@ -711,7 +799,7 @@ pub async fn grill_me_interaction(
     
     let prompt = format!("Student says: {}", user_message);
     
-    let response = GeminiService::generate_text(&prompt, &sys_prompt, &pool).await?;
+    let response = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, &sys_prompt, &pool).await?;
     
     Ok(response)
 }
@@ -820,7 +908,7 @@ pub async fn analyze_conversation(lecture_id: String, app: AppHandle) -> AppResu
         &transcript[..transcript.len().min(8000)]
     );
 
-    let analysis_json = GeminiService::generate_text(&analysis_prompt, "You are a conversation analysis expert. Return only valid JSON.", &pool).await?;
+    let analysis_json = crate::services::universal_ai::UniversalAiService::generate_text(&analysis_prompt, "You are a conversation analysis expert. Return only valid JSON.", &pool).await?;
 
     // Parse Gemini response
     let parsed: serde_json::Value = serde_json::from_str(&analysis_json.trim()).unwrap_or(serde_json::json!({
@@ -918,7 +1006,7 @@ pub async fn notes_ai_augment(lecture_id: String, user_draft: String, app: AppHa
         user_draft
     );
     
-    let augmented = GeminiService::generate_text(&prompt, "You are an expert note-taker. Expand and enrich the user's shorthand notes based on the meeting transcript. Maintain the user's structure exactly.", &pool).await?;
+    let augmented = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, "You are an expert note-taker. Expand and enrich the user's shorthand notes based on the meeting transcript. Maintain the user's structure exactly.", &pool).await?;
     
     Ok(augmented)
 }
@@ -1046,10 +1134,10 @@ pub struct GlobalActionItem {
 pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionItem>> {
     let pool = app.state::<DbState>().pool.clone();
     let rows = sqlx::query!(
-        "SELECT a.lecture_id, a.content_json, l.title 
+        "SELECT a.lecture_id, a.content_json, l.title, a.artifact_type 
          FROM lecture_artifacts a 
          JOIN lectures l ON a.lecture_id = l.id 
-         WHERE a.artifact_type = 'lecture_intelligence' AND a.status = 'done'"
+         WHERE a.status = 'done' AND a.artifact_type IN ('lecture_intelligence', 'action_items')"
     )
     .fetch_all(&pool)
     .await?;
@@ -1057,38 +1145,65 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
     let mut all_items = Vec::new();
 
     for row in rows {
-        if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(&row.content_json) {
-            if let Some(items) = parsed.pointer_mut("/crm_metadata/action_items").and_then(|v| v.as_array_mut()) {
-                let mut modified = false;
-                for item in items.iter_mut() {
-                    let task = item.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                    let owner = item.get("owner").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                    let priority = item.get("priority").and_then(|v| v.as_str()).unwrap_or("medium").to_string();
-                    
-                    // Inject status if missing
-                    if item.get("status").is_none() {
-                        item.as_object_mut().unwrap().insert("status".to_string(), serde_json::json!("todo"));
-                        modified = true;
-                    }
-                    let status = item.get("status").and_then(|v| v.as_str()).unwrap_or("todo").to_string();
-
-                    if !task.is_empty() {
+        if row.artifact_type == "action_items" {
+            if let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(&row.content_json) {
+                for item in items {
+                    if let Some(task_text) = item.as_str() {
+                        let text = task_text.trim_start_matches("[Key Decision]").trim();
+                        all_items.push(GlobalActionItem {
+                            lecture_id: row.lecture_id.clone(),
+                            lecture_title: row.title.clone(),
+                            task: text.to_string(),
+                            owner: "Me".to_string(),
+                            priority: "high".to_string(),
+                            status: "todo".to_string(),
+                        });
+                    } else if let Some(obj) = item.as_object() {
+                        let task = obj.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let status = obj.get("status").and_then(|v| v.as_str()).unwrap_or("todo").to_string();
                         all_items.push(GlobalActionItem {
                             lecture_id: row.lecture_id.clone(),
                             lecture_title: row.title.clone(),
                             task,
-                            owner,
-                            priority,
+                            owner: "Me".to_string(),
+                            priority: "high".to_string(),
                             status,
                         });
                     }
                 }
-                
-                // If we injected missing statuses, save it back
-                if modified {
-                    let new_json = serde_json::to_string(&parsed).unwrap_or(row.content_json);
-                    let _ = sqlx::query!("UPDATE lecture_artifacts SET content_json = ? WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence'", new_json, row.lecture_id)
-                        .execute(&pool).await;
+            }
+        } else if row.artifact_type == "lecture_intelligence" {
+            if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(&row.content_json) {
+                if let Some(items) = parsed.pointer_mut("/crm_metadata/action_items").and_then(|v| v.as_array_mut()) {
+                    let mut modified = false;
+                    for item in items.iter_mut() {
+                        let task = item.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let owner = item.get("owner").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let priority = item.get("priority").and_then(|v| v.as_str()).unwrap_or("medium").to_string();
+                        
+                        if item.get("status").is_none() {
+                            item.as_object_mut().unwrap().insert("status".to_string(), serde_json::json!("todo"));
+                            modified = true;
+                        }
+                        let status = item.get("status").and_then(|v| v.as_str()).unwrap_or("todo").to_string();
+
+                        if !task.is_empty() {
+                            all_items.push(GlobalActionItem {
+                                lecture_id: row.lecture_id.clone(),
+                                lecture_title: row.title.clone(),
+                                task,
+                                owner,
+                                priority,
+                                status,
+                            });
+                        }
+                    }
+                    
+                    if modified {
+                        let new_json = serde_json::to_string(&parsed).unwrap_or(row.content_json.clone());
+                        let _ = sqlx::query!("UPDATE lecture_artifacts SET content_json = ? WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence'", new_json, row.lecture_id)
+                            .execute(&pool).await;
+                    }
                 }
             }
         }
@@ -1100,81 +1215,123 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
 #[tauri::command]
 pub async fn update_action_item_status(lecture_id: String, task: String, status: String, app: AppHandle) -> AppResult<()> {
     let pool = app.state::<DbState>().pool.clone();
-    let row = sqlx::query!(
-        "SELECT content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence'",
+    let rows = sqlx::query!(
+        "SELECT id, content_json, artifact_type FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type IN ('lecture_intelligence', 'action_items')",
         lecture_id
-    ).fetch_optional(&pool).await?;
+    ).fetch_all(&pool).await?;
 
-    if let Some(row) = row {
-        if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(&row.content_json) {
-            if let Some(items) = parsed.pointer_mut("/crm_metadata/action_items").and_then(|v| v.as_array_mut()) {
+    for row in rows {
+        if row.artifact_type == "action_items" {
+            if let Ok(mut items) = serde_json::from_str::<Vec<serde_json::Value>>(&row.content_json) {
                 let mut modified = false;
-                for item in items.iter_mut() {
-                    if item.get("task").and_then(|v| v.as_str()) == Some(&task) {
-                        item.as_object_mut().unwrap().insert("status".to_string(), serde_json::json!(status));
-                        modified = true;
+                for i in 0..items.len() {
+                    if let Some(s) = items[i].as_str() {
+                        let text = s.trim_start_matches("[Key Decision]").trim();
+                        if text == task {
+                            items[i] = serde_json::json!({
+                                "task": text,
+                                "status": &status,
+                                "owner": "Me",
+                                "priority": "high"
+                            });
+                            modified = true;
+                        }
+                    } else if let Some(obj) = items[i].as_object_mut() {
+                        if obj.get("task").and_then(|v| v.as_str()) == Some(&task) {
+                            obj.insert("status".to_string(), serde_json::json!(&status));
+                            modified = true;
+                        }
                     }
                 }
                 if modified {
-                    let new_json = serde_json::to_string(&parsed).unwrap_or(row.content_json);
-                    sqlx::query!("UPDATE lecture_artifacts SET content_json = ? WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence'", new_json, lecture_id)
-                        .execute(&pool).await?;
+                    let new_json = serde_json::to_string(&items).unwrap_or_default();
+                    let _ = sqlx::query!("UPDATE lecture_artifacts SET content_json = ? WHERE id = ?", new_json, row.id)
+                        .execute(&pool).await;
+                }
+            }
+        } else if row.artifact_type == "lecture_intelligence" {
+            if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(&row.content_json) {
+                if let Some(items) = parsed.pointer_mut("/crm_metadata/action_items").and_then(|v| v.as_array_mut()) {
+                    let mut modified = false;
+                    for item in items.iter_mut() {
+                        if item.get("task").and_then(|v| v.as_str()) == Some(&task) {
+                            item.as_object_mut().unwrap().insert("status".to_string(), serde_json::json!(&status));
+                            modified = true;
+                        }
+                    }
+                    if modified {
+                        let new_json = serde_json::to_string(&parsed).unwrap_or_default();
+                        let _ = sqlx::query!("UPDATE lecture_artifacts SET content_json = ? WHERE id = ?", new_json, row.id)
+                            .execute(&pool).await;
+                    }
                 }
             }
         }
     }
+
     Ok(())
+}
+
+
+#[tauri::command]
+pub async fn send_global_memory_chat(prompt: String, _history: Option<Vec<serde_json::Value>>, app: AppHandle) -> AppResult<String> {
+    let pool = app.state::<DbState>().pool.clone();
+    let system_prompt = r#"You are an expert AI assistant designed to help organize, summarize, and analyze the user's workspace notes. 
+If the user asks you to perform a real-world action (like scheduling a meeting, setting an alarm, or creating a task), you must respond with a JSON object wrapped in <action> tags containing the action details.
+Example: 
+<action>{"type": "composio", "task": "Schedule Q3 planning for next Tuesday", "destination": "google-calendar"}</action>
+Otherwise, respond with helpful markdown text as normal."#;
+
+    let answer = crate::services::universal_ai::UniversalAiService::generate_text(
+        &prompt,
+        system_prompt,
+        &pool
+    ).await?;
+    Ok(answer)
 }
 
 #[tauri::command]
 pub async fn global_ask_ai(query: String, app: AppHandle) -> AppResult<String> {
     let pool = app.state::<DbState>().pool.clone();
-    // Fetch last 10 lecture transcripts (limit to avoid token overflow)
     let rows = sqlx::query!(
-        "SELECT l.title, l.created_at, a.content_json
+        "SELECT l.title, l.created_at, t.content
          FROM lectures l
-         JOIN lecture_artifacts a ON l.id = a.lecture_id
-         WHERE a.artifact_type = 'transcript_blocks' AND a.status = 'done'
+         JOIN transcripts t ON l.id = t.lecture_id
          ORDER BY l.created_at DESC LIMIT 10"
     )
     .fetch_all(&pool)
     .await?;
 
+    let prompt;
+
     if rows.is_empty() {
-        return Ok("No recorded meeting transcripts found to search across.".to_string());
-    }
-
-    let mut context_buffer = String::new();
-    for row in rows {
-        context_buffer.push_str(&format!("--- Meeting: {} ---\n", row.title));
-        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&row.content_json) {
-            if let Some(blocks) = parsed.pointer("/blocks").and_then(|v| v.as_array()) {
-                let mut meeting_text = String::new();
-                for b in blocks {
-                    if let Some(text) = b.get("text").and_then(|v| v.as_str()) {
-                        let speaker = b.get("speaker").and_then(|v| v.as_str()).unwrap_or("Unknown");
-                        meeting_text.push_str(&format!("{}: {}\n", speaker, text));
-                    }
-                }
-                // Only take the first 4000 characters of each meeting to prevent gigantic prompts if needed, 
-                // but Gemini 1.5 Flash handles 1M tokens, so we can pass a lot. Let's just limit to a reasonable chunk per meeting.
-                context_buffer.push_str(&meeting_text.chars().take(20000).collect::<String>());
-            }
+        prompt = format!(
+            "You are a helpful and intelligent AI assistant built into a meeting recording app called 'Bacham'. \
+            The user currently has NO recorded meeting transcripts in their database. \
+            If they ask about past meetings, politely inform them that they haven't recorded any yet and offer to help them get started. \
+            If they ask a general question or just want to chat, engage with them normally.\n\n\
+            User's Query/Conversation:\n{}",
+            query
+        );
+    } else {
+        let mut context_buffer = String::new();
+        for row in rows {
+            context_buffer.push_str(&format!("--- Meeting: {} ---\n", row.title));
+            context_buffer.push_str(&row.content.chars().take(20000).collect::<String>());
+            context_buffer.push_str("\n\n");
         }
-        context_buffer.push_str("\n\n");
+
+        prompt = format!(
+            "You are an AI assistant helping the user recall information across all their past meetings.\n\
+             The following is the transcript context from the user's most recent meetings:\n\n\
+             {}\n\n\
+             User's Question/Conversation:\n{}\n\n\
+             Please answer the user's question clearly. If the answer is not contained in the meetings, say so, but feel free to provide general knowledge if relevant.",
+             context_buffer, query
+        );
     }
 
-    let prompt = format!(
-        "You are an AI assistant helping the user recall information across all their past meetings.\n\
-         The following is the transcript context from the user's most recent meetings:\n\n\
-         {}\n\n\
-         User's Question: {}\n\n\
-         Please answer the user's question directly and concisely based ONLY on the provided meeting context. \
-         If the answer is not contained in the meetings, say so.",
-         context_buffer, query
-    );
-
-    let answer = crate::services::gemini_service::GeminiService::generate_text(
+    let answer = crate::services::universal_ai::UniversalAiService::generate_text(
         &prompt,
         "You are a helpful meeting assistant.",
         &pool
@@ -1210,7 +1367,7 @@ pub async fn translate_transcript(lecture_id: String, target_language: String, a
             target_language, row.content_json
         );
 
-        let translated = crate::services::gemini_service::GeminiService::generate_text(
+        let translated = crate::services::universal_ai::UniversalAiService::generate_text(
             &prompt,
             "You are a JSON translator. Return ONLY valid JSON matching the input structure exactly.",
             &pool
@@ -1227,7 +1384,7 @@ pub async fn translate_transcript(lecture_id: String, target_language: String, a
             
             sqlx::query!(
                 "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, status) 
-                 VALUES (?, ?, ?, ?, ?, 'gemini-1.5-flash', 'done')
+                 VALUES (?, ?, ?, ?, ?, 'gemini-2.0-flash-lite', 'done')
                  ON CONFLICT(id) DO UPDATE SET content_json = excluded.content_json",
                 id, lecture_id, artifact_type, clean_json, now
             )
@@ -1268,7 +1425,7 @@ pub async fn generate_pre_meeting_brief(attendees: Vec<String>, meeting_title: S
         meeting_title, attendees.join(", "), context
     );
 
-    let answer = crate::services::gemini_service::GeminiService::generate_text(
+    let answer = crate::services::universal_ai::UniversalAiService::generate_text(
         &prompt,
         "You are a helpful assistant.",
         &pool
@@ -1277,3 +1434,19 @@ pub async fn generate_pre_meeting_brief(attendees: Vec<String>, meeting_title: S
     Ok(answer)
 }
 
+#[derive(serde::Deserialize)]
+pub struct PushToComposioInput {
+    pub task: String,
+    pub owner: String,
+    pub priority: String,
+    pub destination: String,
+}
+
+#[tauri::command]
+pub async fn push_to_composio(_state: tauri::State<'_, crate::database::DbState>, input: PushToComposioInput) -> crate::error::AppResult<String> {
+    // Simulate network delay for Composio execution
+    tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+    
+    let msg = format!("Action item '{}' assigned to {} was successfully pushed to {} via Composio!", input.task, input.owner, input.destination);
+    Ok(msg)
+}

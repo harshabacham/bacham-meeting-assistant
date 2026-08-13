@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { X, Copy, Check, ExternalLink, Mail, Loader2, ChevronRight, Hash } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Copy, Check, Mail, Loader2, ChevronRight, PlugZap, FileText } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
+import { pluginManager } from '@/core/integrations/PluginManager';
+import { BachamPlugin } from '@/core/integrations/types';
+import jsPDF from 'jspdf';
 
 interface ExportPushDialogProps {
   isOpen: boolean;
@@ -89,10 +93,26 @@ function IntegrationCard({
 
 export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artifacts }: ExportPushDialogProps) {
   const [copied, setCopied] = useState(false);
-  const [isSlackSending, setIsSlackSending] = useState(false);
-  const [isNotionSending, setIsNotionSending] = useState(false);
-  const [slackStatus, setSlackStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [notionStatus, setNotionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [exportPlugins, setExportPlugins] = useState<BachamPlugin[]>([]);
+  const [pluginStatuses, setPluginStatuses] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({});
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadPlugins = async () => {
+        const allPlugins = pluginManager.getPlugins().filter(p => p.actions?.export);
+        const connectedPlugins = [];
+        for (const p of allPlugins) {
+          const connected = p.auth?.type === 'none' ? true : await p.auth?.isConnected?.();
+          if (connected) {
+            connectedPlugins.push(p);
+          }
+        }
+        setExportPlugins(connectedPlugins);
+      };
+      loadPlugins();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -110,46 +130,42 @@ export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artif
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
   };
 
-  const handleSlackShare = async () => {
-    const webhookUrl = localStorage.getItem('slack_webhook_url');
-    if (!webhookUrl) {
-      alert('Please configure your Slack webhook URL in Settings → Integrations first.');
-      return;
-    }
-    setIsSlackSending(true);
-    setSlackStatus('idle');
+  const handlePluginExport = async (plugin: BachamPlugin) => {
+    if (!plugin.actions?.export) return;
+    
+    setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'loading' }));
     try {
-      const payload = {
-        text: `*Meeting Notes: ${lectureTitle}*\n\n${summary?.substring(0, 400) || 'No summary available.'}${summary && summary.length > 400 ? '...' : ''}`
-      };
-      await fetch(webhookUrl, { method: 'POST', body: JSON.stringify(payload) });
-      setSlackStatus('success');
-    } catch {
-      setSlackStatus('error');
-    } finally {
-      setIsSlackSending(false);
+      const data = { title: lectureTitle, summary, content: markdownContent };
+      await plugin.actions.export(data);
+      setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'success' }));
+      setTimeout(() => setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'idle' })), 3000);
+    } catch (e: any) {
+      console.error('[Export Error]', e);
+      showToast(`Export Failed: ${e.message}`, 'error');
+      setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'error' }));
+      setTimeout(() => setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'idle' })), 4000);
     }
   };
 
-  const handleNotionShare = async () => {
-    const webhookUrl = localStorage.getItem('notion_webhook_url');
-    if (!webhookUrl) {
-      alert('Please configure your Notion webhook URL in Settings → Integrations first.');
-      return;
-    }
-    setIsNotionSending(true);
-    setNotionStatus('idle');
+  const handleExportMarkdownFile = () => {
     try {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: lectureTitle, content: markdownContent }),
-      });
-      setNotionStatus('success');
-    } catch {
-      setNotionStatus('error');
-    } finally {
-      setIsNotionSending(false);
+      const safeTitle = lectureTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const blob = new Blob([markdownContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeTitle}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast('Exported Markdown file successfully!', 'success');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to export markdown file.', 'error');
     }
   };
 
@@ -157,11 +173,11 @@ export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artif
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-[var(--surface)] border border-border/60 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="relative bg-[var(--surface)] border border-border/60 rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border/40">
+        <div className="flex items-center justify-between p-5 border-b border-border/40 shrink-0">
           <div>
             <h2 className="text-base font-semibold text-foreground">Share & Export</h2>
             <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[280px]">{lectureTitle}</p>
@@ -172,8 +188,8 @@ export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artif
         </div>
 
         {/* Integrations */}
-        <div className="p-5 space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">Export Options</p>
+        <div className="p-5 space-y-3 overflow-y-auto">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">Basic Options</p>
 
           <IntegrationCard
             icon={copied ? Check : Copy}
@@ -185,6 +201,15 @@ export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artif
           />
 
           <IntegrationCard
+            icon={FileText}
+            title="Export Markdown File"
+            description="Save as a local .md file for Obsidian or Notion"
+            action={handleExportMarkdownFile}
+            actionLabel="Save"
+            color="green"
+          />
+
+          <IntegrationCard
             icon={Mail}
             title="Share via Email"
             description="Open email client with notes pre-filled"
@@ -192,34 +217,62 @@ export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artif
             actionLabel="Open"
             color="blue"
           />
-
+          
           <IntegrationCard
-            icon={Hash}
-            title="Push to Slack"
-            description={slackStatus === 'success' ? '✓ Sent!' : slackStatus === 'error' ? '✗ Failed — check webhook URL' : 'Post summary to your Slack channel'}
-            action={handleSlackShare}
-            actionLabel="Send"
-            isLoading={isSlackSending}
+            icon={FileText}
+            title="Export as PDF"
+            description="Download notes as a PDF document"
+            action={() => {
+              const doc = new jsPDF();
+              // Add a nice header
+              doc.setFontSize(18);
+              doc.text(lectureTitle, 15, 20);
+              doc.setFontSize(10);
+              doc.setTextColor(100, 100, 100);
+              doc.text(`Generated by Bacham — ${new Date().toLocaleDateString()}`, 15, 28);
+              doc.setTextColor(0, 0, 0);
+              
+              // Add content
+              doc.setFontSize(12);
+              const contentLines = markdownContent.split('\n').filter(line => !line.startsWith('# '));
+              const splitText = doc.splitTextToSize(contentLines.join('\n'), 180);
+              doc.text(splitText, 15, 40);
+              doc.save(`${lectureTitle}.pdf`);
+            }}
+            actionLabel="Save"
             color="green"
           />
 
-          <IntegrationCard
-            icon={ExternalLink}
-            title="Push to Notion"
-            description={notionStatus === 'success' ? '✓ Sent!' : notionStatus === 'error' ? '✗ Failed — check webhook URL' : 'Create a new page in your Notion workspace'}
-            action={handleNotionShare}
-            actionLabel="Push"
-            isLoading={isNotionSending}
-            color="purple"
-          />
-        </div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mt-6 mb-3">Your Connected Plugins</p>
+          
+          {exportPlugins.length === 0 ? (
+            <div className="bg-surface/50 border border-border/40 rounded-2xl p-6 text-center">
+               <PlugZap size={24} className="mx-auto text-muted-foreground/50 mb-3" />
+               <h3 className="text-sm font-medium text-foreground">No plugins connected</h3>
+               <p className="text-xs text-muted-foreground mt-1">Go to Settings &rarr; Integrations to connect Notion, Slack, and more.</p>
+            </div>
+          ) : (
+            exportPlugins.map(plugin => {
+              const status = pluginStatuses[plugin.manifest.id] || 'idle';
+              const isSending = status === 'loading';
+              let desc = plugin.manifest.description;
+              if (status === 'success') desc = '✓ Export successful!';
+              if (status === 'error') desc = '✗ Export failed. Check connection.';
 
-        {/* Footer */}
-        <div className="px-5 pb-5">
-          <p className="text-[10px] text-muted-foreground/50 text-center">
-            Configure Slack & Notion webhook URLs in{' '}
-            <span className="text-primary/70">Settings → Integrations</span>
-          </p>
+              return (
+                <IntegrationCard
+                  key={plugin.manifest.id}
+                  icon={PlugZap}
+                  title={`Send to ${plugin.manifest.name}`}
+                  description={desc}
+                  action={() => handlePluginExport(plugin)}
+                  actionLabel={isSending ? 'Sending' : 'Send'}
+                  isLoading={isSending}
+                  color="purple"
+                />
+              );
+            })
+          )}
         </div>
       </div>
     </div>

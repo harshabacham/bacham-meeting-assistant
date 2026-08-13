@@ -17,6 +17,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    modulePreload: false,
     rollupOptions: {
       input: {
         offscreen: 'src/offscreen/offscreen.html',

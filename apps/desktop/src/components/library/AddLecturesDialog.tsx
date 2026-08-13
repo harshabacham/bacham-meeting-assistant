@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { X, Search, Check } from 'lucide-react';
 import { cn } from '@/components';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface AddLecturesDialogProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
     const [query, setQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isSaving, setIsSaving] = useState(false);
+    const { showToast } = useToast();
 
     // Filter lectures that are NOT in the current folder and not archived
     const availableLectures = lectures.filter(l => l.folderId !== folderId && !l.isArchived);
@@ -50,7 +52,7 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
             await moveLectures(Array.from(selectedIds), folderId);
             onClose();
         } catch (err: any) {
-            alert(`Error adding lectures: ${err.message}`);
+            showToast(`Error adding lectures: ${err.message}`, 'error');
         } finally {
             setIsSaving(false);
         }

@@ -4,6 +4,7 @@ import { Conversation, ChatScope } from '../types';
 import { Plus, Search, Settings, X, Star, Pencil, Trash2 } from 'lucide-react';
 import { ProviderSettings } from './ProviderSettings';
 import { cn } from '@/components';
+import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 
 interface WorkspaceSidebarProps {
     onSelectConversation: (conv: Conversation) => void;
@@ -17,6 +18,7 @@ export function WorkspaceSidebar({ onSelectConversation, selectedId, onCreateNew
     const [activeFilter, setActiveFilter] = useState<'all' | 'pinned'>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const { showConfirm } = useConfirmStore();
 
     useEffect(() => {
         loadConversations();
@@ -142,7 +144,8 @@ export function WorkspaceSidebar({ onSelectConversation, selectedId, onCreateNew
                                 <button
                                     onClick={async (e) => {
                                         e.stopPropagation();
-                                        if (confirm("Are you sure you want to delete this conversation?")) {
+                                        const ok = await showConfirm("Are you sure you want to delete this conversation?");
+                                        if (ok) {
                                             await TauriClient.deleteConversation(conv.id);
                                             loadConversations();
                                         }

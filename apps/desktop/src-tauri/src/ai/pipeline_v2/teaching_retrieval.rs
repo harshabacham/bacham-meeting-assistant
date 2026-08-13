@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 use crate::error::AppResult;
-use crate::services::gemini_service::{GeminiService, REFUSAL_STRING};
+use crate::services::gemini_service::REFUSAL_STRING;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -123,7 +123,7 @@ Rules for Response:
             visuals_str
         );
 
-        let raw_res = GeminiService::generate_text_with_model(&prompt, &system_instruction, pool, "gemini-3.1-flash-lite").await?;
+        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, &system_instruction, pool).await?;
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         if clean_res.contains(REFUSAL_STRING) || clean_res.to_lowercase().contains("couldn't find that information") {
@@ -209,7 +209,7 @@ Return ONLY valid JSON matching this schema:
 Raw JSON array only."#;
 
         let prompt = format!("Course: {}\nLectures:\n{}", course_label, lecture_summaries.join("\n"));
-        let raw_res = GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?;
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         let parsed: Vec<serde_json::Value> = serde_json::from_str(clean_res).unwrap_or_default();

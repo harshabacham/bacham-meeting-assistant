@@ -1,4 +1,5 @@
 import { Play, Clock, BookOpen, Hash, BarChart } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Lecture } from '@/shared/types';
 
 interface OverviewTabProps {
@@ -18,7 +19,12 @@ export function OverviewTab({ lecture, artifacts, thumbnailSrc, onJumpToVideo }:
     <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500 pb-12">
       
       {/* Hero Card */}
-      <div className="bg-surface border border-border/50 rounded-2xl overflow-hidden flex flex-col md:flex-row group hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        className="relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl flex flex-col md:flex-row group shadow-2xl"
+      >
         <div className="md:w-1/3 relative h-48 md:h-auto bg-background shrink-0">
           {thumbnailSrc ? (
             <img src={thumbnailSrc} alt="Thumbnail" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
@@ -54,7 +60,7 @@ export function OverviewTab({ lecture, artifacts, thumbnailSrc, onJumpToVideo }:
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -66,7 +72,12 @@ export function OverviewTab({ lecture, artifacts, thumbnailSrc, onJumpToVideo }:
 
       {/* Key Concepts Tags */}
       {keyConcepts.length > 0 && (
-        <div className="bg-surface border border-border/50 rounded-2xl p-6 md:p-8 group hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.1 }}
+          className="relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl"
+        >
           <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
             <Hash size={18} className="text-[var(--accent)]" /> 
             Core Concepts
@@ -80,8 +91,8 @@ export function OverviewTab({ lecture, artifacts, thumbnailSrc, onJumpToVideo }:
                 </span>
               );
             })}
-          </div>
-        </div>
+            </div>
+        </motion.div>
       )}
 
     </div>
@@ -90,12 +101,21 @@ export function OverviewTab({ lecture, artifacts, thumbnailSrc, onJumpToVideo }:
 
 function StatCard({ icon: Icon, label, value }: { icon: any, label: string, value: string }) {
   return (
-    <div className="bg-surface border border-border/50 rounded-xl p-4 flex flex-col gap-2 group hover:-translate-y-1 hover:border-[var(--border-accent)] transition-all duration-300">
-      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-        <Icon size={14} />
-        <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2, scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex flex-col gap-2 shadow-xl group"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+          <Icon size={14} />
+          <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
+        </div>
+        <div className="text-xl sm:text-2xl font-semibold text-foreground">{value}</div>
       </div>
-      <div className="text-xl sm:text-2xl font-semibold text-foreground">{value}</div>
-    </div>
+    </motion.div>
   );
 }

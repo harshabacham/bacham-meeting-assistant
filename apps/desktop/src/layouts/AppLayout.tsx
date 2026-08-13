@@ -8,7 +8,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, Sparkles, CheckSquare, Radio
+    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, CheckSquare, Sparkles, Plus
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
@@ -18,12 +18,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useSearchStore } from '@/features/search/searchStore';
 import { InlineAIToolbar } from '@/components/command_center/InlineAIToolbar';
+
 import { GlobalQuickLookModal } from '@/components/command_center/GlobalQuickLookModal';
-import { LiveWingman } from '@/components/ui/LiveWingman';
+import { GoogleCalendarSyncModal } from '@/components/dashboard/GoogleCalendarSyncModal';
+import { GlobalAskAI } from '@/components/dashboard/GlobalAskAI';
+import { TauriClient } from '@/infrastructure/tauri-client';
+import { AutoRecordWatcher } from '@/components/AutoRecordWatcher';
 
 const STUDENT_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/lectures', label: 'Library', icon: Library },
+    { path: '/knowledge', label: 'Knowledge Base', icon: BrainCircuit },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
 ];
@@ -31,6 +36,7 @@ const STUDENT_NAV_ITEMS = [
 const PRO_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/lectures', label: 'Meetings', icon: Library },
+    { path: '/knowledge', label: 'Knowledge Base', icon: BrainCircuit },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Action Items', icon: CheckSquare },
 ];
@@ -39,6 +45,7 @@ const PRO_NAV_ITEMS = [
 const SETTINGS_NAV_ITEMS = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'pets', label: 'Pets', icon: Sparkles },
     { id: 'integrations', label: 'Integrations', icon: BrainCircuit },
     { id: 'storage', label: 'Storage', icon: Database },
 ];
@@ -82,6 +89,44 @@ export function AppLayout() {
         };
     }, [navigate]);
 
+    // Auto-navigate to live workspace when a meeting starts
+    useEffect(() => {
+        let isNavigating = false;
+        
+        const unlistenCaption = listen('live_caption_received', () => {
+            if (sessionStorage.getItem('ignore_live_nav') === 'true') return;
+            if (!isNavigating && location.pathname !== '/live') {
+                isNavigating = true;
+                navigate('/live');
+                setTimeout(() => { isNavigating = false; }, 2000); // debounce
+            }
+        });
+
+        const unlistenAutoWake = listen('auto_wake_live', async () => {
+            sessionStorage.removeItem('ignore_live_nav'); // clear ignore state
+            if (!isNavigating && location.pathname !== '/live') {
+                isNavigating = true;
+                navigate('/live');
+                setTimeout(() => { isNavigating = false; }, 2000);
+            }
+            try {
+                // Tauri v2 Window API to wake up
+                const { getCurrentWindow } = await import('@tauri-apps/api/window');
+                const win = getCurrentWindow();
+                await win.unminimize();
+                await win.show();
+                await win.setFocus();
+            } catch (err) {
+                console.error("Failed to auto wake window:", err);
+            }
+        });
+
+        return () => {
+            unlistenCaption.then(f => f());
+            unlistenAutoWake.then(f => f());
+        };
+    }, [location.pathname, navigate]);
+
     useEffect(() => {
         initialize();
     }, [initialize]);
@@ -114,6 +159,18 @@ export function AppLayout() {
     
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 relative z-0">
+            <AutoRecordWatcher />
+            {/* Invisible Drag Region across the very top */}
+            <div data-tauri-drag-region className="absolute top-0 left-0 right-0 h-8 z-[90]" />
+
+            {/* Native-style Window Controls (Top Right) */}
+            <div className="absolute top-0 right-0 h-12 z-[100] flex items-center justify-end pr-6">
+                <div className="flex items-center gap-2.5">
+                    <button onClick={() => TauriClient.minimize()} className="w-3 h-3 rounded-full bg-[#FFC15E] hover:bg-[#ffb040] shadow-[0_0_8px_rgba(255,193,94,0.2)] transition-all active:scale-95 cursor-default" title="Minimize" />
+                    <button onClick={() => TauriClient.maximize()} className="w-3 h-3 rounded-full bg-[#5EFF9F] hover:bg-[#40ff80] shadow-[0_0_8px_rgba(94,255,159,0.2)] transition-all active:scale-95 cursor-default" title="Maximize" />
+                    <button onClick={() => TauriClient.close()} className="w-3 h-3 rounded-full bg-[#FF5E5E] hover:bg-[#ff4040] shadow-[0_0_8px_rgba(255,94,94,0.2)] transition-all active:scale-95 cursor-default" title="Close" />
+                </div>
+            </div>
             {/* Global Ambient Background Effects */}
             <div className="absolute inset-0 bg-gradient-to-br from-transparent to-surface-raised/50 z-[-1] pointer-events-none" />
             <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-[-1]" />
@@ -134,36 +191,33 @@ export function AppLayout() {
                 {isSidebarOpen && (
                     <motion.aside 
                         initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 240, opacity: 1 }}
+                        animate={{ width: 200, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 350, damping: 38, mass: 0.8 }}
-                        className="bg-background/95 shrink-0 flex flex-col z-20 relative overflow-hidden border-r border-white/5 backdrop-blur-2xl h-full"
+                        className="bg-surface shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full shadow-[2px_0_8px_rgba(0,0,0,0.05)]"
                     >
+                        {/* Absolutely positioned Sidebar Toggle to perfectly align horizontally with h-12 Window Controls */}
+                        <div className="absolute top-0 right-0 h-12 w-16 flex items-center justify-end pr-4 z-50">
+                            <button 
+                                onClick={() => setIsSidebarOpen(false)}
+                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-border/50"
+                                title="Close Sidebar"
+                            >
+                                <Sidebar size={14} strokeWidth={2.5} />
+                            </button>
+                        </div>
+
                         {/* Content Area (Contextual) */}
-                        <div className="flex-1 overflow-y-auto flex flex-col relative px-3 py-4 scrollbar-hide">
+                        <div className="flex-1 overflow-y-auto flex flex-col relative px-3 pt-14 pb-4 scrollbar-hide">
                             
-                            {/* Top Left Toggle Button (Always visible when open) */}
-                            <div className="mb-4 flex justify-between items-center px-1">
-                                <button 
-                                    onClick={() => setIsSidebarOpen(false)}
-                                    className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-border/50"
-                                >
-                                    <Sidebar size={14} strokeWidth={2.5} />
-                                </button>
-                                
-                                {isSettingsRoute ? (
+                            {/* Top Action Button */}
+                            <div className="mb-4 flex items-center px-1">
+                                {isSettingsRoute && (
                                     <button 
                                         onClick={() => navigate('/')}
                                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-foreground transition-colors bg-surface shadow-sm border border-border"
                                     >
                                         <ChevronLeft size={12} /> Home
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => setAppMode(appMode === 'student' ? 'professional' : 'student')}
-                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold text-foreground transition-all bg-surface/50 hover:bg-surface shadow-sm border border-white/5 uppercase tracking-wider"
-                                    >
-                                        {appMode === 'student' ? '🎓 Student Mode' : '💼 Pro Mode'}
                                     </button>
                                 )}
                             </div>
@@ -193,8 +247,10 @@ export function AppLayout() {
                                         
                                         <nav className="space-y-0.5 w-full">
                                             {SETTINGS_NAV_ITEMS.map((item) => (
-                                                <button
+                                                <motion.button
                                                     key={item.id}
+                                                    whileHover={{ scale: 1.02, x: 2 }}
+                                                    whileTap={{ scale: 0.98 }}
                                                     onClick={() => setSearchParams({ tab: item.id })}
                                                     className={cn(
                                                         "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors duration-200 outline-none group text-[12px] font-medium",
@@ -205,7 +261,7 @@ export function AppLayout() {
                                                 >
                                                     <item.icon size={14} strokeWidth={2.5} className={activeSettingsTab === item.id ? "text-primary" : "text-muted-foreground"} />
                                                     {item.label}
-                                                </button>
+                                                </motion.button>
                                             ))}
                                         </nav>
                                     </motion.div>
@@ -220,20 +276,20 @@ export function AppLayout() {
                                     >
                                         {/* Search Bar */}
                                         <button 
-                                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-background/40 hover:bg-[var(--overlay-hover)] hover:border-border transition-all duration-150 group cursor-text focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg border border-border/50 bg-background/40 hover:bg-[var(--overlay-hover)] hover:border-border transition-all duration-150 group cursor-text focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             onClick={() => openSearch()}
                                         >
                                             <div className="flex items-center gap-2">
-                                                <Search size={13} className="text-muted-foreground/70" />
-                                                <span className="text-[12px] text-muted-foreground/70">Search</span>
+                                                <Search size={12} className="text-muted-foreground/70" />
+                                                <span className="text-[11px] text-muted-foreground/70">Search</span>
                                             </div>
-                                            <kbd className="text-[10px] font-mono text-muted-foreground/50 bg-muted/50 px-1.5 py-0.5 rounded border border-border/50">⌘K</kbd>
+                                            <kbd className="text-[9px] font-mono text-muted-foreground/50 bg-muted/50 px-1 py-0.5 rounded border border-border/50">⌘K</kbd>
                                         </button>
 
                                         <nav className="space-y-0.5">
                                             {MAIN_NAV_ITEMS.map(item => (
+                                                <motion.div key={item.path} whileHover={{ scale: 1.02, x: 2 }} whileTap={{ scale: 0.98 }}>
                                                 <Link 
-                                                    key={item.path} 
                                                     to={item.path} 
                                                     className="block outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
                                                     onClick={() => {
@@ -245,7 +301,7 @@ export function AppLayout() {
                                                 >
                                                     <div 
                                                         className={cn(
-                                                            'relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium transition-all duration-150',
+                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-all duration-150',
                                                             isActive(item.path)
                                                                 ? 'bg-primary/10 text-primary'
                                                                 : 'text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground'
@@ -254,13 +310,14 @@ export function AppLayout() {
                                                         {isActive(item.path) && (
                                                             <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
                                                         )}
-                                                        <item.icon size={14} strokeWidth={2} className={cn(
+                                                        <item.icon size={13} strokeWidth={2} className={cn(
                                                             'transition-colors duration-150',
                                                             isActive(item.path) ? 'text-primary' : 'text-muted-foreground'
                                                         )} />
                                                         <span>{item.label}</span>
                                                     </div>
                                                 </Link>
+                                                </motion.div>
                                             ))}
                                         </nav>
                                         
@@ -280,7 +337,7 @@ export function AppLayout() {
                                                 <Link key={item.id} to={`/lectures?view=${item.id}`} className="block outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring">
                                                     <div 
                                                         className={cn(
-                                                            'relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium transition-all duration-150',
+                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-all duration-150',
                                                             location.pathname === '/lectures' && searchParams.get('view') === item.id
                                                                 ? 'bg-primary/10 text-primary'
                                                                 : 'text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground'
@@ -295,7 +352,7 @@ export function AppLayout() {
                                                         {(location.pathname === '/lectures' && searchParams.get('view') === item.id) && (
                                                             <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
                                                         )}
-                                                        <item.icon size={14} strokeWidth={2} className={cn(
+                                                        <item.icon size={13} strokeWidth={2} className={cn(
                                                             'transition-colors duration-150',
                                                             (location.pathname === '/lectures' && searchParams.get('view') === item.id) ? 'text-primary' : 'text-muted-foreground'
                                                         )} />
@@ -308,17 +365,30 @@ export function AppLayout() {
 
 
                                         <div className="flex-1 mt-4">
-                                            <button 
-                                                onClick={() => setIsFoldersOpen(!isFoldersOpen)}
-                                                className="w-full px-2.5 mb-1 flex items-center gap-1.5 text-left hover:text-foreground transition-colors group outline-none"
-                                            >
-                                                {isFoldersOpen ? (
-                                                    <ChevronDown size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                                                ) : (
-                                                    <ChevronRight size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                                                )}
-                                                <span className="text-[11px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider">Folders</span>
-                                            </button>
+                                            <div className="w-full px-2.5 mb-1 flex items-center justify-between group">
+                                                <button 
+                                                    onClick={() => setIsFoldersOpen(!isFoldersOpen)}
+                                                    className="flex flex-1 items-center gap-1.5 text-left hover:text-foreground transition-colors outline-none"
+                                                >
+                                                    {isFoldersOpen ? (
+                                                        <ChevronDown size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                    ) : (
+                                                        <ChevronRight size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                    )}
+                                                    <span className="text-[11px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider">Folders</span>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!isFoldersOpen) setIsFoldersOpen(true);
+                                                        setTimeout(() => window.dispatchEvent(new CustomEvent('trigger-create-folder')), 50);
+                                                    }}
+                                                    className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground outline-none"
+                                                    title="New Folder"
+                                                >
+                                                    <Plus size={14} />
+                                                </button>
+                                            </div>
                                             
                                             {/* We embed FolderSidebar but override styling heavily */}
                                             {isFoldersOpen && (
@@ -334,7 +404,9 @@ export function AppLayout() {
                                                         onSelectFolder={(id) => {
                                                             setSystemView('all');
                                                             setSelectedFolderId(id);
-                                                            navigate('/lectures');
+                                                            if (!location.pathname.startsWith('/notes')) {
+                                                                navigate('/lectures');
+                                                            }
                                                         }}
                                                     />
                                                 </div>
@@ -357,8 +429,31 @@ export function AppLayout() {
                                 </button>
                             ) : (
                                 <>
+                                    <div className="flex items-center gap-1.5 w-full">
+                                        <button 
+                                            onClick={async () => {
+                                                sessionStorage.removeItem('ignore_live_nav');
+                                                await TauriClient.startNativeRecording();
+                                                navigate('/live');
+                                            }}
+                                            className="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-1 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors duration-200 outline-none group text-[10px] font-bold tracking-wide border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+                                        >
+                                            <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                                            <span className="truncate">Record</span>
+                                        </button>
+                                        {/* Mode Switcher */}
+                                        {!isSettingsRoute && (
+                                            <button
+                                                onClick={() => setAppMode(appMode === 'student' ? 'professional' : 'student')}
+                                                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-1 py-1.5 rounded-lg text-[10px] font-semibold text-foreground transition-all bg-background/50 hover:bg-surface-hover shadow-sm border border-border uppercase tracking-wider"
+                                            >
+                                                <span className="truncate">{appMode === 'student' ? '🎓 Student' : '💼 Pro'}</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    
                                     {/* Profile Summary block */}
-                                    <ProfileDropdown className="w-full mt-1" />
+                                    <ProfileDropdown className="w-full mt-2" />
                                 </>
                             )}
                         </div>
@@ -366,47 +461,16 @@ export function AppLayout() {
                 )}
             </AnimatePresence>
 
-            {/* Collapsed Sidebar Handle */}
+            {/* Floating Re-open Button when Sidebar is Closed */}
             {!isSidebarOpen && (
-                <div className="flex flex-col items-center py-3 shrink-0 w-14 transition-all z-20 border-r border-white/5 bg-background/95 backdrop-blur-2xl">
+                <div className="absolute top-0 left-0 h-16 w-16 flex items-center justify-start pl-4 z-[100]">
                     <button
-                        className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-[var(--overlay-hover)] transition-all duration-150 mb-3"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm"
                         onClick={() => setIsSidebarOpen(true)}
-                        title="Expand Sidebar"
+                        title="Open Sidebar"
                     >
-                        <Sidebar size={15} strokeWidth={2} />
+                        <Sidebar size={14} strokeWidth={2.5} />
                     </button>
-                    
-                    <div className="flex flex-col gap-1 w-full items-center px-2">
-                        {MAIN_NAV_ITEMS.map(item => (
-                            <Link 
-                                key={item.path} 
-                                to={item.path} 
-                                className="outline-none w-full rounded-lg focus-visible:ring-2 focus-visible:ring-ring" 
-                                title={item.label}
-                                onClick={() => {
-                                    if (item.path === '/lectures') {
-                                        setSystemView('all');
-                                        setSelectedFolderId(null);
-                                    }
-                                }}
-                            >
-                                <div className={cn(
-                                    "relative flex justify-center p-2 rounded-lg transition-all duration-150 cursor-pointer w-full",
-                                    isActive(item.path) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground"
-                                )}>
-                                    {isActive(item.path) && (
-                                        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
-                                    )}
-                                    <item.icon size={15} strokeWidth={2} />
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                    
-                    <div className="mt-auto mb-2 w-full px-2">
-                        <ProfileDropdown collapsed={true} className="w-full flex justify-center" />
-                    </div>
                 </div>
             )}
 
@@ -418,7 +482,8 @@ export function AppLayout() {
             {/* AI Learning Command Center Components */}
             <InlineAIToolbar />
             <GlobalQuickLookModal />
-            <LiveWingman />
+            <GoogleCalendarSyncModal />
+            <GlobalAskAI />
 
             {/* Global Styles for FolderTree override */}
             <style>{`

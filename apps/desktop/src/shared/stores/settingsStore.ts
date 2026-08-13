@@ -22,8 +22,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     aiMaxRetries: 5,
     workspacePanelSizes: [20, 55, 25],
     geminiApiKeySet: false,
+    speakerMapping: {},
+    autoExportMarkdown: false,
+    markdownExportPath: '',
+    transcriptionEngine: 'gemini',
+    autoStartRecording: true,
   },
-  isLoading: true,
+  isLoading: false,
 
   fetchSettings: async () => {
     set({ isLoading: true });

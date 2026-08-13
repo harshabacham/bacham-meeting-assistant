@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Play, Square, TimerReset } from 'lucide-react';
 import { cn } from '@/components';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export function FocusTimer() {
     const [timeLeft, setTimeLeft] = useState(25 * 60);
     const [isRunning, setIsRunning] = useState(false);
     const [mode, setMode] = useState<'focus' | 'break'>('focus');
+    const { showToast } = useToast();
 
     const totalTime = mode === 'focus' ? 25 * 60 : 5 * 60;
     const progress = ((totalTime - timeLeft) / totalTime) * 100;
@@ -28,7 +30,7 @@ export function FocusTimer() {
                     });
                 }
             } else {
-                alert(msg);
+                showToast(msg);
             }
 
             if (mode === 'focus') {

@@ -1,0 +1,14 @@
+{
+  "dashboard": {
+    "title": "Welcome to Bacham",
+    "subtitle": "Your Visual Meeting Copilot"
+  },
+  "settings": {
+    "language": "Language",
+    "english": "English",
+    "spanish": "Spanish",
+    "french": "French",
+    "japanese": "Japanese",
+    "hindi": "Hindi"
+  }
+}

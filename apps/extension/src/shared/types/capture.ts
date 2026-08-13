@@ -9,7 +9,7 @@ export interface CaptureConfig {
    */
   readonly screenshotIntervalMs?: number;
   /** Whether to capture the current tab or the entire screen. Defaults to 'tab' if omitted. */
-  readonly captureMode?: 'tab' | 'screen';
+  readonly captureMode?: 'tab' | 'screen' | 'walkthrough';
 }
 
 /** Detected lecture platform for metadata enrichment. */

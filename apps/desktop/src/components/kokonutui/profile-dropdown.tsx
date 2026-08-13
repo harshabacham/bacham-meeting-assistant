@@ -35,23 +35,21 @@ interface MenuItem {
   onClick?: (e?: any) => void;
   danger?: boolean;
 }
-
-const SAMPLE_PROFILE_DATA: Profile = {
-  name: "Eugene An",
-  email: "eugene@kokonutui.com",
-  avatar:
-    "https://ferf1mheo22r9ira.public.blob.vercel-storage.com/profile-mjss82WnWBRO86MHHGxvJ2TVZuyrDv.jpeg",
-  subscription: "PRO",
-  model: "Gemini 2.0 Flash",
-};
-
 interface ProfileDropdownProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'data'> {
   data?: Profile;
   collapsed?: boolean;
 }
 
+const DEFAULT_GUEST_PROFILE: Profile = {
+  name: "Guest User",
+  email: "guest@bacham.app",
+  avatar: "",
+  subscription: "FREE",
+  model: "Gemini 2.0 Flash",
+};
+
 export default function ProfileDropdown({
-  data = SAMPLE_PROFILE_DATA,
+  data = DEFAULT_GUEST_PROFILE,
   className,
   collapsed = false,
   ...props

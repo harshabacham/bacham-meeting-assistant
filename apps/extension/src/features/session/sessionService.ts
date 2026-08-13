@@ -61,6 +61,7 @@ export function createSessionService(
       tabTitle,
       tabUrl,
       ...(intent.courseLabel !== undefined ? { courseLabel: intent.courseLabel } : {}),
+      ...(intent.captureMode !== undefined ? { captureMode: intent.captureMode } : {}),
       state: 'connecting',
       pausedDurationMs: 0,
     };

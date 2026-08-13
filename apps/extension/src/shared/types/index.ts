@@ -21,6 +21,7 @@ export type {
   DeleteLecturePayload,
   RenameLecturePayload,
   TriggerSnapshotPayload,
+  MuteStatePayload,
   ConnectionStatus,
   BackgroundState,
   InternalMessage,

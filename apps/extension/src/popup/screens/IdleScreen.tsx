@@ -80,11 +80,17 @@ export function IdleScreen({ onStart, isLoading, onOpenApp }: IdleScreenProps): 
         {!isConnected && (
           <div className="flex items-start gap-3 p-3.5 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
             <AlertCircle size={16} className="mt-0.5 shrink-0 text-[var(--warning)]" />
-            <div>
+            <div className="flex-1">
               <p className="text-[12px] font-bold text-[var(--text-primary)]">Desktop App Disconnected</p>
-              <p className="text-[11px] mt-0.5 text-[var(--text-secondary)]">
+              <p className="text-[11px] mt-0.5 text-[var(--text-secondary)] mb-2">
                 Please open the BACHAM app to enable recording.
               </p>
+              <button 
+                onClick={() => chrome.runtime.sendMessage({ type: 'RETRY_CONNECTION' })}
+                className="text-[10px] font-bold uppercase tracking-wider bg-[var(--bg)] px-3 py-1.5 rounded-md hover:bg-[var(--surface-hover)] border border-[var(--border)] transition-colors text-[var(--text-primary)]"
+              >
+                Retry Connection
+              </button>
             </div>
           </div>
         )}

@@ -4,6 +4,8 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useFolderStore } from '@/shared/stores/folderStore';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import { MultiSelectBar } from '@/components/library/MultiSelectBar';
 import { FilterPanel } from '@/components/library/FilterPanel';
 import { FolderDashboard } from '@/components/library/FolderDashboard';
@@ -12,11 +14,11 @@ import { KnowledgeGraphView } from '@/components/library/KnowledgeGraphView';
 import { FilterQuery } from '@/infrastructure/tauri-client';
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
-    Trash2, Filter, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, FileText, BrainCircuit, Network
+    Trash2, Filter, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { cn, Button } from '@/components';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type ViewMode = 'grid' | 'list' | 'graph';
 type SortMode = 'recent' | 'title' | 'duration';
@@ -30,6 +32,8 @@ export function LibraryPage() {
     const { folderTree } = useFolderStore();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { showToast } = useToast();
+    const { showConfirm } = useConfirmStore();
 
     useLearningContext({
         type: 'library',
@@ -45,18 +49,9 @@ export function LibraryPage() {
     const [groupByCourse] = useState(false);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [currentFilter, setCurrentFilter] = useState<FilterQuery | null>(null);
-    const [toastMessage, setToastMessage] = useState<{ id: string, message: string, action?: { label: string, onClick: () => void } } | null>(null);
     const [showProperties, setShowProperties] = useState(false);
     const [showFolderDashboard, setShowFolderDashboard] = useState(true);
     const [quickLookLecture, setQuickLookLecture] = useState<Lecture | null>(null);
-
-    const showToast = useCallback((message: string, action?: { label: string, onClick: () => void }) => {
-        const id = Date.now().toString();
-        setToastMessage({ id, message, action });
-        setTimeout(() => {
-            setToastMessage(prev => prev?.id === id ? null : prev);
-        }, 8000);
-    }, []);
 
     useEffect(() => {
         setShowFolderDashboard(true);
@@ -98,11 +93,6 @@ export function LibraryPage() {
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
                 if (new Date(l.createdAt) < oneWeekAgo) return false;
-            }
-            // Mock empty states for upcoming views
-            if (['pinned', 'collections'].includes(currentView || '')) {
-                // Mock behavior: return false if we don't have implementations yet, to show empty state
-                return false;
             }
 
             if (!query) return true;
@@ -175,18 +165,17 @@ export function LibraryPage() {
         const idsToDelete = [...selectedIds];
         await trashLectures(idsToDelete);
         setSelectedIds(new Set());
-        showToast(`${idsToDelete.length} lectures moved to trash.`, {
+        showToast(`${idsToDelete.length} lectures moved to trash.`, 'info', {
             label: 'Undo',
             onClick: async () => {
                 await restoreLectures(idsToDelete);
-                setToastMessage(null);
             }
         });
     };
 
     const handleHardDelete = async () => {
         const idsToDelete = [...selectedIds];
-        if (confirm(`Are you sure you want to permanently delete ${idsToDelete.length} lectures? This cannot be undone.`)) {
+        if (await showConfirm(`Are you sure you want to permanently delete ${idsToDelete.length} lectures? This cannot be undone.`)) {
             await hardDeleteLectures(idsToDelete);
             setSelectedIds(new Set());
         }
@@ -201,11 +190,10 @@ export function LibraryPage() {
     const handleDeleteSingle = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         await trashLectures([id]);
-        showToast(`Lecture moved to trash.`, {
+        showToast(`Lecture moved to trash.`, 'info', {
             label: 'Undo',
             onClick: async () => {
                 await restoreLectures([id]);
-                setToastMessage(null);
             }
         });
     };
@@ -226,26 +214,13 @@ export function LibraryPage() {
         showToast(`Moved ${lectureIds.length} lectures.`);
     };
 
-    const handleAutoOrganize = async (_id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        showToast("Auto-Organize is coming in Phase 2!");
-    };
-
-    const handleDuplicate = async () => {
-        showToast("Duplicate feature coming soon!");
-    };
-
-    const handleMerge = async () => {
-        showToast("Merge feature coming soon!");
-    };
-
     const isShowingDashboard = Boolean(selectedFolderId && systemView === 'all' && !query && showFolderDashboard);
 
     return (
         <div className="flex flex-col h-full w-full min-w-0" style={{ background: 'var(--bg)' }}>
             {/* Toolbar */}
             {!isShowingDashboard && (
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 shrink-0">
+            <div className="flex items-center gap-3 pl-6 pr-[140px] py-4 border-b border-border/50 shrink-0">
                 <div className="flex items-center gap-2 mr-2">
                     {selectedFolderId && !showFolderDashboard && !query && (
                         <button 
@@ -276,7 +251,7 @@ export function LibraryPage() {
                     {systemView === 'trash' && (
                         <button
                             onClick={async () => {
-                                if (confirm('Are you sure you want to permanently delete all trashed lectures?')) {
+                                if (await showConfirm('Are you sure you want to permanently delete all trashed lectures?')) {
                                     await emptyTrash();
                                 }
                             }}
@@ -344,7 +319,7 @@ export function LibraryPage() {
                                     if (name?.trim()) {
                                         try {
                                             await useFolderStore.getState().createFolder(name.trim());
-                                        } catch (e: any) { alert("Error: " + e.message); }
+                                        } catch (e: any) { showToast("Error: " + e.message, 'error'); }
                                     }
                                 }}>
                                     <FolderPlus size={14} className="mr-2" /> New Folder
@@ -355,7 +330,7 @@ export function LibraryPage() {
                                         if (src && !Array.isArray(src)) {
                                             await useFolderStore.getState().importFolder(src);
                                         }
-                                    } catch (e: any) { alert("Import error: " + e.message); }
+                                    } catch (e: any) { showToast("Import error: " + e.message, 'error'); }
                                 }}>
                                     <Upload size={14} className="mr-2" /> Import
                                 </DropdownMenuItem>
@@ -390,26 +365,37 @@ export function LibraryPage() {
                 {viewMode === 'graph' ? (
                     <KnowledgeGraphView />
                 ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center mt-20 gap-4">
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center bg-surface-raised border border-border">
-                            <BookOpen size={24} className="text-muted-foreground" />
-                        </div>
-                        <div className="text-center">
-                            <p className="font-semibold text-foreground text-base">
-                                {query ? 'No results found' : 
-                                 ['pinned', 'collections'].includes(currentView || '') ? 'Coming Soon' : 
-                                 currentView === 'subjects' ? 'No subjects found' :
-                                 currentView === 'bookmarks' ? 'No bookmarks yet' :
-                                 currentView === 'recent' ? 'No recent lectures' : 'No lectures yet'}
-                            </p>
-                            <p className="text-muted-foreground text-sm mt-1">
-                                {query ? `No lectures match "${query}"` : 
-                                 ['pinned', 'collections'].includes(currentView || '') ? `The ${currentView} feature is scheduled for Phase 2.` : 
-                                 currentView === 'subjects' ? 'Lectures will be automatically grouped by their subjects' :
-                                 currentView === 'bookmarks' ? 'Star a lecture to see it here' :
-                                 currentView === 'recent' ? 'Lectures recorded in the last 7 days will appear here' : 'Start recording from the Chrome extension'}
-                            </p>
-                        </div>
+                    <div className="flex flex-col items-center justify-center py-20 px-4">
+                        <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ y: -2 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                            className="relative max-w-md w-full overflow-hidden rounded-3xl border border-border/50 bg-surface/30 p-8 text-center backdrop-blur-xl shadow-xl hover:border-primary/30 group transition-all duration-300"
+                        >
+                            {/* Inner radial glow on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            
+                            <div className="relative z-10 flex flex-col items-center">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-surface-raised border border-border/80 text-muted-foreground/80 group-hover:text-primary group-hover:border-primary/20 group-hover:bg-primary/5 transition-all duration-300 shadow-inner mb-5">
+                                    <BookOpen size={22} className="group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <h3 className="font-bold text-foreground text-base tracking-tight mb-2">
+                                    {query ? 'No results found' : 
+                                     ['pinned', 'collections'].includes(currentView || '') ? 'Coming Soon' : 
+                                     currentView === 'subjects' ? 'No subjects found' :
+                                     currentView === 'bookmarks' ? 'No bookmarks yet' :
+                                     currentView === 'recent' ? 'No recent lectures' : 'No lectures yet'}
+                                </h3>
+                                <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px] mx-auto">
+                                    {query ? `No lectures match "${query}"` : 
+                                     ['pinned', 'collections'].includes(currentView || '') ? `The ${currentView} feature is scheduled for Phase 2.` : 
+                                     currentView === 'subjects' ? 'Lectures will be automatically grouped by their subjects' :
+                                     currentView === 'bookmarks' ? 'Star a lecture to see it here' :
+                                     currentView === 'recent' ? 'Lectures recorded in the last 7 days will appear here' : 'Start recording from the Chrome extension'}
+                                </p>
+                            </div>
+                        </motion.div>
                     </div>
                 ) : (
                     groups.map(group => (
@@ -435,7 +421,6 @@ export function LibraryPage() {
                                             onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
                                             onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
                                             onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
-                                            onAutoOrganize={(e: React.MouseEvent) => handleAutoOrganize(lecture.id, e)}
                                             onMoveToFolder={(folderId: string) => handleMoveToFolder(folderId, [lecture.id])}
                                             folderTree={folderTree}
                                             onClick={() => navigate(`/lectures/${lecture.id}`)}
@@ -460,7 +445,6 @@ export function LibraryPage() {
                                             onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
                                             onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
                                             onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
-                                            onAutoOrganize={(e: React.MouseEvent) => handleAutoOrganize(lecture.id, e)}
                                             onMoveToFolder={(folderId: string) => handleMoveToFolder(folderId, [lecture.id])}
                                             folderTree={folderTree}
                                             onClick={() => navigate(`/lectures/${lecture.id}`)}
@@ -502,15 +486,15 @@ export function LibraryPage() {
                 selectedCount={selectedIds.size}
                 onDelete={handleDelete}
                 onHardDelete={handleHardDelete}
-                onDuplicate={selectedIds.size === 1 && systemView !== 'trash' ? handleDuplicate : undefined}
-                onMerge={selectedIds.size === 2 && systemView !== 'trash' ? handleMerge : undefined}
+                onDuplicate={undefined}
+                onMerge={undefined}
                 onArchive={systemView !== 'trash' ? handleBatchArchive : undefined}
                 onMoveToFolder={systemView !== 'trash' ? (_e?: any) => {
                     const folderName = prompt("Enter the exact name of the folder to move to (or cancel):");
                     if (folderName) {
                         const folder = folderTree.find((f: any) => f.folder.name.toLowerCase() === folderName.toLowerCase());
                         if (folder) handleMoveToFolder(folder.folder.id, Array.from(selectedIds));
-                        else alert("Folder not found.");
+                        else showToast("Folder not found.", 'error');
                     }
                 } : undefined}
                 onRestore={systemView === 'trash' ? async () => {
@@ -520,24 +504,6 @@ export function LibraryPage() {
                 onClear={() => setSelectedIds(new Set())}
                 mode={systemView === 'trash' ? 'trash' : 'library'}
             />
-            
-            {/* Toast Notification */}
-            <div 
-                className={cn(
-                    "absolute bottom-8 right-8 bg-surface-hover border border-border px-4 py-3 rounded-xl shadow-lg flex items-center gap-4 transition-all duration-300 z-50",
-                    toastMessage ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
-                )}
-            >
-                <span className="text-sm font-medium">{toastMessage?.message}</span>
-                {toastMessage?.action && (
-                    <button 
-                        onClick={toastMessage.action.onClick}
-                        className="text-sm font-bold text-accent hover:opacity-80 transition-opacity"
-                    >
-                        {toastMessage.action.label}
-                    </button>
-                )}
-            </div>
         </div>
     );
 }
@@ -553,8 +519,8 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
     return (
         <div
             className={cn(
-                'group relative flex flex-col text-left bg-surface hover:bg-surface-hover border rounded-xl p-4 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-full',
-                isSelected ? 'border-primary ring-1 ring-primary shadow-sm bg-primary/5' : 'border-border/60 hover:shadow-sm'
+                'group relative flex flex-col text-left bg-surface hover:bg-surface-hover border rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-full',
+                isSelected ? 'border-primary ring-1 ring-primary shadow-sm bg-primary/5' : 'border-border/60 hover:border-border'
             )}
             onClick={onClick}
             draggable={true}
@@ -612,15 +578,6 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
                                 </DropdownMenuItem>
                                 
                                 <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">AI Actions</DropdownMenuLabel>
-                                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); alert('Generate Flashcards coming soon!'); }}>
-                                    <BrainCircuit size={14} className="mr-2 text-primary" /> Generate Flashcards
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); alert('Summarize coming soon!'); }}>
-                                    <FileText size={14} className="mr-2 text-primary" /> Auto Summarize
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuSeparator />
                                 <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Manage</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleArchive(e); }} className="cursor-pointer">
                                     <Archive size={14} className="mr-2 text-muted-foreground" /> {lecture.isArchived ? "Unarchive" : "Archive"}
@@ -673,8 +630,8 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
 
     return (
         <div
-            className={cn('group relative flex items-center px-4 py-2.5 cursor-pointer rounded-xl transition-all duration-300', 
-                isSelected ? 'bg-primary/5 ring-1 ring-primary/20' : 'hover:bg-surface-hover/50 border border-transparent hover:border-border/50'
+            className={cn('group relative flex items-center px-4 py-2.5 cursor-pointer rounded-xl transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5', 
+                isSelected ? 'bg-primary/5 ring-1 ring-primary shadow-sm' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-border/60 hover:border-border'
             )}
             onClick={onClick}
             draggable={true}
@@ -762,15 +719,6 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                                 </DropdownMenuSub>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }} className="cursor-pointer">
                                     <Bookmark size={14} className={cn("mr-2", lecture.isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} /> {lecture.isFavorite ? "Remove Bookmark" : "Bookmark"}
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">AI Actions</DropdownMenuLabel>
-                                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); alert('Generate Flashcards coming soon!'); }}>
-                                    <BrainCircuit size={14} className="mr-2 text-primary" /> Generate Flashcards
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer" onClick={(e) => { e.stopPropagation(); alert('Summarize coming soon!'); }}>
-                                    <FileText size={14} className="mr-2 text-primary" /> Auto Summarize
                                 </DropdownMenuItem>
                                 
                                 <DropdownMenuSeparator />

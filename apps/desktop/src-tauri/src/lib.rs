@@ -9,6 +9,8 @@ pub mod error;
 pub mod services;
 pub mod ai;
 pub mod models;
+pub mod ws_server;
+pub mod integrations;
 
 use tauri::Manager;
 
@@ -16,27 +18,12 @@ pub fn run() {
     let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
 
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init());
 
     if !is_native_messaging {
-        builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new()
-            .with_shortcut("CmdOrCtrl+Shift+Space")
-            .unwrap()
-            .with_handler(|app, _shortcut, event| {
-                if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                    if let Some(window) = app.get_webview_window("copilot") {
-                        if window.is_visible().unwrap_or(false) {
-                            let _ = window.hide();
-                        } else {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                }
-            })
-            .build()
-        );
+        builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
     }
 
     builder.setup(move |app| {
@@ -58,6 +45,8 @@ pub fn run() {
                 )
                 .title("appsdesktop")
                 .inner_size(1200.0, 800.0)
+                .decorations(false)
+                .transparent(true)
                 .visible(false)
                 .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .on_new_window(move |_url, _features| {
@@ -75,6 +64,27 @@ pub fn run() {
                 let _ = main_window.show();
             } else {
                 crate::native_messaging::host::start_listener(handle.clone());
+            }
+
+            if !is_native_messaging {
+                use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState, Shortcut};
+                if let Ok(shortcut) = "CmdOrCtrl+Shift+Space".parse::<Shortcut>() {
+                    let _ = app.global_shortcut().on_shortcut(
+                        shortcut,
+                        |app, _shortcut, event| {
+                            if event.state == ShortcutState::Pressed {
+                                if let Some(window) = app.get_webview_window("copilot") {
+                                    if window.is_visible().unwrap_or(false) {
+                                        let _ = window.hide();
+                                    } else {
+                                        let _ = window.show();
+                                        let _ = window.set_focus();
+                                    }
+                                }
+                            }
+                        }
+                    );
+                }
             }
             
             let mut db_pool = None;
@@ -94,8 +104,9 @@ pub fn run() {
                 if let Some(pool) = db_pool {
                     let handle_clone = handle.clone();
                     tauri::async_runtime::spawn(async move {
-                        crate::ai::queue_worker::QueueWorker::spawn(handle_clone, pool.clone());
+                        crate::ai::queue_worker::QueueWorker::spawn(handle_clone.clone(), pool.clone());
                         crate::services::search_indexer::SearchIndexer::run_backfill_background(pool.clone());
+                        crate::ws_server::start_ws_server(handle_clone).await;
                     });
                 }
             }
@@ -107,16 +118,21 @@ pub fn run() {
             commands::settings::settings_get,
             commands::settings::settings_update,
             commands::settings::settings_set_api_key,
+            commands::settings::settings_set_provider_token,
+            commands::settings::settings_get_provider_token,
+            commands::settings::settings_remove_provider_token,
             commands::storage::storage_get_layout,
             commands::storage::storage_change_location,
             commands::storage::storage_get_breakdown,
             commands::storage::storage_delete_video,
+            commands::storage::storage_backup_database,
             commands::window::window_minimize,
             commands::window::window_maximize,
             commands::window::window_close,
             commands::native::native_messaging_status,
             commands::native::fetch_ical_feed,
             commands::native::fetch_url_with_auth,
+            commands::native::fetch_custom,
             commands::db_health_check,
             commands::logger_write,
             // Lectures
@@ -130,6 +146,7 @@ pub fn run() {
             commands::lectures::lectures_hard_delete,
             commands::lectures::lectures_merge,
             commands::lectures::lectures_duplicate,
+            commands::lectures::delete_lecture_video,
             commands::lectures::tags_list,
             commands::lectures::lecture_add_tag,
             commands::lectures::lecture_remove_tag,
@@ -219,13 +236,19 @@ pub fn run() {
             commands::ai::get_all_action_items,
             commands::ai::update_action_item_status,
             commands::ai::global_ask_ai,
+            commands::ai::send_global_memory_chat,
             commands::ai::translate_transcript,
             commands::ai::generate_pre_meeting_brief,
+            commands::interview_copilot::analyze_interview_live,
+            commands::decision_tracker::detect_decisions_live,
+            commands::decision_tracker::confirm_live_decision,
+            commands::markdown_export::sync_meeting_to_markdown,
             // Capture
             commands::capture::start_native_recording,
             commands::capture::stop_native_recording,
             // Integrations
             commands::integrations::push_task_to_notion,
+            commands::integrations::execute_integration,
             // Artifacts
             commands::artifacts::artifacts_get,
             commands::artifacts::artifacts_list,
@@ -296,6 +319,8 @@ pub fn run() {
             commands::undo::get_undoable_action,
             // Scoped Chat
             commands::ai::start_scoped_chat,
+            commands::ai::save_live_scratchpad,
+            commands::ai::push_to_composio,
             // Study Actions
             commands::study_actions::run_study_action,
             commands::study_actions::get_study_action_status,

@@ -244,7 +244,8 @@ export function createNativeMessagingClient(log: Logger): NativeMessagingClient 
 
   function onHeartbeatAlarm(): void {
     if (_status !== 'connected' || port === null) {
-      log.debug(MODULE, 'Heartbeat alarm fired but not connected — skipping');
+      log.debug(MODULE, 'Heartbeat alarm fired but not connected — attempting to reconnect');
+      connect();
       return;
     }
 

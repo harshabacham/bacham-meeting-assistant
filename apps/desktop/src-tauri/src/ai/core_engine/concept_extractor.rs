@@ -1,7 +1,6 @@
 use sqlx::SqlitePool;
 use crate::error::AppResult;
 use uuid::Uuid;
-use crate::services::gemini_service::GeminiService;
 use crate::ai::context_builder::ContextBuilder;
 use crate::ai::core_engine::models::KnowledgeConcept;
 
@@ -48,9 +47,9 @@ Do not output generic AI filler. Return ONLY the raw JSON array. Do not wrap in 
 
     // 2. Call Gemini
     let content = if image_parts.is_empty() {
-        GeminiService::generate_text(&enriched_transcript, instruction, pool).await?
+        crate::services::universal_ai::UniversalAiService::generate_text(&enriched_transcript, instruction, pool).await?
     } else {
-        GeminiService::generate_multimodal(&enriched_transcript, instruction, &image_parts, pool).await?
+        crate::services::universal_ai::UniversalAiService::generate_multimodal(&enriched_transcript, instruction, &image_parts, pool).await?
     };
 
     // 3. Parse JSON and insert into extracted_concepts

@@ -120,7 +120,7 @@ impl ArtifactService {
         sqlx::query!(
             "INSERT OR IGNORE INTO lecture_artifacts \
              (id, lecture_id, artifact_type, content_json, generated_at, model_used, version, status) \
-             VALUES (?, ?, ?, '{}', ?, 'gemini-3.1-flash-lite', 1, 'pending')",
+             VALUES (?, ?, ?, '{}', ?, 'gemini-2.0-flash-lite', 1, 'pending')",
             id, lecture_id, artifact_type, now
         )
         .execute(pool)

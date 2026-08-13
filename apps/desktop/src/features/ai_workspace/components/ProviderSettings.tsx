@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { TauriClient, ProviderConfig, SaveProviderConfigPayload } from '@/infrastructure/tauri-client';
 import { Loader2, Key, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { cn } from '@/components';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export function ProviderSettings() {
     const [configs, setConfigs] = useState<ProviderConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
     const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
+    const { showToast } = useToast();
 
     const loadConfigs = async () => {
         setLoading(true);
@@ -43,7 +45,7 @@ export function ProviderSettings() {
             await loadConfigs();
         } catch (e) {
             console.error("Failed to save provider config", e);
-            alert(`Failed to save config: ${e}`);
+            showToast(`Failed to save config: ${e}`, 'error');
         } finally {
             setSaving(null);
         }

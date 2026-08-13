@@ -1,0 +1,10 @@
+import sqlite3
+conn = sqlite3.connect(r'C:\Users\harsh\OneDrive\Documents\BACHAM\Data\bacham.sqlite')
+c = conn.cursor()
+c.execute("DELETE FROM settings WHERE key = 'aiProvider'")
+c.execute("INSERT INTO settings (key, value) VALUES ('aiProvider', 'bacham.gemini')")
+conn.commit()
+result = c.execute("SELECT key, value FROM settings WHERE key = 'aiProvider'").fetchall()
+print('Reverted to:', result)
+conn.close()
+print('Done!')

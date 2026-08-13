@@ -317,7 +317,7 @@ pub async fn generate_lecture_intelligence(lecture_id: String, force: bool, app:
 
 pub async fn generate_lecture_intelligence_core(lecture_id: &str, force: bool, app: &AppHandle, pool: &SqlitePool) -> AppResult<serde_json::Value> {
     use sha2::{Sha256, Digest};
-    use crate::services::gemini_service::GeminiService;
+    
 
     if crate::ai::pipeline_v2::engine::USE_PIPELINE_V2 {
         return crate::ai::pipeline_v2::engine::run_v2(lecture_id, force, app, pool).await;
@@ -373,50 +373,26 @@ ANTI-HALLUCINATION RULES:
 1. No graph/chart section without OCR or visual evidence of an actual graph.
 2. No fabricated numeric values in calculations — only values traceable to transcript or OCR.
 3. No invented formulas — every formula must be traceable to transcript or OCR.
-4. If you cannot verify a detail from the transcript, OCR, or images, omit it."#;
+4. If you cannot verify a detail from the transcript, OCR, or images, omit it.
+CRITICAL TIMESTAMPS RULE:
+5. You MUST embed exact timestamps [MM:SS] referencing the transcript for EVERY key bullet point in the executive_summary, crm_metadata, and revision_notes (e.g. `- [12:35] The client agreed...`). This is crucial for verifying accuracy."#;
 
-    let schema = r#"Create a single comprehensive structured JSON object with the exact schema. 
+    let schema = r#"Create a single comprehensive structured JSON object. 
 Return ONLY valid JSON.
 {
   "lecture_information": { "title": "string", "subject": "string", "duration_hint": "string", "instructor": "string", "date": "string" },
-  "executive_summary": "string",
+  "executive_summary": "string (markdown format)",
   "chapter_breakdown": [ { "title": "string", "summary": "string", "timestamp_hint": "string" } ],
-  "formula_sheet": [ { "formula": "string", "meaning": "string", "variables": "string", "example": "string" } ],
-  "problems_solved": [ { "question": "string", "step_by_step": "string", "final_answer": "string", "professors_explanation": "string" } ],
-  "code_explained": [ { "language": "string", "purpose": "string", "logic": "string", "complexity": "string", "output": "string" } ],
+  "formula_sheet": null, // OPTIONAL: Only include array of {formula, meaning, variables, example} if mathematical formulas are actually present. Otherwise null.
+  "problems_solved": null, // OPTIONAL: Only include array of {question, step_by_step, final_answer} if explicit problems are solved. Otherwise null.
+  "code_explained": null, // OPTIONAL: Only include array of {language, purpose, logic, output} if programming code is present. Otherwise null.
   "key_concepts": ["string"],
-  "crm_metadata": { 
-    "bant": { "budget": "string|null", "authority": "string|null", "need": "string|null", "timeline": "string|null" }, 
-    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low" } ], 
-    "key_decisions": ["string"] 
-  },
-  "revision_notes": "string",
-  "schemaVersion": 2,
-  "richContent": {
-    "lectureOverview": "string | null",
-    "learningObjectives": ["string"],
-    "topicsCovered": [ { "topic": "string", "subtopics": [ { "name": "string", "concepts": ["string"] } ] } ],
-    "detailedExplanation": "markdown string | null",
-    "visualConcepts": [ { "timestamp": 123, "screenshotRef": "string (the screenshot ID)", "whatAppeared": "string", "whyItMatters": "string", "howItConnects": "string" } ],
-    "codeSection": { "language": "string", "purpose": "string", "explanation": "markdown", "timeComplexity": "string", "spaceComplexity": "string", "commonMistakes": ["string"], "bestPractices": ["string"] },
-    "formulaSheet": [ { "formula": "string", "variables": [ { "symbol": "string", "meaning": "string" } ], "application": "string", "workedExample": "markdown", "examTips": "string" } ],
-    "tables": [ { "title": "string", "markdown": "string" } ],
-    "graphInterpretation": [ { "screenshotRef": "string", "axes": "string", "trend": "string", "observations": "string" } ],
-    "diagrams": [ { "screenshotRef": "string", "type": "string", "explanation": "markdown" } ],
-    "calculations": [ { "problem": "string", "steps": ["string"], "finalAnswer": "string" } ],
-    "workedExamples": [ { "title": "string", "steps": ["string"] } ],
-    "commonMistakes": ["string"],
-    "examTips": ["string"],
-    "onePageRevision": "markdown string | null",
-    "cheatSheet": "markdown string | null",
-    "memoryTricks": ["string"],
-    "practiceQuestions": [ { "type": "mcq|short|long|problem|coding|numerical", "question": "string", "answer": "string" } ],
-    "relatedConcepts": { "prerequisites": ["string"], "relatedTopics": ["string"], "advancedTopics": ["string"] },
-    "detectedLectureType": "programming|math|science|business|law|medical|general"
-  }
+  "crm_metadata": null // OPTIONAL: Only include { bant: {}, action_items: [], key_decisions: [] } if this is a business meeting or sales call. Otherwise null.
 }
 
-Use these hints to determine which richContent sections to populate (omit empty sections):
+CRITICAL: Do NOT invent formulas, code, or problems if the transcript is a song, casual conversation, or lacks that context. Just return null for those fields.
+
+Use these hints from the system to determine mathematical/code presence:
 - has_code: {HAS_CODE}
 - has_formula: {HAS_FORMULA}
 - has_diagram: {HAS_DIAGRAM}
@@ -445,9 +421,9 @@ Use these hints to determine which richContent sections to populate (omit empty 
 
     while retries >= 0 {
         let raw = if !image_parts.is_empty() {
-            GeminiService::generate_multimodal(&prompt, system, &image_parts, pool).await?
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system, &image_parts, pool).await?
         } else {
-            GeminiService::generate_text(&prompt, system, pool).await?
+            crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system, pool).await?
         };
 
         let clean = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();

@@ -10,7 +10,6 @@ use uuid::Uuid;
 use serde_json;
 use crate::ai::context_builder::ContextBuilder;
 use crate::error::{AppError, AppResult};
-use crate::services::gemini_service::GeminiService;
 
 pub const ALL_ARTIFACT_TYPES: &[&str] = &[
     "lecture_intelligence",
@@ -115,9 +114,9 @@ impl IntelligenceEngine {
         );
 
         let raw = if (artifact_type == "summary" || artifact_type == "detailed_notes" || artifact_type == "formula_sheet" || artifact_type == "important_code") && !image_parts.is_empty() {
-            GeminiService::generate_multimodal(&prompt, system, image_parts, pool).await?
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system, image_parts, pool).await?
         } else {
-            GeminiService::generate_text(&prompt, system, pool).await?
+            crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system, pool).await?
         };
 
         // Try to parse as JSON; if it's not valid JSON (plain text), wrap it.
@@ -140,7 +139,7 @@ impl IntelligenceEngine {
             let id = Uuid::new_v4().to_string();
             let _ = sqlx::query!(
                 "INSERT OR REPLACE INTO summaries (id, lecture_id, content, model_used) \
-                 VALUES (?, ?, ?, 'gemini-3.1-flash-lite')",
+                 VALUES (?, ?, ?, 'gemini-2.0-flash-lite')",
                 id,
                 lecture_id,
                 raw
@@ -242,7 +241,7 @@ impl IntelligenceEngine {
         let now = chrono::Utc::now().timestamp_millis();
         sqlx::query!(
             "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, status) \
-             VALUES (?, ?, ?, ?, ?, 'gemini-3.1-flash-lite', ?) \
+             VALUES (?, ?, ?, ?, ?, 'gemini-2.0-flash-lite', ?) \
              ON CONFLICT(id) DO UPDATE SET status = excluded.status",
             id, lecture_id, artifact_type, content_json, now, status
         )
@@ -276,7 +275,7 @@ impl IntelligenceEngine {
         sqlx::query!(
             "INSERT INTO lecture_artifacts \
              (id, lecture_id, artifact_type, content_json, generated_at, model_used, version, status) \
-             VALUES (?, ?, ?, ?, ?, 'gemini-3.1-flash-lite', ?, 'done')",
+             VALUES (?, ?, ?, ?, ?, 'gemini-2.0-flash-lite', ?, 'done')",
             id, lecture_id, artifact_type, content_json, now, new_version
         )
         .execute(pool)
@@ -304,5 +303,49 @@ impl IntelligenceEngine {
         let content_json = Self::generate_artifact(pool, lecture_id, artifact_type, &text_context, &image_parts).await?;
         Self::upsert_artifact_done(pool, lecture_id, artifact_type, &content_json).await?;
         Ok(content_json)
+    }
+
+    pub async fn generate_embeddings(
+        app: AppHandle,
+        lecture_id: String,
+        full_transcript: String,
+    ) {
+        let pool = match app.try_state::<crate::database::DbState>() {
+            Some(s) => s.pool.clone(),
+            None => return,
+        };
+
+        let api_key = match keyring::Entry::new("bacham", "gemini_api_key") {
+            Ok(entry) => entry.get_password().ok(),
+            Err(_) => None,
+        };
+        let api_key = api_key.or_else(|| std::env::var("GEMINI_API_KEY").ok());
+        
+        let words: Vec<&str> = full_transcript.split_whitespace().collect();
+        let chunk_size = 150;
+        let overlap = 30;
+        let mut chunks = Vec::new();
+        
+        let mut i = 0;
+        while i < words.len() {
+            let end = std::cmp::min(i + chunk_size, words.len());
+            let chunk_text = words[i..end].join(" ");
+            chunks.push(chunk_text);
+            if end == words.len() { break; }
+            i += chunk_size - overlap;
+        }
+
+        let vector_db = crate::services::vector_db::VectorDb::new(pool.clone());
+        let _ = vector_db.init_tables().await;
+        
+        if let Ok(embedding_service) = crate::services::embedding_service::EmbeddingService::new().await {
+            for chunk in chunks {
+                if chunk.trim().is_empty() { continue; }
+                let use_local = false; 
+                if let Ok(emb) = embedding_service.embed_text(&chunk, use_local, api_key.as_deref()).await {
+                    let _ = vector_db.insert_chunk(&lecture_id, &chunk, emb).await;
+                }
+            }
+        }
     }
 }

@@ -31,7 +31,7 @@ impl FlashcardService {
         let instruction = "Generate comprehensive flashcards from the lecture. \
             Return a JSON array of objects with 'question', 'answer', and 'difficulty' \
             (easy/medium/hard) fields. Generate 10-20 cards covering key concepts.";
-        let content = crate::services::gemini_service::GeminiService::generate_text(transcript, instruction, pool).await?;
+        let content = crate::services::universal_ai::UniversalAiService::generate_text(transcript, instruction, pool).await?;
         
         let clean_json = content
             .trim_start_matches("```json")

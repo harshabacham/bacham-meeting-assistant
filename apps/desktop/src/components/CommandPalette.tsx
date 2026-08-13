@@ -4,7 +4,6 @@ import {
     Search as SearchIcon, FileText, BrainCircuit, Play, BookOpen, Clock, Command, Terminal, Tags, Sparkles, History
 } from 'lucide-react';
 import { useSearchStore } from '@/features/search/searchStore';
-import { useAiCommandCenterStore } from '@/shared/stores/aiCommandCenterStore';
 import { UniversalSearchResult, TauriClient } from '@/infrastructure/tauri-client';
 import { SmoothInput } from '@/components/ui/skiper-ui/skiper106';
 
@@ -172,7 +171,7 @@ export function CommandPalette() {
                         autoFocus
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search across all your knowledge..."
+                        placeholder="Search across your knowledge & visual concepts..."
                         className="flex-1 bg-transparent border-none outline-none text-foreground text-[16px] placeholder:text-muted-foreground/50 w-full"
                         wrapperClassName="flex-1 max-w-full p-0 bg-transparent rounded-none focus-within:outline-none focus-within:ring-0 shadow-none border-none outline-none ring-0 has-[:focus-visible]:outline-none"
                     />
@@ -236,7 +235,7 @@ export function CommandPalette() {
                             ) : (
                                 <div className="py-8 text-center text-muted-foreground">
                                     <Command size={32} className="mx-auto mb-3 opacity-20" />
-                                    <p>Type to search your library, transcripts, and study notes</p>
+                                    <p>Type to search your library, transcripts, and visual concepts (e.g. diagrams)</p>
                                 </div>
                             )}
                         </div>

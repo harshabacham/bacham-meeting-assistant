@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 use crate::error::AppResult;
-use crate::services::gemini_service::GeminiService;
 use crate::ai::context_builder::KeyFrame;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -122,9 +121,9 @@ Rules:
         }
 
         let raw_res = if !image_parts.is_empty() {
-            GeminiService::generate_multimodal_with_model(&prompt, system_instruction, &image_parts, pool, "gemini-3.1-flash-lite").await?
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system_instruction, &image_parts, pool).await?
         } else {
-            GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?
+            crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?
         };
 
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
@@ -199,7 +198,7 @@ Return ONLY valid JSON matching this schema:
   "cleaned_text": "Cleaned, polished transcript preserving all educational explanations, formulas, code mentions, and student questions."
 }"#;
 
-        let raw_res = GeminiService::generate_text_with_model(transcript, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(transcript, system_instruction, pool).await?;
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         let parsed: serde_json::Value = serde_json::from_str(clean_res).unwrap_or_else(|_| {

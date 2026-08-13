@@ -199,3 +199,25 @@ pub async fn trim_video_by_timestamps(lecture_id: String, exclude_segments: Vec<
     }
     Err(crate::error::AppError::Internal("Failed to trim video".to_string()))
 }
+
+#[tauri::command]
+pub async fn delete_lecture_video(id: String, state: State<'_, DbState>) -> AppResult<()> {
+    let pool = &state.pool;
+    let row = sqlx::query!("SELECT video_path FROM lectures WHERE id = ?", id)
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(r) = row {
+        if let Some(video_path) = r.video_path {
+            let path = PathBuf::from(&video_path);
+            if path.exists() {
+                let _ = fs::remove_file(&path);
+            }
+            let now = chrono::Utc::now().timestamp_millis();
+            sqlx::query!("UPDATE lectures SET video_path = NULL, updated_at = ? WHERE id = ?", now, id)
+                .execute(pool)
+                .await?;
+        }
+    }
+    Ok(())
+}

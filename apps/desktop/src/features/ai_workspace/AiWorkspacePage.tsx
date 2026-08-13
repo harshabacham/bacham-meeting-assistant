@@ -12,9 +12,11 @@ import {
     Sparkles, Zap, PenTool, CheckSquare, LayoutTemplate,
     Pin, SidebarOpen, SidebarClose,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { WaveLoader } from '@/components';
 import { PromptLibrary } from './components/PromptLibrary';
 import { ContextSelectorModal } from './components/ContextSelectorModal';
+import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import type { ChatMessage } from '@/shared/types';
 
 type WorkspaceChatMessage = ChatMessage & { references?: MessageReference[]; followups?: string[] };
@@ -36,6 +38,7 @@ export function AiWorkspacePage() {
     const [activeReference, setActiveReference] = useState<MessageReference | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const { showConfirm } = useConfirmStore();
     const [contextOpen, setContextOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState<'all' | 'pinned'>('all');
@@ -97,7 +100,8 @@ export function AiWorkspacePage() {
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm('Delete this conversation?')) return;
+        const ok = await showConfirm('Delete this conversation?');
+        if (!ok) return;
         await TauriClient.deleteConversation(id);
         if (selectedConversation?.id === id) setSelectedConversation(null);
         loadConversations();
@@ -517,16 +521,21 @@ function HomeView({ onCreateNew, onSelectConversation, conversations, isCreating
                 {/* Quick Actions */}
                 <div className="w-full mb-6">
                     <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</div>
-                    <div className="grid grid-cols-3 gap-2">
-                        {QUICK_ACTIONS.map(({ icon: Icon, text, color }) => (
-                            <button
+                    <div className="grid grid-cols-3 gap-3">
+                        {QUICK_ACTIONS.map(({ icon: Icon, text, color }, index) => (
+                            <motion.button
                                 key={text}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.05 + 0.1, duration: 0.3 }}
                                 onClick={() => onCreateNew(text)}
-                                className="flex flex-col gap-2 p-3 bg-surface hover:bg-surface-hover border border-border hover:border-primary/30 rounded-xl text-left transition-all group"
+                                className="flex flex-col gap-2 p-4 bg-surface/40 hover:bg-surface border border-border/50 hover:border-primary/40 rounded-2xl text-left transition-all shadow-sm hover:shadow-md group backdrop-blur-sm"
                             >
-                                <Icon size={16} className={cn(color, 'group-hover:scale-110 transition-transform')} />
-                                <span className="text-[11px] font-medium text-foreground leading-tight">{text}</span>
-                            </button>
+                                <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center bg-background border border-border/50 shadow-sm transition-transform group-hover:scale-110 group-hover:-rotate-3', color)}>
+                                    <Icon size={16} />
+                                </div>
+                                <span className="text-[11px] font-semibold text-foreground leading-tight mt-1">{text}</span>
+                            </motion.button>
                         ))}
                     </div>
                 </div>

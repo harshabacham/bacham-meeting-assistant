@@ -78,6 +78,21 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
           <Monitor size={16} />
           Entire Screen
         </button>
+        <button
+          type="button"
+          onClick={() => onChange({ ...config, captureMode: 'walkthrough' })}
+          disabled={disabled}
+          className={[
+            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm transition-colors duration-fast border',
+            captureMode === 'walkthrough'
+              ? 'bg-accent-purple/10 border-accent-purple text-accent-purple'
+              : 'bg-surface-2 border-border-subtle text-text-secondary hover:bg-surface-3',
+            disabled ? 'opacity-50 cursor-not-allowed' : '',
+          ].join(' ')}
+        >
+          <Video size={16} />
+          Walkthrough
+        </button>
       </div>
 
       {/* Audio toggle */}

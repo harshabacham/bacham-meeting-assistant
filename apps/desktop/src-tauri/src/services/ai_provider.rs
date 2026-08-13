@@ -28,7 +28,7 @@ impl AiProvider for GeminiProvider {
         pool: &'a SqlitePool,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<String>> + Send + 'a>> {
         Box::pin(async move {
-            crate::services::gemini_service::GeminiService::generate_text(prompt, system_instruction, pool).await
+            crate::services::universal_ai::UniversalAiService::generate_text(prompt, system_instruction, pool).await
         })
     }
 
@@ -40,7 +40,7 @@ impl AiProvider for GeminiProvider {
         pool: &'a SqlitePool,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<String>> + Send + 'a>> {
         Box::pin(async move {
-            crate::services::gemini_service::GeminiService::generate_multimodal(prompt, system_instruction, image_parts, pool).await
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(prompt, system_instruction, image_parts, pool).await
         })
     }
 }

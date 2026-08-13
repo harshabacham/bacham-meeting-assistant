@@ -1,7 +1,6 @@
 use crate::error::{AppError, AppResult};
 use sqlx::SqlitePool;
 use super::models::{KnowledgeGraph, SectionDraftJob, KnowledgeSegment};
-use crate::services::gemini_service::GeminiService;
 
 pub async fn segment_graph(graph: &mut KnowledgeGraph, pool: &SqlitePool) -> AppResult<Vec<SectionDraftJob>> {
     if graph.nodes.is_empty() {
@@ -31,7 +30,7 @@ Rules:
     let nodes_json = serde_json::to_string_pretty(&graph.nodes).unwrap_or_default();
     let prompt = format!("Nodes:\n{}", nodes_json);
 
-    let res = GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+    let res = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?;
     let res = res.replace("```json", "").replace("```", "");
 
     let segments: Vec<KnowledgeSegment> = serde_json::from_str(&res)

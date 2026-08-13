@@ -57,8 +57,11 @@ pub struct UpdateFolderInput {
 pub async fn folders_list(state: State<'_, DbState>) -> AppResult<Vec<Folder>> {
     let rows = sqlx::query!(
         "SELECT id, name, parent_id, color, icon, cover_image_path, description, subject, semester, sort_order, is_locked, is_favorite, is_pinned, is_archived, trashed_at, created_at, updated_at 
-         FROM folders ORDER BY sort_order ASC, name ASC"
-    ).fetch_all(&state.pool).await?;
+         FROM folders WHERE trashed_at IS NULL ORDER BY sort_order ASC, name ASC"
+    ).fetch_all(&state.pool).await.map_err(|e| {
+        eprintln!("folders_list error: {:?}", e);
+        e
+    })?;
     
     let folders = rows.into_iter().map(|r| Folder {
         id: r.id.unwrap_or_default(),

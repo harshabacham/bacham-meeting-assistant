@@ -36,6 +36,7 @@ pub struct LectureContext {
     pub course: Option<String>,
     pub transcript_segments: Vec<TranscriptSegment>,
     pub key_frames: Vec<KeyFrame>,
+    pub user_notes: Option<String>,
     /// Quick summary of what's available (for system prompt templating).
     pub has_transcript: bool,
     pub has_frames: bool,
@@ -165,6 +166,16 @@ impl ContextBuilder {
             });
         }
 
+        let scratchpad = sqlx::query!(
+            "SELECT content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'live_scratchpad'",
+            lecture_id
+        )
+        .fetch_optional(pool)
+        .await
+        .unwrap_or_default();
+        
+        let user_notes = scratchpad.map(|r| r.content_json);
+
         let has_transcript = !transcript_segments.is_empty();
         let has_frames = !key_frames.is_empty();
         let frame_count = key_frames.len();
@@ -176,6 +187,7 @@ impl ContextBuilder {
             course: lecture_row.course,
             transcript_segments,
             key_frames,
+            user_notes,
             has_transcript,
             has_frames,
             frame_count,
@@ -198,6 +210,15 @@ impl ContextBuilder {
         let duration_min = ctx.duration_ms / 60_000;
         parts.push(format!("Duration: ~{duration_min} minutes"));
         parts.push(String::new());
+
+        if let Some(notes) = &ctx.user_notes {
+            if !notes.trim().is_empty() {
+                parts.push("## User's Live Scratchpad Notes".to_string());
+                parts.push("CRITICAL INSTRUCTION: The user took these manual shorthand notes during the meeting. YOU MUST prioritize these topics and BOLD them in your final summary.".to_string());
+                parts.push(notes.clone());
+                parts.push(String::new());
+            }
+        }
 
         if ctx.has_transcript {
             parts.push("## Transcript".to_string());

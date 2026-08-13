@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { Bot, Plus, X, Trash2, Star, Save } from 'lucide-react';
 import { cn } from '@/components';
+import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 
 export interface SavedPrompt {
     id: string;
@@ -24,6 +25,7 @@ export function PromptLibrary({ onClose, onSelectPrompt }: PromptLibraryProps) {
     const [loading, setLoading] = useState(true);
     const [editingPrompt, setEditingPrompt] = useState<SavedPrompt | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const { showConfirm } = useConfirmStore();
     
     // Form state
     const [formName, setFormName] = useState('');
@@ -64,7 +66,8 @@ export function PromptLibrary({ onClose, onSelectPrompt }: PromptLibraryProps) {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this prompt?')) return;
+        const ok = await showConfirm('Are you sure you want to delete this prompt?');
+        if (!ok) return;
         try {
             await TauriClient.deletePrompt(id);
             await loadPrompts();

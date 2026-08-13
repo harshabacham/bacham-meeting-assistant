@@ -32,6 +32,11 @@ export function LectureIntelligenceTab({
   const renderMultiLevelSummary = (parsed: any) => {
     const content = parsed[`${summaryTier}_summary`] || parsed[summaryTier === 'deep' ? 'deep_notes' : summaryTier === 'textbook' ? 'textbook_notes' : 'standard_summary'];
     
+    // We explicitly remove executive_summary from parsed so that LectureIntelligenceView doesn't render it again
+    // since the multi-tier summary (which is acting as our executive summary) is already rendered at the top.
+    const viewData = { ...parsed };
+    delete viewData.executive_summary;
+
     return (
       <div className="space-y-6">
         <div className="flex p-1 bg-surface-raised border border-border/50 rounded-xl overflow-hidden shadow-sm">
@@ -54,6 +59,8 @@ export function LectureIntelligenceTab({
             <ReactMarkdown>{content || "This summary level is not available yet."}</ReactMarkdown>
           </div>
         </div>
+
+        <LectureIntelligenceView data={viewData} />
       </div>
     );
   };

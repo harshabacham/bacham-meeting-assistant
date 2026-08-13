@@ -57,7 +57,7 @@ pub async fn create_conversation(
 
     sqlx::query!(
         "INSERT INTO conversations (id, title, scope_type, scope_ref_json, provider, model, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'gemini', 'gemini-3.1-flash-lite', ?, ?)",
+         VALUES (?, ?, ?, ?, 'gemini', 'gemini-2.0-flash-lite', ?, ?)",
         id, title_val, scope_type, scope_ref_json, now, now
     ).execute(pool).await.map_err(|e| e.to_string())?;
 
@@ -70,7 +70,7 @@ pub async fn create_conversation(
         is_favorite: false,
         is_archived: false,
         provider: "gemini".to_string(),
-        model: "gemini-3.1-flash-lite".to_string(),
+        model: "gemini-2.0-flash-lite".to_string(),
         created_at: now.clone(),
         updated_at: now,
     })
@@ -117,7 +117,7 @@ pub async fn get_or_create_lecture_conversation(
 
     sqlx::query!(
         "INSERT INTO conversations (id, title, scope_type, scope_ref_json, provider, model, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'gemini', 'gemini-3.1-flash-lite', ?, ?)",
+         VALUES (?, ?, ?, ?, 'gemini', 'gemini-2.0-flash-lite', ?, ?)",
         id, title_val, scope_type, scope_ref_json, now, now
     ).execute(pool).await.map_err(|e| e.to_string())?;
 
@@ -130,7 +130,7 @@ pub async fn get_or_create_lecture_conversation(
         is_favorite: false,
         is_archived: false,
         provider: "gemini".to_string(),
-        model: "gemini-3.1-flash-lite".to_string(),
+        model: "gemini-2.0-flash-lite".to_string(),
         created_at: now.clone(),
         updated_at: now,
     })
@@ -161,8 +161,14 @@ pub async fn send_message(
     let bundle = ContextEngine::build_context_bundle(pool, &scope, &content).await.map_err(|e| e.to_string())?;
     
     let bundle_id = Uuid::new_v4().to_string();
-    let scope_hash = "TODO";
-    let query_hash = "TODO";
+    let mut s_hasher = std::collections::hash_map::DefaultHasher::new();
+    std::hash::Hash::hash(&serde_json::to_string(&scope).unwrap_or_default(), &mut s_hasher);
+    let scope_hash = std::hash::Hasher::finish(&s_hasher).to_string();
+    
+    let mut q_hasher = std::collections::hash_map::DefaultHasher::new();
+    std::hash::Hash::hash(&content, &mut q_hasher);
+    let query_hash = std::hash::Hasher::finish(&q_hasher).to_string();
+    
     let lecture_ids_json = serde_json::to_string(&bundle.lecture_ids).unwrap_or_default();
     let truncated = if bundle.truncated { 1 } else { 0 };
     let expires = Utc::now().to_rfc3339();

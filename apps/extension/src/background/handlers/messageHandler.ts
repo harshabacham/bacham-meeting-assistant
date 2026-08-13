@@ -97,6 +97,11 @@ export function createMessageHandler(
         return { success: true };
       }
 
+      case MessageType.RETRY_CONNECTION: {
+        messagingClient.connect();
+        return { success: true };
+      }
+
       case MessageType.START_SESSION: {
         const intent = message.payload as StartSessionIntent;
 
@@ -115,8 +120,8 @@ export function createMessageHandler(
 
         // Get stream ID immediately to preserve user gesture
         const streamId = await new Promise<string | undefined>((resolve, reject) => {
-          if (intent.captureMode === 'screen') {
-            chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab'], tab, (id) => {
+          if (intent.captureMode === 'screen' || intent.captureMode === 'walkthrough') {
+            chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab', 'audio'], tab, (id) => {
               if (chrome.runtime.lastError || !id) {
                 log.error(MODULE, 'desktopCapture.chooseDesktopMedia failed', {
                   error: chrome.runtime.lastError?.message,
@@ -187,6 +192,11 @@ export function createMessageHandler(
 
         // Send metadata
         await metadataService.sendMetadata(tab.id, session.id, intent.courseLabel);
+
+        // Tell the content script to open the sidebar UI
+        chrome.tabs.sendMessage(tab.id, { type: 'OPEN_SIDEBAR' }).catch((e) => {
+          log.warn(MODULE, 'Failed to send OPEN_SIDEBAR to content script', { error: e });
+        });
 
         // Set up screenshot interval alarm if configured
         if (intent.screenshotIntervalMs) {
@@ -423,6 +433,25 @@ export function createMessageHandler(
         return { success: true };
       }
 
+      case MessageType.LOCAL_TRANSCRIPT_SEGMENT: {
+        const payload = message.payload as import('@/shared/types').LiveCaptionPayload;
+        // The local transcript segment represents the user's microphone.
+        // We package it as a LIVE_CAPTION so the Desktop App records it and routes it through the Interview Engine.
+        const nativeMsg: NativeMessage<import('@/shared/types').LiveCaptionPayload> = {
+          version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+          type: MessageType.LIVE_CAPTION,
+          payload: {
+            text: payload.text,
+            timestamp: payload.timestamp,
+            platform: 'native_mic', // Indicates this came from the local user's microphone
+            speakerName: 'You'
+          },
+          timestamp: Date.now(),
+        };
+        messagingClient.send(nativeMsg);
+        return { success: true };
+      }
+
       case MessageType.CATCHUP_REQUEST: {
         // Fetch buffered captions
         let captionText = '';
@@ -471,6 +500,41 @@ export function createMessageHandler(
           const errMsg = err instanceof Error ? err.message : String(err);
           return { success: false, error: `Gemini API error: ${errMsg}` };
         }
+      }
+
+      case MessageType.MUTE_STATE_CHANGE: {
+        const { muted } = message.payload as import('@/shared/types').MuteStatePayload;
+        const { currentSession } = await storage.get(['currentSession']);
+        if (!currentSession || currentSession.state !== 'recording') {
+          return { success: true }; // Not recording, nothing to do
+        }
+
+        if (muted) {
+          // Pause the transcript recorder so we don't capture muted audio
+          await chrome.runtime.sendMessage({ target: 'offscreen', type: 'PAUSE_CAPTURE' })
+            .catch(err => log.warn(MODULE, 'Failed to pause offscreen capture on mute', { err }));
+          log.info(MODULE, 'Mic muted — transcript capture paused');
+        } else {
+          // Resume when unmuted
+          await chrome.runtime.sendMessage({ target: 'offscreen', type: 'RESUME_CAPTURE' })
+            .catch(err => log.warn(MODULE, 'Failed to resume offscreen capture on unmute', { err }));
+          log.info(MODULE, 'Mic unmuted — transcript capture resumed');
+        }
+        return { success: true };
+      }
+
+      case MessageType.DECISION_CONFIRMED: {
+        const payload = message.payload as { text: string };
+        const nativeMsg: NativeMessage<any> = {
+          version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+          type: MessageType.CONFIRM_DECISION as any, // Cast since CONFIRM_DECISION needs to be added to extension's MessageType if not already there (wait, I didn't add CONFIRM_DECISION to extension's MessageType). I will cast to any or just add it. Wait, I should use string 'CONFIRM_DECISION' and cast to MessageType.
+          payload: { decisionText: payload.text },
+          timestamp: Date.now(),
+        };
+        // Let's use the exact string that matches the Rust enum `ConfirmDecision` which is transformed to `CONFIRM_DECISION` by SCREAMING_SNAKE_CASE
+        (nativeMsg as any).type = 'CONFIRM_DECISION';
+        messagingClient.send(nativeMsg);
+        return { success: true };
       }
 
       default:

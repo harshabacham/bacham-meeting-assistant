@@ -8,8 +8,12 @@ interface Props {
   data: any;
 }
 
+import { useCalendarStore } from '@/shared/stores/calendarStore';
+
 const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(item.status === 'completed');
+  const { addEvent, setSyncModalOpen, isConnected } = useCalendarStore();
 
   const handleExecute = async () => {
     setIsExecuting(true);
@@ -28,22 +32,95 @@ const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
     }
   };
 
+  const handleSetReminder = () => {
+    if (!isConnected) {
+      setSyncModalOpen(true);
+      return;
+    }
+
+    if (!item.due_date) {
+      alert("No due date found to set a reminder for.");
+      return;
+    }
+
+    const today = new Date();
+    // basic assumption that it's next day if due date is raw text, otherwise parse
+    addEvent({
+      title: `Task: ${item.task}`,
+      description: `Action item assigned to ${item.owner}`,
+      dateStr: item.due_date,
+      dayNum: today.getDate() + 1,
+      monthStr: today.toLocaleString('default', { month: 'short' }),
+      dayOfWeek: today.toLocaleString('default', { weekday: 'short' }),
+      type: 'bacham',
+      color: '#3b82f6'
+    });
+    alert(`Reminder for "${item.task}" added to your calendar!`);
+  };
+
   return (
-    <div className="flex flex-col bg-background/50 p-3 rounded border border-border/50 group hover:border-primary/30 transition-colors">
-      <div className="flex justify-between items-start gap-2">
-        <span className="text-sm text-foreground font-medium leading-relaxed">{item.task}</span>
-        <button 
-          onClick={handleExecute}
-          disabled={isExecuting}
-          className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
-          title="Execute with AI"
-        >
-          {isExecuting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-          {isExecuting ? 'Thinking...' : 'Execute'}
-        </button>
+    <div className={`flex flex-col bg-background/50 p-3 rounded border border-border/50 group hover:border-primary/30 transition-colors ${isCompleted ? 'opacity-50' : ''}`}>
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex items-start gap-2 flex-1 mt-1">
+          <input 
+            type="checkbox" 
+            checked={isCompleted}
+            onChange={(e) => setIsCompleted(e.target.checked)}
+            className="mt-0.5 shrink-0 accent-[var(--accent)] cursor-pointer"
+          />
+          <span className={`text-sm font-medium leading-relaxed ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+            {item.task}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 shrink-0 max-w-[200px]">
+          <button 
+            onClick={handleExecute}
+            disabled={isExecuting}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+            title="Execute with AI"
+          >
+            {isExecuting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            Execute
+          </button>
+          
+          <button 
+            onClick={async () => {
+              try {
+                const msg = await invoke<string>('push_to_composio', {
+                  input: {
+                    task: item.task,
+                    owner: item.owner || 'Unassigned',
+                    priority: item.priority || 'medium',
+                    destination: 'Linear'
+                  }
+                });
+                alert(msg);
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)]/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+            title="Push to Linear via Composio"
+          >
+            <Briefcase size={12} /> Push
+          </button>
+
+          <button 
+            onClick={handleSetReminder}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+            title="Set Reminder on Calendar"
+          >
+            <Clock size={12} /> Remind
+          </button>
+        </div>
       </div>
-      <div className="flex justify-between items-center mt-3 text-xs">
-        <span className="text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border/50">Owner: {item.owner || 'Unassigned'}</span>
+      <div className="flex flex-wrap justify-between items-center mt-3 text-xs gap-2">
+        <div className="flex gap-2 items-center">
+          <span className="text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border/50">Owner: {item.owner || 'Unassigned'}</span>
+          {item.due_date && (
+             <span className="text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded border border-orange-400/20 font-medium">Due: {item.due_date}</span>
+          )}
+        </div>
         <span className={`px-2 py-0.5 rounded uppercase tracking-wider font-bold ${
           item.priority === 'high' ? 'text-red-400 bg-red-400/10' :
           item.priority === 'medium' ? 'text-yellow-400 bg-yellow-400/10' :
@@ -129,6 +206,16 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       {data.crm_metadata && (
         <section className="bg-background">
           {renderSectionHeader('crm', 'Auto-CRM & Follow-ups', <Briefcase size={16} />)}
+          {expandedSections['crm'] && (
+            <div className="mt-4 px-2 mb-6">
+              <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg flex items-center gap-3 text-sm text-primary">
+                <CheckCircle size={16} />
+                <span>
+                  <strong>Tip:</strong> Want to focus on execution? Check out the new <strong>Execution</strong> tab for a dedicated view of Action Items and Key Decisions.
+                </span>
+              </div>
+            </div>
+          )}
           {expandedSections['crm'] && (
             <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 px-2">
               
@@ -224,7 +311,7 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
               {data.formula_sheet.map((f: any, i: number) => (
                 <div key={i} className="bg-surface p-4 rounded-lg border border-border hover:border-[color:var(--accent)]/30 transition-colors">
-                  <div className="font-mono text-[color:var(--accent)] bg-[var(--glass-bg)] p-3 rounded text-center text-lg mb-3 overflow-x-auto">
+                  <div className="font-mono text-[color:var(--accent)] bg-surface-raised p-3 rounded text-center text-lg mb-3 overflow-x-auto">
                     {f.formula}
                   </div>
                   <h4 className="text-foreground font-medium mb-1">{f.meaning}</h4>
@@ -279,7 +366,7 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
             <div className="mt-4 flex flex-col gap-4 px-2">
               {data.code_explained.map((c: any, i: number) => (
                 <div key={i} className="bg-surface overflow-hidden rounded-lg border border-border">
-                  <div className="bg-[var(--glass-bg)] px-4 py-2 flex justify-between items-center border-b border-border">
+                  <div className="bg-surface-raised px-4 py-2 flex justify-between items-center border-b border-border">
                     <span className="text-sm font-medium text-foreground">{c.purpose}</span>
                     <span className="text-xs text-[color:var(--accent)] bg-[color:var(--accent)]/10 px-2 py-1 rounded font-mono">
                       {c.language}

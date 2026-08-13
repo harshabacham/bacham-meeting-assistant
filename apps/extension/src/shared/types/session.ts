@@ -45,6 +45,8 @@ export interface Session {
   tabUrl: string;
   /** User-supplied label (e.g. course name, lecture title). */
   courseLabel?: string;
+  /** Mode used for this session's capture. */
+  captureMode?: 'tab' | 'screen' | 'walkthrough';
   /** Current state of this session. */
   state: SessionState;
   /** Accumulated paused duration in milliseconds. */
@@ -61,5 +63,5 @@ export interface StartSessionIntent {
   captureAudio: boolean;
   captureVideo: boolean;
   screenshotIntervalMs?: number;
-  captureMode?: 'tab' | 'screen';
+  captureMode?: 'tab' | 'screen' | 'walkthrough';
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TauriClient, Flashcard } from '@/infrastructure/tauri-client';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 import { cn } from '@/components';
+import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 
 interface Props {
     lectureId: string;
@@ -11,6 +12,7 @@ interface Props {
 export function FlashcardManager({ lectureId, onUpdate }: Props) {
     const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { showConfirm } = useConfirmStore();
     
     // Editing state
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -53,7 +55,8 @@ export function FlashcardManager({ lectureId, onUpdate }: Props) {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this flashcard?')) return;
+        const ok = await showConfirm('Are you sure you want to delete this flashcard?');
+        if (!ok) return;
         await TauriClient.deleteFlashcard(id);
         await loadCards();
         onUpdate();

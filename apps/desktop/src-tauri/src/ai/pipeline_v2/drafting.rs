@@ -13,9 +13,9 @@ pub async fn draft_section(job: &SectionDraftJob, pool: &SqlitePool) -> AppResul
     );
 
     let model = if has_complex_nodes {
-        "gemini-3.1-flash-lite"
+        "gemini-2.0-flash-lite"
     } else {
-        "gemini-3.1-flash-lite"
+        "gemini-2.0-flash-lite"
     };
 
     let system_instruction = "You are a university professor drafting a section of a textbook based on lecture notes.

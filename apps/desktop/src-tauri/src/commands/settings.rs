@@ -21,6 +21,8 @@ pub struct Settings {
     pub ai_max_retries: i32,
     pub workspace_panel_sizes: Vec<f64>,
     pub speaker_mapping: std::collections::HashMap<String, String>,
+    pub auto_export_markdown: bool,
+    pub markdown_export_path: String,
 }
 
 #[derive(Deserialize, Default)]
@@ -34,6 +36,8 @@ pub struct UpdateSettingsInput {
     pub ai_max_retries: Option<i32>,
     pub workspace_panel_sizes: Option<Vec<f64>>,
     pub speaker_mapping: Option<std::collections::HashMap<String, String>>,
+    pub auto_export_markdown: Option<bool>,
+    pub markdown_export_path: Option<String>,
 }
 
 #[tauri::command]
@@ -74,6 +78,12 @@ pub async fn settings_get(state: State<'_, DbState>) -> AppResult<Settings> {
         .map(|r| serde_json::from_str::<std::collections::HashMap<String, String>>(&r.get::<String, _>("value")).unwrap_or_default())
         .unwrap_or_default();
 
+    let auto_export_row = sqlx::query("SELECT value FROM settings WHERE key = 'auto_export_markdown'").fetch_optional(pool).await?;
+    let auto_export_markdown = auto_export_row.map(|r| r.get::<String, _>("value") == "true").unwrap_or(false);
+
+    let export_path_row = sqlx::query("SELECT value FROM settings WHERE key = 'markdown_export_path'").fetch_optional(pool).await?;
+    let markdown_export_path = export_path_row.map(|r| r.get("value")).unwrap_or_else(|| "".to_string());
+
     Ok(Settings {
         theme,
         accent_color,
@@ -85,6 +95,8 @@ pub async fn settings_get(state: State<'_, DbState>) -> AppResult<Settings> {
         ai_max_retries,
         workspace_panel_sizes,
         speaker_mapping,
+        auto_export_markdown,
+        markdown_export_path,
     })
 }
 
@@ -143,6 +155,19 @@ pub async fn settings_update(input: UpdateSettingsInput, state: State<'_, DbStat
             .execute(pool).await?;
     }
     
+    if let Some(auto_export) = input.auto_export_markdown {
+        let val = if auto_export { "true" } else { "false" };
+        sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('auto_export_markdown', ?)")
+            .bind(val)
+            .execute(pool).await?;
+    }
+
+    if let Some(export_path) = input.markdown_export_path {
+        sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('markdown_export_path', ?)")
+            .bind(export_path)
+            .execute(pool).await?;
+    }
+    
     // Return the updated settings
     settings_get(state).await
 }
@@ -166,7 +191,79 @@ pub async fn settings_set_api_key(input: ApiKeyInput, state: State<'_, DbState>)
         .bind(&input.key)
         .execute(&state.pool).await?;
         
+
     sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('gemini_api_key_ref', 'true')")
+        .execute(&state.pool).await?;
+        
+    Ok(true)
+}
+
+#[derive(Deserialize)]
+pub struct ProviderTokenInput {
+    pub provider_id: String,
+    pub token: String,
+}
+
+#[tauri::command]
+pub async fn settings_set_provider_token(input: ProviderTokenInput, state: State<'_, DbState>) -> AppResult<bool> {
+    let key_name = if input.provider_id == "bacham.gemini" { "gemini_api_key" } else { &input.provider_id };
+    let entry_res = Entry::new("bacham", key_name);
+    
+    if let Ok(entry) = entry_res {
+        let _ = entry.set_password(&input.token);
+    }
+
+    // ALWAYS write to SQLite because Windows Credential Manager is flaky
+    sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+        .bind(key_name)
+        .bind(&input.token)
+        .execute(&state.pool).await?;
+        
+    Ok(true)
+}
+
+#[derive(Deserialize)]
+pub struct ProviderIdInput {
+    pub provider_id: String,
+}
+
+#[tauri::command]
+pub async fn settings_get_provider_token(input: ProviderIdInput, state: State<'_, DbState>) -> AppResult<Option<String>> {
+    let key_name = if input.provider_id == "bacham.gemini" { "gemini_api_key" } else { &input.provider_id };
+    
+    // Try Keyring first
+    if let Ok(entry) = Entry::new("bacham", key_name) {
+        if let Ok(key) = entry.get_password() {
+            if !key.trim().is_empty() {
+                return Ok(Some(key));
+            }
+        }
+    }
+    
+    // Fallback to SQLite
+    use sqlx::Row;
+    if let Ok(Some(row)) = sqlx::query("SELECT value FROM settings WHERE key = ?")
+        .bind(key_name)
+        .fetch_optional(&state.pool).await {
+        let val: String = row.get("value");
+        if !val.trim().is_empty() {
+            return Ok(Some(val));
+        }
+    }
+    
+    Ok(None)
+}
+
+#[tauri::command]
+pub async fn settings_remove_provider_token(input: ProviderIdInput, state: State<'_, DbState>) -> AppResult<bool> {
+    let key_name = if input.provider_id == "bacham.gemini" { "gemini_api_key" } else { &input.provider_id };
+    
+    if let Ok(entry) = Entry::new("bacham", key_name) {
+        let _ = entry.delete_credential();
+    }
+
+    sqlx::query("DELETE FROM settings WHERE key = ?")
+        .bind(key_name)
         .execute(&state.pool).await?;
         
     Ok(true)

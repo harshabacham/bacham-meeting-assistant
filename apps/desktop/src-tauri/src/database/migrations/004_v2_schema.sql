@@ -72,6 +72,22 @@ CREATE TABLE IF NOT EXISTS recently_viewed (
 );
 
 -- ── Smart Collections (saved filter queries) ──────────────────
+CREATE TABLE IF NOT EXISTS study_patterns (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    pattern_type TEXT NOT NULL,
+    frequency INTEGER DEFAULT 1,
+    success_rate REAL DEFAULT 0.0,
+    last_detected DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS vector_chunks (
+    id TEXT PRIMARY KEY,
+    lecture_id TEXT NOT NULL,
+    chunk_text TEXT NOT NULL,
+    embedding_json TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS smart_collections (
     id          TEXT PRIMARY KEY,
     name        TEXT NOT NULL,

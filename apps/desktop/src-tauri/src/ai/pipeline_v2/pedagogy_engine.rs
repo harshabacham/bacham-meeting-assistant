@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::error::{AppError, AppResult};
-use crate::services::gemini_service::GeminiService;
 use super::knowledge_extraction::{ExtractedKnowledgePipeline, ExtractedNode};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -20,6 +19,8 @@ pub struct TextbookSummary {
     pub interview_questions: Vec<serde_json::Value>,
     pub exam_questions: Vec<serde_json::Value>,
     pub key_takeaways: Vec<String>,
+    #[serde(rename = "crm_metadata", default)]
+    pub crm_metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -81,13 +82,17 @@ Return ONLY valid JSON matching this schema:
   "exam_questions": [
     { "question": "University exam problem", "solution": "Step-by-step solution", "difficulty": "hard" }
   ],
-  "key_takeaways": ["Takeaway 1", "Takeaway 2"]
+  "key_takeaways": ["Takeaway 1", "Takeaway 2"],
+  "crm_metadata": { 
+    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low" } ] 
+  }
 }
 
 Rules:
 1. DO NOT simply summarize the transcript. Synthesize visual slides, formulas, code algorithms, and teacher explanations into textbook notes.
 2. Ensure mathematical rigor for formulas and clean syntax for code blocks.
-3. Raw JSON only, no markdown fencing."#;
+3. If this is a meeting, extract any action items or tasks into crm_metadata.action_items.
+4. Raw JSON only, no markdown fencing."#;
 
         let nodes_json = serde_json::to_string_pretty(&extracted.nodes).unwrap_or_default();
         let chapters_json = serde_json::to_string_pretty(&extracted.chapters).unwrap_or_default();
@@ -98,7 +103,7 @@ Rules:
             nodes_json
         );
 
-        let raw_res = GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?;
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         let parsed: TextbookSummary = serde_json::from_str(clean_res).map_err(|e| {
@@ -112,7 +117,7 @@ Rules:
 
         let _ = sqlx::query(
             "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, status)
-             VALUES (?, ?, 'lecture_intelligence', ?, ?, 'gemini-3.1-flash-lite', 'done')
+             VALUES (?, ?, 'lecture_intelligence', ?, ?, 'gemini-2.0-flash-lite', 'done')
              ON CONFLICT(id) DO UPDATE SET content_json = EXCLUDED.content_json, status = 'done'"
         )
         .bind(&artifact_id)
@@ -153,7 +158,7 @@ Rules:
 3. Return raw JSON array only."#;
 
         let nodes_text = serde_json::to_string_pretty(nodes).unwrap_or_default();
-        let raw_res = GeminiService::generate_text_with_model(&nodes_text, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(&nodes_text, system_instruction, pool).await?;
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         let parsed: Vec<serde_json::Value> = serde_json::from_str(clean_res).unwrap_or_default();
@@ -228,7 +233,7 @@ Rules:
 4. Raw JSON array only."#;
 
         let nodes_text = serde_json::to_string_pretty(nodes).unwrap_or_default();
-        let raw_res = GeminiService::generate_text_with_model(&nodes_text, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(&nodes_text, system_instruction, pool).await?;
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         let parsed: Vec<serde_json::Value> = serde_json::from_str(clean_res).unwrap_or_default();

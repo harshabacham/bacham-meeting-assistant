@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Session } from '@/shared/types';
-import { Square, Pause, Wifi, WifiOff, Sparkles, Loader2, X, ChevronDown } from 'lucide-react';
+import { Square, Pause, Wifi, WifiOff, Sparkles, Loader2, X, ChevronDown, MicOff, AlertCircle } from 'lucide-react';
 import { useConnection } from '@/shared/hooks/useConnection';
 import { MessageType } from '@/shared/types';
 import logo from '@/assets/logo.png';
@@ -36,6 +36,22 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
   const [catchUpSummary, setCatchUpSummary] = useState<string | null>(null);
   const [catchUpError, setCatchUpError] = useState<string | null>(null);
   const [showCatchUp, setShowCatchUp] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Listen for mute-state changes from the content script
+  useEffect(() => {
+    const listener = (msg: unknown) => {
+      if (
+        typeof msg === 'object' && msg !== null &&
+        (msg as Record<string, unknown>)['type'] === MessageType.MUTE_STATE_CHANGE
+      ) {
+        const payload = (msg as Record<string, unknown>)['payload'] as { muted: boolean };
+        setIsMuted(payload?.muted ?? false);
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -96,6 +112,13 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
               : <WifiOff size={10} className="text-[var(--text-muted)]" />
             }
           </div>
+          {/* Mute indicator */}
+          {isMuted && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
+              <MicOff size={10} className="text-amber-400" />
+              <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">Paused</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -144,6 +167,17 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
             {session.tabUrl || "Entire Desktop"}
           </p>
         </div>
+
+        {/* Screen capture warning */}
+        {(session.captureMode === 'screen' || session.captureMode === 'walkthrough') && (
+          <div className="w-full p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-amber-500">
+            <AlertCircle size={14} className="shrink-0 mt-0.5" />
+            <div className="text-[11px] font-medium leading-relaxed">
+              <strong>Screen capture active.</strong> All system audio (including other tabs, music, etc.) will be recorded. For clean meeting notes, use Tab Capture instead.
+            </div>
+          </div>
+        )}
+
 
         {/* ⚡ Catch Me Up Button */}
         <button

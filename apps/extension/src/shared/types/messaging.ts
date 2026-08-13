@@ -24,6 +24,12 @@ export enum MessageType {
   ACK = 'ACK',
   /** Error from the Desktop App. Payload: ErrorPayload. */
   ERROR = 'ERROR',
+  /** Confirm a decision natively */
+  CONFIRM_DECISION = 'CONFIRM_DECISION',
+  /** Live transcript segment broadcast from Desktop. */
+  TRANSCRIPT_SEGMENT = 'TRANSCRIPT_SEGMENT',
+  /** Live interview insight broadcast from Desktop. */
+  INTERVIEW_INSIGHT = 'INTERVIEW_INSIGHT',
 
   // --- Internal (Popup ↔ Background) ---
   /** Popup requests current full state. Payload: none. */
@@ -54,12 +60,20 @@ export enum MessageType {
   RENAME_LECTURE = 'RENAME_LECTURE',
   /** Internal: popup sends delete lecture to background to forward. */
   SEND_DELETE_LECTURE = 'SEND_DELETE_LECTURE',
+  /** Sent by offscreen doc to background when Web Speech API transcribes text */
+  LOCAL_TRANSCRIPT_SEGMENT = 'LOCAL_TRANSCRIPT_SEGMENT',
   /** Internal: popup sends rename lecture to background to forward. */
   SEND_RENAME_LECTURE = 'SEND_RENAME_LECTURE',
   /** Internal: content script triggers an immediate screenshot based on DOM observation. */
   TRIGGER_SNAPSHOT = 'TRIGGER_SNAPSHOT',
   /** Internal: popup requests a live catch-me-up AI summary of recent captions. Payload: none. */
   CATCHUP_REQUEST = 'CATCHUP_REQUEST',
+  /** Internal: content script detected a mic mute/unmute change in the meeting tab. */
+  MUTE_STATE_CHANGE = 'MUTE_STATE_CHANGE',
+  /** Internal: popup requests a manual retry of the native messaging connection. Payload: none. */
+  RETRY_CONNECTION = 'RETRY_CONNECTION',
+  /** Internal: content script confirms a decision. */
+  DECISION_CONFIRMED = 'DECISION_CONFIRMED',
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +199,13 @@ export interface RenameLecturePayload {
 /** Payload for TRIGGER_SNAPSHOT. */
 export interface TriggerSnapshotPayload {
   readonly reason: string;
+  readonly platform: string;
+}
+
+/** Payload for MUTE_STATE_CHANGE. */
+export interface MuteStatePayload {
+  /** true = mic is now muted, false = mic is now active */
+  readonly muted: boolean;
   readonly platform: string;
 }
 

@@ -54,7 +54,7 @@ export default defineManifest({
       // detects known lecture platforms (Zoom/Meet/YouTube) — never page content.
       matches: ['*://*/*'],
       js: ['src/content/index.ts'],
-      run_at: 'document_idle',
+      run_at: 'document_end',
     },
   ],
 
@@ -68,7 +68,7 @@ export default defineManifest({
     'offscreen',
   ],
 
-  // No host_permissions — the content script reads only browser-visible
-  // document properties that don't require host access grants.
-  host_permissions: [],
+  // We need host permissions for the content script to be automatically injected
+  // so the floating Bot UI is visible on meeting platforms.
+  host_permissions: ['*://*/*'],
 });

@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, FileText, RefreshCw, MessageSquare, Send, X, Scissors, Image, Languages } from 'lucide-react';
+import { AlertCircle, Loader2, FileText, RefreshCw, MessageSquare, Send, X, Scissors, Image, Languages, BrainCircuit, Trash2 } from 'lucide-react';
+import { SpeakerRenamePopover } from './SpeakerRenamePopover';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { UserCheck } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
+import { Play } from 'lucide-react';
 
 interface Screenshot {
   id: string;
@@ -33,6 +38,8 @@ interface TranscriptTabProps {
   screenshots?: Screenshot[];
   onJumpToTime?: (ms: number) => void;
   durationMs?: number;
+  videoPath?: string;
+  onDeleteVideo?: () => void;
 }
 
 export function TranscriptTab({
@@ -47,6 +54,8 @@ export function TranscriptTab({
   screenshots = [],
   onJumpToTime,
   durationMs = 0,
+  videoPath,
+  onDeleteVideo,
 }: TranscriptTabProps) {
   const [comments, setComments] = useState<TranscriptComment[]>([]);
   const [commentingOnBlock, setCommentingOnBlock] = useState<number | null>(null);
@@ -58,13 +67,21 @@ export function TranscriptTab({
   const [soundbiteTitle, setSoundbiteTitle] = useState('');
   const [soundbiteBlockMs, setSoundbiteMsForBlock] = useState(0);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [detectedObjection, setDetectedObjection] = useState<{ text: string, suggestedAnswer: string } | null>(null);
 
   const { settings, updateSettings } = useSettingsStore();
   const speakerMapping = settings?.speakerMapping || {};
+  const { showToast } = useToast();
+  const { currentTimeMs, seekTo } = useLectureSyncStore();
 
   useEffect(() => {
     TauriClient.transcriptCommentsList(lectureId).then(setComments).catch(console.error);
   }, [lectureId]);
+
+  useEffect(() => {
+    // Real insight detection should be handled by a backend WebSocket/Tauri event
+    // that analyzes blocks dynamically using the configured AI provider.
+  }, [transcriptBlocks]);
 
   const getBlockMs = (blockIndex: number): number => {
     if (durationMs === 0 || transcriptBlocks.length === 0) return 0;
@@ -121,7 +138,7 @@ export function TranscriptTab({
     try {
       await TauriClient.translateTranscript(lectureId, lang);
       // Wait for it to save to DB, but for now we just show a toast or rely on a refresh
-      alert(`Translated to ${lang}! You can load it from the backend if wired up.`);
+      showToast(`Translated to ${lang}! You can load it from the backend if wired up.`, 'success');
       onRefresh();
     } catch (e) {
       console.error(e);
@@ -135,11 +152,11 @@ export function TranscriptTab({
     const endMs = startMs + 10000; // approximate block length
     try {
       await TauriClient.trimVideoByTimestamps(lectureId, [{ startMs, endMs }]);
-      alert("Trimmed out of video successfully!");
+      showToast("Trimmed out of video successfully!", 'success');
       onRefresh();
     } catch (e) {
       console.error(e);
-      alert("Failed to trim video.");
+      showToast("Failed to trim video.", 'error');
     }
   };
 
@@ -162,7 +179,57 @@ export function TranscriptTab({
     for (const [original, mapped] of Object.entries(speakerMapping)) {
        output = output.replace(new RegExp(`\\b${original}\\b`, 'gi'), mapped);
     }
-    return output;
+    
+    const speakerMatch = output.match(/^\[(.*?)\]:\s*(.*)/s);
+    let speakerName = null;
+    let restText = output;
+
+    if (speakerMatch) {
+      speakerName = speakerMatch[1];
+      restText = speakerMatch[2];
+    }
+
+    // Insight detection (Mock)
+    const lowerText = restText.toLowerCase();
+    const insights: { label: string, color: string }[] = [];
+    if (lowerText.includes('action item') || lowerText.includes('todo') || lowerText.includes('will do') || lowerText.includes('follow up')) {
+      insights.push({ label: 'Action Item', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' });
+    }
+    if (lowerText.includes('fact check') || lowerText.includes('is that true') || lowerText.includes('double check')) {
+      insights.push({ label: 'Fact Check', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' });
+    }
+    if (lowerText.includes('risk') || lowerText.includes('objection') || lowerText.includes('expensive') || lowerText.includes('security')) {
+      insights.push({ label: 'Risk/Objection', color: 'bg-rose-500/10 text-rose-500 border-rose-500/20' });
+    }
+
+    let speakerNode = null;
+    if (speakerName) {
+      speakerNode = (
+        <SpeakerRenamePopover
+          speakerName={speakerName}
+          onRename={(_from, _to) => {
+            // Force re-render by updating transcript display
+            // speakerMapping update in settingsStore handles the retroactive rename
+          }}
+        />
+      );
+    }
+
+    return (
+      <span className="flex flex-col gap-1.5">
+        {(speakerNode || insights.length > 0) && (
+          <div className="flex items-center flex-wrap gap-2">
+            {speakerNode}
+            {insights.map((insight, idx) => (
+               <span key={idx} className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${insight.color}`}>
+                 {insight.label}
+               </span>
+            ))}
+          </div>
+        )}
+        <span className="block text-foreground/90">{restText}</span>
+      </span>
+    );
   };
 
   return (
@@ -199,6 +266,51 @@ export function TranscriptTab({
         </div>
       )}
 
+      {/* Automated Question & Objection Banner */}
+      <AnimatePresence>
+        {detectedObjection && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-surface/95 backdrop-blur-md border border-primary/30 rounded-2xl shadow-2xl p-4 w-[400px] flex gap-4 items-start"
+          >
+            <div className="mt-0.5 bg-primary/20 p-2 rounded-xl text-primary">
+              <BrainCircuit size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Wingman Detected</span>
+                <button onClick={() => setDetectedObjection(null)} className="text-muted-foreground hover:text-foreground">
+                  <X size={14} />
+                </button>
+              </div>
+              <p className="text-sm font-semibold text-foreground">{detectedObjection.text}</p>
+              
+              <div className="mt-3 bg-surface-hover border border-border/50 rounded-xl p-3">
+                <span className="text-[10px] uppercase font-semibold text-muted-foreground mb-1 block">Suggested Answer</span>
+                <p className="text-xs text-foreground/90">{detectedObjection.suggestedAnswer}</p>
+              </div>
+              
+              <div className="mt-3 flex gap-2">
+                <button 
+                  onClick={() => {
+                    // Logic to open chat with prefilled context could go here
+                    setDetectedObjection(null);
+                  }}
+                  className="flex-1 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                >
+                  Use Suggestion
+                </button>
+                <button onClick={() => setDetectedObjection(null)} className="px-3 py-1.5 rounded-lg border border-border/50 text-xs font-medium text-foreground hover:bg-surface-hover transition-colors">
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Translation Toolbar */}
       <div className="flex justify-end p-2 border-b border-border/10">
         <button onClick={() => handleTranslate('Spanish')} disabled={isTranslating} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-surface border border-border/40 rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50">
@@ -206,6 +318,26 @@ export function TranscriptTab({
            Translate to Spanish
         </button>
       </div>
+
+      {videoPath && (
+        <div className="w-full bg-black/10 border-b border-border/20 p-4 relative group">
+          <video 
+            src={convertFileSrc(videoPath)} 
+            controls 
+            className="w-full max-h-[40vh] rounded-lg shadow-sm border border-border/40" 
+            onTimeUpdate={() => {
+               // Sync currentTimeMs if needed for transcript highlighting
+            }}
+          />
+          <button
+            onClick={() => onDeleteVideo?.()}
+            className="absolute top-6 right-6 p-2 bg-black/60 hover:bg-rose-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-md"
+            title="Delete Video to Save Storage"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="prose prose-sm prose-invert max-w-none relative px-4 py-4"
         style={{ height: transcriptBlocks.length > 0 ? `${transcriptVirtualizer.getTotalSize()}px` : 'auto' }}>
@@ -239,7 +371,11 @@ export function TranscriptTab({
                 )}
 
                 {/* Transcript block */}
-                <div className="relative group/block"
+                <div className={`relative group/block rounded-lg p-2 -mx-2 transition-colors ${
+                  currentTimeMs >= getBlockMs(blockIndex) && (blockIndex === transcriptBlocks.length - 1 || currentTimeMs < getBlockMs(blockIndex + 1)) 
+                    ? 'bg-primary/5 border border-primary/20' 
+                    : 'hover:bg-surface-hover'
+                }`}
                   onMouseUp={() => handleTextSelect(blockIndex)}
                   onMouseEnter={() => setHoveredBlock(blockIndex)}
                   onMouseLeave={() => setHoveredBlock(null)}>
@@ -249,7 +385,14 @@ export function TranscriptTab({
 
                   {/* Action buttons on hover */}
                   {hoveredBlock === blockIndex && (
-                    <div className="absolute right-0 top-0 flex gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity">
+                    <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => seekTo(getBlockMs(blockIndex))}
+                        className="p-1 rounded-md bg-surface border border-border/50 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-colors"
+                        title="Play video from here"
+                      >
+                        <Play size={11} fill="currentColor" />
+                      </button>
                       <button
                         onClick={handleTagSpeaker}
                         className="p-1 rounded-md bg-surface border border-border/50 text-indigo-400 hover:bg-indigo-500/10 hover:border-indigo-500/40 transition-colors"

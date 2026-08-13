@@ -237,6 +237,7 @@ export const TauriClient = {
     changeStorageLocation: (newPath: string) => invoke<any>('storage_change_location', { input: { newPath } }),
     getStorageBreakdown: () => invoke<StorageBreakdown>('storage_get_breakdown'),
     deleteVideoAsset: (id: string) => invoke<void>('storage_delete_video', { id }),
+    backupDatabase: (destinationPath: string) => invoke<void>('storage_backup_database', { input: { destinationPath } }),
 
     // Native Capture
     startNativeRecording: () => invoke<boolean>('start_native_recording'),
@@ -276,7 +277,7 @@ export const TauriClient = {
     renameFolder: (id: string, name: string) => invoke<void>('rename_folder', { id, name }),
     duplicateFolder: (id: string, deep: boolean) => invoke<Folder>('duplicate_folder', { id, deep }),
     moveFolder: (id: string, newParentId: string | null) => 
-        invoke<void>('move_folder', { id, newParentId }),
+        invoke<void>('move_folder', { id, new_parent_id: newParentId }),
     reorderFolders: (parentId: string | null, orderedIds: string[]) => 
         invoke<void>('reorder_folders', { parentId, orderedIds }),
     setFolderFavorite: (id: string, favorite: boolean) => invoke<void>('set_folder_favorite', { id, favorite }),
@@ -424,7 +425,7 @@ export const TauriClient = {
 
     // ── Organization ───────────────────────────────────────────────────────
     moveLectures: (lectureIds: string[], targetFolderId: string | null) => 
-        invoke<BatchResult>('move_lectures', { lectureIds, targetFolderId }),
+        invoke<BatchResult>('move_lectures', { lecture_ids: lectureIds, target_folder_id: targetFolderId }),
     setFavorite: (lectureIds: string[], favorite: boolean) => invoke<void>('set_favorite', { lectureIds, favorite }),
     setPinned: (lectureIds: string[], pinned: boolean) => invoke<void>('set_pinned', { lectureIds, pinned }),
     setArchived: (lectureIds: string[], archived: boolean) => invoke<void>('set_archived', { lectureIds, archived }),
@@ -453,7 +454,7 @@ export const TauriClient = {
     // ── Multimodal Teaching & Cross-Lecture Engine ────────────────────────
     transcriptCommentsList: (lectureId: string) => invoke<any[]>('transcript_comments_list', { lectureId }),
     transcriptCommentsAdd: (lectureId: string, timestampMs: number, blockIndex: number, text: string, author: string) => 
-        invoke<void>('transcript_comments_add', { lectureId, timestampMs, blockIndex, text, author }),
+        invoke<any>('transcript_comments_add', { lectureId, timestampMs, blockIndex, text, author }),
     transcriptCommentsDelete: (id: string) => invoke<void>('transcript_comments_delete', { id }),
     analyzeConversation: (lectureId: string) => invoke<any>('analyze_conversation', { lectureId }),
     notesAiAugment: (lectureId: string, userDraft: string) => invoke<string>('notes_ai_augment', { lectureId, userDraft }),
@@ -539,4 +540,19 @@ export const TauriClient = {
         });
     },
 
+    // ── Missing Mocks/Backend methods ──────────────────────────────────────
+    translateTranscript: (lectureId: string, targetLanguage: string) => invoke<void>('translate_transcript', { lectureId, targetLanguage }),
+    trimVideoByTimestamps: (lectureId: string, blocks: { startMs: number; endMs: number }[]) => invoke<void>('trim_video', { lectureId, blocks }),
+    getAllActionItems: () => invoke<any[]>('get_all_action_items'),
+    updateActionItemStatus: (lectureId: string, task: string, status: string) => invoke<void>('update_action_item_status', { lectureId, task, status }),
+    fsWriteTextFile: (path: string, content: string) => invoke<void>('fs_write_text_file', { path, content }),
+    soundbitesCreate: (lectureId: string, title: string, startMs: number, endMs: number, text: string, color: string) => invoke<any>('soundbites_create', { lectureId, title, startMs, endMs, text, color }),
+    generatePreMeetingBrief: (attendees: string[], title: string) => invoke<any>('generate_pre_meeting_brief', { attendees, title }),
+    analyzeInterviewLive: (input: { transcriptBuffer: string }) => invoke<{ questionDetected: boolean; suggestedAnswer?: string }>('analyze_interview_live', { input }),
+    detectDecisionsLive: (input: { transcriptBuffer: string }) => invoke<{ decisionDetected: boolean; decisionText?: string }>('detect_decisions_live', { input }),
+    confirmLiveDecision: (input: { lectureId: string; decisionText: string }) => invoke<boolean>('confirm_live_decision', { input }),
+    syncMeetingToMarkdown: (lectureId: string) => invoke<boolean>('sync_meeting_to_markdown', { lectureId }),
+    sendGlobalMemoryChat: (prompt: string, history?: any[]) => invoke<string>('send_global_memory_chat', { prompt, history }),
+    saveLiveScratchpad: (lectureId: string, notes: string) => invoke<void>('save_live_scratchpad', { input: { lectureId, notes } }),
+    pushToComposio: (task: string, owner: string, priority: string, destination: string) => invoke<string>('push_to_composio', { input: { task, owner, priority, destination } }),
 };

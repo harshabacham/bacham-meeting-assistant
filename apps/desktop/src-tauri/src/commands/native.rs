@@ -63,4 +63,46 @@ pub async fn fetch_url_with_auth(url: String, token: Option<String>) -> AppResul
     Ok(content)
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct FetchOptions {
+    pub method: String,
+    pub headers: std::collections::HashMap<String, String>,
+    pub body: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+pub struct FetchResponse {
+    pub status: u16,
+    pub text: String,
+}
+
+#[tauri::command]
+pub async fn fetch_custom(url: String, options: FetchOptions) -> AppResult<FetchResponse> {
+    let client = reqwest::Client::new();
+    
+    let method = match options.method.to_uppercase().as_str() {
+        "POST" => reqwest::Method::POST,
+        "PUT" => reqwest::Method::PUT,
+        "PATCH" => reqwest::Method::PATCH,
+        "DELETE" => reqwest::Method::DELETE,
+        _ => reqwest::Method::GET,
+    };
+
+    let mut req = client.request(method, &url);
+    
+    for (key, value) in options.headers {
+        req = req.header(key, value);
+    }
+    
+    if let Some(body) = options.body {
+        req = req.body(body);
+    }
+    
+    let res = req.send().await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    let status = res.status().as_u16();
+    let text = res.text().await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    
+    Ok(FetchResponse { status, text })
+}
+
 

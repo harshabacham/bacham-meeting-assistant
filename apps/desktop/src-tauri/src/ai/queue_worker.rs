@@ -1,6 +1,6 @@
 use sqlx::SqlitePool;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use chrono::Utc;
 
 use crate::error::AppError;
@@ -85,6 +85,31 @@ impl QueueWorker {
                     .bind(&id)
                     .execute(pool)
                     .await?;
+
+                    // Trigger Auto-Export if enabled
+                    if job_type == "lecture_intelligence" {
+                        if let Ok(settings) = crate::commands::settings::settings_get(app.state::<crate::database::DbState>()).await {
+                            if settings.auto_export_markdown {
+                                let mut dest = std::path::PathBuf::from(&settings.markdown_export_path);
+                                if dest.as_os_str().is_empty() {
+                                    if let Ok(doc_dir) = app.path().document_dir() {
+                                        dest = doc_dir.join("BACHAM").join("Exports");
+                                    }
+                                }
+                                
+                                // Fetch lecture title to use as filename
+                                if let Ok(lecture) = sqlx::query!("SELECT title FROM lectures WHERE id = ?", lecture_id)
+                                    .fetch_one(pool)
+                                    .await 
+                                {
+                                    let filename = format!("{}.md", lecture.title.replace(|c: char| !c.is_alphanumeric() && c != ' ' && c != '-', "_"));
+                                    let full_path = dest.join(&filename);
+                                    let _ = crate::services::export_service::ExportService::export_markdown(pool, &lecture_id, &full_path).await;
+                                    eprintln!("[QueueWorker] Auto-exported markdown to {:?}", full_path);
+                                }
+                            }
+                        }
+                    }
                 }
                 Err(AppError::RateLimit(delay_secs)) => {
                     // Gemini returned 429

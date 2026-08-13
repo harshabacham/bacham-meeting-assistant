@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::error::AppResult;
-use crate::services::gemini_service::GeminiService;
 use crate::ai::context_builder::ContextBuilder;
 use super::multimodal_perception::MultimodalPerception;
 
@@ -141,9 +140,9 @@ Rules:
         }
 
         let raw_res = if !image_parts.is_empty() {
-            GeminiService::generate_multimodal_with_model(&prompt, system_instruction, &image_parts, pool, "gemini-3.1-flash-lite").await?
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system_instruction, &image_parts, pool).await?
         } else {
-            GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?
+            crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?
         };
 
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();

@@ -1,0 +1,20 @@
+{
+  "claudeCode.environmentVariables": [
+    {
+      "name": "ANTHROPIC_BASE_URL",
+      "value": "http://localhost:20128"
+    },
+    {
+      "name": "ANTHROPIC_AUTH_TOKEN",
+      "value": "sk-27ef03c8214fc66c-03e827-86c1b06e"
+    },
+    {
+      "name": "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY",
+      "value": "1"
+    },
+    {
+      "name": "ANTHROPIC_MODEL",
+      "value": "auto/best-coding"
+    }
+  ]
+}

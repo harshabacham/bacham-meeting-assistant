@@ -1,4 +1,5 @@
 pub mod gemini_service;
+pub mod universal_ai;
 pub mod ai_provider;
 pub mod lecture_service;
 pub mod summary_service;
@@ -17,3 +18,5 @@ pub mod prompt_service;
 pub mod pattern_service;
 pub mod provider_service;
 pub mod search_indexer;
+pub mod vector_db;
+pub mod embedding_service;

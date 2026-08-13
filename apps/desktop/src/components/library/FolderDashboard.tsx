@@ -5,6 +5,7 @@ import { Button, Card, EmptyState, Loader, cn } from '@/components';
 import { HardDrive, BrainCircuit, LayoutList, CheckCircle, PenTool, Sparkles, Folder as FolderIcon, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TauriClient } from '@/infrastructure/tauri-client';
+import { useToast } from '@/components/ui/ToastProvider';
 import { FolderSettingsDialog } from './FolderSettingsDialog';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
+    const { showToast } = useToast();
     const { getFolderDashboard } = useFolderStore();
     const [dashboard, setDashboard] = useState<IFolderDashboard | null>(null);
     const [loading, setLoading] = useState(true);
@@ -91,8 +93,8 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                         onClick={async () => {
                             try {
                                 await TauriClient.runStudyAction("summary", { folder: folder.id });
-                                alert("Study Guide generation started in background."); 
-                            } catch(err: any) { alert("Error: " + err.message); }
+                                showToast("Study Guide generation started in background.", 'success'); 
+                            } catch(err: any) { showToast("Error: " + err.message, 'error'); }
                         }}
                     >
                         <BrainCircuit size={14} className="text-primary" /> Generate Study Guide
@@ -103,8 +105,8 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                         onClick={async () => {
                             try {
                                 await TauriClient.runStudyAction("flashcards", { folder: folder.id });
-                                alert("Flashcards generation started in background."); 
-                            } catch(err: any) { alert("Error: " + err.message); }
+                                showToast("Flashcards generation started in background.", 'success'); 
+                            } catch(err: any) { showToast("Error: " + err.message, 'error'); }
                         }}
                     >
                         <Sparkles size={14} className="text-accent" /> Generate Flashcards
@@ -115,8 +117,8 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                         onClick={async () => {
                             try {
                                 await TauriClient.runStudyAction("quiz", { folder: folder.id });
-                                alert("Quiz generation started in background."); 
-                            } catch(err: any) { alert("Error: " + err.message); }
+                                showToast("Quiz generation started in background.", 'success'); 
+                            } catch(err: any) { showToast("Error: " + err.message, 'error'); }
                         }}
                     >
                         <CheckCircle size={14} className="text-destructive" /> Generate Quiz
@@ -132,8 +134,8 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                                 const safeName = folder.name.replace(/[^a-z0-9]/gi, '_').slice(0, 60);
                                 const dest = `${docsDir}\\BACHAM\\Data\\exports\\${safeName}_CramSheet.html`;
                                 await TauriClient.exportFolderCramSheet(folder.id, dest);
-                                alert(`Cram Sheet Exported!\nSaved to:\n${dest}`);
-                            } catch(err: any) { alert("Export Error: " + err.message); }
+                                showToast(`Cram Sheet Exported!\nSaved to:\n${dest}`, 'success');
+                            } catch(err: any) { showToast("Export Error: " + err.message, 'error'); }
                         }}
                     >
                         <HardDrive size={14} className="text-white" /> Export Cram Sheet

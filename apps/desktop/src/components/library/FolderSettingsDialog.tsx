@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { Folder } from '@/shared/types';
 import { X, Lock, Unlock, Download, Save } from 'lucide-react';
+import { useToast } from '@/components/ui/ToastProvider';
 interface FolderSettingsDialogProps {
     folder: Folder;
     onClose: () => void;
@@ -9,6 +10,7 @@ interface FolderSettingsDialogProps {
 
 export function FolderSettingsDialog({ folder, onClose }: FolderSettingsDialogProps) {
     const { updateFolder, lockFolder, unlockFolder, exportFolder } = useFolderStore();
+    const { showToast } = useToast();
     
     const [name, setName] = useState(folder.name);
     const [description, setDescription] = useState(folder.description || '');
@@ -23,34 +25,40 @@ export function FolderSettingsDialog({ folder, onClose }: FolderSettingsDialogPr
             await updateFolder(folder.id, name, color, icon, description);
             onClose();
         } catch (e: any) {
-            alert(`Error saving folder: ${e.message}`);
+            showToast(`Error saving folder: ${e.message}`, 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleLock = async () => {
-        if (!passcode) return alert('Enter a passcode');
+        if (!passcode) {
+            showToast('Enter a passcode', 'error');
+            return;
+        }
         try {
             await lockFolder(folder.id, passcode);
             setPasscode('');
-            alert('Folder locked successfully.');
+            showToast('Folder locked successfully.', 'success');
         } catch (e: any) {
-            alert(`Lock error: ${e.message}`);
+            showToast(`Lock error: ${e.message}`, 'error');
         }
     };
 
     const handleUnlock = async () => {
-        if (!passcode) return alert('Enter a passcode');
+        if (!passcode) {
+            showToast('Enter a passcode', 'error');
+            return;
+        }
         try {
             const ok = await unlockFolder(folder.id, passcode);
-            if (!ok) alert('Incorrect passcode');
+            if (!ok) showToast('Incorrect passcode', 'error');
             else {
                 setPasscode('');
-                alert('Folder unlocked.');
+                showToast('Folder unlocked.', 'success');
             }
         } catch (e: any) {
-            alert(`Unlock error: ${e.message}`);
+            showToast(`Unlock error: ${e.message}`, 'error');
         }
     };
 
@@ -61,9 +69,9 @@ export function FolderSettingsDialog({ folder, onClose }: FolderSettingsDialogPr
         if (dest) {
             try {
                 await exportFolder(folder.id, dest, { includeMedia: true, includeStudyMaterials: true });
-                alert('Folder exported successfully.');
+                showToast('Folder exported successfully.', 'success');
             } catch (e: any) {
-                alert(`Export error: ${e.message}`);
+                showToast(`Export error: ${e.message}`, 'error');
             }
         }
     };

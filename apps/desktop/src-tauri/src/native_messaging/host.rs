@@ -110,10 +110,14 @@ impl NativeHost {
                     let app_clone = self.app.clone();
                     
                     tauri::async_runtime::spawn(async move {
+                        // Immediately wake the app so the user sees the transition
+                        let _ = app_clone.emit("auto_wake_live", session_id_clone.clone());
+
                         let now = chrono::Utc::now().to_rfc3339();
                         if let Err(e) = sqlx::query!(
-                            "INSERT INTO lectures (id, title, course_label, duration_ms, source, created_at, updated_at) VALUES (?, ?, ?, 0, 'extension', ?, ?)",
-                            session_id_clone, title, course_label, now, now
+                            "INSERT INTO lectures (id, title, course_label, duration_ms, source, created_at, updated_at) VALUES (?, ?, ?, 0, 'extension', ?, ?)
+                             ON CONFLICT(id) DO UPDATE SET updated_at = ?",
+                            session_id_clone, title, course_label, now, now, now
                         ).execute(&pool).await {
                             let log_path = temp_dir.parent().unwrap().join("debug.log");
                             if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
@@ -249,14 +253,8 @@ impl NativeHost {
                                             }
 
                                             let t_id = uuid::Uuid::new_v4().to_string();
-                                            // Remove any live_captions placeholder before inserting the
-                                            // authoritative AI-generated transcript to avoid duplicates.
                                             let _ = sqlx::query!(
-                                                "DELETE FROM transcripts WHERE lecture_id = ? AND model_used = 'live_captions'",
-                                                session_id_clone
-                                            ).execute(&pool).await;
-                                            let _ = sqlx::query!(
-                                                "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.1-flash-lite')",
+                                                "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-2.0-flash-lite')",
                                                 t_id, session_id_clone, text
                                             ).execute(&pool).await;
                                             full_transcript = text;
@@ -304,6 +302,18 @@ impl NativeHost {
                                 let _ = crate::services::timeline_service::TimelineService::populate_from_key_frames(
                                     &pool, &session_id_clone
                                 ).await;
+
+                                // Generate and store semantic embeddings for Global Chat
+                                let _ = app_clone.emit("pipeline_progress", serde_json::json!({
+                                    "sessionId": session_id_clone,
+                                    "status": "embedding",
+                                    "message": "Generating semantic vectors..."
+                                }));
+                                let _ = crate::ai::intelligence_engine::IntelligenceEngine::generate_embeddings(
+                                    app_clone.clone(),
+                                    session_id_clone.clone(),
+                                    full_transcript.clone()
+                                ).await;
                             }
                             
                             // (Video persistence moved to start of pipeline)
@@ -316,6 +326,11 @@ impl NativeHost {
                             }));
                             let _ = app_clone.emit("refresh_lectures", ());
 
+                            // Auto-export to markdown if enabled
+                            let _ = crate::commands::markdown_export::sync_meeting_to_markdown_internal(
+                                &session_id_clone,
+                                &pool
+                            ).await;
                             
                             let _ = writeln!(log_file, "Pipeline complete!");
                         } else {
@@ -450,10 +465,17 @@ impl NativeHost {
                         .fetch_optional(&pool)
                         .await;
 
+                        // Determine the formatted text based on speaker
+                        let formatted_text = if let Some(speaker) = &payload.speaker_name {
+                            format!("[{}]: {}", speaker, payload.text)
+                        } else {
+                            format!("[Unknown Speaker]: {}", payload.text)
+                        };
+
                         match existing {
                             Ok(Some(row)) => {
                                 // Append new caption text to existing row
-                                let new_content = format!("{}\n{}", row.content, payload.text);
+                                let new_content = format!("{}\n{}", row.content, formatted_text);
                                 let _ = sqlx::query!(
                                     "UPDATE transcripts SET content = ? WHERE id = ?",
                                     new_content,
@@ -467,7 +489,7 @@ impl NativeHost {
                                 let t_id = Uuid::new_v4().to_string();
                                 let _ = sqlx::query!(
                                     "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'live_captions')",
-                                    t_id, session_id_clone, payload.text
+                                    t_id, session_id_clone, formatted_text
                                 )
                                 .execute(&pool)
                                 .await;
@@ -482,6 +504,16 @@ impl NativeHost {
                             "timestamp": payload.timestamp,
                             "platform": payload.platform,
                         }));
+                        
+                        // Broadcast transcript segment to the browser extension
+                        let ext_msg = serde_json::json!({
+                            "type": "TRANSCRIPT_SEGMENT",
+                            "payload": {
+                                "text": payload.text,
+                                "timestamp": payload.timestamp
+                            }
+                        });
+                        crate::ws_server::broadcast_to_extension(ext_msg.to_string()).await;
 
                         // ── Emit transcript_update so the Transcript tab updates live ───────
                         let full = sqlx::query!(
@@ -490,19 +522,84 @@ impl NativeHost {
                         )
                         .fetch_all(&pool)
                         .await
-                        .ok()
-                        .map(|rows| {
-                            rows.into_iter()
-                                .map(|r| r.content)
-                                .collect::<Vec<_>>()
-                                .join("\n\n")
-                        })
                         .unwrap_or_default();
+
+                        let mut full_text = String::new();
+                        for r in &full {
+                            full_text.push_str(&r.content);
+                            full_text.push_str("\n\n");
+                        }
 
                         let _ = app_clone.emit("transcript_update", serde_json::json!({
                             "lectureId": session_id_clone,
-                            "content": full,
+                            "content": full_text
                         }));
+
+                        // Process Interview Insights
+                        // Take the last 1500 chars of full_text as recent context
+                        let context_start = full_text.chars().count().saturating_sub(1500);
+                        let recent_context: String = full_text.chars().skip(context_start).collect();
+                        
+                        let current_speaker = payload.speaker_name.as_deref().unwrap_or("Unknown");
+                        let platform = payload.platform.as_str();
+
+                        if let Ok(Some(insight)) = crate::ai::pipeline_v2::interview_engine::InterviewEngine::process_transcript_segment(&recent_context, current_speaker, platform, &pool).await {
+                            let insight_msg = serde_json::json!({
+                                "type": "INTERVIEW_INSIGHT",
+                                "payload": insight
+                            });
+                            crate::ws_server::broadcast_to_extension(insight_msg.to_string()).await;
+                        }
+                    });
+                }
+            }
+            return;
+        }
+
+        if msg.r#type == MessageType::ConfirmDecision {
+            if let Some(session_id) = &msg.session_id {
+                if let Ok(payload) = serde_json::from_value::<crate::native_messaging::protocol::ConfirmDecisionPayload>(msg.payload.clone()) {
+                    let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                    let session_id_clone = session_id.clone();
+                    let decision_text = payload.decision_text;
+                    let app_clone = self.app.clone();
+
+                    tauri::async_runtime::spawn(async move {
+                        let existing = sqlx::query!(
+                            "SELECT id, content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'action_items' LIMIT 1",
+                            session_id_clone
+                        ).fetch_optional(&pool).await.unwrap_or(None);
+
+                        let mut items: Vec<String> = vec![];
+                        let mut artifact_id = uuid::Uuid::new_v4().to_string();
+
+                        if let Some(row) = existing.as_ref() {
+                            if let Some(id) = &row.id {
+                                artifact_id = id.clone();
+                            }
+                            if let Ok(parsed) = serde_json::from_str::<Vec<String>>(&row.content_json) {
+                                items = parsed;
+                            }
+                        }
+
+                        items.push(format!("[Decision] {}", decision_text));
+                        let new_json = serde_json::to_string(&items).unwrap();
+                        let now = chrono::Utc::now().timestamp_millis();
+
+                        if existing.is_some() {
+                            let _ = sqlx::query!(
+                                "UPDATE lecture_artifacts SET content_json = ? WHERE id = ?",
+                                new_json, artifact_id
+                            ).execute(&pool).await;
+                        } else {
+                            let _ = sqlx::query!(
+                                "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, version, status) 
+                                 VALUES (?, ?, 'action_items', ?, ?, 'live_decision', 1, 'done')",
+                                artifact_id, session_id_clone, new_json, now
+                            ).execute(&pool).await;
+                        }
+                        
+                        let _ = app_clone.emit("refresh_lectures", ());
                     });
                 }
             }

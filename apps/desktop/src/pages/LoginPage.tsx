@@ -79,48 +79,48 @@ export const LoginPage = () => {
 
   if (showProfileSetup) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-zinc-950 text-zinc-50 selection:bg-indigo-500/30 p-4">
+      <div className="flex h-screen w-full items-center justify-center bg-background text-foreground selection:bg-primary/20 p-4">
         <ProfileSetup 
           onComplete={handleProfileComplete} 
           defaultUsername={user?.displayName || email.split('@')[0] || ''} 
-          className="bg-white/5 border-white/10 backdrop-blur-xl text-white" 
+          className="bg-surface/40 border-border backdrop-blur-xl text-foreground" 
         />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-zinc-950 text-zinc-50 selection:bg-indigo-500/30">
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl">
-        <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-indigo-500/20 blur-[100px]"></div>
-        <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-fuchsia-500/20 blur-[100px]"></div>
+    <div className="flex h-screen w-full items-center justify-center bg-background text-foreground selection:bg-primary/20">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-surface/30 p-8 backdrop-blur-xl shadow-2xl">
+        <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-primary/10 blur-[100px]"></div>
+        <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-primary/5 blur-[100px]"></div>
         
         <div className="relative z-10">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-transparent">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h1>
-            <p className="mt-2 text-sm text-zinc-400">
+            <p className="mt-2 text-sm text-muted-foreground">
               {isLogin ? 'Sign in to access your workspace.' : 'Sign up to get started.'}
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
               {error}
             </div>
           )}
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-zinc-400">Email Address</label>
+              <label className="text-xs font-semibold text-muted-foreground">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white/10"
+                  className="w-full rounded-xl border border-border/60 bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground outline-none transition-all focus:border-primary/50 focus:bg-background"
                   placeholder="you@example.com"
                   required
                 />
@@ -128,12 +128,12 @@ export const LoginPage = () => {
             </div>
             
             <div className="space-y-1">
-              <label className="text-xs font-medium text-zinc-400">Password</label>
+              <label className="text-xs font-semibold text-muted-foreground">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm outline-none transition-all focus:border-indigo-500 focus:bg-white/10"
+                className="w-full rounded-xl border border-border/60 bg-background/50 px-4 py-2.5 text-sm text-foreground outline-none transition-all focus:border-primary/50 focus:bg-background"
                 placeholder="••••••••"
                 required
               />
@@ -142,7 +142,7 @@ export const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="mt-6 w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-600 active:scale-[0.98] disabled:opacity-50"
+              className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 shadow-md shadow-primary/10"
             >
               {isLogin ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Sign Up')}
@@ -151,10 +151,10 @@ export const LoginPage = () => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-border/40"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-zinc-950 px-2 text-zinc-400">Or continue with</span>
+              <span className="bg-background px-3 text-muted-foreground text-xs font-medium">Or continue with</span>
             </div>
           </div>
 
@@ -162,7 +162,7 @@ export const LoginPage = () => {
             type="button"
             onClick={handleGoogleAuth}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border/60 bg-surface/50 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-surface-hover hover:text-foreground active:scale-[0.98] disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -173,13 +173,11 @@ export const LoginPage = () => {
             Google
           </button>
 
-
-
-          <div className="mt-8 text-center text-sm text-zinc-400">
+          <div className="mt-8 text-center text-sm text-muted-foreground">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="font-medium text-indigo-400 hover:text-indigo-300"
+              className="font-semibold text-primary hover:opacity-85 transition-opacity"
             >
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>

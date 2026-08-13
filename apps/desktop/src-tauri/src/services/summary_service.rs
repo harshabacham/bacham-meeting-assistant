@@ -33,14 +33,14 @@ Do not wrap the JSON in ```json blocks, return the raw JSON array."#;
         }
 
         let content = if image_parts.is_empty() {
-            crate::services::gemini_service::GeminiService::generate_text(&enriched_transcript, instruction, pool).await?
+            crate::services::universal_ai::UniversalAiService::generate_text(&enriched_transcript, instruction, pool).await?
         } else {
-            crate::services::gemini_service::GeminiService::generate_multimodal(&enriched_transcript, instruction, &image_parts, pool).await?
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(&enriched_transcript, instruction, &image_parts, pool).await?
         };
         
         let id = Uuid::new_v4().to_string();
         sqlx::query!(
-            "INSERT OR REPLACE INTO summaries (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.1-flash-lite')",
+            "INSERT OR REPLACE INTO summaries (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-2.0-flash-lite')",
             id, lecture_id, content
         ).execute(pool).await?;
         

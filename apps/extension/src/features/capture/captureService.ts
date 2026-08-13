@@ -227,6 +227,8 @@ export function createCaptureService(
             mandatory: {
               chromeMediaSource: mediaSource,
               chromeMediaSourceId: streamId,
+              minFrameRate: 30,
+              maxFrameRate: 60,
             },
           } as unknown as MediaTrackConstraints)
         : false,
@@ -234,6 +236,16 @@ export function createCaptureService(
 
     mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
     log.info(MODULE, 'MediaStream acquired', { tracks: mediaStream.getTracks().length });
+
+    // Listen for unexpected stream termination (e.g. user clicks browser's native "Stop sharing")
+    mediaStream.getTracks().forEach(track => {
+      track.onended = () => {
+        log.info(MODULE, 'MediaStream track ended unexpectedly, triggering stop', { trackId: track.id });
+        chrome.runtime.sendMessage({ type: 'STOP_SESSION' }).catch(err => {
+          log.warn(MODULE, 'Failed to send STOP_SESSION on track end', { err });
+        });
+      };
+    });
 
     if (config.audio) {
       try {
@@ -298,6 +310,55 @@ export function createCaptureService(
       transcriptRecorder.start(1000); // 1s timeslice keeps native message small
     }
 
+    // 3. Live Speech Recognition (Microphone only)
+    if (config.audio) {
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+
+          recognition.onresult = (event: any) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              }
+            }
+            if (finalTranscript.trim()) {
+              log.info(MODULE, 'SpeechRecognition transcript', { text: finalTranscript.trim() });
+              // Wrap as a LocalTranscriptSegment (we will forward this to the sidecar via background script)
+              chrome.runtime.sendMessage({
+                type: 'LOCAL_TRANSCRIPT_SEGMENT',
+                payload: { text: finalTranscript.trim(), timestamp: Date.now() }
+              }).catch(err => log.warn(MODULE, 'Failed to send LOCAL_TRANSCRIPT_SEGMENT', { err }));
+            }
+          };
+
+          recognition.onerror = (event: any) => {
+            log.warn(MODULE, 'SpeechRecognition error', { error: event.error });
+          };
+          
+          recognition.onend = () => {
+             // Restart if we are still capturing and it ended unexpectedly
+             if (_state.isCapturing && !(window as any).__bacham_speech_stopped) {
+                 recognition.start();
+             }
+          };
+
+          (window as any).__bacham_speech_stopped = false;
+          recognition.start();
+          (window as any).__bacham_speech_recognition = recognition;
+        } else {
+          log.warn(MODULE, 'SpeechRecognition API not supported in this browser');
+        }
+      } catch (err) {
+        log.warn(MODULE, 'Failed to initialize SpeechRecognition', { err });
+      }
+    }
+
     updateState({
       isCapturing: true,
       isPaused: false,
@@ -358,6 +419,13 @@ export function createCaptureService(
 
     for (const track of mediaStream.getTracks()) {
       track.stop();
+    }
+    
+    // Stop Speech Recognition if active
+    if ((window as any).__bacham_speech_recognition) {
+       (window as any).__bacham_speech_stopped = true;
+       (window as any).__bacham_speech_recognition.stop();
+       delete (window as any).__bacham_speech_recognition;
     }
     mediaStream = null;
     videoRecorder = null;

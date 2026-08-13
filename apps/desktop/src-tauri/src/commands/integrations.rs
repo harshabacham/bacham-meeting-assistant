@@ -46,11 +46,6 @@ pub async fn push_task_to_notion(input: PushNotionInput) -> AppResult<bool> {
         ]
     });
 
-    if input.token.starts_with("mock") {
-        tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-        return Ok(true);
-    }
-
     let res = client.post("https://api.notion.com/v1/pages")
         .header("Authorization", format!("Bearer {}", input.token))
         .header("Notion-Version", "2022-06-28")
@@ -65,4 +60,19 @@ pub async fn push_task_to_notion(input: PushNotionInput) -> AppResult<bool> {
     }
 
     Ok(true)
+}
+
+#[derive(serde::Deserialize)]
+pub struct ExecuteIntegrationInput {
+    pub plugin_id: String,
+    pub action: String,
+    pub payload: serde_json::Value,
+    pub auth_token: String,
+}
+
+#[tauri::command]
+pub async fn execute_integration(
+    input: ExecuteIntegrationInput,
+) -> AppResult<serde_json::Value> {
+    crate::integrations::dispatch_action(&input.plugin_id, &input.action, input.payload, &input.auth_token).await
 }

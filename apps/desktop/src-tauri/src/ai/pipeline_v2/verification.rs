@@ -1,7 +1,6 @@
 use crate::error::AppResult;
 use sqlx::SqlitePool;
 use super::models::KnowledgeGraph;
-use crate::services::gemini_service::GeminiService;
 
 pub async fn verify_markdown(markdown: &str, graph: &KnowledgeGraph, pool: &SqlitePool) -> AppResult<String> {
     if markdown.is_empty() {
@@ -18,7 +17,7 @@ Output the verified markdown text directly.";
     let nodes_json = serde_json::to_string_pretty(&graph.nodes).unwrap_or_default();
     let prompt = format!("Knowledge Graph:\n{}\n\nSummary Draft:\n{}", nodes_json, markdown);
 
-    let res = GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?;
+    let res = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?;
     
     Ok(res)
 }

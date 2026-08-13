@@ -108,16 +108,7 @@ impl StudyActionService {
                             if let Some(s) = rich.get("cheatSheet").and_then(|v| v.as_str()) { return Ok(s.to_string()); }
                             if let Some(s) = rich.get("onePageRevision").and_then(|v| v.as_str()) { return Ok(s.to_string()); }
                         },
-                        StudyActionType::Flashcards => {
-                            // Mocking flashcards from key_concepts or formulaSheet
-                            let mut cards = Vec::new();
-                            if let Some(concepts) = intelligence.get("key_concepts").and_then(|v| v.as_array()) {
-                                for c in concepts.iter().filter_map(|v| v.as_str()) {
-                                    cards.push(serde_json::json!({"front": "Key Concept", "back": c}));
-                                }
-                            }
-                            return Ok(serde_json::json!({"cards": cards}).to_string());
-                        },
+                        StudyActionType::Flashcards => {}, // Let it fall through to generation
                         StudyActionType::Quiz => {
                             // Extract practiceQuestions if they exist
                             if let Some(qs) = rich.get("practiceQuestions").and_then(|v| v.as_array()) {

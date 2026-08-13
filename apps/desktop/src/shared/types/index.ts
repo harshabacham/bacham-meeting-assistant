@@ -9,6 +9,10 @@ export interface Settings {
   aiMaxRetries: number;
   workspacePanelSizes: number[];
   speakerMapping: Record<string, string>;
+  autoExportMarkdown: boolean;
+  markdownExportPath: string;
+  transcriptionEngine: 'gemini' | 'whisper';
+  autoStartRecording?: boolean;
 }
 
 export interface UpdateSettingsInput {
@@ -19,6 +23,11 @@ export interface UpdateSettingsInput {
   aiProvider?: string;
   aiMaxRetries?: number;
   workspacePanelSizes?: number[];
+  speakerMapping?: Record<string, string>;
+  autoExportMarkdown?: boolean;
+  markdownExportPath?: string;
+  transcriptionEngine?: 'gemini' | 'whisper';
+  autoStartRecording?: boolean;
 }
 
 export interface AppSettings {
@@ -31,6 +40,11 @@ export interface AppSettings {
     aiProvider: string;
     aiMaxRetries: number;
     workspacePanelSizes: number[];
+    speakerMapping: Record<string, string>;
+    autoExportMarkdown: boolean;
+    markdownExportPath: string;
+    transcriptionEngine: 'gemini' | 'whisper';
+    autoStartRecording?: boolean;
 }
 
 export interface Lecture {

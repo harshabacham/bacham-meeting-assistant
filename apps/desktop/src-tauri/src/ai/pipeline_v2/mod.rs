@@ -7,4 +7,5 @@ pub mod multimodal_perception;
 pub mod knowledge_extraction;
 pub mod pedagogy_engine;
 pub mod teaching_retrieval;
+pub mod interview_engine;
 pub mod engine;

@@ -2,7 +2,6 @@ use crate::error::{AppError, AppResult};
 use sqlx::SqlitePool;
 use super::models::KnowledgeGraph;
 use crate::ai::context_builder::ContextBuilder;
-use crate::services::gemini_service::GeminiService;
 
 pub async fn build_graph(lecture_id: &str, pool: &SqlitePool) -> AppResult<KnowledgeGraph> {
     // 1. Fetch raw signals locally (SET load_images = true)
@@ -58,9 +57,9 @@ Rules:
 
     // Use Gemini 2.5 Pro for deep multimodal reasoning when screenshots exist
     let res = if !image_parts.is_empty() {
-        GeminiService::generate_multimodal_with_model(&prompt, system_instruction, &image_parts, pool, "gemini-3.1-flash-lite").await?
+        crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system_instruction, &image_parts, pool).await?
     } else {
-        GeminiService::generate_text_with_model(&prompt, system_instruction, pool, "gemini-3.1-flash-lite").await?
+        crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?
     };
 
     // Clean markdown formatting if present

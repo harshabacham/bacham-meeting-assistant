@@ -25,7 +25,9 @@ pub mod batch;
 pub mod undo;
 pub mod capture;
 pub mod integrations;
-use tauri::State;
+pub mod interview_copilot;
+pub mod markdown_export;
+pub mod decision_tracker;
 use serde::Serialize;
 use crate::error::AppResult;
 use crate::database::DbState;
@@ -38,8 +40,16 @@ pub struct DbHealth {
 }
 
 #[tauri::command]
-pub async fn db_health_check(state: State<'_, DbState>) -> AppResult<DbHealth> {
+pub async fn db_health_check(app: tauri::AppHandle) -> AppResult<DbHealth> {
     use sqlx::Row;
+    use tauri::Manager;
+    
+    // If DbState isn't managed yet (DB still initializing), don't panic. Just return not OK.
+    let state = match app.try_state::<DbState>() {
+        Some(s) => s,
+        None => return Ok(DbHealth { ok: false, migration_version: 0 }),
+    };
+
     let row = sqlx::query("SELECT version FROM _sqlx_migrations ORDER BY version DESC LIMIT 1")
         .fetch_optional(&state.pool)
         .await?;
