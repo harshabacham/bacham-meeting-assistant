@@ -21,31 +21,56 @@ interface LiveTranscriptPanelProps {
 export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [isStreaming, setIsStreaming] = useState(true);
+    const [modelStatus, setModelStatus] = useState<string>('idle');
+    const [modelProgress, setModelProgress] = useState<any>(null);
+    const [debugLogs, setDebugLogs] = useState<string[]>(['Panel Mounted']);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const workerRef = useRef<Worker | null>(null);
 
-    // Listen for real incoming transcripts
+    const addDebug = (msg: string) => setDebugLogs(prev => [...prev.slice(-10), msg]);
+
+    // Initialize Web Worker and Audio Capture
     useEffect(() => {
         if (!isOpen) {
             setChunks([]);
+            TauriClient.stopNativeRecording();
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
             return;
         }
 
-        let unlisten: () => void;
+        // 1. Start Rust Dual-Capture
+        TauriClient.startNativeRecording();
 
-        const setup = async () => {
-            unlisten = await TauriClient.onTranscriptUpdate((data) => {
-                if (!isStreaming) return;
-                
+        // 2. Initialize Transformers.js Web Worker
+        workerRef.current = new Worker(new URL('../../../workers/whisper.worker.ts', import.meta.url), {
+            type: 'module'
+        });
+
+        workerRef.current.onmessage = (e) => {
+            const { type, status, progress, payload, error } = e.data;
+            if (type === 'STATUS') {
+                setModelStatus(status);
+                addDebug(`Worker Status: ${status}`);
+                if (error) {
+                    console.error("Whisper Error:", error);
+                    addDebug(`Worker Error: ${error}`);
+                }
+            } else if (type === 'PROGRESS') {
+                setModelProgress(progress);
+            } else if (type === 'TRANSCRIPT') {
+                addDebug(`Transcript Received: ${payload.text.substring(0, 20)}...`);
                 setChunks(prev => {
                     const newChunks = [...prev, {
                         id: Date.now().toString() + Math.random(),
                         speaker: 'Speaker',
-                        text: data.content
+                        text: payload.text
                     }];
                     return newChunks;
                 });
                 
-                // Auto scroll to bottom
                 if (scrollRef.current) {
                     setTimeout(() => {
                         scrollRef.current?.scrollTo({
@@ -54,13 +79,42 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         });
                     }, 50);
                 }
-            });
+            }
         };
 
-        setup();
+        workerRef.current.postMessage({ type: 'INIT' });
+        addDebug('Sent INIT to worker');
+
+        // 3. Listen to audio streams from Rust
+        let unlistenSys: () => void;
+        let unlistenMic: () => void;
+        
+        let sysChunkCount = 0;
+        let micChunkCount = 0;
+
+        import('@tauri-apps/api/event').then(({ listen }) => {
+            listen<{rate: number, channels: number, data: number[]}>('audio_stream_sys', (event) => {
+                sysChunkCount++;
+                if (sysChunkCount % 50 === 0) addDebug(`Sys Audio Chunks: ${sysChunkCount}`);
+                if (isStreaming && workerRef.current) {
+                    workerRef.current.postMessage({ type: 'AUDIO_CHUNK', payload: event.payload.data, sampleRate: event.payload.rate, channels: event.payload.channels });
+                }
+            }).then(u => { unlistenSys = u; addDebug('Sys Listener Attached'); });
+            
+            listen<{rate: number, channels: number, data: number[]}>('audio_stream_mic', (event) => {
+                micChunkCount++;
+                if (micChunkCount % 50 === 0) addDebug(`Mic Audio Chunks: ${micChunkCount}`);
+                if (isStreaming && workerRef.current) {
+                    workerRef.current.postMessage({ type: 'AUDIO_CHUNK', payload: event.payload.data, sampleRate: event.payload.rate, channels: event.payload.channels });
+                }
+            }).then(u => { unlistenMic = u; addDebug('Mic Listener Attached'); });
+        });
 
         return () => {
-            if (unlisten) unlisten();
+            TauriClient.stopNativeRecording();
+            if (workerRef.current) workerRef.current.terminate();
+            if (unlistenSys) unlistenSys();
+            if (unlistenMic) unlistenMic();
         };
     }, [isOpen, isStreaming]);
 
@@ -124,13 +178,35 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         ))}
                     </AnimatePresence>
                     
-                    {isStreaming && (
+                    {modelStatus === 'loading' && (
+                        <div className="text-xs text-[var(--text-muted)] flex flex-col items-center justify-center py-4">
+                            <Sparkles size={16} className="animate-pulse mb-2" />
+                            <p>Loading AI Speech Model...</p>
+                            {modelProgress && (
+                                <div className="w-full bg-[var(--surface-hover)] h-1 rounded-full mt-2 overflow-hidden">
+                                    <div className="bg-[var(--accent)] h-full" style={{ width: `${Math.max(0, Math.min(100, modelProgress.progress || 0))}%` }} />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {isStreaming && modelStatus === 'ready' && (
                         <div className="flex gap-1 items-center p-3 opacity-50">
                             <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-bounce" />
                             <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:0.2s]" />
                             <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:0.4s]" />
                         </div>
                     )}
+                    
+                    {/* DEBUG PANEL */}
+                    <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                        <h4 className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">Diagnostic Logs</h4>
+                        <ul className="space-y-1">
+                            {debugLogs.map((log, i) => (
+                                <li key={i} className="text-[10px] text-red-200 font-mono">{log}</li>
+                            ))}
+                        </ul>
+                    </div>
                 </div>
 
                 {/* Footer */}

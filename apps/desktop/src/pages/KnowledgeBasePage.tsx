@@ -89,7 +89,7 @@ export function KnowledgeBasePage() {
 
             {/* Chat Area */}
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 md:px-8 py-8 scrollbar-hide flex flex-col items-center relative z-10 w-full">
-                <div className="w-full max-w-4xl flex flex-col gap-8 pb-32">
+                <div className="w-full max-w-3xl flex flex-col gap-8 pb-32">
                     {messages.length === 0 ? (
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -187,7 +187,7 @@ export function KnowledgeBasePage() {
                 <div className="w-full max-w-3xl relative pointer-events-auto">
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] to-transparent -top-16 pointer-events-none z-[-1]" />
                     
-                    <div className="relative group shadow-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] transition-all duration-300 focus-within:border-[var(--text-muted)] focus-within:shadow-xl">
+                    <div className="relative group shadow-sm rounded-2xl bg-[var(--surface)] border border-[var(--border)] transition-all duration-300 focus-within:border-[var(--text-muted)]">
                         <textarea
                             value={input}
                             onChange={e => setInput(e.target.value)}
@@ -198,16 +198,16 @@ export function KnowledgeBasePage() {
                                 }
                             }}
                             placeholder="Message Knowledge Base..."
-                            className="w-full bg-transparent pl-5 pr-14 py-4 text-[14px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none resize-none min-h-[56px] max-h-[200px]"
+                            className="w-full bg-transparent pl-5 pr-14 py-4 text-[14px] font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus-visible:shadow-none resize-none min-h-[56px] max-h-[200px]"
                             rows={1}
                             style={{ height: 'auto' }}
                         />
                         <button
                             onClick={() => handleSend()}
                             disabled={!input.trim() || isTyping}
-                            className="absolute right-2 bottom-2 p-2 rounded-xl bg-[var(--text-primary)] text-[var(--bg)] hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:scale-95 shadow-sm"
+                            className="absolute right-3 bottom-3 p-2 rounded-full bg-[var(--text-primary)] text-[var(--bg)] hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:scale-95 shadow-sm flex items-center justify-center"
                         >
-                            {isTyping ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} className="ml-0.5" />}
+                            {isTyping ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                         </button>
                     </div>
                     <p className="text-center text-[11px] text-[var(--text-muted)] mt-2 font-medium">

@@ -100,6 +100,16 @@ export function ComingUpCalendarWidget() {
           currentEvents.map((evt) => (
             <div 
               key={evt.id} 
+              draggable={true}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('application/x-calendar-event', JSON.stringify({
+                  id: evt.id,
+                  title: evt.title || 'Meeting Note',
+                  timeRange: evt.timeRange || evt.startTime || '12:00 PM',
+                  dateStr: evt.dateStr || evt.dayOfWeek || evt.monthStr || 'Today'
+                }));
+                e.dataTransfer.effectAllowed = 'copyMove';
+              }}
               className="py-3.5 first:pt-1 last:pb-1 flex items-center gap-6 group hover:bg-[var(--surface-hover)]/50 rounded-xl px-2 transition-colors cursor-pointer relative"
               onClick={() => handleOpenEventNote(evt)}
             >

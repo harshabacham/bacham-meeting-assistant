@@ -123,7 +123,7 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                         exit={{ opacity: 0, y: 20, scale: 0.97 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className={cn(
-                            "w-full bg-[var(--surface-raised)] border border-[var(--border-accent)] rounded-3xl p-5 mb-4 shadow-2xl flex flex-col overflow-hidden transition-all duration-300",
+                            "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-3xl p-5 mb-4 shadow-sm flex flex-col overflow-hidden transition-all duration-300",
                             fullscreen ? "flex-1 h-full" : "h-[500px]"
                         )}
                     >
@@ -205,7 +205,7 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
 
             {/* Granola Floating Input Bar */}
             <div className={cn(
-                "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-[2rem] shadow-2xl p-2 flex flex-col transition-all duration-300 ring-1 ring-[var(--border)]",
+                "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-[2rem] shadow-sm p-2 flex flex-col transition-all duration-300",
                 expanded ? "rounded-3xl" : (focused ? "rounded-[1.5rem]" : "rounded-full p-1 max-w-xl mx-auto")
             )}>
                 
@@ -277,7 +277,7 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                                 }
                             }}
                             placeholder={expanded || focused ? "Ask anything" : "Continue chat"}
-                            className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1"
+                            className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1 focus-visible:shadow-none"
                         />
                         {inputText.trim() && (
                             <button 

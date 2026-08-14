@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useCollectionStore } from '@/shared/stores/collectionStore';
-import { Folder as FolderIcon, ChevronRight, Plus, MoreVertical, Trash2, Edit2, LayoutList, Archive, Settings, Lock, Upload, Hash, BrainCircuit, Sparkles } from 'lucide-react';
+import { Folder as FolderIcon, ChevronRight, Plus, MoreVertical, Trash2, Edit2, LayoutList, Archive, Settings, Lock, Upload, Hash, BrainCircuit, Sparkles, FolderPlus, FileText } from 'lucide-react';
 import { cn, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components';
 import { useToast } from '@/components/ui/ToastProvider';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -179,6 +179,7 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
 
                     let draggedFolderId = e.dataTransfer.getData('application/x-folder-id');
                     let draggedLectureIds = e.dataTransfer.getData('application/x-lecture-ids');
+                    let draggedEventStr = e.dataTransfer.getData('application/x-calendar-event');
                     
                     if (!draggedLectureIds && !draggedFolderId) {
                         const textPlain = e.dataTransfer.getData('text/plain');
@@ -204,6 +205,14 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
                         } catch (err: any) {
                             showToast(`Root drop lecture error: ${err.message || err}`, 'error');
                             console.error(err);
+                        }
+                    } else if (draggedEventStr) {
+                        try {
+                            const evt = JSON.parse(draggedEventStr);
+                            await TauriClient.createWorkspaceNote(evt.title || 'Meeting Note', '');
+                            showToast('Created root note from calendar event!', 'success');
+                        } catch (err: any) {
+                            showToast(`Failed to create note: ${err.message || err}`, 'error');
                         }
                     }
                 }}
@@ -260,6 +269,10 @@ function FolderNode({
     const [isRenaming, setIsRenaming] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editName, setEditName] = useState(folder.name);
+    
+    // Subfolder creation state
+    const [isCreatingSubfolder, setIsCreatingSubfolder] = useState(false);
+    const [newSubfolderName, setNewSubfolderName] = useState('');
 
     const handleDragStart = (e: React.DragEvent) => {
         e.stopPropagation();
@@ -275,8 +288,9 @@ function FolderNode({
         const types = Array.from(e.dataTransfer.types || []).map(t => t.toLowerCase());
         const hasFolder = types.includes('application/x-folder-id') || types.includes('text/plain');
         const hasLectures = types.includes('application/x-lecture-ids') || types.includes('text/plain');
+        const hasCalendarEvent = types.includes('application/x-calendar-event');
         
-        if (hasLectures) {
+        if (hasLectures || hasCalendarEvent) {
             e.dataTransfer.dropEffect = 'move';
             if (!isDragOver) setIsDragOver(true);
         } else if (hasFolder) {
@@ -308,6 +322,7 @@ function FolderNode({
 
         let draggedFolderId = e.dataTransfer.getData('application/x-folder-id');
         let draggedLectureIds = e.dataTransfer.getData('application/x-lecture-ids');
+        let draggedEventStr = e.dataTransfer.getData('application/x-calendar-event');
         
         if (!draggedLectureIds && !draggedFolderId) {
             const textPlain = e.dataTransfer.getData('text/plain');
@@ -338,14 +353,38 @@ function FolderNode({
                 showToast(`Lecture move error: ${err.message || err}`, 'error');
                 console.error(err);
             }
+        } else if (draggedEventStr) {
+            try {
+                const evt = JSON.parse(draggedEventStr);
+                const newNote = await TauriClient.createWorkspaceNote(evt.title || 'Meeting Note', '');
+                await TauriClient.updateWorkspaceNote(newNote.id, undefined, undefined, undefined, [`folder:${folder.id}`]);
+                showToast(`Created note in ${folder.name}`, 'success');
+            } catch (err: any) {
+                showToast(`Failed to create note: ${err.message || err}`, 'error');
+            }
         }
     };
 
     const handleRename = async () => {
-        if (editName.trim() && editName !== folder.name) {
-            await updateFolder(folder.id, editName.trim());
-        }
         setIsRenaming(false);
+        if (editName.trim() && editName !== folder.name) {
+            await updateFolder(folder.id, { name: editName.trim() });
+        } else {
+            setEditName(folder.name);
+        }
+    };
+
+    const handleCreateSubfolder = async () => {
+        setIsCreatingSubfolder(false);
+        if (newSubfolderName.trim()) {
+            try {
+                const { createFolder } = useFolderStore.getState();
+                await createFolder(newSubfolderName.trim(), folder.id);
+            } catch (err: any) {
+                showToast(`Failed to create subfolder: ${err.message}`, 'error');
+            }
+        }
+        setNewSubfolderName('');
     };
 
     const handleDelete = async (e: React.MouseEvent) => {
@@ -439,6 +478,20 @@ function FolderNode({
                                 <Sparkles size={12} /> Cheat Sheet
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-foreground flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setIsCreatingSubfolder(true); setIsExpanded(true); }}>
+                                <FolderPlus size={12} /> New Subfolder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-foreground flex items-center gap-2" onClick={async (e) => { 
+                                e.stopPropagation(); 
+                                try {
+                                    const newNote = await TauriClient.createWorkspaceNote('New Note', '');
+                                    await TauriClient.updateWorkspaceNote(newNote.id, undefined, undefined, undefined, [`folder:${folder.id}`]);
+                                    showToast('Created new note in folder.', 'success');
+                                } catch(err: any) { showToast("Error: " + err.message, 'error'); }
+                            }}>
+                                <FileText size={12} /> New Note
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-foreground flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setIsSettingsOpen(true); }}>
                                 <Settings size={12} /> Settings
                             </DropdownMenuItem>
@@ -450,13 +503,29 @@ function FolderNode({
                 </div>
             </div>
             
-            {children.length > 0 && (
-                <div 
-                    className={cn(
-                        "overflow-hidden transition-all duration-300 ease-in-out",
-                        isExpanded ? "max-h-[1000px] opacity-100 mt-0.5" : "max-h-0 opacity-0 mt-0"
+            {isExpanded && (
+                <div className="flex flex-col">
+                    {isCreatingSubfolder && (
+                        <div className="flex items-center group py-1 pr-2 rounded-md transition-colors" style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}>
+                            <div className="w-4 h-4 mr-1.5 shrink-0" />
+                            <FolderIcon size={14} className="mr-2 opacity-70 shrink-0 text-[var(--accent)]" />
+                            <input
+                                autoFocus
+                                value={newSubfolderName}
+                                onChange={e => setNewSubfolderName(e.target.value)}
+                                onBlur={handleCreateSubfolder}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') handleCreateSubfolder();
+                                    if (e.key === 'Escape') {
+                                        setIsCreatingSubfolder(false);
+                                        setNewSubfolderName('');
+                                    }
+                                }}
+                                className="bg-[var(--bg)] border border-[var(--border-accent)] px-1.5 py-0.5 rounded text-xs w-full outline-none text-[var(--text-primary)]"
+                                placeholder="Subfolder name..."
+                            />
+                        </div>
                     )}
-                >
                     {children.map(child => (
                         <FolderNode 
                             key={child.folder.id} 
