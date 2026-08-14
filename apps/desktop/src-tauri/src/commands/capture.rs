@@ -1,5 +1,5 @@
 use tauri::{AppHandle, Manager, Emitter};
-use crate::error::{AppResult, AppError};
+use crate::error::AppResult;
 use std::sync::Mutex;
 use std::thread;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -54,6 +54,36 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                         None,
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
+                SampleFormat::I16 => {
+                    device.build_input_stream(
+                        config.clone().into(),
+                        move |data: &[i16], _: &cpal::InputCallbackInfo| {
+                            let f32_data: Vec<f32> = data.iter().map(|&s| s as f32 / 32768.0).collect();
+                            let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
+                                "rate": sample_rate,
+                                "channels": channels,
+                                "data": f32_data
+                            }));
+                        },
+                        |err| eprintln!("loopback err: {}", err),
+                        None,
+                    ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
+                },
+                SampleFormat::U16 => {
+                    device.build_input_stream(
+                        config.clone().into(),
+                        move |data: &[u16], _: &cpal::InputCallbackInfo| {
+                            let f32_data: Vec<f32> = data.iter().map(|&s| (s as f32 - 32768.0) / 32768.0).collect();
+                            let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
+                                "rate": sample_rate,
+                                "channels": channels,
+                                "data": f32_data
+                            }));
+                        },
+                        |err| eprintln!("loopback err: {}", err),
+                        None,
+                    ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
+                },
                 _ => Err(crate::error::AppError::Internal("StreamConfigNotSupported".to_string())),
             };
             if let Ok(s) = stream {
@@ -79,6 +109,36 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                                 "rate": sample_rate,
                                 "channels": channels,
                                 "data": data.to_vec()
+                            }));
+                        },
+                        |err| eprintln!("mic err: {}", err),
+                        None,
+                    ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
+                },
+                SampleFormat::I16 => {
+                    device.build_input_stream(
+                        config.clone().into(),
+                        move |data: &[i16], _: &cpal::InputCallbackInfo| {
+                            let f32_data: Vec<f32> = data.iter().map(|&s| s as f32 / 32768.0).collect();
+                            let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
+                                "rate": sample_rate,
+                                "channels": channels,
+                                "data": f32_data
+                            }));
+                        },
+                        |err| eprintln!("mic err: {}", err),
+                        None,
+                    ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
+                },
+                SampleFormat::U16 => {
+                    device.build_input_stream(
+                        config.clone().into(),
+                        move |data: &[u16], _: &cpal::InputCallbackInfo| {
+                            let f32_data: Vec<f32> = data.iter().map(|&s| (s as f32 - 32768.0) / 32768.0).collect();
+                            let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
+                                "rate": sample_rate,
+                                "channels": channels,
+                                "data": f32_data
                             }));
                         },
                         |err| eprintln!("mic err: {}", err),

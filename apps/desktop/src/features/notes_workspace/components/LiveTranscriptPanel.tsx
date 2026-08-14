@@ -18,21 +18,33 @@ interface LiveTranscriptPanelProps {
     onProcess: (transcript: string) => void;
 }
 
-export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [isStreaming, setIsStreaming] = useState(true);
     const [modelStatus, setModelStatus] = useState<string>('idle');
     const [modelProgress, setModelProgress] = useState<any>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [sysChunks, setSysChunks] = useState<number>(0);
+    const [micChunks, setMicChunks] = useState<number>(0);
     const [debugLogs, setDebugLogs] = useState<string[]>(['Panel Mounted']);
     const scrollRef = useRef<HTMLDivElement>(null);
     const workerRef = useRef<Worker | null>(null);
+    const streamingRef = useRef<boolean>(true);
 
-    const addDebug = (msg: string) => setDebugLogs(prev => [...prev.slice(-10), msg]);
+    useEffect(() => {
+        streamingRef.current = isStreaming;
+    }, [isStreaming]);
+
+    const addDebug = (msg: string) => {
+        setDebugLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    };
 
     // Initialize Web Worker and Audio Capture
     useEffect(() => {
         if (!isOpen) {
             setChunks([]);
+            setSysChunks(0);
+            setMicChunks(0);
+            setErrorMessage(null);
             TauriClient.stopNativeRecording();
             if (workerRef.current) {
                 workerRef.current.terminate();
@@ -42,72 +54,95 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         }
 
         // 1. Start Rust Dual-Capture
-        TauriClient.startNativeRecording();
-
-        // 2. Initialize Transformers.js Web Worker
-        workerRef.current = new Worker(new URL('../../../workers/whisper.worker.ts', import.meta.url), {
-            type: 'module'
+        TauriClient.startNativeRecording().then(() => {
+            addDebug('Native audio capture started');
+        }).catch((err) => {
+            addDebug(`Native capture error: ${err}`);
+            setErrorMessage(`Failed to start native audio capture: ${err}`);
         });
 
-        workerRef.current.onmessage = (e) => {
-            const { type, status, progress, payload, error } = e.data;
-            if (type === 'STATUS') {
-                setModelStatus(status);
-                addDebug(`Worker Status: ${status}`);
-                if (error) {
-                    console.error("Whisper Error:", error);
-                    addDebug(`Worker Error: ${error}`);
-                }
-            } else if (type === 'PROGRESS') {
-                setModelProgress(progress);
-            } else if (type === 'TRANSCRIPT') {
-                addDebug(`Transcript Received: ${payload.text.substring(0, 20)}...`);
-                setChunks(prev => {
-                    const newChunks = [...prev, {
-                        id: Date.now().toString() + Math.random(),
-                        speaker: 'Speaker',
-                        text: payload.text
-                    }];
-                    return newChunks;
-                });
-                
-                if (scrollRef.current) {
-                    setTimeout(() => {
-                        scrollRef.current?.scrollTo({
-                            top: scrollRef.current.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    }, 50);
-                }
-            }
-        };
+        // 2. Initialize Transformers.js Web Worker
+        try {
+            workerRef.current = new Worker(new URL('../../../workers/whisper.worker.ts', import.meta.url), {
+                type: 'module'
+            });
 
-        workerRef.current.postMessage({ type: 'INIT' });
-        addDebug('Sent INIT to worker');
+            workerRef.current.onmessage = (e) => {
+                const { type, status, progress, payload, error } = e.data;
+                if (type === 'STATUS') {
+                    setModelStatus(status);
+                    addDebug(`Worker: ${status}`);
+                    if (error) {
+                        console.error("Whisper Error:", error);
+                        setErrorMessage(error);
+                        addDebug(`Worker Error: ${error}`);
+                    }
+                } else if (type === 'PROGRESS') {
+                    setModelProgress(progress);
+                } else if (type === 'TRANSCRIPT') {
+                    addDebug(`Transcript: "${payload.text}"`);
+                    setChunks(prev => {
+                        const newChunks = [...prev, {
+                            id: Date.now().toString() + Math.random(),
+                            speaker: 'Speaker',
+                            text: payload.text
+                        }];
+                        return newChunks;
+                    });
+                    
+                    if (scrollRef.current) {
+                        setTimeout(() => {
+                            scrollRef.current?.scrollTo({
+                                top: scrollRef.current.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        }, 50);
+                    }
+                }
+            };
+
+            workerRef.current.onerror = (err) => {
+                console.error("Worker error event:", err);
+                setErrorMessage(err.message || 'Worker initialization failed');
+                addDebug(`Worker error: ${err.message}`);
+            };
+
+            workerRef.current.postMessage({ type: 'INIT' });
+            addDebug('Sent INIT to Whisper Web Worker');
+        } catch (err: any) {
+            console.error("Failed to spawn worker:", err);
+            setErrorMessage(err.message || 'Failed to spawn worker');
+            addDebug(`Spawn error: ${err.message}`);
+        }
 
         // 3. Listen to audio streams from Rust
         let unlistenSys: () => void;
         let unlistenMic: () => void;
-        
-        let sysChunkCount = 0;
-        let micChunkCount = 0;
 
         import('@tauri-apps/api/event').then(({ listen }) => {
             listen<{rate: number, channels: number, data: number[]}>('audio_stream_sys', (event) => {
-                sysChunkCount++;
-                if (sysChunkCount % 50 === 0) addDebug(`Sys Audio Chunks: ${sysChunkCount}`);
-                if (isStreaming && workerRef.current) {
-                    workerRef.current.postMessage({ type: 'AUDIO_CHUNK', payload: event.payload.data, sampleRate: event.payload.rate, channels: event.payload.channels });
+                setSysChunks(c => c + 1);
+                if (streamingRef.current && workerRef.current) {
+                    workerRef.current.postMessage({ 
+                        type: 'AUDIO_CHUNK', 
+                        payload: event.payload.data, 
+                        sampleRate: event.payload.rate, 
+                        channels: event.payload.channels 
+                    });
                 }
-            }).then(u => { unlistenSys = u; addDebug('Sys Listener Attached'); });
+            }).then(u => { unlistenSys = u; addDebug('System Audio listener attached'); });
             
             listen<{rate: number, channels: number, data: number[]}>('audio_stream_mic', (event) => {
-                micChunkCount++;
-                if (micChunkCount % 50 === 0) addDebug(`Mic Audio Chunks: ${micChunkCount}`);
-                if (isStreaming && workerRef.current) {
-                    workerRef.current.postMessage({ type: 'AUDIO_CHUNK', payload: event.payload.data, sampleRate: event.payload.rate, channels: event.payload.channels });
+                setMicChunks(c => c + 1);
+                if (streamingRef.current && workerRef.current) {
+                    workerRef.current.postMessage({ 
+                        type: 'AUDIO_CHUNK', 
+                        payload: event.payload.data, 
+                        sampleRate: event.payload.rate, 
+                        channels: event.payload.channels 
+                    });
                 }
-            }).then(u => { unlistenMic = u; addDebug('Mic Listener Attached'); });
+            }).then(u => { unlistenMic = u; addDebug('Microphone listener attached'); });
         });
 
         return () => {
@@ -116,7 +151,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             if (unlistenSys) unlistenSys();
             if (unlistenMic) unlistenMic();
         };
-    }, [isOpen, isStreaming]);
+    }, [isOpen]);
 
     const handleTagLatest = (tag: 'decision' | 'action') => {
         setChunks(prev => {
@@ -198,14 +233,47 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         </div>
                     )}
                     
-                    {/* DEBUG PANEL */}
-                    <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
-                        <h4 className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">Diagnostic Logs</h4>
-                        <ul className="space-y-1">
-                            {debugLogs.map((log, i) => (
-                                <li key={i} className="text-[10px] text-red-200 font-mono">{log}</li>
-                            ))}
-                        </ul>
+                    {/* Error Banner */}
+                    {errorMessage && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex flex-col gap-1">
+                            <span className="font-bold">Error Detected:</span>
+                            <span className="font-mono text-[11px]">{errorMessage}</span>
+                        </div>
+                    )}
+
+                    {/* Status & Diagnostics */}
+                    <div className="mt-4 p-3.5 bg-black/40 border border-white/10 rounded-2xl space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${modelStatus === 'ready' || modelStatus.startsWith('ready') || modelStatus.startsWith('Transcribed') ? 'bg-emerald-500 animate-pulse' : modelStatus === 'loading' ? 'bg-amber-500 animate-spin' : 'bg-red-500'}`} />
+                                <span className="font-medium text-white/90">Status: <span className="text-white/70">{modelStatus}</span></span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[11px] text-white/50 font-mono">
+                                <span>Sys: {sysChunks}</span>
+                                <span>Mic: {micChunks}</span>
+                            </div>
+                        </div>
+
+                        {modelStatus === 'loading' && modelProgress && (
+                            <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] text-white/60">
+                                    <span>Downloading Whisper AI weights...</span>
+                                    <span>{Math.round(modelProgress.progress || 0)}%</span>
+                                </div>
+                                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-primary h-full transition-all duration-300" style={{ width: `${Math.max(5, modelProgress.progress || 0)}%` }} />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-2 border-t border-white/5">
+                            <h4 className="text-[9px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Live Diagnostics Activity</h4>
+                            <div className="max-h-24 overflow-y-auto space-y-1 pr-1 font-mono text-[10px] text-white/60">
+                                {debugLogs.map((log, i) => (
+                                    <div key={i} className="truncate">{log}</div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -4,6 +4,12 @@ import { pipeline, env } from '@xenova/transformers';
 env.allowLocalModels = false; // We use HuggingFace Hub to pull the model on first run
 env.useBrowserCache = true; // Cache it in the browser's IndexedDB
 
+// CRITICAL for WebView/Tauri: Web Workers cannot use SharedArrayBuffer multithreading without COOP/COEP
+if (env.backends && env.backends.onnx && env.backends.onnx.wasm) {
+  env.backends.onnx.wasm.numThreads = 1;
+  env.backends.onnx.wasm.proxy = false;
+}
+
 let transcriber: any = null;
 let isModelLoaded = false;
 let audioBuffer: Float32Array = new Float32Array(0);
@@ -11,6 +17,10 @@ let currentSampleRate = 48000;
 let currentChannels = 1;
 const TARGET_SAMPLE_RATE = 16000;
 const PROCESSING_INTERVAL = 3000; // Process every 3 seconds
+
+self.onerror = (e: any) => {
+  self.postMessage({ type: 'STATUS', status: 'error', error: e?.message || String(e) });
+};
 
 self.onmessage = async (e) => {
   const { type, payload } = e.data;
@@ -77,30 +87,49 @@ async function processBufferLoop() {
     // Resample to 16kHz
     const resampled = linearInterpolate(currentBuffer, currentSampleRate, TARGET_SAMPLE_RATE);
 
+    // Calculate RMS volume to check if there is actual audio/speech
+    let sumSq = 0;
+    for (let i = 0; i < resampled.length; i++) {
+      sumSq += resampled[i] * resampled[i];
+    }
+    const rms = Math.sqrt(sumSq / resampled.length);
+
     try {
-      // Tell UI we are processing
-      self.postMessage({ type: 'STATUS', status: `Processing ${resampled.length} samples...` });
+      self.postMessage({ 
+        type: 'STATUS', 
+        status: `Processing ${resampled.length} samples (Vol: ${(rms * 100).toFixed(1)}%)...` 
+      });
       
+      // If audio is practically dead silence (rms < 0.001), skip inference to save CPU
+      if (rms < 0.002) {
+        self.postMessage({ type: 'STATUS', status: 'ready (listening - silence detected)' });
+        continue;
+      }
+
       // Transcribe
       const output = await transcriber(resampled, {
         language: "english",
-        task: "transcribe"
+        task: "transcribe",
+        return_timestamps: false
       });
 
-      if (output && output.text && output.text.trim()) {
+      const text = (typeof output === 'string' ? output : output?.text || '').trim();
+
+      if (text && text.length > 0 && !text.includes('[BLANK_AUDIO]')) {
         self.postMessage({
           type: 'TRANSCRIPT',
           payload: {
-            text: output.text.trim(),
+            text: text,
             timestamp: Date.now()
           }
         });
+        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 30)}..."` });
       } else {
-        self.postMessage({ type: 'STATUS', status: 'ready (empty transcript)' });
+        self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
       }
     } catch (err: any) {
       console.error('Transcription error:', err);
-      self.postMessage({ type: 'STATUS', status: 'error', error: err.message });
+      self.postMessage({ type: 'STATUS', status: 'error', error: err?.message || String(err) });
     }
   }
 }
