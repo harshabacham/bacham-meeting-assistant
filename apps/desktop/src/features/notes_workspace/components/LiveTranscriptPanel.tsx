@@ -18,6 +18,7 @@ interface LiveTranscriptPanelProps {
     onProcess: (transcript: string) => void;
 }
 
+export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [isStreaming, setIsStreaming] = useState(true);
     const [modelStatus, setModelStatus] = useState<string>('idle');
