@@ -126,6 +126,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 if (streamingRef.current && workerRef.current) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
+                        stream: 'sys',
                         payload: event.payload.data, 
                         sampleRate: event.payload.rate, 
                         channels: event.payload.channels 
@@ -138,6 +139,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 if (streamingRef.current && workerRef.current) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
+                        stream: 'mic',
                         payload: event.payload.data, 
                         sampleRate: event.payload.rate, 
                         channels: event.payload.channels 

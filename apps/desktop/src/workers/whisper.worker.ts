@@ -12,9 +12,16 @@ if (env.backends && env.backends.onnx && env.backends.onnx.wasm) {
 
 let transcriber: any = null;
 let isModelLoaded = false;
-let audioBuffer: Float32Array = new Float32Array(0);
-let currentSampleRate = 48000;
-let currentChannels = 1;
+
+// Separate buffers for system audio and microphone to prevent interleaving corruption
+let sysBuffer: Float32Array = new Float32Array(0);
+let micBuffer: Float32Array = new Float32Array(0);
+
+let sysSampleRate = 48000;
+let micSampleRate = 48000;
+let sysChannels = 2;
+let micChannels = 1;
+
 const TARGET_SAMPLE_RATE = 16000;
 const PROCESSING_INTERVAL = 3000; // Process every 3 seconds
 
@@ -23,97 +30,137 @@ self.onerror = (e: any) => {
 };
 
 self.onmessage = async (e) => {
-  const { type, payload } = e.data;
+  const { type, stream, payload, sampleRate, channels } = e.data;
 
   if (type === 'INIT') {
     self.postMessage({ type: 'STATUS', status: 'loading' });
     try {
-      // Use the smaller whispered model for real-time performance
       transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
         progress_callback: (progress: any) => {
           self.postMessage({ type: 'PROGRESS', progress });
         }
       });
       isModelLoaded = true;
-      self.postMessage({ type: 'STATUS', status: 'ready' });
+      self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
       processBufferLoop();
     } catch (err: any) {
-      self.postMessage({ type: 'STATUS', status: 'error', error: err.message });
+      self.postMessage({ type: 'STATUS', status: 'error', error: err.message || String(err) });
     }
   }
 
   if (type === 'AUDIO_CHUNK') {
     if (!isModelLoaded) return;
     
-    if (e.data.sampleRate) {
-        currentSampleRate = e.data.sampleRate;
-    }
-    if (e.data.channels) {
-        currentChannels = e.data.channels;
+    const isSys = stream === 'sys';
+    const rate = sampleRate || 48000;
+    const numChannels = channels || (isSys ? 2 : 1);
+
+    if (isSys) {
+      sysSampleRate = rate;
+      sysChannels = numChannels;
+    } else {
+      micSampleRate = rate;
+      micChannels = numChannels;
     }
     
     let processedChunk = new Float32Array(payload);
     
-    // Mixdown to mono if necessary
-    if (currentChannels > 1) {
-        const mono = new Float32Array(Math.floor(processedChunk.length / currentChannels));
-        for (let i = 0; i < mono.length; i++) {
-            let sum = 0;
-            for (let c = 0; c < currentChannels; c++) {
-                sum += processedChunk[i * currentChannels + c];
-            }
-            mono[i] = sum / currentChannels;
+    // Downmix to mono if multi-channel (e.g. stereo WASAPI loopback)
+    if (numChannels > 1) {
+      const mono = new Float32Array(Math.floor(processedChunk.length / numChannels));
+      for (let i = 0; i < mono.length; i++) {
+        let sum = 0;
+        for (let c = 0; c < numChannels; c++) {
+          sum += processedChunk[i * numChannels + c];
         }
-        processedChunk = mono;
+        mono[i] = sum / numChannels;
+      }
+      processedChunk = mono;
     }
     
-    // Append incoming audio to the buffer
-    const merged = new Float32Array(audioBuffer.length + processedChunk.length);
-    merged.set(audioBuffer);
-    merged.set(processedChunk, audioBuffer.length);
-    audioBuffer = merged;
+    // Append to respective stream buffer
+    if (isSys) {
+      const merged = new Float32Array(sysBuffer.length + processedChunk.length);
+      merged.set(sysBuffer);
+      merged.set(processedChunk, sysBuffer.length);
+      sysBuffer = merged;
+    } else {
+      const merged = new Float32Array(micBuffer.length + processedChunk.length);
+      merged.set(micBuffer);
+      merged.set(processedChunk, micBuffer.length);
+      micBuffer = merged;
+    }
   }
 };
 
 async function processBufferLoop() {
   while (true) {
     await new Promise(resolve => setTimeout(resolve, PROCESSING_INTERVAL));
-    if (!isModelLoaded || audioBuffer.length === 0) continue;
+    if (!isModelLoaded) continue;
 
-    // Grab the current buffer and clear it
-    const currentBuffer = audioBuffer;
-    audioBuffer = new Float32Array(0);
+    // Grab buffers and clear them
+    const curSys = sysBuffer;
+    const curMic = micBuffer;
+    sysBuffer = new Float32Array(0);
+    micBuffer = new Float32Array(0);
 
-    // Resample to 16kHz
-    const resampled = linearInterpolate(currentBuffer, currentSampleRate, TARGET_SAMPLE_RATE);
+    if (curSys.length === 0 && curMic.length === 0) continue;
 
-    // Calculate RMS volume to check if there is actual audio/speech
+    // Resample both streams independently to 16kHz
+    const sys16k = curSys.length > 0 ? linearInterpolate(curSys, sysSampleRate, TARGET_SAMPLE_RATE) : new Float32Array(0);
+    const mic16k = curMic.length > 0 ? linearInterpolate(curMic, micSampleRate, TARGET_SAMPLE_RATE) : new Float32Array(0);
+
+    // Mix both tracks parallelly
+    const maxLen = Math.max(sys16k.length, mic16k.length);
+    if (maxLen === 0) continue;
+
+    const mixed = new Float32Array(maxLen);
     let sumSq = 0;
-    for (let i = 0; i < resampled.length; i++) {
-      sumSq += resampled[i] * resampled[i];
+
+    for (let i = 0; i < maxLen; i++) {
+      const s = (i < sys16k.length ? sys16k[i] : 0);
+      const m = (i < mic16k.length ? mic16k[i] : 0);
+      // Soft mix with clipping protection
+      let val = s + m;
+      if (val > 1.0) val = 1.0;
+      if (val < -1.0) val = -1.0;
+      mixed[i] = val;
+      sumSq += val * val;
     }
-    const rms = Math.sqrt(sumSq / resampled.length);
+
+    const rms = Math.sqrt(sumSq / maxLen);
 
     try {
       self.postMessage({ 
         type: 'STATUS', 
-        status: `Processing ${resampled.length} samples (Vol: ${(rms * 100).toFixed(1)}%)...` 
+        status: `Processing ${(maxLen / TARGET_SAMPLE_RATE).toFixed(1)}s audio (Vol: ${(rms * 100).toFixed(1)}%)...` 
       });
       
-      // If audio is practically dead silence (rms < 0.001), skip inference to save CPU
-      if (rms < 0.002) {
-        self.postMessage({ type: 'STATUS', status: 'ready (listening - silence detected)' });
+      // If audio is dead silence, skip inference
+      if (rms < 0.003) {
+        self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
         continue;
       }
 
-      // Transcribe
-      const output = await transcriber(resampled, {
+      // Run speech-to-text inference
+      const output = await transcriber(mixed, {
+        chunk_length_s: 30,
+        stride_length_s: 5,
         language: "english",
         task: "transcribe",
         return_timestamps: false
       });
 
-      const text = (typeof output === 'string' ? output : output?.text || '').trim();
+      let text = '';
+      if (typeof output === 'string') {
+        text = output;
+      } else if (output && typeof output.text === 'string') {
+        text = output.text;
+      } else if (Array.isArray(output) && output.length > 0) {
+        text = output.map((item: any) => item?.text || '').join(' ');
+      }
+
+      text = text.trim();
 
       if (text && text.length > 0 && !text.includes('[BLANK_AUDIO]')) {
         self.postMessage({
@@ -123,9 +170,9 @@ async function processBufferLoop() {
             timestamp: Date.now()
           }
         });
-        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 30)}..."` });
+        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 35)}..."` });
       } else {
-        self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
+        self.postMessage({ type: 'STATUS', status: `No speech detected in ${(maxLen / TARGET_SAMPLE_RATE).toFixed(1)}s chunk` });
       }
     } catch (err: any) {
       console.error('Transcription error:', err);
