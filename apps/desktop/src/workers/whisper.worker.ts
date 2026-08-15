@@ -12,7 +12,7 @@ if ((env as any).backends?.onnx?.wasm) {
 
 let transcriber: any = null;
 let isModelLoaded = false;
-let currentLanguage = 'english';
+let currentLanguage = 'auto'; // Default to auto-detect so multilingual model is loaded
 let isLooping = false;
 
 // Separate ring-buffers for system audio and microphone
@@ -43,12 +43,14 @@ self.onerror = (e: any) => {
 
 async function loadModel(lang: string) {
   isModelLoaded = false;
-  currentLanguage = lang || 'english';
+  currentLanguage = lang || 'auto';
   self.postMessage({ type: 'STATUS', status: `loading` });
 
   try {
-    const isEn = currentLanguage === 'english';
-    const modelName = isEn ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-tiny';
+    // Use English-only tiny model ONLY when explicitly set to English (faster, more accurate for English)
+    // For all other languages including 'auto', use the multilingual model which can handle any language
+    const isEnglishOnly = currentLanguage === 'english';
+    const modelName = isEnglishOnly ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-tiny';
 
     transcriber = await pipeline('automatic-speech-recognition', modelName, {
       progress_callback: (progress: any) => {
@@ -106,7 +108,7 @@ self.onmessage = async (e) => {
   const { type, stream, payload, language } = e.data;
 
   if (type === 'INIT') {
-    await loadModel(language || 'english');
+    await loadModel(language || 'auto');
     if (!isLooping) {
       isLooping = true;
       processLoop();
@@ -182,7 +184,7 @@ async function processLoop() {
     });
 
     try {
-      const langInfo = LANGUAGE_MAP[currentLanguage] || { code: 'en', isEnglishOnly: true };
+      const langInfo = LANGUAGE_MAP[currentLanguage] || { code: 'auto', isEnglishOnly: false };
 
       const genOptions: any = {
         temperature: 0.0,
@@ -192,11 +194,17 @@ async function processLoop() {
         return_timestamps: false,
       };
 
+      // For English-only model: no task/language needed
+      // For multilingual model:
+      //   - 'auto': set task=transcribe but NO language — Whisper will detect the language automatically
+      //   - specific language: set task=transcribe AND language code so Whisper transcribes in that language
       if (!langInfo.isEnglishOnly) {
         genOptions.task = 'transcribe';
         if (langInfo.code !== 'auto') {
+          // Explicitly pin to the selected language
           genOptions.language = langInfo.code;
         }
+        // If 'auto', do NOT set genOptions.language — Whisper will auto-detect from the audio
       }
 
       const output = await transcriber(finalAudio, genOptions);

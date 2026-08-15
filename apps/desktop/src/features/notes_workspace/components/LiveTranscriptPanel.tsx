@@ -22,7 +22,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [interimText, setInterimText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
-    const [selectedLanguage, setSelectedLanguage] = useState<string>('english');
+    const [selectedLanguage, setSelectedLanguage] = useState<string>('auto');
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
     const [modelStatus, setModelStatus] = useState<string>('idle');
     const [modelProgress, setModelProgress] = useState<any>(null);
@@ -36,8 +36,8 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const streamingRef = useRef<boolean>(true);
 
     const LANGUAGES = [
+        { code: 'auto', label: '🌐 Auto Detect', bcp: '' },
         { code: 'english', label: 'English', bcp: 'en-US' },
-        { code: 'auto', label: 'Auto Detect', bcp: 'en-US' },
         { code: 'hindi', label: 'Hindi (हिंदी)', bcp: 'hi-IN' },
         { code: 'telugu', label: 'Telugu (తెలుగు)', bcp: 'te-IN' },
         { code: 'tamil', label: 'Tamil (தமிழ்)', bcp: 'ta-IN' },
@@ -174,7 +174,10 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             try {
                 const recognition = new SpeechRecognition();
                 const targetLangObj = LANGUAGES.find(l => l.code === selectedLanguage);
-                recognition.lang = targetLangObj?.bcp || 'en-US';
+                // Only set lang if not auto-detect — let browser detect naturally for auto
+                if (selectedLanguage !== 'auto' && targetLangObj?.bcp) {
+                    recognition.lang = targetLangObj.bcp;
+                }
                 recognition.continuous = true;
                 recognition.interimResults = true;
 
