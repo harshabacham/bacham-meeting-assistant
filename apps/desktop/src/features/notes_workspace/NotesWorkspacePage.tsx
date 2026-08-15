@@ -10,6 +10,7 @@ export interface Note {
     id: string;
     title: string;
     content: string; // HTML from TipTap
+    summary?: string; // AI Generated Summary
     transcript?: string; // Verbatim raw transcript
     updatedAt: number;
     createdAt: number;
@@ -68,9 +69,13 @@ export function NotesWorkspacePage() {
                     const mapped = (fetched || []).map((n: any) => {
                         const folderTag = n.tags?.find((t: string) => t.startsWith('folder:'));
                         const folderId = folderTag ? folderTag.replace('folder:', '') : null;
+                        const savedSummary = localStorage.getItem(`summary_${n.id}`) || n.summary || undefined;
+                        const savedTranscript = localStorage.getItem(`transcript_${n.id}`) || n.transcript || undefined;
                         return {
                             ...n,
                             folderId,
+                            summary: savedSummary,
+                            transcript: savedTranscript,
                         };
                     });
                     setNotes(mapped);
