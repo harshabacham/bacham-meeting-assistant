@@ -1444,9 +1444,20 @@ pub struct PushToComposioInput {
 
 #[tauri::command]
 pub async fn push_to_composio(_state: tauri::State<'_, crate::database::DbState>, input: PushToComposioInput) -> crate::error::AppResult<String> {
-    // Simulate network delay for Composio execution
     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
-    
     let msg = format!("Action item '{}' assigned to {} was successfully pushed to {} via Composio!", input.task, input.owner, input.destination);
     Ok(msg)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscribeAudioChunkInput {
+    pub audio_base64: String,
+    pub mime_type: String,
+    pub language_hint: Option<String>,
+}
+
+#[tauri::command]
+pub async fn transcribe_live_audio_chunk(app: AppHandle, input: TranscribeAudioChunkInput) -> AppResult<serde_json::Value> {
+    GeminiService::transcribe_audio_chunk(&input.audio_base64, &input.mime_type, input.language_hint, &app).await
 }

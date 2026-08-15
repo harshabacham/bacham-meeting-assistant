@@ -260,10 +260,12 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             console.error("Whisper worker error:", err);
         }
 
-        // 4. Direct Web Audio API Microphone Capture (100% reliable hardware audio pipe)
+        // 4. Direct Web Audio API Microphone Capture & Live Gemini Multimodal Audio Chunking
         let audioCtx: AudioContext | null = null;
         let mediaStream: MediaStream | null = null;
         let processor: ScriptProcessorNode | null = null;
+        let mediaRecorder: MediaRecorder | null = null;
+        let isTranscribingChunk = false;
 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ 
@@ -275,6 +277,62 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 } 
             }).then((stream) => {
                 mediaStream = stream;
+
+                // A. Live 2.5s Multimodal Audio Chunk Streamer
+                try {
+                    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+                        ? 'audio/webm;codecs=opus' 
+                        : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
+                    
+                    const recorder = new MediaRecorder(stream, { mimeType });
+                    recorder.ondataavailable = async (e) => {
+                        if (!streamingRef.current || !e.data || e.data.size < 1500 || isTranscribingChunk) return;
+                        isTranscribingChunk = true;
+                        try {
+                            const reader = new FileReader();
+                            reader.onloadend = async () => {
+                                const base64Data = (reader.result as string).split(',')[1];
+                                if (base64Data) {
+                                    try {
+                                        const res = await TauriClient.transcribeLiveAudioChunk(base64Data, mimeType, selectedLanguage);
+                                        if (res && res.text && res.text.trim()) {
+                                            const trimmed = res.text.trim();
+                                            if (res.language && res.language !== 'Auto') {
+                                                setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
+                                            }
+                                            setChunks(prev => {
+                                                if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
+                                                    return prev;
+                                                }
+                                                return [...prev, {
+                                                    id: Date.now().toString() + Math.random(),
+                                                    speaker: 'speaker',
+                                                    text: trimmed,
+                                                    language: res.language,
+                                                    timeMs: Date.now(),
+                                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                                }];
+                                            });
+                                            setInterimText('');
+                                        }
+                                    } catch (apiErr) {
+                                        console.warn("Chunk transcription notice:", apiErr);
+                                    }
+                                }
+                                isTranscribingChunk = false;
+                            };
+                            reader.readAsDataURL(e.data);
+                        } catch (err) {
+                            isTranscribingChunk = false;
+                        }
+                    };
+                    recorder.start(2500);
+                    mediaRecorder = recorder;
+                } catch (recErr) {
+                    console.warn("MediaRecorder start notice:", recErr);
+                }
+
+                // B. Low-latency AudioContext Pipeline
                 try {
                     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
                     audioCtx = new AudioContextClass({ sampleRate: 16000 });
@@ -289,7 +347,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         const inputData = e.inputBuffer.getChannelData(0);
                         const floatArray = new Float32Array(inputData);
                         
-                        // Calculate quick RMS for live audio feedback
                         let sum = 0;
                         for (let i = 0; i < floatArray.length; i++) {
                             sum += floatArray[i] * floatArray[i];
@@ -309,7 +366,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
                     source.connect(processor);
                     processor.connect(audioCtx.destination);
-                    (window as any).__audioProcessorRef = processor; // Prevent V8 garbage collection
+                    (window as any).__audioProcessorRef = processor;
                 } catch (err) {
                     console.warn("AudioContext init notice:", err);
                 }

@@ -720,8 +720,7 @@ impl GeminiService {
             .and_then(|p| p.get("text"))
             .and_then(|t| t.as_str())
             .unwrap_or_default();
-        
-        app.emit("ai_chat_chunk", serde_json::json!({ "chunk": text }))
+                app.emit("ai_chat_chunk", serde_json::json!({ "chunk": text }))
            .map_err(|e| AppError::Internal(e.to_string()))?;
            
         Ok(())
@@ -786,22 +785,19 @@ impl GeminiService {
             }
 
             let get_body: serde_json::Value = get_res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
-            
             if let Some(err) = get_body.get("error") {
                 return Err(AppError::Internal(format!("Gemini file status returned error: {:?}", err)));
             }
 
             let state = get_body.get("state").and_then(|s| s.as_str()).unwrap_or_default();
-            
             if state == "ACTIVE" {
                 break;
             } else if state == "FAILED" {
                 return Err(AppError::Internal("Gemini File processing failed".into()));
             }
-            
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         }
-        
+
         Ok(file_uri.to_string())
     }
 
@@ -809,42 +805,18 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={}", key);
         
         let payload = serde_json::json!({
             "contents": [{
                 "parts": [
                     { "fileData": { "mimeType": mime_type, "fileUri": file_uri } },
-                    { "text": "Please provide a detailed, accurate transcript of the audio in this file. Include no other conversational filler, just the transcript." }
+                    { "text": "Please provide a detailed, accurate transcript of the audio in this file. Output native script." }
                 ]
             }]
         });
 
-        let mut retries = 0;
-        let res = loop {
-            let res = client.post(&url)
-                .json(&payload)
-                .send()
-                .await
-                .map_err(|e| AppError::Internal(e.to_string()))?;
-
-            if res.status().is_success() {
-                break res;
-            } else if res.status().as_u16() == 429 || res.status().is_server_error() {
-                if retries < 4 {
-                    retries += 1;
-                    tokio::time::sleep(tokio::time::Duration::from_secs(20 * retries)).await;
-                    continue;
-                } else {
-                    return Err(AppError::Internal("Transcription Failed: AI API Rate Limit or Server Error exceeded. Please wait a minute and try again.".into()));
-                }
-            } else {
-                let status = res.status();
-                let body = res.text().await.unwrap_or_default();
-                return Err(AppError::Internal(format!("Transcription API Error {status}: {body}")));
-            }
-        };
-
+        let res = client.post(&url).json(&payload).send().await.map_err(|e| AppError::Internal(e.to_string()))?;
         let body: serde_json::Value = res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
         let text = body.get("candidates")
             .and_then(|c| c.get(0))
@@ -856,6 +828,92 @@ impl GeminiService {
             .unwrap_or_default();
         
         Ok(text.to_string())
+    }
+
+    pub async fn transcribe_audio_chunk(
+        audio_base64: &str,
+        mime_type: &str,
+        language_hint: Option<String>,
+        app: &AppHandle,
+    ) -> AppResult<serde_json::Value> {
+        let pool = app.state::<crate::database::DbState>().pool.clone();
+        let key = Self::get_api_key(&pool).await?;
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(12))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+
+        let candidate_models = [
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-flash-latest",
+            "gemini-flash-lite-latest",
+        ];
+
+        let lang_hint_str = match language_hint.as_deref() {
+            Some(l) if l != "auto" => format!("The spoken language is likely {}. ", l),
+            _ => "Detect the spoken language automatically. ".to_string(),
+        };
+
+        let prompt_text = format!(
+            "{}Accurately transcribe this audio snippet verbatim. \
+            If spoken in Hindi, Telugu, Tamil, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Spanish, French, German, Japanese, Chinese, Russian, Arabic, or English, transcribe in its true native script. \
+            Output JSON only with keys: \
+            \"text\" (the verbatim transcript text in native script, or empty string if only silence/breathing/noise), \
+            \"language\" (detected language name, e.g. Telugu, Hindi, Spanish, Japanese, English), \
+            \"flag\" (country flag emoji, e.g. 🇮🇳, 🇪🇸, 🇯🇵, 🇺🇸, 🇫🇷).",
+            lang_hint_str
+        );
+
+        let payload = serde_json::json!({
+            "contents": [{
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": audio_base64
+                        }
+                    },
+                    { "text": prompt_text }
+                ]
+            }],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.1
+            }
+        });
+
+        for model in &candidate_models {
+            let url = format!(
+                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+                model, key
+            );
+            if let Ok(res) = client.post(&url).json(&payload).send().await {
+                if res.status().is_success() {
+                    if let Ok(body) = res.json::<serde_json::Value>().await {
+                        if let Some(text) = body.get("candidates")
+                            .and_then(|c| c.get(0))
+                            .and_then(|c| c.get("content"))
+                            .and_then(|c| c.get("parts"))
+                            .and_then(|p| p.get(0))
+                            .and_then(|p| p.get("text"))
+                            .and_then(|t| t.as_str()) {
+                                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(text) {
+                                    return Ok(parsed);
+                                } else {
+                                    return Ok(serde_json::json!({
+                                        "text": text.trim(),
+                                        "language": "Auto",
+                                        "flag": "🌐"
+                                    }));
+                                }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(serde_json::json!({ "text": "", "language": "Auto", "flag": "🌐" }))
     }
 
     pub async fn generate_tutor_action(
@@ -934,7 +992,7 @@ impl GeminiService {
 
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={}", key);
         
         let payload = serde_json::json!({
             "systemInstruction": {

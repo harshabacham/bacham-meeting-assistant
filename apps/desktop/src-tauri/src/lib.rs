@@ -239,6 +239,7 @@ pub fn run() {
             commands::ai::send_global_memory_chat,
             commands::ai::translate_transcript,
             commands::ai::generate_pre_meeting_brief,
+            commands::ai::transcribe_live_audio_chunk,
             commands::interview_copilot::analyze_interview_live,
             commands::decision_tracker::detect_decisions_live,
             commands::decision_tracker::confirm_live_decision,

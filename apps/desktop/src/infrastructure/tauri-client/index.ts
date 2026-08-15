@@ -555,4 +555,6 @@ export const TauriClient = {
     sendGlobalMemoryChat: (prompt: string, history?: any[]) => invoke<string>('send_global_memory_chat', { prompt, history }),
     saveLiveScratchpad: (lectureId: string, notes: string) => invoke<void>('save_live_scratchpad', { input: { lectureId, notes } }),
     pushToComposio: (task: string, owner: string, priority: string, destination: string) => invoke<string>('push_to_composio', { input: { task, owner, priority, destination } }),
+    transcribeLiveAudioChunk: (audioBase64: string, mimeType: string, languageHint?: string) => 
+        invoke<{ text: string; language: string; flag: string }>('transcribe_live_audio_chunk', { input: { audioBase64, mimeType, languageHint } }),
 };
