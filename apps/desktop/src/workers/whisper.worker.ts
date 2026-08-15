@@ -12,6 +12,7 @@ if (env.backends && env.backends.onnx && env.backends.onnx.wasm) {
 
 let transcriber: any = null;
 let isModelLoaded = false;
+let currentLanguage = 'english';
 
 // Separate buffers for system audio and microphone to prevent interleaving corruption
 let sysBuffer: Float32Array = new Float32Array(0);
@@ -29,23 +30,39 @@ self.onerror = (e: any) => {
   self.postMessage({ type: 'STATUS', status: 'error', error: e?.message || String(e) });
 };
 
+async function loadModel(lang: string) {
+  isModelLoaded = false;
+  currentLanguage = lang || 'english';
+  self.postMessage({ type: 'STATUS', status: `loading model for ${currentLanguage}...` });
+  
+  try {
+    // English fine-tuned model is 4x faster and 10x more accurate for English
+    const modelName = currentLanguage === 'english' ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-tiny';
+    
+    transcriber = await pipeline('automatic-speech-recognition', modelName, {
+      progress_callback: (progress: any) => {
+        self.postMessage({ type: 'PROGRESS', progress });
+      }
+    });
+    isModelLoaded = true;
+    self.postMessage({ type: 'STATUS', status: `ready (${currentLanguage} listening)` });
+  } catch (err: any) {
+    self.postMessage({ type: 'STATUS', status: 'error', error: err.message || String(err) });
+  }
+}
+
 self.onmessage = async (e) => {
-  const { type, stream, payload, sampleRate, channels } = e.data;
+  const { type, stream, payload, sampleRate, channels, language } = e.data;
 
   if (type === 'INIT') {
-    self.postMessage({ type: 'STATUS', status: 'loading' });
-    try {
-      // Use Xenova/whisper-tiny for real-time 180ms multilingual transcription
-      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-        progress_callback: (progress: any) => {
-          self.postMessage({ type: 'PROGRESS', progress });
-        }
-      });
-      isModelLoaded = true;
-      self.postMessage({ type: 'STATUS', status: 'ready (multilingual listening)' });
-      processBufferLoop();
-    } catch (err: any) {
-      self.postMessage({ type: 'STATUS', status: 'error', error: err.message || String(err) });
+    await loadModel(language || 'english');
+    processBufferLoop();
+  }
+
+  if (type === 'SET_LANGUAGE') {
+    const newLang = language || 'english';
+    if (newLang !== currentLanguage) {
+      await loadModel(newLang);
     }
   }
 
@@ -176,18 +193,25 @@ async function processBufferLoop() {
 
       self.postMessage({ 
         type: 'STATUS', 
-        status: `Transcribing ${durationSec}s [${sourceLabel}]...` 
+        status: `Transcribing ${durationSec}s [${sourceLabel}] in ${currentLanguage}...` 
       });
 
-      // Run speech-to-text with strict repetition penalties & greedy decoding
-      const output = await transcriber(finalAudio, {
+      // Build generation parameters based on chosen language
+      const genOptions: any = {
         task: 'transcribe',
         temperature: 0.0,
         max_new_tokens: 64,
         repetition_penalty: 1.3,
         no_repeat_ngram_size: 3,
         return_timestamps: false
-      });
+      };
+
+      if (currentLanguage !== 'english' && currentLanguage !== 'auto') {
+        genOptions.language = currentLanguage;
+      }
+
+      // Run speech-to-text with strict repetition penalties & greedy decoding
+      const output = await transcriber(finalAudio, genOptions);
 
       let text = '';
       if (typeof output === 'string') {

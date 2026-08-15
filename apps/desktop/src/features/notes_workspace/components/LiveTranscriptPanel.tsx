@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Minus, Mic, Sparkles, ChevronDown, CheckSquare, Target } from 'lucide-react';
+import { Search, SlidersHorizontal, Minus, Mic, Sparkles, ChevronDown, CheckSquare, Target, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -21,6 +21,8 @@ interface LiveTranscriptPanelProps {
 export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [isStreaming, setIsStreaming] = useState(true);
+    const [selectedLanguage, setSelectedLanguage] = useState<string>('english');
+    const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
     const [modelStatus, setModelStatus] = useState<string>('idle');
     const [modelProgress, setModelProgress] = useState<any>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -30,6 +32,19 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const scrollRef = useRef<HTMLDivElement>(null);
     const workerRef = useRef<Worker | null>(null);
     const streamingRef = useRef<boolean>(true);
+
+    const LANGUAGES = [
+        { code: 'english', label: 'English' },
+        { code: 'auto', label: 'Auto Detect' },
+        { code: 'hindi', label: 'Hindi (हिंदी)' },
+        { code: 'telugu', label: 'Telugu (తెలుగు)' },
+        { code: 'tamil', label: 'Tamil (தமிழ்)' },
+        { code: 'spanish', label: 'Spanish (Español)' },
+        { code: 'french', label: 'French (Français)' },
+        { code: 'german', label: 'German (Deutsch)' },
+        { code: 'japanese', label: 'Japanese (日本語)' },
+        { code: 'chinese', label: 'Chinese (中文)' },
+    ];
 
     useEffect(() => {
         streamingRef.current = isStreaming;
@@ -108,8 +123,8 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 addDebug(`Worker error: ${err.message}`);
             };
 
-            workerRef.current.postMessage({ type: 'INIT' });
-            addDebug('Sent INIT to Whisper Web Worker');
+            workerRef.current.postMessage({ type: 'INIT', language: selectedLanguage });
+            addDebug(`Sent INIT to Whisper Worker (Lang: ${selectedLanguage})`);
         } catch (err: any) {
             console.error("Failed to spawn worker:", err);
             setErrorMessage(err.message || 'Failed to spawn worker');
@@ -154,7 +169,16 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             if (unlistenSys) unlistenSys();
             if (unlistenMic) unlistenMic();
         };
-    }, [isOpen]);
+    }, [isOpen, selectedLanguage]);
+
+    const handleLanguageChange = (langCode: string) => {
+        setSelectedLanguage(langCode);
+        setIsLangMenuOpen(false);
+        if (workerRef.current) {
+            workerRef.current.postMessage({ type: 'SET_LANGUAGE', language: langCode });
+            addDebug(`Language switched to: ${langCode}`);
+        }
+    };
 
     const handleTagLatest = (tag: 'decision' | 'action') => {
         setChunks(prev => {
@@ -177,7 +201,34 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)] bg-[var(--surface)]">
-                    <Search size={14} className="text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)] transition-colors" />
+                    <div className="flex items-center gap-3">
+                        <Search size={14} className="text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)] transition-colors" />
+                        <div className="relative">
+                            <button 
+                                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--surface-hover)] border border-[var(--border)] text-[11px] font-medium text-[var(--text-primary)] hover:border-primary/50 transition-all"
+                            >
+                                <Globe size={12} className="text-primary" />
+                                <span>{LANGUAGES.find(l => l.code === selectedLanguage)?.label || 'Language'}</span>
+                                <ChevronDown size={11} className="text-[var(--text-muted)]" />
+                            </button>
+
+                            {isLangMenuOpen && (
+                                <div className="absolute top-full left-0 mt-1.5 w-44 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-1 overflow-hidden">
+                                    {LANGUAGES.map(lang => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => handleLanguageChange(lang.code)}
+                                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-[var(--surface-hover)] transition-colors ${selectedLanguage === lang.code ? 'text-primary font-bold bg-primary/10' : 'text-[var(--text-primary)]'}`}
+                                        >
+                                            <span>{lang.label}</span>
+                                            {selectedLanguage === lang.code && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <div className="flex items-center gap-4">
                         <SlidersHorizontal size={14} className="text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)] transition-colors" />
                         <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
