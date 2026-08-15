@@ -201,13 +201,19 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>
-
-            {/* Granola Floating Input Bar */}
-            <div className={cn(
-                "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-[2rem] shadow-sm p-2 flex flex-col transition-all duration-300",
-                expanded ? "rounded-3xl" : (focused ? "rounded-[1.5rem]" : "rounded-full p-1 max-w-xl mx-auto")
-            )}>
+            </AnimatePresence>            {/* Granola Floating Input Bar */}
+            <div 
+                className={cn(
+                    "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-[2rem] shadow-xl p-2 flex flex-col transition-all duration-300 pointer-events-auto",
+                    expanded ? "rounded-3xl" : (focused ? "rounded-[1.5rem]" : "rounded-full p-1.5 max-w-xl mx-auto")
+                )}
+                onMouseDown={(e) => {
+                    // Prevent blur when clicking inside the container
+                    if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                        e.stopPropagation();
+                    }
+                }}
+            >
                 
                 {/* Recipes & Quick Prompts */}
                 {(!expanded && focused) && (
@@ -224,37 +230,40 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                                 <button
                                     type="button"
                                     key={recipe.id}
+                                    onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => handleAskAi(recipe.prompt(contextName))}
-                                    className="flex items-center gap-1.5 shrink-0 px-2 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                                    className="flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
                                 >
                                     <recipe.icon size={13} className="opacity-70" />
-                                    {recipe.shortTitle}
+                                    <span>{recipe.shortTitle}</span>
                                 </button>
                             ))}
                             {recipes.length > 3 && (
                                 <button 
                                     type="button"
+                                    onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => setRecipesExpanded(!recipesExpanded)}
                                     className="flex items-center gap-1.5 shrink-0 px-2 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors ml-auto"
                                 >
                                     <LayoutGrid size={13} className="opacity-70" />
-                                    {recipesExpanded ? 'Less' : 'All recipes'}
+                                    <span>{recipesExpanded ? 'Less' : 'All recipes'}</span>
                                 </button>
                             )}
                         </div>
                         {/* Quick Prompts */}
                         <div className="flex items-center gap-2">
-                             <div className="flex items-center gap-1 text-[var(--accent)] shrink-0 pr-2">
+                             <div className="flex items-center gap-1 text-emerald-500 shrink-0 pr-2">
                                  <Sparkles size={14} />
                              </div>
-                             {['Say next', 'Clarify', 'Follow-up'].map((promptText) => (
+                             {['Summarize', 'Action items', 'Follow-up'].map((promptText) => (
                                 <button
                                     type="button"
                                     key={promptText}
-                                    onClick={() => handleAskAi(`Can you ${promptText.toLowerCase()} regarding the current context?`)}
-                                    className="flex items-center gap-1.5 shrink-0 px-3 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)]/20 text-[11px] font-bold transition-colors"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => handleAskAi(`Can you generate a ${promptText.toLowerCase()} for this note?`)}
+                                    className="flex items-center gap-1.5 shrink-0 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-semibold transition-colors"
                                 >
-                                    {promptText}
+                                    <span>{promptText}</span>
                                 </button>
                              ))}
                         </div>
@@ -262,7 +271,7 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                 )}
 
                 {/* Input Area */}
-                <div className={cn("flex items-center gap-2 px-3", expanded || focused ? "py-1" : "py-1.5")}>
+                <div className={cn("flex items-center gap-2 px-3", expanded || focused ? "py-1" : "py-1")}>
                     <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-2 min-w-0">
                         <input
                             type="text"
@@ -270,35 +279,37 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                             onChange={e => setInputText(e.target.value)}
                             onFocus={() => setFocused(true)}
                             onBlur={() => {
-                                // If they click outside and input is empty and not expanded, un-focus
-                                if (!inputText.trim() && !expanded) {
-                                    // slight delay to allow recipe button clicks to fire
-                                    setTimeout(() => setFocused(false), 150);
-                                }
+                                // Small timeout to allow click handlers to resolve smoothly
+                                setTimeout(() => {
+                                    if (!inputText.trim() && !expanded) {
+                                        setFocused(false);
+                                    }
+                                }, 200);
                             }}
-                            placeholder={expanded || focused ? "Ask anything" : "Continue chat"}
-                            className="flex-1 bg-transparent border-none outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1 focus-visible:shadow-none"
+                            placeholder={expanded || focused ? "Ask anything about this note..." : "Continue chat"}
+                            className="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1 focus-visible:shadow-none"
                         />
                         {inputText.trim() && (
                             <button 
                                 type="submit" 
                                 disabled={loading}
-                                className="p-2 bg-[var(--text-primary)] text-[var(--bg)] hover:opacity-90 rounded-full transition-colors shrink-0 flex items-center justify-center"
+                                className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full transition-colors shrink-0 flex items-center justify-center shadow-sm"
                             >
-                                <Send size={14} className={loading ? "animate-pulse" : ""} />
+                                <Send size={13} className={loading ? "animate-pulse" : ""} />
                             </button>
                         )}
                     </form>
 
-                    {/* Right side icons / single recipe chip */}
+                    {/* Right side single recipe chip when unfocused */}
                     {(!expanded && !focused && recipes.length > 0 && !inputText.trim()) && (
                         <button
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleAskAi(recipes[0].prompt(contextName))}
-                            className="flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full border border-[var(--border)] hover:border-[var(--border-accent)] hover:bg-[var(--bg)] text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors ml-auto bg-[var(--surface-hover)]"
+                            className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full border border-[var(--border)] hover:border-emerald-500/40 hover:bg-[var(--surface-hover)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all ml-auto bg-[var(--surface)] shadow-sm"
                         >
-                            {React.createElement(recipes[0].icon, { size: 12, className: "text-[var(--text-muted)]" })}
-                            {recipes[0].shortTitle}
+                            {React.createElement(recipes[0].icon, { size: 12, className: "text-emerald-500" })}
+                            <span>{recipes[0].shortTitle}</span>
                         </button>
                     )}
 
@@ -306,25 +317,16 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                         <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-[var(--border)]">
                             <button 
                                 type="button" 
+                                onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => setAutoEnabled(!autoEnabled)}
                                 className={cn(
-                                    "flex items-center gap-1 px-2 py-1 text-xs font-bold transition-colors rounded-lg",
-                                    autoEnabled ? "text-[var(--accent)] bg-[var(--accent)]/10" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                    "flex items-center gap-1 px-2 py-1 text-xs font-semibold transition-colors rounded-lg",
+                                    autoEnabled ? "text-emerald-500 bg-emerald-500/10" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                                 )}
-                                title={autoEnabled ? "Auto-detect meeting enabled" : "Auto-detect meeting disabled"}
+                                title={autoEnabled ? "Auto memory enabled" : "Auto memory disabled"}
                             >
-                                Auto <ChevronDown size={14} />
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={() => setMicEnabled(!micEnabled)}
-                                className={cn(
-                                    "p-1.5 rounded-lg transition-colors",
-                                    micEnabled ? "text-red-500 bg-red-500/10 animate-pulse" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg)]"
-                                )}
-                                title={micEnabled ? "Listening..." : "Start voice input"}
-                            >
-                                <Mic size={16} />
+                                <span>Auto</span>
+                                <ChevronDown size={12} />
                             </button>
                         </div>
                     )}
@@ -333,6 +335,8 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
         </div>
     );
 }
+
+
 
 const ChevronDown = ({ size }: { size: number }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
