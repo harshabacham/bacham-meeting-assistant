@@ -534,8 +534,8 @@ export const TauriClient = {
             callback(event.payload);
         });
     },
-    onTranscriptUpdate: (callback: (data: { session_id: string; text: string; timestamp: number; platform: string }) => void) => {
-        return listen<{ session_id: string; text: string; timestamp: number; platform: string }>('live_caption_received', (event) => {
+    onTranscriptUpdate: (callback: (data: { session_id?: string; lectureId?: string; text?: string; content?: string; timestamp: number; platform?: string }) => void) => {
+        return listen<any>('live_caption_received', (event) => {
             callback(event.payload);
         });
     },

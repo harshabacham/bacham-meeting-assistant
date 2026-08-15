@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-    Search, ThumbsDown, Copy, Minus, Mic, Sparkles, ChevronDown, 
-    ChevronUp, Check, Languages, Square, FileText, Wand2, Globe2, ArrowRightLeft,
-    Volume2, VolumeX, Monitor
+    Search, Copy, Minus, Sparkles, ChevronDown, 
+    ChevronUp, Check, Square, FileText, Wand2, ArrowRightLeft,
+    Volume2, VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -487,6 +487,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
         return () => {
             TauriClient.stopNativeRecording().catch(console.error);
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                try { mediaRecorder.stop(); } catch (_) {}
+            }
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
             }

@@ -368,7 +368,7 @@ function FolderNode({
     const handleRename = async () => {
         setIsRenaming(false);
         if (editName.trim() && editName !== folder.name) {
-            await updateFolder(folder.id, { name: editName.trim() });
+            await updateFolder(folder.id, editName.trim());
         } else {
             setEditName(folder.name);
         }
