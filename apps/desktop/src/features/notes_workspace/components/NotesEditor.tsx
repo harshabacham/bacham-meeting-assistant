@@ -15,8 +15,7 @@ import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { 
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
-    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Layers, 
-    CheckCircle2, ListFilter, ArrowUpRight
+    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, LayoutGrid
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
@@ -108,7 +107,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         },
         editorProps: {
             attributes: {
-                class: 'bacham-editor-content outline-none min-h-[400px] text-[15px] leading-relaxed',
+                class: 'bacham-editor-content outline-none min-h-[400px] text-[14.5px] leading-relaxed text-[var(--text-primary)]',
                 spellcheck: 'true',
             },
         },
@@ -280,7 +279,7 @@ Structure your response with:
     const handleInsertSummaryToNotes = () => {
         if (!editor || !aiSummary) return;
         editor.commands.insertContent(`
-            <div class="my-4 p-4 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border)] text-sm leading-relaxed">
+            <div class="my-4 p-5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm leading-relaxed shadow-xs">
                 ${aiSummary.replace(/\n/g, '<br/>')}
             </div>
         `);
@@ -314,10 +313,7 @@ Structure your response with:
     return (
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
-            {/* Minimal Top Header */}
-            <div className="h-14 shrink-0 flex items-center justify-between pl-16 pr-24 sticky top-0 bg-[var(--bg)] z-30 border-b border-[var(--border)]/40 pointer-events-auto">
-                <div className="flex items-center gap-2">
-            {/* Minimal Top Header */}
+            {/* ── Top Navigation Bar (Matches Dashboard Header Bar Aesthetic) ────── */}
             <div className="h-14 shrink-0 flex items-center justify-between pl-16 pr-24 sticky top-0 bg-[var(--bg)] z-30 border-b border-[var(--border)] pointer-events-auto">
                 <div className="flex items-center gap-2">
                     <button
@@ -326,7 +322,7 @@ Structure your response with:
                             if (onBack) onBack();
                             else navigate('/');
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-xs cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                         title="Back to Notes"
                     >
                         <ArrowLeft size={13} />
@@ -335,19 +331,19 @@ Structure your response with:
                 </div>
 
                 {/* ── 3-WAY TOP MODE SWITCHER: Summary | Notes | Transcript ──────────────── */}
-                <div className="flex items-center p-1 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
+                <div className="flex items-center p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
                     {/* 1. Summary Button */}
                     <button
                         type="button"
                         onClick={() => setViewMode('summary')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'summary'
-                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-[var(--accent)]"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
+                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                     >
-                        <Sparkles size={12} className={viewMode === 'summary' ? "text-[var(--accent)]" : ""} />
+                        <Sparkles size={12} className={viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70"} />
                         <span>Summary</span>
                         {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
                     </button>
@@ -357,13 +353,13 @@ Structure your response with:
                         type="button"
                         onClick={() => setViewMode('notes')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'notes'
-                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-[var(--accent)]"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
+                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                     >
-                        <FileText size={12} className={viewMode === 'notes' ? "text-[var(--accent)]" : ""} />
+                        <FileText size={12} className={viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70"} />
                         <span>Notes</span>
                     </button>
 
@@ -372,33 +368,33 @@ Structure your response with:
                         type="button"
                         onClick={() => setViewMode('transcript')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'transcript'
-                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-[var(--accent)]"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
+                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                     >
-                        <Mic size={12} className={viewMode === 'transcript' ? "text-[var(--accent)]" : ""} />
+                        <Mic size={12} className={viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70"} />
                         <span>Transcript</span>
                         {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
                     </button>
                 </div>
 
-                {/* Right Action Icons */}
+                {/* Right Action Controls */}
                 <div className="flex items-center gap-2 pointer-events-auto">
-                    {/* Record Meeting Action Button */}
+                    {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
                         type="button"
                         onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
                         className={cn(
-                            "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer",
+                            "px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
                             isTranscriptOpen
-                                ? "bg-[var(--destructive)] hover:opacity-90 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]"
-                                : "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C]"
+                                ? "bg-[var(--destructive)] hover:opacity-90 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse"
+                                : "bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)]"
                         )}
                         title="Record Meeting & Live Transcription"
                     >
-                        <Mic size={13} className={isTranscriptOpen ? "animate-pulse" : ""} />
+                        <Mic size={13} />
                         <span>{isTranscriptOpen ? 'Recording...' : 'Record'}</span>
                     </button>
 
@@ -408,7 +404,7 @@ Structure your response with:
                         <button
                             type="button"
                             onClick={handleCopyMarkdown}
-                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
                             title="Copy note markdown"
                         >
                             {copied ? <Check size={14} className="text-[var(--accent)]" /> : <Copy size={14} />}
@@ -416,7 +412,7 @@ Structure your response with:
                         <button
                             type="button"
                             onClick={handleExportFile}
-                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
                             title="Export markdown file"
                         >
                             <Download size={14} />
@@ -430,26 +426,29 @@ Structure your response with:
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {viewMode === 'summary' && (
                 <div className="flex-1 overflow-y-auto scroll-smooth">
-                    <div className="max-w-3xl mx-auto px-8 pt-6 pb-48">
+                    <div className="max-w-3xl mx-auto px-8 py-8 pb-48 flex flex-col gap-6">
                         {/* Summary Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)] mb-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
                             <div>
-                                <h1 className="text-2xl font-serif text-[var(--text-primary)] font-normal tracking-tight flex items-center gap-2">
-                                    <span>AI Meeting Summary</span>
-                                    {isGeneratingSummary && <RefreshCw size={16} className="animate-spin text-[var(--accent)]" />}
+                                <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] select-none mb-1">
+                                    AI Intelligence
+                                </p>
+                                <h1 className="text-[24px] font-semibold text-[var(--text-primary)] tracking-tight leading-tight flex items-center gap-2">
+                                    <span>Executive Summary</span>
+                                    {isGeneratingSummary && <RefreshCw size={15} className="animate-spin text-[var(--accent)]" />}
                                 </h1>
-                                <p className="text-xs text-[var(--text-muted)] mt-1">
-                                    Synthesized with Google Gemini from your meeting notes & transcripts.
+                                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                                    Synthesized with Google Gemini from your note content and transcripts.
                                 </p>
                             </div>
 
-                            {/* Summary Actions */}
+                            {/* Summary Action CTAs */}
                             <div className="flex items-center gap-2 shrink-0">
                                 <button
                                     type="button"
                                     onClick={() => handleGenerateSummary()}
                                     disabled={isGeneratingSummary}
-                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[#0A0A0C] text-xs font-bold shadow-sm transition-all cursor-pointer"
+                                    className="px-3.5 py-1.5 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                                 >
                                     <RefreshCw size={12} className={isGeneratingSummary ? "animate-spin" : ""} />
                                     <span>{isGeneratingSummary ? 'Synthesizing...' : 'Re-generate'}</span>
@@ -460,7 +459,7 @@ Structure your response with:
                                         <button
                                             type="button"
                                             onClick={handleCopySummary}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
                                             title="Copy Summary"
                                         >
                                             {summaryCopied ? <Check size={13} className="text-[var(--accent)]" /> : <Copy size={13} />}
@@ -470,7 +469,7 @@ Structure your response with:
                                         <button
                                             type="button"
                                             onClick={handleInsertSummaryToNotes}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--accent)] hover:underline transition-all shadow-xs cursor-pointer"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--accent)] hover:underline transition-all shadow-xs cursor-pointer"
                                             title="Insert into Custom Notes"
                                         >
                                             <Plus size={13} />
@@ -481,40 +480,40 @@ Structure your response with:
                             </div>
                         </div>
 
-                        {/* Summary Content */}
+                        {/* Summary Content Card */}
                         {aiSummary ? (
-                            <div className="space-y-6 text-sm text-[var(--text-primary)] leading-relaxed font-sans prose prose-neutral dark:prose-invert max-w-none">
+                            <div className="text-sm text-[var(--text-primary)] leading-relaxed font-sans prose prose-neutral dark:prose-invert max-w-none">
                                 <div 
-                                    className="p-6 rounded-3xl bg-[var(--surface-raised)] border border-[var(--border)] shadow-xs space-y-4"
+                                    className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-4"
                                     dangerouslySetInnerHTML={{ 
                                         __html: aiSummary
-                                            .replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">$1</h3>')
-                                            .replace(/^### (.*$)/gim, '<h4 class="text-sm font-semibold text-[var(--text-primary)] mt-3 mb-1">$1</h4>')
-                                            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-[var(--text-primary)]">$1</strong>')
-                                            .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc text-xs text-[var(--text-primary)]">$1</li>')
+                                            .replace(/^## (.*$)/gim, '<h3 class="text-[15px] font-semibold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">$1</h3>')
+                                            .replace(/^### (.*$)/gim, '<h4 class="text-[13.5px] font-medium text-[var(--text-primary)] mt-3 mb-1">$1</h4>')
+                                            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-[var(--text-primary)]">$1</strong>')
+                                            .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc text-xs text-[var(--text-secondary)]">$1</li>')
                                             .replace(/\n/g, '<br/>')
                                     }} 
                                 />
                             </div>
                         ) : (
-                            /* Empty Summary State */
-                            <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-3xl bg-[var(--surface-raised)] border border-dashed border-[var(--border)]">
-                                <div className="p-4 rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)] mb-4 shadow-sm">
-                                    <Sparkles size={32} />
+                            /* Empty Summary State (Dashboard Empty Style) */
+                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
+                                <div className="p-3.5 rounded-xl bg-[var(--accent-dim)] text-[var(--accent)] mb-3 shadow-xs">
+                                    <Sparkles size={24} />
                                 </div>
-                                <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">
-                                    No summary generated yet
+                                <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">
+                                    No executive summary generated yet
                                 </h3>
-                                <p className="text-xs text-[var(--text-muted)] max-w-sm mb-6 leading-relaxed">
+                                <p className="text-xs text-[var(--text-muted)] max-w-sm mb-5 leading-relaxed">
                                     Generate an AI-powered executive summary, discussion highlights, decisions, and action items directly from this note.
                                 </p>
                                 <button
                                     type="button"
                                     onClick={() => handleGenerateSummary()}
                                     disabled={isGeneratingSummary}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C] text-xs font-bold shadow-md transition-all cursor-pointer"
+                                    className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
                                 >
-                                    <Sparkles size={14} className={isGeneratingSummary ? "animate-spin" : ""} />
+                                    <Sparkles size={13} className={isGeneratingSummary ? "animate-spin" : ""} />
                                     <span>{isGeneratingSummary ? 'Synthesizing...' : 'Generate AI Summary'}</span>
                                 </button>
                             </div>
@@ -531,21 +530,21 @@ Structure your response with:
                     <div className={cn(
                         'w-full pb-48 transition-all',
                         focusMode
-                            ? 'max-w-3xl mx-auto px-8 pt-6'
-                            : 'max-w-3xl mx-auto px-8 pt-4',
+                            ? 'max-w-3xl mx-auto px-8 pt-8'
+                            : 'max-w-3xl mx-auto px-8 pt-6',
                     )}>
-                        {/* Note Title (Granola Editorial Serif) */}
-                        <div className="mb-3">
+                        {/* Note Title */}
+                        <div className="mb-4">
                             <input
                                 type="text"
                                 value={note.title}
                                 onChange={handleTitleChange}
                                 placeholder="Untitled Note"
-                                className="w-full bg-transparent text-[32px] sm:text-[36px] font-serif font-normal text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 focus:outline-none tracking-tight leading-tight"
+                                className="w-full bg-transparent text-[28px] sm:text-[32px] font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/40 focus:outline-none tracking-tight leading-tight"
                             />
                         </div>
 
-                        {/* Granola Minimal Metadata Row */}
+                        {/* Metadata Row */}
                         <div className="flex flex-wrap items-center gap-2 mb-8 text-xs">
                             {/* Date Picker Pill */}
                             <div className="relative" ref={dateMenuRef}>
@@ -555,7 +554,7 @@ Structure your response with:
                                     <ChevronDown size={10} className="text-[var(--text-muted)] opacity-60" />
                                 </MetaPill>
                                 {dateMenuOpen && (
-                                    <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1 w-40">
+                                    <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl py-1 w-40">
                                         <button type="button" onClick={() => { onUpdate({ eventDate: 'Today' }); setDateMenuOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">Today</button>
                                         <button type="button" onClick={() => { onUpdate({ eventDate: 'Yesterday' }); setDateMenuOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">Yesterday</button>
                                         <button type="button" onClick={() => { onUpdate({ eventDate: 'Last Week' }); setDateMenuOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">Last Week</button>
@@ -572,7 +571,7 @@ Structure your response with:
                                 </MetaPill>
 
                                 {folderMenuOpen && (
-                                    <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1 w-48 max-h-56 overflow-y-auto">
+                                    <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-xl py-1 w-48 max-h-56 overflow-y-auto">
                                         <button
                                             type="button"
                                             onClick={() => { onUpdate({ folderId: null }); setFolderMenuOpen(false); }}
@@ -607,7 +606,7 @@ Structure your response with:
 
                             {/* Add Tag */}
                             {isAddingTag ? (
-                                <div className="flex items-center gap-1 px-2.5 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs">
+                                <div className="flex items-center gap-1 px-2.5 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-md text-xs">
                                     <Hash size={11} className="text-[var(--text-muted)]" />
                                     <input
                                         type="text"
@@ -624,7 +623,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => setIsAddingTag(true)}
-                                    className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-[var(--border)] rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-colors cursor-pointer"
+                                    className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-[var(--border)] rounded-md text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-colors cursor-pointer"
                                 >
                                     <Plus size={11} /> Tag
                                 </button>
@@ -635,12 +634,12 @@ Structure your response with:
                         {selectionMenu && (
                             <div 
                                 style={{ position: 'fixed', left: `${selectionMenu.x}px`, top: `${selectionMenu.y}px`, transform: 'translateX(-50%)' }}
-                                className="fixed z-50 flex items-center gap-1 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl px-2 py-1 shadow-xl"
+                                className="fixed z-50 flex items-center gap-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1 shadow-xl"
                             >
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleBold().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('bold') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded text-xs transition-colors cursor-pointer", editor.isActive('bold') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Bold"
                                 >
                                     <Bold size={13} />
@@ -649,7 +648,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleItalic().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('italic') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded text-xs transition-colors cursor-pointer", editor.isActive('italic') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Italic"
                                 >
                                     <Italic size={13} />
@@ -667,7 +666,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleCode().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer", editor.isActive('code') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded text-xs font-mono font-bold transition-colors cursor-pointer", editor.isActive('code') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Code"
                                 >
                                     <Code size={13} />
@@ -688,14 +687,17 @@ Structure your response with:
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {viewMode === 'transcript' && (
                 <div className="flex-1 overflow-y-auto scroll-smooth">
-                    <div className="max-w-3xl mx-auto px-8 pt-6 pb-48">
+                    <div className="max-w-3xl mx-auto px-8 py-8 pb-48 flex flex-col gap-6">
                         {/* Transcript Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)] mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
                             <div>
-                                <h1 className="text-2xl font-serif text-[var(--text-primary)] font-normal tracking-tight">
+                                <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] select-none mb-1">
+                                    Audio Recording
+                                </p>
+                                <h1 className="text-[24px] font-semibold text-[var(--text-primary)] tracking-tight leading-tight">
                                     Verbatim Meeting Transcript
                                 </h1>
-                                <p className="text-xs text-[var(--text-muted)] mt-1">
+                                <p className="text-xs text-[var(--text-secondary)] mt-1">
                                     {rawTranscript ? `${transcriptWordCount} words • ~${estimatedMinutes} min duration` : 'No recording transcript attached'}
                                 </p>
                             </div>
@@ -707,7 +709,7 @@ Structure your response with:
                                         type="button"
                                         onClick={() => handleGenerateSummary()}
                                         disabled={isGeneratingSummary}
-                                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[#0A0A0C] text-xs font-bold shadow-sm transition-all cursor-pointer"
+                                        className="px-3.5 py-1.5 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                                         title="Generate notes and action items using AI"
                                     >
                                         <Sparkles size={13} className={isGeneratingSummary ? "animate-spin" : ""} />
@@ -717,7 +719,7 @@ Structure your response with:
                                     <button
                                         type="button"
                                         onClick={handleCopyTranscript}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
                                         title="Copy full transcript"
                                     >
                                         {transcriptCopied ? <Check size={13} className="text-[var(--accent)]" /> : <Copy size={13} />}
@@ -727,7 +729,7 @@ Structure your response with:
                                     <button
                                         type="button"
                                         onClick={handleExportTranscriptFile}
-                                        className="p-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
+                                        className="p-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
                                         title="Export transcript as text file"
                                     >
                                         <Download size={13} />
@@ -738,14 +740,14 @@ Structure your response with:
 
                         {/* Search Bar if transcript exists */}
                         {rawTranscript ? (
-                            <div className="relative mb-6">
+                            <div className="relative">
                                 <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                                 <input
                                     type="text"
                                     value={transcriptSearch}
                                     onChange={e => setTranscriptSearch(e.target.value)}
                                     placeholder="Search in transcript..."
-                                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] shadow-xs"
+                                    className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] shadow-xs"
                                 />
                                 {transcriptSearch && (
                                     <button
@@ -761,19 +763,19 @@ Structure your response with:
 
                         {/* Transcript Body */}
                         {rawTranscript ? (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {filteredTranscriptLines.length > 0 ? (
                                     filteredTranscriptLines.map((line, idx) => (
                                         <div 
                                             key={idx} 
-                                            className="p-4 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border)] shadow-xs flex flex-col gap-1.5 transition-all hover:border-[var(--accent-dim)]"
+                                            className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
                                         >
                                             <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
                                                 <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
                                                     <span>Speaker {Math.floor(idx / 3) + 1}</span>
                                                 </div>
-                                                <span>{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
+                                                <span className="tabular-nums">{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
                                             </div>
                                             <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans">
                                                 {line}
@@ -788,20 +790,20 @@ Structure your response with:
                             </div>
                         ) : (
                             /* Empty State for Transcript Mode */
-                            <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-3xl bg-[var(--surface-raised)] border border-dashed border-[var(--border)]">
-                                <div className="p-4 rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)] mb-4 shadow-sm">
-                                    <Mic size={28} />
+                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
+                                <div className="p-3.5 rounded-xl bg-[var(--accent-dim)] text-[var(--accent)] mb-3 shadow-xs">
+                                    <Mic size={24} />
                                 </div>
-                                <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">
+                                <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">
                                     No transcript recorded yet
                                 </h3>
-                                <p className="text-xs text-[var(--text-muted)] max-w-sm mb-6 leading-relaxed">
+                                <p className="text-xs text-[var(--text-muted)] max-w-sm mb-5 leading-relaxed">
                                     Start recording during your meeting or lecture. Real-time transcription will automatically save here alongside your notes.
                                 </p>
                                 <button
                                     type="button"
                                     onClick={() => setIsTranscriptOpen(true)}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C] text-xs font-bold shadow-md transition-all cursor-pointer"
+                                    className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
                                 >
                                     <Mic size={13} />
                                     <span>Start Live Recording</span>
@@ -821,7 +823,7 @@ Structure your response with:
                     onInsertToEditor={(content) => {
                         if (editor) {
                             editor.commands.insertContent(`
-                                <div class="my-3 p-3.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] text-sm leading-relaxed">
+                                <div class="my-3 p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm leading-relaxed shadow-xs">
                                     ${content.replace(/\n/g, '<br/>')}
                                 </div>
                             `);
@@ -845,7 +847,7 @@ function MetaPill({ children, onClick }: { children: React.ReactNode; onClick?: 
         <button 
             type="button"
             onClick={onClick}
-            className="flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] rounded-md text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         >
             {children}
         </button>
