@@ -58,7 +58,7 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
     if let Some(device) = host.default_output_device() {
         if let Ok(config) = device.default_output_config() {
             let app_clone = app.clone();
-            let sample_rate = config.sample_rate().0;
+            let sample_rate = config.sample_rate();
             let channels = config.channels();
             let min_chunk_size = (sample_rate / 4).max(4000) as usize; // ~250ms chunks
             let buffer = std::sync::Arc::new(std::sync::Mutex::new(Vec::<f32>::with_capacity(min_chunk_size * 2)));
@@ -146,7 +146,7 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
     if let Some(device) = host.default_input_device() {
         if let Ok(config) = device.default_input_config() {
             let app_clone = app.clone();
-            let sample_rate = config.sample_rate().0;
+            let sample_rate = config.sample_rate();
             let channels = config.channels();
             let min_chunk_size = (sample_rate / 4).max(4000) as usize; // ~250ms chunks
             let buffer = std::sync::Arc::new(std::sync::Mutex::new(Vec::<f32>::with_capacity(min_chunk_size * 2)));
