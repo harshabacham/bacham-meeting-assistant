@@ -82,7 +82,7 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                                 }
                             }
                         },
-                        |err| eprintln!("loopback err: {}", err),
+                        |_err| {},
                         None,
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
@@ -105,7 +105,7 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                                 }
                             }
                         },
-                        |err| eprintln!("loopback err: {}", err),
+                        |_err| {},
                         None,
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
@@ -128,7 +128,7 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                                 }
                             }
                         },
-                        |err| eprintln!("loopback err: {}", err),
+                        |_err| {},
                         None,
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },

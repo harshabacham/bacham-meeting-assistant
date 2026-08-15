@@ -260,7 +260,50 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             console.error("Whisper worker error:", err);
         }
 
-        // 4. Listen to buffered audio streams from Rust CPAL backend
+        // 4. Direct Web Audio API Microphone Capture (100% reliable hardware audio pipe)
+        let audioCtx: AudioContext | null = null;
+        let mediaStream: MediaStream | null = null;
+        let processor: ScriptProcessorNode | null = null;
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    echoCancellation: true, 
+                    noiseSuppression: true, 
+                    autoGainControl: true,
+                    channelCount: 1 
+                } 
+            }).then((stream) => {
+                mediaStream = stream;
+                try {
+                    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                    audioCtx = new AudioContextClass({ sampleRate: 16000 });
+                    const source = audioCtx.createMediaStreamSource(stream);
+                    processor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+                    processor.onaudioprocess = (e) => {
+                        if (!streamingRef.current || !workerRef.current) return;
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        const floatArray = new Float32Array(inputData);
+                        workerRef.current.postMessage({
+                            type: 'AUDIO_CHUNK',
+                            stream: 'mic',
+                            payload: Array.from(floatArray),
+                            sampleRate: 16000
+                        });
+                    };
+
+                    source.connect(processor);
+                    processor.connect(audioCtx.destination);
+                } catch (err) {
+                    console.warn("AudioContext init notice:", err);
+                }
+            }).catch((err) => {
+                console.warn("Direct microphone stream notice:", err);
+            });
+        }
+
+        // 5. Also listen to native background stream from Tauri CPAL backend
         let unlistenSys: () => void;
         let unlistenMic: () => void;
 
@@ -290,6 +333,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
         return () => {
             TauriClient.stopNativeRecording().catch(console.error);
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            if (processor) {
+                try { processor.disconnect(); } catch (_) {}
+            }
+            if (audioCtx) {
+                try { audioCtx.close(); } catch (_) {}
+            }
             if (speechRecRef.current) {
                 try { speechRecRef.current.stop(); } catch (_) {}
                 speechRecRef.current = null;
