@@ -30,14 +30,27 @@ self.onerror = (e: any) => {
   self.postMessage({ type: 'STATUS', status: 'error', error: e?.message || String(e) });
 };
 
+const LANGUAGE_MAP: Record<string, { code: string; isEnglishOnly: boolean }> = {
+  'english': { code: 'en', isEnglishOnly: true },
+  'auto': { code: 'auto', isEnglishOnly: false },
+  'hindi': { code: 'hi', isEnglishOnly: false },
+  'telugu': { code: 'te', isEnglishOnly: false },
+  'tamil': { code: 'ta', isEnglishOnly: false },
+  'spanish': { code: 'es', isEnglishOnly: false },
+  'french': { code: 'fr', isEnglishOnly: false },
+  'german': { code: 'de', isEnglishOnly: false },
+  'japanese': { code: 'ja', isEnglishOnly: false },
+  'chinese': { code: 'zh', isEnglishOnly: false },
+};
+
 async function loadModel(lang: string) {
   isModelLoaded = false;
   currentLanguage = lang || 'english';
   self.postMessage({ type: 'STATUS', status: `loading model for ${currentLanguage}...` });
   
   try {
-    // English fine-tuned model is 4x faster and 10x more accurate for English
-    const modelName = currentLanguage === 'english' ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-tiny';
+    const isEn = currentLanguage === 'english';
+    const modelName = isEn ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-tiny';
     
     transcriber = await pipeline('automatic-speech-recognition', modelName, {
       progress_callback: (progress: any) => {
@@ -196,9 +209,10 @@ async function processBufferLoop() {
         status: `Transcribing ${durationSec}s [${sourceLabel}] in ${currentLanguage}...` 
       });
 
+      const langInfo = LANGUAGE_MAP[currentLanguage] || { code: 'en', isEnglishOnly: true };
+
       // Build generation parameters based on chosen language
       const genOptions: any = {
-        task: 'transcribe',
         temperature: 0.0,
         max_new_tokens: 64,
         repetition_penalty: 1.3,
@@ -206,8 +220,12 @@ async function processBufferLoop() {
         return_timestamps: false
       };
 
-      if (currentLanguage !== 'english' && currentLanguage !== 'auto') {
-        genOptions.language = currentLanguage;
+      // Only pass task and language for multilingual models
+      if (!langInfo.isEnglishOnly) {
+        genOptions.task = 'transcribe';
+        if (langInfo.code !== 'auto') {
+          genOptions.language = langInfo.code;
+        }
       }
 
       // Run speech-to-text with strict repetition penalties & greedy decoding

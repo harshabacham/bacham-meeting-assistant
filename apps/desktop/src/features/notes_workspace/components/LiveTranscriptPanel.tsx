@@ -20,6 +20,7 @@ interface LiveTranscriptPanelProps {
 
 export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
+    const [interimText, setInterimText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
     const [selectedLanguage, setSelectedLanguage] = useState<string>('english');
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -31,19 +32,20 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [debugLogs, setDebugLogs] = useState<string[]>(['Panel Mounted']);
     const scrollRef = useRef<HTMLDivElement>(null);
     const workerRef = useRef<Worker | null>(null);
+    const speechRecRef = useRef<any>(null);
     const streamingRef = useRef<boolean>(true);
 
     const LANGUAGES = [
-        { code: 'english', label: 'English' },
-        { code: 'auto', label: 'Auto Detect' },
-        { code: 'hindi', label: 'Hindi (हिंदी)' },
-        { code: 'telugu', label: 'Telugu (తెలుగు)' },
-        { code: 'tamil', label: 'Tamil (தமிழ்)' },
-        { code: 'spanish', label: 'Spanish (Español)' },
-        { code: 'french', label: 'French (Français)' },
-        { code: 'german', label: 'German (Deutsch)' },
-        { code: 'japanese', label: 'Japanese (日本語)' },
-        { code: 'chinese', label: 'Chinese (中文)' },
+        { code: 'english', label: 'English', bcp: 'en-US' },
+        { code: 'auto', label: 'Auto Detect', bcp: 'en-US' },
+        { code: 'hindi', label: 'Hindi (हिंदी)', bcp: 'hi-IN' },
+        { code: 'telugu', label: 'Telugu (తెలుగు)', bcp: 'te-IN' },
+        { code: 'tamil', label: 'Tamil (தமிழ்)', bcp: 'ta-IN' },
+        { code: 'spanish', label: 'Spanish (Español)', bcp: 'es-ES' },
+        { code: 'french', label: 'French (Français)', bcp: 'fr-FR' },
+        { code: 'german', label: 'German (Deutsch)', bcp: 'de-DE' },
+        { code: 'japanese', label: 'Japanese (日本語)', bcp: 'ja-JP' },
+        { code: 'chinese', label: 'Chinese (中文)', bcp: 'zh-CN' },
     ];
 
     useEffect(() => {
@@ -163,9 +165,65 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             }).then(u => { unlistenMic = u; addDebug('Microphone listener attached'); });
         });
 
+        // 4. Initialize Native Web Speech Recognition for instant zero-latency speech streaming
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            try {
+                const recognition = new SpeechRecognition();
+                const targetLangObj = LANGUAGES.find(l => l.code === selectedLanguage);
+                recognition.lang = targetLangObj?.bcp || 'en-US';
+                recognition.continuous = true;
+                recognition.interimResults = true;
+
+                recognition.onresult = (event: any) => {
+                    if (!streamingRef.current) return;
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            if (transcript.trim()) {
+                                addDebug(`Live speech: "${transcript.trim()}"`);
+                                setChunks(prev => [...prev, {
+                                    id: Date.now().toString() + Math.random(),
+                                    speaker: 'Speaker',
+                                    text: transcript.trim()
+                                }]);
+                                setInterimText('');
+                            }
+                        } else {
+                            interim += transcript;
+                        }
+                    }
+                    if (interim) {
+                        setInterimText(interim);
+                    }
+                };
+
+                recognition.onerror = (e: any) => {
+                    console.log("Web Speech notice:", e.error);
+                };
+
+                recognition.onend = () => {
+                    if (streamingRef.current && isOpen) {
+                        try { recognition.start(); } catch (_) {}
+                    }
+                };
+
+                recognition.start();
+                speechRecRef.current = recognition;
+                addDebug(`Native Speech recognizer started (${recognition.lang})`);
+            } catch (err) {
+                console.log("SpeechRecognition not initialized:", err);
+            }
+        }
+
         return () => {
             TauriClient.stopNativeRecording();
             if (workerRef.current) workerRef.current.terminate();
+            if (speechRecRef.current) {
+                try { speechRecRef.current.stop(); } catch (_) {}
+                speechRecRef.current = null;
+            }
             if (unlistenSys) unlistenSys();
             if (unlistenMic) unlistenMic();
         };
@@ -266,6 +324,17 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                             </motion.div>
                         ))}
                     </AnimatePresence>
+
+                    {/* Live Streaming Interim Preview */}
+                    {interimText && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-3 bg-primary/5 rounded-2xl border border-primary/20 text-[13px] text-[var(--text-primary)] italic"
+                        >
+                            <span className="text-primary font-bold mr-1.5 animate-pulse">●</span> {interimText}...
+                        </motion.div>
+                    )}
                     
                     {modelStatus === 'loading' && (
                         <div className="text-xs text-[var(--text-muted)] flex flex-col items-center justify-center py-4">
