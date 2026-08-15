@@ -247,21 +247,40 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                     </button>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                <div className="flex items-center gap-2">
+                    {/* Granola Record Meeting Action Button */}
                     <button
-                        onClick={handleCopyMarkdown}
-                        className="p-2 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)]"
-                        title="Copy note markdown"
+                        onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all",
+                            isTranscriptOpen
+                                ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+                                : "bg-[#3d5a22] hover:bg-[#344d1d] text-white"
+                        )}
+                        title="Record Meeting & Live Transcription"
                     >
-                        {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                        <Mic size={13} className={isTranscriptOpen ? "animate-pulse" : ""} />
+                        <span>{isTranscriptOpen ? 'Recording...' : 'Record Meeting'}</span>
                     </button>
-                    <button
-                        onClick={handleExportFile}
-                        className="p-2 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)]"
-                        title="Export markdown file"
-                    >
-                        <Download size={14} />
-                    </button>
+
+                    <div className="h-4 w-px bg-[var(--border)] mx-0.5" />
+
+                    <div className="flex items-center gap-1 text-[var(--text-muted)]">
+                        <button
+                            onClick={handleCopyMarkdown}
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)]"
+                            title="Copy note markdown"
+                        >
+                            {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                        </button>
+                        <button
+                            onClick={handleExportFile}
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)]"
+                            title="Export markdown file"
+                        >
+                            <Download size={14} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
