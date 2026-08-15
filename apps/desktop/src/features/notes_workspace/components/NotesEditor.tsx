@@ -465,7 +465,15 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                     contextName={note.title || 'Untitled Note'} 
                     contextText={note.content.replace(/<[^>]+>/g, ' ')}
                     recipes={NOTE_RECIPES}
-                    position="absolute"
+                    onInsertToEditor={(content) => {
+                        if (editor) {
+                            editor.commands.insertContent(`
+                                <div class="my-3 p-3.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] text-sm leading-relaxed">
+                                    ${content.replace(/\n/g, '<br/>')}
+                                </div>
+                            `);
+                        }
+                    }}
                 />
             )}
 

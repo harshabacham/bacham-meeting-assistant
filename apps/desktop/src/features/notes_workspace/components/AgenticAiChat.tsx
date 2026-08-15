@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Sparkles, Maximize2, History, CheckCircle2, ChevronRight, Mic, LayoutGrid, X, RefreshCw, Minimize2 } from 'lucide-react';
+import { Send, Sparkles, Maximize2, History, CheckCircle2, ChevronRight, Mic, LayoutGrid, X, RefreshCw, Minimize2, Plus, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/components';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -18,19 +18,26 @@ interface AgenticAiChatProps {
     recipes: AiRecipe[];
     position?: 'fixed' | 'absolute' | 'relative';
     className?: string;
+    onInsertToEditor?: (content: string) => void;
 }
 
-export function AgenticAiChat({ contextName, contextText: _contextText, recipes, position = 'fixed', className }: AgenticAiChatProps) {
+export function AgenticAiChat({ 
+    contextName, 
+    contextText: _contextText, 
+    recipes, 
+    className,
+    onInsertToEditor 
+}: AgenticAiChatProps) {
     const [expanded, setExpanded] = useState(false);
     const [focused, setFocused] = useState(false);
     const [fullscreen, setFullscreen] = useState(false);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const [recipesExpanded, setRecipesExpanded] = useState(false);
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     
     // Feature Toggles
     const [autoEnabled, setAutoEnabled] = useState(true);
-    const [micEnabled, setMicEnabled] = useState(false);
     
     // Agentic Progress State
     const [progressSteps, setProgressSteps] = useState<{ id: string, text: string, status: 'pending'|'done' }[]>([]);
@@ -57,7 +64,7 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
 
         try {
             setProgressSteps([
-                { id: '1', text: `Analyzing query for "${contextName}"`, status: 'pending' }
+                { id: '1', text: `Analyzing "${contextName}"`, status: 'pending' }
             ]);
 
             let responseText = await TauriClient.sendGlobalMemoryChat(
@@ -96,11 +103,17 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
             const errMsg = err instanceof Error ? err.message : String(err);
             setTranscript(prev => [...prev, {
                 role: 'ai',
-                content: `⚠️ Failed to contact AI assistant: ${errMsg}. Please check your API key in Settings.`
+                content: `⚠️ Failed to contact AI assistant: ${errMsg}. Please verify your API key in Settings.`
             }]);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCopyMessage = (text: string, index: number) => {
+        navigator.clipboard.writeText(text);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -109,39 +122,36 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
     };
 
     return (
-        <div className={cn(
-            "z-50 w-full px-4 flex flex-col items-center mx-auto",
-            position === 'relative' ? "relative" : `${position} bottom-6 left-1/2 -translate-x-1/2`,
-            fullscreen ? "max-w-5xl h-[85vh] !bottom-auto !top-1/2 -translate-y-1/2" : "max-w-2xl",
-            className
-        )}>
-            {/* Expanded Chat Window */}
+        <>
+            {/* 1. Right Copilot Side Drawer when Expanded */}
             <AnimatePresence>
                 {expanded && (
                     <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.97 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 40, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         className={cn(
-                            "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-3xl p-5 mb-4 shadow-sm flex flex-col overflow-hidden transition-all duration-300",
-                            fullscreen ? "flex-1 h-full" : "h-[500px]"
+                            "fixed z-50 bg-[var(--surface)] dark:bg-[#181816] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden",
+                            fullscreen 
+                                ? "inset-6 rounded-3xl" 
+                                : "right-6 bottom-6 w-[430px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-5rem)] rounded-[1.75rem]"
                         )}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between pb-3 mb-2 shrink-0">
-                            <div className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer text-sm font-semibold">
-                                <History size={16} />
-                                {fullscreen && <span>Chat History</span>}
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)] dark:bg-[#1c1c1a] shrink-0">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
+                                <Sparkles size={14} className="text-emerald-500" />
+                                <span className="truncate max-w-[200px]">AI Assistant &bull; {contextName}</span>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 text-[var(--text-muted)]">
                                 <button 
                                     type="button"
                                     onClick={() => setFullscreen(!fullscreen)}
-                                    className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                                    title={fullscreen ? "Restore" : "Maximize"}
+                                    className="p-1 hover:text-[var(--text-primary)] transition-colors rounded hover:bg-[var(--surface-hover)]"
+                                    title={fullscreen ? "Restore size" : "Maximize"}
                                 >
-                                    {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                                    {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                                 </button>
                                 <button 
                                     type="button"
@@ -150,195 +160,201 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
                                         setFullscreen(false);
                                         setFocused(false);
                                     }}
-                                    className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                                    title="Close"
+                                    className="p-1 hover:text-[var(--text-primary)] transition-colors rounded hover:bg-[var(--surface-hover)]"
+                                    title="Close Copilot"
                                 >
-                                    <X size={18} />
+                                    <X size={15} />
                                 </button>
                             </div>
                         </div>
-                        
-                        {/* Chat History & Progress */}
-                        <div className="flex-1 overflow-y-auto space-y-6 pr-2 -mr-2 scroll-smooth">
+
+                        {/* Chat Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs scroll-smooth">
                             {transcript.length === 0 && !loading && (
-                                <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)]">
-                                    <Sparkles size={32} className="mb-4 opacity-50" />
-                                    <p className="text-sm font-medium">How can I help with {contextName}?</p>
+                                <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] gap-2 py-12">
+                                    <Sparkles size={28} className="opacity-40 text-emerald-500" />
+                                    <p className="font-medium text-center">Ask questions, request summaries, or organize your thoughts on this note.</p>
                                 </div>
                             )}
 
                             {transcript.map((msg, i) => (
-                                <div key={i} className="flex flex-col">
+                                <div key={i} className="flex flex-col gap-1.5">
                                     {msg.role === 'user' ? (
-                                        <div className="ml-auto bg-[var(--bg)] border border-[var(--border)] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm font-bold text-[var(--text-primary)] max-w-[80%] shadow-sm">
+                                        <div className="ml-auto bg-emerald-600 text-white font-medium px-3.5 py-2 rounded-2xl rounded-tr-xs max-w-[85%] shadow-sm text-xs leading-relaxed">
                                             {msg.content}
                                         </div>
                                     ) : (
-                                        <div className="mr-auto px-1 text-sm text-[var(--text-primary)] leading-relaxed max-w-[95%]">
-                                            <div dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br/>') }} />
+                                        <div className="mr-auto bg-[var(--surface-raised)] dark:bg-[#232321] border border-[var(--border)] rounded-2xl rounded-tl-xs p-3.5 max-w-[95%] shadow-sm flex flex-col gap-2">
+                                            <div 
+                                                className="text-[var(--text-primary)] leading-relaxed space-y-2 text-xs"
+                                                dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br/>') }}
+                                            />
+                                            {/* Action bar on AI response */}
+                                            <div className="flex items-center gap-2 pt-1 mt-1 border-t border-[var(--border)]/60 text-[11px] text-[var(--text-muted)]">
+                                                <button
+                                                    onClick={() => handleCopyMessage(msg.content, i)}
+                                                    className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors"
+                                                >
+                                                    {copiedIndex === i ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                                                    <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
+                                                </button>
+                                                {onInsertToEditor && (
+                                                    <button
+                                                        onClick={() => onInsertToEditor(msg.content)}
+                                                        className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-semibold ml-auto"
+                                                    >
+                                                        <Plus size={12} />
+                                                        <span>Insert to Note</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             ))}
 
                             {progressSteps.length > 0 && (
-                                <div className="mr-auto px-1 flex flex-col gap-2 mt-4 max-w-[80%]">
-                                    {progressSteps.map((step) => (
-                                        <div key={step.id} className="flex items-center gap-2 text-sm">
-                                            {step.status === 'done' ? (
-                                                <CheckCircle2 size={16} className="text-[var(--text-muted)]" />
-                                            ) : (
-                                                <RefreshCw size={14} className="text-[var(--accent)] animate-spin ml-0.5 mr-0.5" />
-                                            )}
-                                            <span className={step.status === 'done' ? 'text-[var(--text-muted)] font-medium' : 'text-[var(--text-primary)] font-bold'}>
-                                                {step.text}
-                                            </span>
-                                            {step.status === 'done' && <ChevronRight size={14} className="text-[var(--text-muted)] ml-auto" />}
-                                        </div>
-                                    ))}
+                                <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl px-3 py-2">
+                                    <RefreshCw size={12} className="text-emerald-500 animate-spin" />
+                                    <span>{progressSteps[0].text}...</span>
                                 </div>
                             )}
-                            <div ref={bottomRef} className="h-4" />
+
+                            <div ref={bottomRef} className="h-2" />
+                        </div>
+
+                        {/* Bottom Input inside Copilot */}
+                        <div className="p-3 border-t border-[var(--border)] bg-[var(--surface-raised)] dark:bg-[#1c1c1a]">
+                            {/* Prompt Chips */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                                {['Summarize', 'Action items', 'Follow-up'].map((promptText) => (
+                                    <button
+                                        type="button"
+                                        key={promptText}
+                                        onClick={() => handleAskAi(`Can you generate ${promptText.toLowerCase()} for this note?`)}
+                                        className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-semibold transition-colors"
+                                    >
+                                        {promptText}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-[var(--surface)] dark:bg-[#181816] border border-[var(--border)] rounded-full pl-3.5 pr-1.5 py-1">
+                                <input
+                                    type="text"
+                                    value={inputText}
+                                    onChange={e => setInputText(e.target.value)}
+                                    placeholder="Ask anything..."
+                                    className="flex-1 bg-transparent border-none outline-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium py-1"
+                                />
+                                <button 
+                                    type="submit" 
+                                    disabled={loading || !inputText.trim()}
+                                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-full transition-colors shrink-0"
+                                >
+                                    <Send size={12} className={loading ? "animate-pulse" : ""} />
+                                </button>
+                            </form>
                         </div>
                     </motion.div>
                 )}
-            </AnimatePresence>            {/* Granola Floating Input Bar */}
-            <div 
-                className={cn(
-                    "w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-[2rem] shadow-xl p-2 flex flex-col transition-all duration-300 pointer-events-auto",
-                    expanded ? "rounded-3xl" : (focused ? "rounded-[1.5rem]" : "rounded-full p-1.5 max-w-xl mx-auto")
-                )}
-                onMouseDown={(e) => {
-                    // Prevent blur when clicking inside the container
-                    if ((e.target as HTMLElement).tagName !== 'INPUT') {
-                        e.stopPropagation();
-                    }
-                }}
-            >
-                
-                {/* Recipes & Quick Prompts */}
-                {(!expanded && focused) && (
-                    <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="flex flex-col gap-2 overflow-x-auto px-2 pb-2 mb-1 border-b border-[var(--border)] no-scrollbar"
+            </AnimatePresence>
+
+            {/* 2. Floating Centered Bottom Pill when Minimized (Never shifts vertically) */}
+            {!expanded && (
+                <div 
+                    className={cn(
+                        "fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 pointer-events-auto",
+                        className
+                    )}
+                >
+                    <div 
+                        className="w-full bg-[var(--surface-raised)] dark:bg-[#1c1c1a] border border-[var(--border)] rounded-full shadow-xl p-1.5 flex flex-col transition-all duration-300"
+                        onMouseDown={(e) => {
+                            if ((e.target as HTMLElement).tagName !== 'INPUT') {
+                                e.stopPropagation();
+                            }
+                        }}
                     >
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 text-[var(--text-muted)] shrink-0 pr-2">
-                                <History size={14} />
-                            </div>
-                            {recipes.slice(0, recipesExpanded ? recipes.length : 3).map(recipe => (
+                        {/* Recipes bar when focused */}
+                        {focused && (
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="flex flex-col gap-1.5 overflow-x-auto px-2 pb-2 mb-1 border-b border-[var(--border)] no-scrollbar"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <History size={13} className="text-[var(--text-muted)] shrink-0" />
+                                    {recipes.slice(0, recipesExpanded ? recipes.length : 3).map(recipe => (
+                                        <button
+                                            type="button"
+                                            key={recipe.id}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => handleAskAi(recipe.prompt(contextName))}
+                                            className="flex items-center gap-1 shrink-0 px-2 py-1 rounded text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+                                        >
+                                            <recipe.icon size={12} className="opacity-70" />
+                                            <span>{recipe.shortTitle}</span>
+                                        </button>
+                                    ))}
+                                    {recipes.length > 3 && (
+                                        <button 
+                                            type="button"
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => setRecipesExpanded(!recipesExpanded)}
+                                            className="flex items-center gap-1 shrink-0 px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ml-auto"
+                                        >
+                                            <LayoutGrid size={12} />
+                                            <span>{recipesExpanded ? 'Less' : 'More'}</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* Input Row */}
+                        <div className="flex items-center gap-2 px-3 py-1">
+                            <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-2 min-w-0">
+                                <input
+                                    type="text"
+                                    value={inputText}
+                                    onChange={e => setInputText(e.target.value)}
+                                    onFocus={() => setFocused(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => {
+                                            if (!inputText.trim()) setFocused(false);
+                                        }, 200);
+                                    }}
+                                    placeholder="Continue chat or ask anything..."
+                                    className="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1"
+                                />
+                                {inputText.trim() && (
+                                    <button 
+                                        type="submit" 
+                                        disabled={loading}
+                                        className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full transition-colors shrink-0"
+                                    >
+                                        <Send size={12} className={loading ? "animate-pulse" : ""} />
+                                    </button>
+                                )}
+                            </form>
+
+                            {/* Right side prompt chip when unfocused */}
+                            {(!focused && recipes.length > 0 && !inputText.trim()) && (
                                 <button
                                     type="button"
-                                    key={recipe.id}
                                     onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => handleAskAi(recipe.prompt(contextName))}
-                                    className="flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+                                    onClick={() => handleAskAi(recipes[0].prompt(contextName))}
+                                    className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full border border-[var(--border)] hover:border-emerald-500/40 hover:bg-[var(--surface-hover)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all ml-auto bg-[var(--surface)] shadow-sm"
                                 >
-                                    <recipe.icon size={13} className="opacity-70" />
-                                    <span>{recipe.shortTitle}</span>
-                                </button>
-                            ))}
-                            {recipes.length > 3 && (
-                                <button 
-                                    type="button"
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => setRecipesExpanded(!recipesExpanded)}
-                                    className="flex items-center gap-1.5 shrink-0 px-2 py-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors ml-auto"
-                                >
-                                    <LayoutGrid size={13} className="opacity-70" />
-                                    <span>{recipesExpanded ? 'Less' : 'All recipes'}</span>
+                                    {React.createElement(recipes[0].icon, { size: 12, className: "text-emerald-500" })}
+                                    <span>{recipes[0].shortTitle}</span>
                                 </button>
                             )}
                         </div>
-                        {/* Quick Prompts */}
-                        <div className="flex items-center gap-2">
-                             <div className="flex items-center gap-1 text-emerald-500 shrink-0 pr-2">
-                                 <Sparkles size={14} />
-                             </div>
-                             {['Summarize', 'Action items', 'Follow-up'].map((promptText) => (
-                                <button
-                                    type="button"
-                                    key={promptText}
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => handleAskAi(`Can you generate a ${promptText.toLowerCase()} for this note?`)}
-                                    className="flex items-center gap-1.5 shrink-0 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-semibold transition-colors"
-                                >
-                                    <span>{promptText}</span>
-                                </button>
-                             ))}
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Input Area */}
-                <div className={cn("flex items-center gap-2 px-3", expanded || focused ? "py-1" : "py-1")}>
-                    <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-2 min-w-0">
-                        <input
-                            type="text"
-                            value={inputText}
-                            onChange={e => setInputText(e.target.value)}
-                            onFocus={() => setFocused(true)}
-                            onBlur={() => {
-                                // Small timeout to allow click handlers to resolve smoothly
-                                setTimeout(() => {
-                                    if (!inputText.trim() && !expanded) {
-                                        setFocused(false);
-                                    }
-                                }, 200);
-                            }}
-                            placeholder={expanded || focused ? "Ask anything about this note..." : "Continue chat"}
-                            className="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1 focus-visible:shadow-none"
-                        />
-                        {inputText.trim() && (
-                            <button 
-                                type="submit" 
-                                disabled={loading}
-                                className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full transition-colors shrink-0 flex items-center justify-center shadow-sm"
-                            >
-                                <Send size={13} className={loading ? "animate-pulse" : ""} />
-                            </button>
-                        )}
-                    </form>
-
-                    {/* Right side single recipe chip when unfocused */}
-                    {(!expanded && !focused && recipes.length > 0 && !inputText.trim()) && (
-                        <button
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => handleAskAi(recipes[0].prompt(contextName))}
-                            className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full border border-[var(--border)] hover:border-emerald-500/40 hover:bg-[var(--surface-hover)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all ml-auto bg-[var(--surface)] shadow-sm"
-                        >
-                            {React.createElement(recipes[0].icon, { size: 12, className: "text-emerald-500" })}
-                            <span>{recipes[0].shortTitle}</span>
-                        </button>
-                    )}
-
-                    {(expanded || focused) && (
-                        <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-[var(--border)]">
-                            <button 
-                                type="button" 
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => setAutoEnabled(!autoEnabled)}
-                                className={cn(
-                                    "flex items-center gap-1 px-2 py-1 text-xs font-semibold transition-colors rounded-lg",
-                                    autoEnabled ? "text-emerald-500 bg-emerald-500/10" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                                )}
-                                title={autoEnabled ? "Auto memory enabled" : "Auto memory disabled"}
-                            >
-                                <span>Auto</span>
-                                <ChevronDown size={12} />
-                            </button>
-                        </div>
-                    )}
+                    </div>
                 </div>
-            </div>
-        </div>
+            )}
+        </>
     );
 }
-
-
-
-const ChevronDown = ({ size }: { size: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-);
