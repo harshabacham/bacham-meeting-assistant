@@ -228,12 +228,12 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 } else if (type === 'LANGUAGE_DETECTED') {
                     setDetectedLanguage({ label: payload.language, flag: payload.flag || '🌐' });
                 } else if (type === 'TRANSCRIPT') {
-                    // In Translate Mode or Whisper fallback mode
-                    if ((translateMode || !useWebSpeechRef.current) && payload?.text) {
+                    if (payload?.text) {
                         const trimmed = payload.text.trim();
                         if (trimmed) {
                             setChunks(prev => {
-                                if (prev.length > 0 && prev[prev.length - 1].text === trimmed) {
+                                // Deduplicate if identical to last chunk
+                                if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
                                     return prev;
                                 }
                                 return [...prev, {
@@ -245,6 +245,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                                 }];
                             });
+                            setInterimText('');
                         }
                     }
                 }
