@@ -35,7 +35,8 @@ self.onmessage = async (e) => {
   if (type === 'INIT') {
     self.postMessage({ type: 'STATUS', status: 'loading' });
     try {
-      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
+      // Use Xenova/whisper-tiny for fast multilingual real-time performance (~75MB)
+      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
         progress_callback: (progress: any) => {
           self.postMessage({ type: 'PROGRESS', progress });
         }
@@ -130,26 +131,39 @@ async function processBufferLoop() {
 
     const rms = Math.sqrt(sumSq / maxLen);
 
+    // Dynamic amplitude normalization (boost quiet speech for Whisper)
+    let maxAmp = 0;
+    for (let i = 0; i < maxLen; i++) {
+      const abs = Math.abs(mixed[i]);
+      if (abs > maxAmp) maxAmp = abs;
+    }
+    if (maxAmp > 0.005) {
+      const gain = Math.min(0.9 / maxAmp, 6.0); // Boost quiet audio up to 6x
+      for (let i = 0; i < maxLen; i++) {
+        mixed[i] *= gain;
+      }
+    }
+
     try {
       self.postMessage({ 
         type: 'STATUS', 
-        status: `Processing ${(maxLen / TARGET_SAMPLE_RATE).toFixed(1)}s audio (Vol: ${(rms * 100).toFixed(1)}%)...` 
+        status: `Processing ${(maxLen / TARGET_SAMPLE_RATE).toFixed(1)}s audio (Vol: ${(rms * 100).toFixed(1)}%, Peak: ${(maxAmp * 100).toFixed(0)}%)...` 
       });
       
       // If audio is dead silence, skip inference
-      if (rms < 0.003) {
+      if (rms < 0.002) {
         self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
         continue;
       }
 
-      // Run speech-to-text inference
-      const output = await transcriber(mixed, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        language: "english",
-        task: "transcribe",
-        return_timestamps: false
-      });
+      // Run speech-to-text inference with raw audio object format
+      const output = await transcriber(
+        { raw: mixed, sampling_rate: TARGET_SAMPLE_RATE },
+        {
+          task: 'transcribe',
+          return_timestamps: false
+        }
+      );
 
       let text = '';
       if (typeof output === 'string') {
@@ -162,7 +176,14 @@ async function processBufferLoop() {
 
       text = text.trim();
 
-      if (text && text.length > 0 && !text.includes('[BLANK_AUDIO]')) {
+      // Filter out Whisper hallucinated tokens on silence/noise like [BLANK_AUDIO], (music), etc.
+      const isHallucination = !text || 
+        text.includes('[BLANK_AUDIO]') || 
+        text.startsWith('(') && text.endsWith(')') ||
+        text.startsWith('[') && text.endsWith(']') ||
+        text === '.' || text === '...' || text === 'you' || text === 'Thank you.';
+
+      if (text && text.length > 0 && !isHallucination) {
         self.postMessage({
           type: 'TRANSCRIPT',
           payload: {
