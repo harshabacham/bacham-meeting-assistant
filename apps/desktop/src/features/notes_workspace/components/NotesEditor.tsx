@@ -317,13 +317,16 @@ Structure your response with:
             {/* Minimal Top Header */}
             <div className="h-14 shrink-0 flex items-center justify-between pl-16 pr-24 sticky top-0 bg-[var(--bg)] z-30 border-b border-[var(--border)]/40 pointer-events-auto">
                 <div className="flex items-center gap-2">
+            {/* Minimal Top Header */}
+            <div className="h-14 shrink-0 flex items-center justify-between pl-16 pr-24 sticky top-0 bg-[var(--bg)] z-30 border-b border-[var(--border)] pointer-events-auto">
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => {
                             if (onBack) onBack();
                             else navigate('/');
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-sm cursor-pointer"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-xs cursor-pointer"
                         title="Back to Notes"
                     >
                         <ArrowLeft size={13} />
@@ -332,7 +335,7 @@ Structure your response with:
                 </div>
 
                 {/* ── 3-WAY TOP MODE SWITCHER: Summary | Notes | Transcript ──────────────── */}
-                <div className="flex items-center p-1 rounded-full bg-[var(--surface-raised)] dark:bg-[#1c1c1a] border border-[var(--border)] shadow-sm pointer-events-auto gap-0.5">
+                <div className="flex items-center p-1 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
                     {/* 1. Summary Button */}
                     <button
                         type="button"
@@ -340,13 +343,13 @@ Structure your response with:
                         className={cn(
                             "flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer",
                             viewMode === 'summary'
-                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-emerald-600 dark:text-emerald-400"
+                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-[var(--accent)]"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
                         )}
                     >
-                        <Sparkles size={12} className={viewMode === 'summary' ? "text-emerald-500" : ""} />
+                        <Sparkles size={12} className={viewMode === 'summary' ? "text-[var(--accent)]" : ""} />
                         <span>Summary</span>
-                        {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                        {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
                     </button>
 
                     {/* 2. Notes Button */}
@@ -356,11 +359,11 @@ Structure your response with:
                         className={cn(
                             "flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer",
                             viewMode === 'notes'
-                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-emerald-600 dark:text-emerald-400"
+                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-[var(--accent)]"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
                         )}
                     >
-                        <FileText size={12} className={viewMode === 'notes' ? "text-emerald-500" : ""} />
+                        <FileText size={12} className={viewMode === 'notes' ? "text-[var(--accent)]" : ""} />
                         <span>Notes</span>
                     </button>
 
@@ -371,13 +374,13 @@ Structure your response with:
                         className={cn(
                             "flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer",
                             viewMode === 'transcript'
-                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-emerald-600 dark:text-emerald-400"
+                                ? "bg-[var(--surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border)] font-bold text-[var(--accent)]"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
                         )}
                     >
-                        <Mic size={12} className={viewMode === 'transcript' ? "text-emerald-500" : ""} />
+                        <Mic size={12} className={viewMode === 'transcript' ? "text-[var(--accent)]" : ""} />
                         <span>Transcript</span>
-                        {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                        {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
                     </button>
                 </div>
 
@@ -388,10 +391,10 @@ Structure your response with:
                         type="button"
                         onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
                         className={cn(
-                            "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer",
                             isTranscriptOpen
-                                ? "bg-red-500 hover:bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]"
-                                : "bg-[#3d5a22] hover:bg-[#344d1d] text-white"
+                                ? "bg-[var(--destructive)] hover:opacity-90 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)]"
+                                : "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C]"
                         )}
                         title="Record Meeting & Live Transcription"
                     >
@@ -408,7 +411,7 @@ Structure your response with:
                             className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
                             title="Copy note markdown"
                         >
-                            {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                            {copied ? <Check size={14} className="text-[var(--accent)]" /> : <Copy size={14} />}
                         </button>
                         <button
                             type="button"
@@ -433,7 +436,7 @@ Structure your response with:
                             <div>
                                 <h1 className="text-2xl font-serif text-[var(--text-primary)] font-normal tracking-tight flex items-center gap-2">
                                     <span>AI Meeting Summary</span>
-                                    {isGeneratingSummary && <RefreshCw size={16} className="animate-spin text-emerald-500" />}
+                                    {isGeneratingSummary && <RefreshCw size={16} className="animate-spin text-[var(--accent)]" />}
                                 </h1>
                                 <p className="text-xs text-[var(--text-muted)] mt-1">
                                     Synthesized with Google Gemini from your meeting notes & transcripts.
@@ -446,7 +449,7 @@ Structure your response with:
                                     type="button"
                                     onClick={() => handleGenerateSummary()}
                                     disabled={isGeneratingSummary}
-                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[#0A0A0C] text-xs font-bold shadow-sm transition-all cursor-pointer"
                                 >
                                     <RefreshCw size={12} className={isGeneratingSummary ? "animate-spin" : ""} />
                                     <span>{isGeneratingSummary ? 'Synthesizing...' : 'Re-generate'}</span>
@@ -457,17 +460,17 @@ Structure your response with:
                                         <button
                                             type="button"
                                             onClick={handleCopySummary}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-sm cursor-pointer"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
                                             title="Copy Summary"
                                         >
-                                            {summaryCopied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                                            {summaryCopied ? <Check size={13} className="text-[var(--accent)]" /> : <Copy size={13} />}
                                             <span>{summaryCopied ? 'Copied' : 'Copy'}</span>
                                         </button>
 
                                         <button
                                             type="button"
                                             onClick={handleInsertSummaryToNotes}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-all shadow-sm cursor-pointer"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--accent)] hover:underline transition-all shadow-xs cursor-pointer"
                                             title="Insert into Custom Notes"
                                         >
                                             <Plus size={13} />
@@ -482,10 +485,10 @@ Structure your response with:
                         {aiSummary ? (
                             <div className="space-y-6 text-sm text-[var(--text-primary)] leading-relaxed font-sans prose prose-neutral dark:prose-invert max-w-none">
                                 <div 
-                                    className="p-6 rounded-3xl bg-[var(--surface-raised)] dark:bg-[#181816] border border-[var(--border)] shadow-xs space-y-4"
+                                    className="p-6 rounded-3xl bg-[var(--surface-raised)] border border-[var(--border)] shadow-xs space-y-4"
                                     dangerouslySetInnerHTML={{ 
                                         __html: aiSummary
-                                            .replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]/50">$1</h3>')
+                                            .replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">$1</h3>')
                                             .replace(/^### (.*$)/gim, '<h4 class="text-sm font-semibold text-[var(--text-primary)] mt-3 mb-1">$1</h4>')
                                             .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-[var(--text-primary)]">$1</strong>')
                                             .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc text-xs text-[var(--text-primary)]">$1</li>')
@@ -495,8 +498,8 @@ Structure your response with:
                             </div>
                         ) : (
                             /* Empty Summary State */
-                            <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-3xl bg-[var(--surface-raised)] dark:bg-[#181816] border border-dashed border-[var(--border)]">
-                                <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-500 mb-4 shadow-sm">
+                            <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-3xl bg-[var(--surface-raised)] border border-dashed border-[var(--border)]">
+                                <div className="p-4 rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)] mb-4 shadow-sm">
                                     <Sparkles size={32} />
                                 </div>
                                 <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">
@@ -509,7 +512,7 @@ Structure your response with:
                                     type="button"
                                     onClick={() => handleGenerateSummary()}
                                     disabled={isGeneratingSummary}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C] text-xs font-bold shadow-md transition-all cursor-pointer"
                                 >
                                     <Sparkles size={14} className={isGeneratingSummary ? "animate-spin" : ""} />
                                     <span>{isGeneratingSummary ? 'Synthesizing...' : 'Generate AI Summary'}</span>
@@ -585,7 +588,7 @@ Structure your response with:
                                                 onClick={() => { onUpdate({ folderId: f.id }); setFolderMenuOpen(false); }}
                                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] truncate"
                                             >
-                                                <Folder size={12} className="text-emerald-500 shrink-0" />
+                                                <Folder size={12} className="text-[var(--accent)] shrink-0" />
                                                 <span className="truncate">{f.name}</span>
                                             </button>
                                         ))}
@@ -596,9 +599,9 @@ Structure your response with:
                             {/* Tag Pills */}
                             {note.tags.filter(t => !t.startsWith('folder:')).map(tag => (
                                 <MetaPill key={tag} onClick={() => handleRemoveTag(tag)}>
-                                    <Hash size={11} className="text-emerald-500" />
+                                    <Hash size={11} className="text-[var(--accent)]" />
                                     <span>{tag}</span>
-                                    <X size={10} className="text-[var(--text-muted)] hover:text-red-400 transition-colors ml-0.5" />
+                                    <X size={10} className="text-[var(--text-muted)] hover:text-[var(--destructive)] transition-colors ml-0.5" />
                                 </MetaPill>
                             ))}
 
@@ -637,7 +640,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleBold().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('bold') ? "bg-[var(--surface-hover)] text-emerald-500" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('bold') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Bold"
                                 >
                                     <Bold size={13} />
@@ -646,7 +649,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleItalic().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('italic') ? "bg-[var(--surface-hover)] text-emerald-500" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('italic') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Italic"
                                 >
                                     <Italic size={13} />
@@ -655,7 +658,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleStrike().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('strike') ? "bg-[var(--surface-hover)] text-emerald-500" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded-lg text-xs transition-colors cursor-pointer", editor.isActive('strike') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Strikethrough"
                                 >
                                     <Strikethrough size={13} />
@@ -664,7 +667,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => editor.chain().focus().toggleCode().run()}
-                                    className={cn("p-1.5 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer", editor.isActive('code') ? "bg-[var(--surface-hover)] text-emerald-500" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
+                                    className={cn("p-1.5 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer", editor.isActive('code') ? "bg-[var(--surface-hover)] text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]")}
                                     title="Code"
                                 >
                                     <Code size={13} />
@@ -704,7 +707,7 @@ Structure your response with:
                                         type="button"
                                         onClick={() => handleGenerateSummary()}
                                         disabled={isGeneratingSummary}
-                                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-50 text-[#0A0A0C] text-xs font-bold shadow-sm transition-all cursor-pointer"
                                         title="Generate notes and action items using AI"
                                     >
                                         <Sparkles size={13} className={isGeneratingSummary ? "animate-spin" : ""} />
@@ -714,17 +717,17 @@ Structure your response with:
                                     <button
                                         type="button"
                                         onClick={handleCopyTranscript}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-sm cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
                                         title="Copy full transcript"
                                     >
-                                        {transcriptCopied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                                        {transcriptCopied ? <Check size={13} className="text-[var(--accent)]" /> : <Copy size={13} />}
                                         <span>{transcriptCopied ? 'Copied' : 'Copy'}</span>
                                     </button>
 
                                     <button
                                         type="button"
                                         onClick={handleExportTranscriptFile}
-                                        className="p-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all shadow-sm cursor-pointer"
+                                        className="p-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
                                         title="Export transcript as text file"
                                     >
                                         <Download size={13} />
@@ -742,7 +745,7 @@ Structure your response with:
                                     value={transcriptSearch}
                                     onChange={e => setTranscriptSearch(e.target.value)}
                                     placeholder="Search in transcript..."
-                                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-[var(--surface)] dark:bg-[#181816] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-emerald-500/50 shadow-xs"
+                                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] shadow-xs"
                                 />
                                 {transcriptSearch && (
                                     <button
@@ -763,11 +766,11 @@ Structure your response with:
                                     filteredTranscriptLines.map((line, idx) => (
                                         <div 
                                             key={idx} 
-                                            className="p-4 rounded-2xl bg-[var(--surface-raised)] dark:bg-[#1c1c1a] border border-[var(--border)] shadow-xs flex flex-col gap-1.5 transition-all hover:border-[var(--border-strong)]"
+                                            className="p-4 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border)] shadow-xs flex flex-col gap-1.5 transition-all hover:border-[var(--accent-dim)]"
                                         >
                                             <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
-                                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
                                                     <span>Speaker {Math.floor(idx / 3) + 1}</span>
                                                 </div>
                                                 <span>{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
@@ -785,8 +788,8 @@ Structure your response with:
                             </div>
                         ) : (
                             /* Empty State for Transcript Mode */
-                            <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-3xl bg-[var(--surface-raised)] dark:bg-[#181816] border border-dashed border-[var(--border)]">
-                                <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-500 mb-4 shadow-sm">
+                            <div className="flex flex-col items-center justify-center py-20 px-4 text-center rounded-3xl bg-[var(--surface-raised)] border border-dashed border-[var(--border)]">
+                                <div className="p-4 rounded-2xl bg-[var(--accent-dim)] text-[var(--accent)] mb-4 shadow-sm">
                                     <Mic size={28} />
                                 </div>
                                 <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">
@@ -798,7 +801,7 @@ Structure your response with:
                                 <button
                                     type="button"
                                     onClick={() => setIsTranscriptOpen(true)}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#3d5a22] hover:bg-[#344d1d] text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C] text-xs font-bold shadow-md transition-all cursor-pointer"
                                 >
                                     <Mic size={13} />
                                     <span>Start Live Recording</span>
@@ -842,7 +845,7 @@ function MetaPill({ children, onClick }: { children: React.ReactNode; onClick?: 
         <button 
             type="button"
             onClick={onClick}
-            className="flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-all shadow-xs cursor-pointer"
         >
             {children}
         </button>

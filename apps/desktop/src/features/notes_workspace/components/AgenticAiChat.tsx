@@ -132,23 +132,23 @@ export function AgenticAiChat({
                         exit={{ opacity: 0, x: 40, scale: 0.95 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         className={cn(
-                            "fixed z-50 bg-[var(--surface)] dark:bg-[#181816] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden",
+                            "fixed z-50 bg-[var(--surface)] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden",
                             fullscreen 
                                 ? "inset-6 rounded-3xl" 
                                 : "right-6 bottom-6 w-[430px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-5rem)] rounded-[1.75rem]"
                         )}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)] dark:bg-[#1c1c1a] shrink-0">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
                             <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-primary)]">
-                                <Sparkles size={14} className="text-emerald-500" />
+                                <Sparkles size={14} className="text-[var(--accent)]" />
                                 <span className="truncate max-w-[200px]">AI Assistant &bull; {contextName}</span>
                             </div>
                             <div className="flex items-center gap-2 text-[var(--text-muted)]">
                                 <button 
                                     type="button"
                                     onClick={() => setFullscreen(!fullscreen)}
-                                    className="p-1 hover:text-[var(--text-primary)] transition-colors rounded hover:bg-[var(--surface-hover)]"
+                                    className="p-1 hover:text-[var(--text-primary)] transition-colors rounded hover:bg-[var(--surface-hover)] cursor-pointer"
                                     title={fullscreen ? "Restore size" : "Maximize"}
                                 >
                                     {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
@@ -160,7 +160,7 @@ export function AgenticAiChat({
                                         setFullscreen(false);
                                         setFocused(false);
                                     }}
-                                    className="p-1 hover:text-[var(--text-primary)] transition-colors rounded hover:bg-[var(--surface-hover)]"
+                                    className="p-1 hover:text-[var(--text-primary)] transition-colors rounded hover:bg-[var(--surface-hover)] cursor-pointer"
                                     title="Close Copilot"
                                 >
                                     <X size={15} />
@@ -172,7 +172,7 @@ export function AgenticAiChat({
                         <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs scroll-smooth">
                             {transcript.length === 0 && !loading && (
                                 <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] gap-2 py-12">
-                                    <Sparkles size={28} className="opacity-40 text-emerald-500" />
+                                    <Sparkles size={28} className="opacity-40 text-[var(--accent)]" />
                                     <p className="font-medium text-center">Ask questions, request summaries, or organize your thoughts on this note.</p>
                                 </div>
                             )}
@@ -180,28 +180,30 @@ export function AgenticAiChat({
                             {transcript.map((msg, i) => (
                                 <div key={i} className="flex flex-col gap-1.5">
                                     {msg.role === 'user' ? (
-                                        <div className="ml-auto bg-emerald-600 text-white font-medium px-3.5 py-2 rounded-2xl rounded-tr-xs max-w-[85%] shadow-sm text-xs leading-relaxed">
+                                        <div className="ml-auto bg-[var(--accent)] text-[#0A0A0C] font-semibold px-3.5 py-2 rounded-2xl rounded-tr-xs max-w-[85%] shadow-xs text-xs leading-relaxed">
                                             {msg.content}
                                         </div>
                                     ) : (
-                                        <div className="mr-auto bg-[var(--surface-raised)] dark:bg-[#232321] border border-[var(--border)] rounded-2xl rounded-tl-xs p-3.5 max-w-[95%] shadow-sm flex flex-col gap-2">
+                                        <div className="mr-auto bg-[var(--surface-raised)] border border-[var(--border)] rounded-2xl rounded-tl-xs p-3.5 max-w-[95%] shadow-xs flex flex-col gap-2">
                                             <div 
                                                 className="text-[var(--text-primary)] leading-relaxed space-y-2 text-xs"
                                                 dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br/>') }}
                                             />
                                             {/* Action bar on AI response */}
-                                            <div className="flex items-center gap-2 pt-1 mt-1 border-t border-[var(--border)]/60 text-[11px] text-[var(--text-muted)]">
+                                            <div className="flex items-center gap-2 pt-1 mt-1 border-t border-[var(--border)] text-[11px] text-[var(--text-muted)]">
                                                 <button
+                                                    type="button"
                                                     onClick={() => handleCopyMessage(msg.content, i)}
-                                                    className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors"
+                                                    className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                                                 >
-                                                    {copiedIndex === i ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                                                    {copiedIndex === i ? <Check size={12} className="text-[var(--accent)]" /> : <Copy size={12} />}
                                                     <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
                                                 </button>
                                                 {onInsertToEditor && (
                                                     <button
+                                                        type="button"
                                                         onClick={() => onInsertToEditor(msg.content)}
-                                                        className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-semibold ml-auto"
+                                                        className="flex items-center gap-1 text-[var(--accent)] hover:underline font-semibold ml-auto cursor-pointer"
                                                     >
                                                         <Plus size={12} />
                                                         <span>Insert to Note</span>
@@ -215,7 +217,7 @@ export function AgenticAiChat({
 
                             {progressSteps.length > 0 && (
                                 <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl px-3 py-2">
-                                    <RefreshCw size={12} className="text-emerald-500 animate-spin" />
+                                    <RefreshCw size={12} className="text-[var(--accent)] animate-spin" />
                                     <span>{progressSteps[0].text}...</span>
                                 </div>
                             )}
@@ -224,7 +226,7 @@ export function AgenticAiChat({
                         </div>
 
                         {/* Bottom Input inside Copilot */}
-                        <div className="p-3 border-t border-[var(--border)] bg-[var(--surface-raised)] dark:bg-[#1c1c1a]">
+                        <div className="p-3 border-t border-[var(--border)] bg-[var(--surface-raised)]">
                             {/* Prompt Chips */}
                             <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar">
                                 {['Summarize', 'Action items', 'Follow-up'].map((promptText) => (
@@ -232,14 +234,14 @@ export function AgenticAiChat({
                                         type="button"
                                         key={promptText}
                                         onClick={() => handleAskAi(`Can you generate ${promptText.toLowerCase()} for this note?`)}
-                                        className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-[11px] font-semibold transition-colors"
+                                        className="shrink-0 px-2.5 py-1 rounded-full bg-[var(--accent-dim)] text-[var(--accent)] hover:opacity-80 text-[11px] font-semibold transition-colors cursor-pointer"
                                     >
                                         {promptText}
                                     </button>
                                 ))}
                             </div>
 
-                            <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-[var(--surface)] dark:bg-[#181816] border border-[var(--border)] rounded-full pl-3.5 pr-1.5 py-1">
+                            <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-[var(--surface)] border border-[var(--border)] rounded-full pl-3.5 pr-1.5 py-1">
                                 <input
                                     type="text"
                                     value={inputText}
@@ -250,7 +252,7 @@ export function AgenticAiChat({
                                 <button 
                                     type="submit" 
                                     disabled={loading || !inputText.trim()}
-                                    className="p-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-full transition-colors shrink-0"
+                                    className="p-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-40 text-[#0A0A0C] rounded-full transition-colors shrink-0 cursor-pointer"
                                 >
                                     <Send size={12} className={loading ? "animate-pulse" : ""} />
                                 </button>
@@ -269,7 +271,7 @@ export function AgenticAiChat({
                     )}
                 >
                     <div 
-                        className="w-full bg-[var(--surface-raised)] dark:bg-[#1c1c1a] border border-[var(--border)] rounded-full shadow-xl p-1.5 flex flex-col transition-all duration-300"
+                        className="w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-full shadow-xl p-1.5 flex flex-col transition-all duration-300"
                         onMouseDown={(e) => {
                             if ((e.target as HTMLElement).tagName !== 'INPUT') {
                                 e.stopPropagation();
@@ -291,7 +293,7 @@ export function AgenticAiChat({
                                             key={recipe.id}
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleAskAi(recipe.prompt(contextName))}
-                                            className="flex items-center gap-1 shrink-0 px-2 py-1 rounded text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+                                            className="flex items-center gap-1 shrink-0 px-2 py-1 rounded text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
                                         >
                                             <recipe.icon size={12} className="opacity-70" />
                                             <span>{recipe.shortTitle}</span>
@@ -302,7 +304,7 @@ export function AgenticAiChat({
                                             type="button"
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => setRecipesExpanded(!recipesExpanded)}
-                                            className="flex items-center gap-1 shrink-0 px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ml-auto"
+                                            className="flex items-center gap-1 shrink-0 px-2 py-1 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ml-auto cursor-pointer"
                                         >
                                             <LayoutGrid size={12} />
                                             <span>{recipesExpanded ? 'Less' : 'More'}</span>
@@ -332,7 +334,7 @@ export function AgenticAiChat({
                                     <button 
                                         type="submit" 
                                         disabled={loading}
-                                        className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full transition-colors shrink-0"
+                                        className="p-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0A0A0C] font-bold rounded-full transition-colors shrink-0 cursor-pointer"
                                     >
                                         <Send size={12} className={loading ? "animate-pulse" : ""} />
                                     </button>
@@ -345,9 +347,9 @@ export function AgenticAiChat({
                                     type="button"
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => handleAskAi(recipes[0].prompt(contextName))}
-                                    className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full border border-[var(--border)] hover:border-emerald-500/40 hover:bg-[var(--surface-hover)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all ml-auto bg-[var(--surface)] shadow-sm"
+                                    className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--surface-hover)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all ml-auto bg-[var(--surface)] shadow-xs cursor-pointer"
                                 >
-                                    {React.createElement(recipes[0].icon, { size: 12, className: "text-emerald-500" })}
+                                    {React.createElement(recipes[0].icon, { size: 12, className: "text-[var(--accent)]" })}
                                     <span>{recipes[0].shortTitle}</span>
                                 </button>
                             )}
