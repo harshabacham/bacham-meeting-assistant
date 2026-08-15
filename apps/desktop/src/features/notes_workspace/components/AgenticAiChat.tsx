@@ -93,9 +93,10 @@ export function AgenticAiChat({ contextName, contextText: _contextText, recipes,
         } catch (err) {
             console.error('Failed to ask AI', err);
             setProgressSteps([]);
+            const errMsg = err instanceof Error ? err.message : String(err);
             setTranscript(prev => [...prev, {
                 role: 'ai',
-                content: 'Failed to contact AI assistant. Please check your AI provider settings.'
+                content: `⚠️ Failed to contact AI assistant: ${errMsg}. Please check your API key in Settings.`
             }]);
         } finally {
             setLoading(false);

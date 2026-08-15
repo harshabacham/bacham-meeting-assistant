@@ -24,17 +24,20 @@ impl UniversalAiService {
         "bacham.gemini".to_string()
     }
 
-    pub async fn get_provider_token(provider: &str) -> AppResult<String> {
+    pub async fn get_provider_token(provider: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
         // Fallback for legacy gemini api key
         let key_name = if provider == "bacham.gemini" { "gemini_api_key" } else { provider };
-        let entry = Entry::new("bacham", key_name).map_err(|e| AppError::Internal(e.to_string()))?;
-        if let Ok(key) = entry.get_password() {
-            if !key.trim().is_empty() {
-                return Ok(key.trim().to_string());
+        
+        // 1. Check OS Keyring
+        if let Ok(entry) = Entry::new("bacham", key_name) {
+            if let Ok(key) = entry.get_password() {
+                if !key.trim().is_empty() {
+                    return Ok(key.trim().to_string());
+                }
             }
         }
 
-        // Environment Variable Fallbacks
+        // 2. Check Environment Variables
         let env_key = match provider {
             "bacham.anthropic" => std::env::var("ANTHROPIC_AUTH_TOKEN").or_else(|_| std::env::var("ANTHROPIC_API_KEY")).ok(),
             "bacham.openrouter" => std::env::var("OPENROUTER_API_KEY").ok(),
@@ -46,6 +49,30 @@ impl UniversalAiService {
         if let Some(key) = env_key {
             if !key.trim().is_empty() {
                 return Ok(key.trim().to_string());
+            }
+        }
+
+        // 3. Check SQLite settings table (Essential on Windows dev mode and app storage)
+        use sqlx::Row;
+        let query_keys = match provider {
+            "bacham.gemini" => vec!["gemini_api_key", "apiKey", "geminiApiKey", "gemini_api_key_ref"],
+            "bacham.openai" => vec!["openai_api_key", "openaiApiKey", "bacham.openai"],
+            "bacham.anthropic" => vec!["anthropic_api_key", "anthropicApiKey", "bacham.anthropic"],
+            "bacham.openrouter" => vec!["openrouter_api_key", "openrouterApiKey", "bacham.openrouter"],
+            _ => vec![key_name],
+        };
+
+        for qk in query_keys {
+            if let Ok(Some(row)) = sqlx::query("SELECT value FROM settings WHERE key = ?")
+                .bind(qk)
+                .fetch_optional(pool)
+                .await 
+            {
+                let val: String = row.get("value");
+                let trimmed = val.trim().to_string();
+                if !trimmed.is_empty() && trimmed != "true" {
+                    return Ok(trimmed);
+                }
             }
         }
 
@@ -103,7 +130,7 @@ impl UniversalAiService {
             if *fb == preferred { continue; } // already tried
             if *fb != "bacham.ollama" {
                 // Check if key exists (skip if no key)
-                match Self::get_provider_token(fb).await {
+                match Self::get_provider_token(fb, pool).await {
                     Ok(_) => {}
                     Err(_) => {
                         eprintln!("[UniversalAI] Skipping {} - no API key configured", fb);
@@ -148,7 +175,7 @@ impl UniversalAiService {
         for fb in all_providers.iter() {
             if *fb == preferred { continue; }
             if *fb != "bacham.ollama" {
-                if Self::get_provider_token(fb).await.is_err() {
+                if Self::get_provider_token(fb, pool).await.is_err() {
                     continue;
                 }
             }
@@ -237,8 +264,8 @@ impl UniversalAiService {
 
     // --- Provider Implementations ---
 
-    async fn call_openai(prompt: &str, system: &str, _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let token = Self::get_provider_token("bacham.openai").await?;
+    async fn call_openai(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.openai", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let payload = serde_json::json!({
@@ -263,8 +290,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_openai_vision(prompt: &str, system: &str, images: &[(String, String)], _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let token = Self::get_provider_token("bacham.openai").await?;
+    async fn call_openai_vision(prompt: &str, system: &str, images: &[(String, String)], pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.openai", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let mut content = vec![serde_json::json!({ "type": "text", "text": prompt })];
@@ -297,8 +324,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_anthropic(prompt: &str, system: &str, _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let token = Self::get_provider_token("bacham.anthropic").await?;
+    async fn call_anthropic(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.anthropic", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let payload = serde_json::json!({
@@ -325,8 +352,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_anthropic_vision(prompt: &str, system: &str, images: &[(String, String)], _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let token = Self::get_provider_token("bacham.anthropic").await?;
+    async fn call_anthropic_vision(prompt: &str, system: &str, images: &[(String, String)], pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.anthropic", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let mut content = vec![];
@@ -362,8 +389,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_ollama(prompt: &str, system: &str, _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let url = Self::get_provider_token("bacham.ollama").await.unwrap_or_else(|_| "http://localhost:11434".to_string());
+    async fn call_ollama(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let url = Self::get_provider_token("bacham.ollama", pool).await.unwrap_or_else(|_| "http://localhost:11434".to_string());
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         // Auto-detect available model
@@ -401,8 +428,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_ollama_vision(prompt: &str, system: &str, images: &[(String, String)], _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let url = Self::get_provider_token("bacham.ollama").await.unwrap_or_else(|_| "http://localhost:11434".to_string());
+    async fn call_ollama_vision(prompt: &str, system: &str, images: &[(String, String)], pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let url = Self::get_provider_token("bacham.ollama", pool).await.unwrap_or_else(|_| "http://localhost:11434".to_string());
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let tags_url = format!("{}/api/tags", url.trim_end_matches('/'));
@@ -452,8 +479,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_lmstudio(prompt: &str, system: &str, _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let url = Self::get_provider_token("bacham.lmstudio").await.unwrap_or_else(|_| "http://localhost:1234/v1".to_string());
+    async fn call_lmstudio(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let url = Self::get_provider_token("bacham.lmstudio", pool).await.unwrap_or_else(|_| "http://localhost:1234/v1".to_string());
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let payload = serde_json::json!({
@@ -476,8 +503,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_openrouter(prompt: &str, system: &str, _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let token = Self::get_provider_token("bacham.openrouter").await?;
+    async fn call_openrouter(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.openrouter", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let payload = serde_json::json!({
@@ -502,8 +529,8 @@ impl UniversalAiService {
         Ok(text)
     }
 
-    async fn call_openrouter_vision(prompt: &str, system: &str, images: &[(String, String)], _pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let token = Self::get_provider_token("bacham.openrouter").await?;
+    async fn call_openrouter_vision(prompt: &str, system: &str, images: &[(String, String)], pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.openrouter", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let mut content = vec![serde_json::json!({ "type": "text", "text": prompt })];
