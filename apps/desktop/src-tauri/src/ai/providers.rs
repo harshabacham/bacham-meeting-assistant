@@ -46,7 +46,7 @@ impl AiProvider for GeminiProvider {
         let pool = &app.state::<crate::database::DbState>().pool;
         let key = ProviderService::get_api_key(pool, "gemini").await?;
         let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-lite:streamGenerateContent?alt=sse&key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={}", key);
         
         let mut contents = Vec::new();
         for msg in &request.history {
@@ -94,7 +94,7 @@ impl AiProvider for GeminiProvider {
                 // DYNAMIC FALLBACK
                 if status.as_u16() == 404 && body.contains("is not found") {
                     eprintln!("Attempting dynamic fallback to find available models for streaming...");
-                    let list_url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", key);
+                    let list_url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", key);
                     if let Ok(list_res) = client.get(&list_url).send().await {
                         if let Ok(list_body) = list_res.json::<serde_json::Value>().await {
                             if let Some(models) = list_body.get("models").and_then(|m| m.as_array()) {
@@ -112,7 +112,7 @@ impl AiProvider for GeminiProvider {
                                 
                                 if let Some(new_model) = found_model {
                                     eprintln!("Found supported model: {}, retrying stream...", new_model);
-                                    let new_url = format!("https://generativelanguage.googleapis.com/v1/models/{}:streamGenerateContent?alt=sse&key={}", new_model, key);
+                                    let new_url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse&key={}", new_model, key);
                                     if let Ok(retry_res) = client.post(&new_url).json(&payload).send().await {
                                         if retry_res.status().is_success() {
                                             break retry_res;

@@ -220,7 +220,7 @@ pub async fn folder_chat_send(app: AppHandle, input: FolderChatInput) -> AppResu
     // Make the Gemini request
     let key = GeminiService::get_api_key(&pool).await?;
     let client = reqwest::Client::new();
-    let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}", key);
     
     let mut contents = Vec::new();
     for msg in &input.history {
@@ -448,7 +448,7 @@ pub async fn generate_highlight_reel(
                 
                 let key = GeminiService::get_api_key(&state.pool).await?;
                 let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
-                let url = format!("https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key={}", key);
+                let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}", key);
                 
                 let payload = serde_json::json!({
                     "systemInstruction": { "parts": [{ "text": system }] },

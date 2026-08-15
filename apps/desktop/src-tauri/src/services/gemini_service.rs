@@ -106,7 +106,7 @@ impl GeminiService {
 
         let key = Self::get_api_key(pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", model, key);
+        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", model, key);
         
         let payload = serde_json::json!({
             "systemInstruction": {
@@ -157,7 +157,7 @@ impl GeminiService {
                 
                 if status.as_u16() == 404 && body.contains("is not found") {
                     eprintln!("Attempting dynamic fallback to find available models...");
-                    let list_url = format!("https://generativelanguage.googleapis.com/v1/models?key={}", key);
+                    let list_url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", key);
                     if let Ok(list_res) = client.get(&list_url).send().await {
                         if let Ok(list_body) = list_res.json::<serde_json::Value>().await {
                             if let Some(models) = list_body.get("models").and_then(|m| m.as_array()) {
@@ -167,7 +167,7 @@ impl GeminiService {
                                             if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
                                                 let new_model = name.strip_prefix("models/").unwrap_or(name);
                                                 eprintln!("Found supported model: {}, retrying...", new_model);
-                                                let new_url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", new_model, key);
+                                                let new_url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", new_model, key);
                                                 if let Ok(retry_res) = client.post(&new_url).json(&payload).send().await {
                                                     if retry_res.status().is_success() {
                                                         if let Ok(retry_body) = retry_res.json::<serde_json::Value>().await {
@@ -671,7 +671,7 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/upload/v1/files?uploadType=media&key={}", key);
+        let url = format!("https://generativelanguage.googleapis.com/upload/v1beta/files?uploadType=media&key={}", key);
         
         let file_bytes = tokio::fs::read(file_path).await.map_err(|e| AppError::Internal(e.to_string()))?;
         
@@ -711,7 +711,7 @@ impl GeminiService {
                 return Err(AppError::Internal("Gemini file processing timed out after 5 minutes".into()));
             }
 
-            let get_url = format!("https://generativelanguage.googleapis.com/v1/{}?key={}", file_name, key);
+            let get_url = format!("https://generativelanguage.googleapis.com/v1beta/{}?key={}", file_name, key);
             let get_res = client.get(&get_url).send().await.map_err(|e| AppError::Internal(e.to_string()))?;
             
             if !get_res.status().is_success() {
