@@ -15,7 +15,7 @@ import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { 
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
-    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, LayoutGrid
+    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, LayoutGrid, Wand2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
@@ -284,6 +284,32 @@ Structure your response with:
             </div>
         `);
         setViewMode('notes');
+    };
+
+    const [isPolishingTranscript, setIsPolishingTranscript] = useState(false);
+
+    const handlePolishTranscript = async () => {
+        if (!rawTranscript.trim() || isPolishingTranscript) return;
+        setIsPolishingTranscript(true);
+        try {
+            const prompt = `You are a professional audio transcript editor. Clean and polish the following verbatim transcript: correct minor speech-to-text recognition errors, fix sentence punctuation and capitalization, and format into readable speech without altering the original meaning:
+
+Raw Transcript:
+${rawTranscript}
+
+Return only the polished transcript text:`;
+
+            const polished = await TauriClient.sendGlobalMemoryChat(prompt, []);
+            if (polished) {
+                setRawTranscript(polished);
+                localStorage.setItem(`transcript_${note.id}`, polished);
+                onUpdate({ transcript: polished });
+            }
+        } catch (err) {
+            console.error("Failed to polish transcript", err);
+        } finally {
+            setIsPolishingTranscript(false);
+        }
     };
 
     const handleExportTranscriptFile = () => {
@@ -719,6 +745,17 @@ Structure your response with:
                                     >
                                         <Sparkles size={13} className={isGeneratingSummary ? "animate-spin" : ""} />
                                         <span>{isGeneratingSummary ? 'Synthesizing...' : 'Synthesize Summary'}</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handlePolishTranscript}
+                                        disabled={isPolishingTranscript}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-primary)] transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                                        title="Clean up speech errors and punctuate transcript with AI"
+                                    >
+                                        <Wand2 size={13} className={isPolishingTranscript ? "animate-spin text-[var(--accent)]" : "text-[var(--accent)]"} />
+                                        <span>{isPolishingTranscript ? 'Polishing...' : 'AI Polish'}</span>
                                     </button>
 
                                     <button

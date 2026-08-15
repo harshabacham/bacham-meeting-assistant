@@ -58,19 +58,28 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
     if let Some(device) = host.default_output_device() {
         if let Ok(config) = device.default_output_config() {
             let app_clone = app.clone();
-            let sample_rate = config.sample_rate();
+            let sample_rate = config.sample_rate().0;
             let channels = config.channels();
+            let min_chunk_size = (sample_rate / 4).max(4000) as usize; // ~250ms chunks
+            let buffer = std::sync::Arc::new(std::sync::Mutex::new(Vec::<f32>::with_capacity(min_chunk_size * 2)));
+
             let stream = match config.sample_format() {
                 SampleFormat::F32 => {
+                    let buf_clone = buffer.clone();
                     device.build_input_stream(
                         config.clone().into(),
                         move |data: &[f32], _: &cpal::InputCallbackInfo| {
                             let mono = downmix_to_mono(data, channels);
                             if !mono.is_empty() {
-                                let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
-                                    "data": mono,
-                                    "rate": sample_rate
-                                }));
+                                let mut b = buf_clone.lock().unwrap();
+                                b.extend_from_slice(&mono);
+                                if b.len() >= min_chunk_size {
+                                    let chunk: Vec<f32> = b.drain(..).collect();
+                                    let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
+                                        "data": chunk,
+                                        "rate": sample_rate
+                                    }));
+                                }
                             }
                         },
                         |err| eprintln!("loopback err: {}", err),
@@ -78,16 +87,22 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
                 SampleFormat::I16 => {
+                    let buf_clone = buffer.clone();
                     device.build_input_stream(
                         config.clone().into(),
                         move |data: &[i16], _: &cpal::InputCallbackInfo| {
                             let f32_data: Vec<f32> = data.iter().map(|&s| s as f32 / 32768.0).collect();
                             let mono = downmix_to_mono(&f32_data, channels);
                             if !mono.is_empty() {
-                                let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
-                                    "data": mono,
-                                    "rate": sample_rate
-                                }));
+                                let mut b = buf_clone.lock().unwrap();
+                                b.extend_from_slice(&mono);
+                                if b.len() >= min_chunk_size {
+                                    let chunk: Vec<f32> = b.drain(..).collect();
+                                    let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
+                                        "data": chunk,
+                                        "rate": sample_rate
+                                    }));
+                                }
                             }
                         },
                         |err| eprintln!("loopback err: {}", err),
@@ -95,16 +110,22 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
                 SampleFormat::U16 => {
+                    let buf_clone = buffer.clone();
                     device.build_input_stream(
                         config.clone().into(),
                         move |data: &[u16], _: &cpal::InputCallbackInfo| {
                             let f32_data: Vec<f32> = data.iter().map(|&s| (s as f32 - 32768.0) / 32768.0).collect();
                             let mono = downmix_to_mono(&f32_data, channels);
                             if !mono.is_empty() {
-                                let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
-                                    "data": mono,
-                                    "rate": sample_rate
-                                }));
+                                let mut b = buf_clone.lock().unwrap();
+                                b.extend_from_slice(&mono);
+                                if b.len() >= min_chunk_size {
+                                    let chunk: Vec<f32> = b.drain(..).collect();
+                                    let _ = app_clone.emit("audio_stream_sys", serde_json::json!({
+                                        "data": chunk,
+                                        "rate": sample_rate
+                                    }));
+                                }
                             }
                         },
                         |err| eprintln!("loopback err: {}", err),
@@ -125,19 +146,28 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
     if let Some(device) = host.default_input_device() {
         if let Ok(config) = device.default_input_config() {
             let app_clone = app.clone();
-            let sample_rate = config.sample_rate();
+            let sample_rate = config.sample_rate().0;
             let channels = config.channels();
+            let min_chunk_size = (sample_rate / 4).max(4000) as usize; // ~250ms chunks
+            let buffer = std::sync::Arc::new(std::sync::Mutex::new(Vec::<f32>::with_capacity(min_chunk_size * 2)));
+
             let stream = match config.sample_format() {
                 SampleFormat::F32 => {
+                    let buf_clone = buffer.clone();
                     device.build_input_stream(
                         config.clone().into(),
                         move |data: &[f32], _: &cpal::InputCallbackInfo| {
                             let mono = downmix_to_mono(data, channels);
                             if !mono.is_empty() {
-                                let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
-                                    "data": mono,
-                                    "rate": sample_rate
-                                }));
+                                let mut b = buf_clone.lock().unwrap();
+                                b.extend_from_slice(&mono);
+                                if b.len() >= min_chunk_size {
+                                    let chunk: Vec<f32> = b.drain(..).collect();
+                                    let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
+                                        "data": chunk,
+                                        "rate": sample_rate
+                                    }));
+                                }
                             }
                         },
                         |err| eprintln!("mic err: {}", err),
@@ -145,16 +175,22 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
                 SampleFormat::I16 => {
+                    let buf_clone = buffer.clone();
                     device.build_input_stream(
                         config.clone().into(),
                         move |data: &[i16], _: &cpal::InputCallbackInfo| {
                             let f32_data: Vec<f32> = data.iter().map(|&s| s as f32 / 32768.0).collect();
                             let mono = downmix_to_mono(&f32_data, channels);
                             if !mono.is_empty() {
-                                let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
-                                    "data": mono,
-                                    "rate": sample_rate
-                                }));
+                                let mut b = buf_clone.lock().unwrap();
+                                b.extend_from_slice(&mono);
+                                if b.len() >= min_chunk_size {
+                                    let chunk: Vec<f32> = b.drain(..).collect();
+                                    let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
+                                        "data": chunk,
+                                        "rate": sample_rate
+                                    }));
+                                }
                             }
                         },
                         |err| eprintln!("mic err: {}", err),
@@ -162,16 +198,22 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
                     ).map_err(|e| crate::error::AppError::Internal(e.to_string()))
                 },
                 SampleFormat::U16 => {
+                    let buf_clone = buffer.clone();
                     device.build_input_stream(
                         config.clone().into(),
                         move |data: &[u16], _: &cpal::InputCallbackInfo| {
                             let f32_data: Vec<f32> = data.iter().map(|&s| (s as f32 - 32768.0) / 32768.0).collect();
                             let mono = downmix_to_mono(&f32_data, channels);
                             if !mono.is_empty() {
-                                let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
-                                    "data": mono,
-                                    "rate": sample_rate
-                                }));
+                                let mut b = buf_clone.lock().unwrap();
+                                b.extend_from_slice(&mono);
+                                if b.len() >= min_chunk_size {
+                                    let chunk: Vec<f32> = b.drain(..).collect();
+                                    let _ = app_clone.emit("audio_stream_mic", serde_json::json!({
+                                        "data": chunk,
+                                        "rate": sample_rate
+                                    }));
+                                }
                             }
                         },
                         |err| eprintln!("mic err: {}", err),
