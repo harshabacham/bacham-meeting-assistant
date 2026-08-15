@@ -133,36 +133,39 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             addDebug(`Spawn error: ${err.message}`);
         }
 
-        // 3. Listen to audio streams from Rust
+        // 3. Listen to audio streams from Rust (clean 16kHz mono floats)
         let unlistenSys: () => void;
         let unlistenMic: () => void;
+        let sysCount = 0;
+        let micCount = 0;
+
+        const statsTimer = setInterval(() => {
+            setSysChunks(sysCount);
+            setMicChunks(micCount);
+        }, 1000);
 
         import('@tauri-apps/api/event').then(({ listen }) => {
-            listen<{rate: number, channels: number, data: number[]}>('audio_stream_sys', (event) => {
-                setSysChunks(c => c + 1);
-                if (streamingRef.current && workerRef.current) {
+            listen<number[]>('audio_stream_sys', (event) => {
+                sysCount++;
+                if (streamingRef.current && workerRef.current && event.payload) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
                         stream: 'sys',
-                        payload: event.payload.data, 
-                        sampleRate: event.payload.rate, 
-                        channels: event.payload.channels 
+                        payload: event.payload 
                     });
                 }
-            }).then(u => { unlistenSys = u; addDebug('System Audio listener attached'); });
+            }).then(u => { unlistenSys = u; addDebug('System Audio stream connected (16kHz)'); });
             
-            listen<{rate: number, channels: number, data: number[]}>('audio_stream_mic', (event) => {
-                setMicChunks(c => c + 1);
-                if (streamingRef.current && workerRef.current) {
+            listen<number[]>('audio_stream_mic', (event) => {
+                micCount++;
+                if (streamingRef.current && workerRef.current && event.payload) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
                         stream: 'mic',
-                        payload: event.payload.data, 
-                        sampleRate: event.payload.rate, 
-                        channels: event.payload.channels 
+                        payload: event.payload 
                     });
                 }
-            }).then(u => { unlistenMic = u; addDebug('Microphone listener attached'); });
+            }).then(u => { unlistenMic = u; addDebug('Microphone stream connected (16kHz)'); });
         });
 
         // 4. Initialize Native Web Speech Recognition for instant zero-latency speech streaming
@@ -218,6 +221,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         }
 
         return () => {
+            clearInterval(statsTimer);
             TauriClient.stopNativeRecording();
             if (workerRef.current) workerRef.current.terminate();
             if (speechRecRef.current) {

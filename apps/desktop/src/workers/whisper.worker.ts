@@ -83,33 +83,9 @@ self.onmessage = async (e) => {
     if (!isModelLoaded) return;
     
     const isSys = stream === 'sys';
-    const rate = sampleRate || 48000;
-    const numChannels = channels || (isSys ? 2 : 1);
-
-    if (isSys) {
-      sysSampleRate = rate;
-      sysChannels = numChannels;
-    } else {
-      micSampleRate = rate;
-      micChannels = numChannels;
-    }
+    const processedChunk = new Float32Array(payload);
     
-    let processedChunk = new Float32Array(payload);
-    
-    // Downmix to mono if multi-channel (e.g. stereo WASAPI loopback)
-    if (numChannels > 1) {
-      const mono = new Float32Array(Math.floor(processedChunk.length / numChannels));
-      for (let i = 0; i < mono.length; i++) {
-        let sum = 0;
-        for (let c = 0; c < numChannels; c++) {
-          sum += processedChunk[i * numChannels + c];
-        }
-        mono[i] = sum / numChannels;
-      }
-      processedChunk = mono;
-    }
-    
-    // Append to respective stream buffer
+    // Append to respective stream buffer (already 16kHz mono from Rust)
     if (isSys) {
       const merged = new Float32Array(sysBuffer.length + processedChunk.length);
       merged.set(sysBuffer);
@@ -129,17 +105,13 @@ async function processBufferLoop() {
     await new Promise(resolve => setTimeout(resolve, PROCESSING_INTERVAL));
     if (!isModelLoaded) continue;
 
-    // Grab buffers and clear them
-    const curSys = sysBuffer;
-    const curMic = micBuffer;
+    // Grab buffers and clear them (already 16kHz mono)
+    const sys16k = sysBuffer;
+    const mic16k = micBuffer;
     sysBuffer = new Float32Array(0);
     micBuffer = new Float32Array(0);
 
-    if (curSys.length === 0 && curMic.length === 0) continue;
-
-    // Resample both streams independently to 16kHz
-    const sys16k = curSys.length > 0 ? linearInterpolate(curSys, sysSampleRate, TARGET_SAMPLE_RATE) : new Float32Array(0);
-    const mic16k = curMic.length > 0 ? linearInterpolate(curMic, micSampleRate, TARGET_SAMPLE_RATE) : new Float32Array(0);
+    if (sys16k.length === 0 && mic16k.length === 0) continue;
 
     // Calculate independent RMS energy to prevent microphone ambient noise from degrading pristine system audio
     let sysRms = 0;
