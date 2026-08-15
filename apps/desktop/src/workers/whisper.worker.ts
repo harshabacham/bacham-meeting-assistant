@@ -35,8 +35,8 @@ self.onmessage = async (e) => {
   if (type === 'INIT') {
     self.postMessage({ type: 'STATUS', status: 'loading' });
     try {
-      // Use Xenova/whisper-tiny for fast multilingual real-time performance (~75MB)
-      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
+      // Use Xenova/whisper-tiny.en for high accuracy on English YouTube/meetings (~75MB)
+      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
         progress_callback: (progress: any) => {
           self.postMessage({ type: 'PROGRESS', progress });
         }
@@ -111,56 +111,70 @@ async function processBufferLoop() {
     const sys16k = curSys.length > 0 ? linearInterpolate(curSys, sysSampleRate, TARGET_SAMPLE_RATE) : new Float32Array(0);
     const mic16k = curMic.length > 0 ? linearInterpolate(curMic, micSampleRate, TARGET_SAMPLE_RATE) : new Float32Array(0);
 
-    // Mix both tracks parallelly
-    const maxLen = Math.max(sys16k.length, mic16k.length);
-    if (maxLen === 0) continue;
+    // Calculate independent RMS energy to prevent microphone ambient noise from degrading pristine system audio
+    let sysRms = 0;
+    for (let i = 0; i < sys16k.length; i++) sysRms += sys16k[i] * sys16k[i];
+    sysRms = sys16k.length > 0 ? Math.sqrt(sysRms / sys16k.length) : 0;
 
-    const mixed = new Float32Array(maxLen);
-    let sumSq = 0;
+    let micRms = 0;
+    for (let i = 0; i < mic16k.length; i++) micRms += mic16k[i] * mic16k[i];
+    micRms = mic16k.length > 0 ? Math.sqrt(micRms / mic16k.length) : 0;
 
-    for (let i = 0; i < maxLen; i++) {
-      const s = (i < sys16k.length ? sys16k[i] : 0);
-      const m = (i < mic16k.length ? mic16k[i] : 0);
-      // Soft mix with clipping protection
-      let val = s + m;
-      if (val > 1.0) val = 1.0;
-      if (val < -1.0) val = -1.0;
-      mixed[i] = val;
-      sumSq += val * val;
+    // Granola-style Intelligent Voice Activity Routing:
+    // If YouTube / Video is playing, use pristine direct digital audio without mic background noise/phase cancellation!
+    let activeAudio: Float32Array;
+    let sourceLabel = '';
+
+    if (sysRms > 0.003 && micRms < 0.02) {
+      activeAudio = sys16k;
+      sourceLabel = `Sys Audio ${(sysRms * 100).toFixed(0)}%`;
+    } else if (micRms > 0.015 && sysRms < 0.003) {
+      activeAudio = mic16k;
+      sourceLabel = `Mic ${(micRms * 100).toFixed(0)}%`;
+    } else {
+      // Both active (e.g. speaking over a video or meeting dialogue), mix both
+      const len = Math.max(sys16k.length, mic16k.length);
+      activeAudio = new Float32Array(len);
+      for (let i = 0; i < len; i++) {
+        const s = (i < sys16k.length ? sys16k[i] : 0);
+        const m = (i < mic16k.length ? mic16k[i] : 0);
+        activeAudio[i] = Math.max(-1.0, Math.min(1.0, s + m));
+      }
+      sourceLabel = `Mixed (Sys: ${(sysRms * 100).toFixed(0)}%, Mic: ${(micRms * 100).toFixed(0)}%)`;
     }
 
-    const rms = Math.sqrt(sumSq / maxLen);
+    const maxLen = activeAudio.length;
+    if (maxLen === 0) continue;
 
     // Dynamic amplitude normalization (boost quiet speech for Whisper)
     let maxAmp = 0;
     for (let i = 0; i < maxLen; i++) {
-      const abs = Math.abs(mixed[i]);
+      const abs = Math.abs(activeAudio[i]);
       if (abs > maxAmp) maxAmp = abs;
     }
-    if (maxAmp > 0.005) {
-      const gain = Math.min(0.9 / maxAmp, 6.0); // Boost quiet audio up to 6x
+    if (maxAmp > 0.002) {
+      const gain = Math.min(0.95 / maxAmp, 5.0); // Boost quiet audio up to 5x
       for (let i = 0; i < maxLen; i++) {
-        mixed[i] *= gain;
+        activeAudio[i] *= gain;
       }
     }
+
+    const durationSec = (maxLen / TARGET_SAMPLE_RATE).toFixed(1);
 
     try {
       self.postMessage({ 
         type: 'STATUS', 
-        status: `Processing ${(maxLen / TARGET_SAMPLE_RATE).toFixed(1)}s audio (Vol: ${(rms * 100).toFixed(1)}%, Peak: ${(maxAmp * 100).toFixed(0)}%)...` 
+        status: `Processing ${durationSec}s [${sourceLabel}]...` 
       });
       
-      // If audio is dead silence, skip inference
-      if (rms < 0.002) {
+      // If audio is practically dead silence (< 0.2%), skip inference
+      if (maxAmp < 0.002) {
         self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
         continue;
       }
 
-      // Run speech-to-text inference directly with Float32Array
-      const output = await transcriber(mixed, {
-        task: 'transcribe',
-        return_timestamps: false
-      });
+      // Run Whisper speech-to-text inference
+      const output = await transcriber(activeAudio);
 
       let text = '';
       if (typeof output === 'string') {
@@ -173,11 +187,9 @@ async function processBufferLoop() {
 
       text = text.trim();
 
-      // Filter out Whisper hallucinated tokens on silence/noise like [BLANK_AUDIO], (music), etc.
+      // Filter out Whisper hallucinated tokens on silence/noise
       const isHallucination = !text || 
         text.includes('[BLANK_AUDIO]') || 
-        text.startsWith('(') && text.endsWith(')') ||
-        text.startsWith('[') && text.endsWith(']') ||
         text === '.' || text === '...' || text === 'you' || text === 'Thank you.';
 
       if (text && text.length > 0 && !isHallucination) {
@@ -188,9 +200,9 @@ async function processBufferLoop() {
             timestamp: Date.now()
           }
         });
-        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 35)}..."` });
+        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 40)}..."` });
       } else {
-        self.postMessage({ type: 'STATUS', status: `No speech detected in ${(maxLen / TARGET_SAMPLE_RATE).toFixed(1)}s chunk` });
+        self.postMessage({ type: 'STATUS', status: `Result: "${text || '(no words)'}" in ${durationSec}s` });
       }
     } catch (err: any) {
       console.error('Transcription error:', err);
