@@ -156,27 +156,29 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         }, 1000);
 
         import('@tauri-apps/api/event').then(({ listen }) => {
-            listen<number[]>('audio_stream_sys', (event) => {
+            listen<{data: number[], rate: number}>('audio_stream_sys', (event) => {
                 sysCount++;
                 if (streamingRef.current && workerRef.current && event.payload) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
                         stream: 'sys',
-                        payload: event.payload 
+                        payload: event.payload.data,
+                        sampleRate: event.payload.rate
                     });
                 }
-            }).then(u => { unlistenSys = u; addDebug('System Audio stream connected (16kHz)'); });
+            }).then(u => { unlistenSys = u; addDebug('System Audio stream connected'); });
             
-            listen<number[]>('audio_stream_mic', (event) => {
+            listen<{data: number[], rate: number}>('audio_stream_mic', (event) => {
                 micCount++;
                 if (streamingRef.current && workerRef.current && event.payload) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
                         stream: 'mic',
-                        payload: event.payload 
+                        payload: event.payload.data,
+                        sampleRate: event.payload.rate
                     });
                 }
-            }).then(u => { unlistenMic = u; addDebug('Microphone stream connected (16kHz)'); });
+            }).then(u => { unlistenMic = u; addDebug('Microphone stream connected'); });
         });
 
         // 4. Initialize Native Web Speech Recognition for instant zero-latency speech streaming

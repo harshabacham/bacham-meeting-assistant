@@ -98,6 +98,24 @@ function rms(buf: Float32Array): number {
   return Math.sqrt(sum / buf.length);
 }
 
+let sysSampleRate = 48000;
+let micSampleRate = 48000;
+
+function linearInterpolate(buffer: Float32Array, fromRate: number, toRate: number): Float32Array {
+  if (fromRate === toRate || buffer.length === 0) return buffer;
+  const ratio = fromRate / toRate;
+  const newLength = Math.floor(buffer.length / ratio);
+  const resampled = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    const origIndex = i * ratio;
+    const index1 = Math.floor(origIndex);
+    const index2 = Math.min(buffer.length - 1, index1 + 1);
+    const frac = origIndex - index1;
+    resampled[i] = buffer[index1] * (1 - frac) + buffer[index2] * frac;
+  }
+  return resampled;
+}
+
 /**
  * High-accuracy dynamic range normalizer for Whisper mel-spectrogram input
  */
@@ -119,7 +137,7 @@ function normalize(buf: Float32Array): Float32Array {
 }
 
 self.onmessage = async (e) => {
-  const { type, stream, payload, language } = e.data;
+  const { type, stream, payload, sampleRate, language } = e.data;
 
   if (type === 'INIT') {
     await loadModel(language || 'auto');
@@ -140,8 +158,10 @@ self.onmessage = async (e) => {
     if (!isModelLoaded) return;
     const data: number[] = Array.isArray(payload) ? payload : Object.values(payload);
     if (stream === 'sys') {
+      if (sampleRate) sysSampleRate = sampleRate;
       sysBuffer = appendToBuffer(sysBuffer, data);
     } else {
+      if (sampleRate) micSampleRate = sampleRate;
       micBuffer = appendToBuffer(micBuffer, data);
     }
   }
@@ -167,13 +187,16 @@ async function processLoop() {
     // Intelligent source selection:
     // If YouTube / Video is playing, use pristine direct loopback digital audio!
     let activeAudio: Float32Array;
+    let activeRate = 48000;
     let sourceLabel: string;
 
     if (sysRms > 0.0003 && sysRms >= micRms * 0.5) {
       activeAudio = sys;
+      activeRate = sysSampleRate;
       sourceLabel = `Sys ${(sysRms * 100).toFixed(1)}%`;
     } else if (micRms > 0.001) {
       activeAudio = mic;
+      activeRate = micSampleRate;
       sourceLabel = `Mic ${(micRms * 100).toFixed(1)}%`;
     } else {
       // Very low energy - restore samples to avoid wasting audio buffer
@@ -187,7 +210,11 @@ async function processLoop() {
       continue;
     }
 
-    const finalAudio = normalize(activeAudio);
+    // 1. Continuous Linear Resample to 16kHz
+    const resampled16k = linearInterpolate(activeAudio, activeRate, TARGET_SAMPLE_RATE);
+
+    // 2. Dynamic Peak Normalization
+    const finalAudio = normalize(resampled16k);
     const durationSec = (finalAudio.length / TARGET_SAMPLE_RATE).toFixed(1);
 
     self.postMessage({
@@ -196,7 +223,7 @@ async function processLoop() {
     });
 
     try {
-      const langInfo = LANGUAGE_MAP[currentLanguage] || { code: 'auto', isEnglishOnly: false };
+      const langInfo = LANGUAGE_MAP[currentLanguage] || { code: null, isEnglishOnly: false };
 
       const genOptions: any = {
         task: 'transcribe',
@@ -208,7 +235,7 @@ async function processLoop() {
       };
 
       // Explicitly set language in Whisper generation options so output matches the chosen audio language
-      if (langInfo.code && langInfo.code !== 'auto') {
+      if (langInfo.code) {
         genOptions.language = langInfo.code;
       }
 
@@ -254,5 +281,3 @@ async function processLoop() {
     }
   }
 }
-
-
