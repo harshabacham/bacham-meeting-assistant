@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, SlidersHorizontal, Minus, Mic, Sparkles, ChevronDown, CheckSquare, Target, Globe } from 'lucide-react';
+import { Search, ThumbsDown, Copy, Minus, Mic, Sparkles, ChevronDown, ChevronUp, Check, Languages, Square, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -7,9 +7,8 @@ import { TauriClient } from '@/infrastructure/tauri-client';
 interface TranscriptChunk {
     id: string;
     text: string;
-    speaker?: string;
-    isCurrent?: boolean;
-    tag?: 'decision' | 'action' | null;
+    speaker?: 'speaker' | 'me';
+    timestamp?: string;
 }
 
 interface LiveTranscriptPanelProps {
@@ -22,22 +21,23 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [interimText, setInterimText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
+    const [isMinimized, setIsMinimized] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState<string>('auto');
     const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
     const [modelStatus, setModelStatus] = useState<string>('idle');
     const [modelProgress, setModelProgress] = useState<any>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [sysChunks, setSysChunks] = useState<number>(0);
-    const [micChunks, setMicChunks] = useState<number>(0);
-    const [debugLogs, setDebugLogs] = useState<string[]>(['Panel Mounted']);
+    const [copied, setCopied] = useState(false);
+    const [askQuery, setAskQuery] = useState('');
+    const [recordingTime, setRecordingTime] = useState(0);
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const workerRef = useRef<Worker | null>(null);
     const speechRecRef = useRef<any>(null);
     const streamingRef = useRef<boolean>(true);
 
     const LANGUAGES = [
-        { code: 'auto', label: '🌐 Auto Detect', bcp: '' },
+        { code: 'auto', label: 'Multi (Auto)', bcp: '' },
         { code: 'english', label: 'English', bcp: 'en-US' },
         { code: 'hindi', label: 'Hindi (हिंदी)', bcp: 'hi-IN' },
         { code: 'telugu', label: 'Telugu (తెలుగు)', bcp: 'te-IN' },
@@ -64,17 +64,26 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         streamingRef.current = isStreaming;
     }, [isStreaming]);
 
-    const addDebug = (msg: string) => {
-        setDebugLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    // Timer
+    useEffect(() => {
+        if (!isOpen || !isStreaming) return;
+        const interval = setInterval(() => {
+            setRecordingTime(t => t + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [isOpen, isStreaming]);
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
     // Initialize Web Worker and Audio Capture
     useEffect(() => {
         if (!isOpen) {
             setChunks([]);
-            setSysChunks(0);
-            setMicChunks(0);
-            setErrorMessage(null);
+            setRecordingTime(0);
             TauriClient.stopNativeRecording();
             if (workerRef.current) {
                 workerRef.current.terminate();
@@ -84,12 +93,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         }
 
         // 1. Start Rust Dual-Capture
-        TauriClient.startNativeRecording().then(() => {
-            addDebug('Native audio capture started');
-        }).catch((err) => {
-            addDebug(`Native capture error: ${err}`);
-            setErrorMessage(`Failed to start native audio capture: ${err}`);
-        });
+        TauriClient.startNativeRecording().catch(console.error);
 
         // 2. Initialize Transformers.js Web Worker
         try {
@@ -98,30 +102,19 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             });
 
             workerRef.current.onmessage = (e) => {
-                const { type, status, progress, payload, error } = e.data;
+                const { type, status, progress, payload } = e.data;
                 if (type === 'STATUS') {
                     setModelStatus(status);
-                    addDebug(`Worker: ${status}`);
-                    if (error) {
-                        console.error("Whisper Error:", error);
-                        setErrorMessage(error);
-                        addDebug(`Worker Error: ${error}`);
-                    }
                 } else if (type === 'PROGRESS') {
                     setModelProgress(progress);
                 } else if (type === 'LANGUAGE_DETECTED') {
                     setDetectedLanguage(payload.language);
-                    addDebug(`Auto-detected: ${payload.language}`);
                 } else if (type === 'TRANSCRIPT') {
-                    addDebug(`Transcript: "${payload.text}"`);
-                    setChunks(prev => {
-                        const newChunks = [...prev, {
-                            id: Date.now().toString() + Math.random(),
-                            speaker: 'Speaker',
-                            text: payload.text
-                        }];
-                        return newChunks;
-                    });
+                    setChunks(prev => [...prev, {
+                        id: Date.now().toString() + Math.random(),
+                        speaker: 'speaker',
+                        text: payload.text
+                    }]);
                     
                     if (scrollRef.current) {
                         setTimeout(() => {
@@ -134,34 +127,17 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 }
             };
 
-            workerRef.current.onerror = (err) => {
-                console.error("Worker error event:", err);
-                setErrorMessage(err.message || 'Worker initialization failed');
-                addDebug(`Worker error: ${err.message}`);
-            };
-
             workerRef.current.postMessage({ type: 'INIT', language: selectedLanguage });
-            addDebug(`Sent INIT to Whisper Worker (Lang: ${selectedLanguage})`);
         } catch (err: any) {
-            console.error("Failed to spawn worker:", err);
-            setErrorMessage(err.message || 'Failed to spawn worker');
-            addDebug(`Spawn error: ${err.message}`);
+            console.error("Worker error:", err);
         }
 
-        // 3. Listen to audio streams from Rust (clean 16kHz mono floats)
+        // 3. Listen to audio streams from Rust
         let unlistenSys: () => void;
         let unlistenMic: () => void;
-        let sysCount = 0;
-        let micCount = 0;
-
-        const statsTimer = setInterval(() => {
-            setSysChunks(sysCount);
-            setMicChunks(micCount);
-        }, 1000);
 
         import('@tauri-apps/api/event').then(({ listen }) => {
             listen<{data: number[], rate: number}>('audio_stream_sys', (event) => {
-                sysCount++;
                 if (streamingRef.current && workerRef.current && event.payload) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
@@ -170,10 +146,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         sampleRate: event.payload.rate
                     });
                 }
-            }).then(u => { unlistenSys = u; addDebug('System Audio stream connected'); });
+            }).then(u => { unlistenSys = u; });
             
             listen<{data: number[], rate: number}>('audio_stream_mic', (event) => {
-                micCount++;
                 if (streamingRef.current && workerRef.current && event.payload) {
                     workerRef.current.postMessage({ 
                         type: 'AUDIO_CHUNK', 
@@ -182,16 +157,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         sampleRate: event.payload.rate
                     });
                 }
-            }).then(u => { unlistenMic = u; addDebug('Microphone stream connected'); });
+            }).then(u => { unlistenMic = u; });
         });
 
-        // 4. Initialize Native Web Speech Recognition for instant zero-latency speech streaming
+        // 4. Native Web Speech Recognition for instant zero-latency speech preview
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (SpeechRecognition) {
             try {
                 const recognition = new SpeechRecognition();
                 const targetLangObj = LANGUAGES.find(l => l.code === selectedLanguage);
-                // Only set lang if not auto-detect — let browser detect naturally for auto
                 if (selectedLanguage !== 'auto' && targetLangObj?.bcp) {
                     recognition.lang = targetLangObj.bcp;
                 }
@@ -205,10 +179,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         const transcript = event.results[i][0].transcript;
                         if (event.results[i].isFinal) {
                             if (transcript.trim()) {
-                                addDebug(`Live speech: "${transcript.trim()}"`);
                                 setChunks(prev => [...prev, {
                                     id: Date.now().toString() + Math.random(),
-                                    speaker: 'Speaker',
+                                    speaker: 'speaker',
                                     text: transcript.trim()
                                 }]);
                                 setInterimText('');
@@ -222,10 +195,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                     }
                 };
 
-                recognition.onerror = (e: any) => {
-                    console.log("Web Speech notice:", e.error);
-                };
-
                 recognition.onend = () => {
                     if (streamingRef.current && isOpen) {
                         try { recognition.start(); } catch (_) {}
@@ -234,14 +203,10 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
                 recognition.start();
                 speechRecRef.current = recognition;
-                addDebug(`Native Speech recognizer started (${recognition.lang})`);
-            } catch (err) {
-                console.log("SpeechRecognition not initialized:", err);
-            }
+            } catch (_) {}
         }
 
         return () => {
-            clearInterval(statsTimer);
             TauriClient.stopNativeRecording();
             if (workerRef.current) workerRef.current.terminate();
             if (speechRecRef.current) {
@@ -258,7 +223,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         setIsLangMenuOpen(false);
         if (workerRef.current) {
             workerRef.current.postMessage({ type: 'SET_LANGUAGE', language: langCode });
-            addDebug(`Whisper language set to: ${langCode}`);
         }
         if (speechRecRef.current) {
             try {
@@ -268,98 +232,147 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                     speechRecRef.current.lang = targetLangObj.bcp;
                 }
                 speechRecRef.current.start();
-                addDebug(`Speech recognition switched to: ${targetLangObj?.label || langCode}`);
             } catch (_) {}
         }
     };
 
-    const handleTagLatest = (tag: 'decision' | 'action') => {
-        setChunks(prev => {
-            if (prev.length === 0) return prev;
-            const newChunks = [...prev];
-            newChunks[newChunks.length - 1] = { ...newChunks[newChunks.length - 1], tag };
-            return newChunks;
-        });
+    const handleCopyAll = () => {
+        const fullText = chunks.map(c => c.text).join('\n\n');
+        navigator.clipboard.writeText(fullText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     if (!isOpen) return null;
 
-    return (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-3xl z-50">
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="bg-[var(--surface-raised)] border border-[var(--border)] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
-            >
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)] bg-[var(--surface)]">
-                    <div className="flex items-center gap-3">
-                        <Search size={14} className="text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)] transition-colors" />
-                        <div className="relative">
-                            <button 
-                                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--surface-hover)] border border-[var(--border)] text-[11px] font-medium text-[var(--text-primary)] hover:border-primary/50 transition-all"
-                            >
-                                <Globe size={12} className="text-primary" />
-                                <span>
-                                    {selectedLanguage === 'auto'
-                                        ? (detectedLanguage ? `🌐 Auto (${detectedLanguage})` : '🌐 Auto Detect')
-                                        : (LANGUAGES.find(l => l.code === selectedLanguage)?.label || 'Language')}
-                                </span>
-                                <ChevronDown size={11} className="text-[var(--text-muted)]" />
-                            </button>
+    // Granola Minimized Floating Bottom Bar (Image 2)
+    if (isMinimized) {
+        return (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-50">
+                {/* Floating Generate notes Button */}
+                <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => onProcess(chunks.map(c => c.text).join(' '))}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#3d5a22] hover:bg-[#344d1d] text-white text-xs font-medium shadow-lg transition-all"
+                >
+                    <Sparkles size={13} className="text-[#a4e062]" />
+                    <span>Generate notes</span>
+                </motion.button>
 
-                            {isLangMenuOpen && (
-                                <div className="absolute top-full left-0 mt-1.5 w-44 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl shadow-xl z-50 py-1 overflow-hidden">
-                                    {LANGUAGES.map(lang => (
-                                        <button
-                                            key={lang.code}
-                                            onClick={() => handleLanguageChange(lang.code)}
-                                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-[var(--surface-hover)] transition-colors ${selectedLanguage === lang.code ? 'text-primary font-bold bg-primary/10' : 'text-[var(--text-primary)]'}`}
-                                        >
-                                            <span>{lang.label}</span>
-                                            {selectedLanguage === lang.code && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                {/* Minimized Dock Bar */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-2"
+                >
+                    {/* Left Audio State Pill */}
+                    <button
+                        onClick={() => setIsStreaming(!isStreaming)}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-neutral-200 shadow-md text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-0.5">
+                            <span className={`w-0.5 h-3 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse' : ''}`} />
+                            <span className={`w-0.5 h-4 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.2s]' : ''}`} />
+                            <span className={`w-0.5 h-2.5 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.4s]' : ''}`} />
                         </div>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }}
+                            className="p-0.5 hover:bg-neutral-100 rounded"
+                        >
+                            <ChevronUp size={14} className="text-neutral-500" />
+                        </button>
+                        <span className="text-[#44a320] font-semibold">{isStreaming ? 'Resume' : 'Paused'}</span>
+                    </button>
+
+                    {/* Right Ask Anything Bar */}
+                    <div className="flex items-center bg-white border border-neutral-200 rounded-full shadow-md pl-4 pr-1.5 py-1 min-w-[380px]">
+                        <input
+                            type="text"
+                            placeholder="Ask anything"
+                            value={askQuery}
+                            onChange={(e) => setAskQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && askQuery.trim()) {
+                                    onProcess(chunks.map(c => c.text).join(' ') + `\n\nUser Question: ${askQuery}`);
+                                    setAskQuery('');
+                                }
+                            }}
+                            className="bg-transparent text-xs text-neutral-700 placeholder-neutral-400 outline-none flex-1 font-sans"
+                        />
+                        <button 
+                            onClick={() => onProcess(chunks.map(c => c.text).join(' '))}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-neutral-200 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+                        >
+                            <FileText size={12} className="text-neutral-400" />
+                            <span>Write follow up email</span>
+                        </button>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <SlidersHorizontal size={14} className="text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-primary)] transition-colors" />
-                        <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-                            <Minus size={16} />
+                </motion.div>
+            </div>
+        );
+    }
+
+    // Granola Expanded Live Transcript Card (Image 1)
+    return (
+        <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4">
+            <motion.div 
+                initial={{ opacity: 0, y: 30, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="w-full max-w-xl bg-white border border-neutral-200/90 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
+            >
+                {/* Header (Image 1) */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100 bg-white">
+                    <button className="text-neutral-400 hover:text-neutral-600 transition-colors p-1">
+                        <Search size={14} />
+                    </button>
+                    
+                    <span className="text-[11px] text-neutral-400 font-sans cursor-pointer hover:underline">
+                        Always get consent when transcribing others. Learn more &gt;
+                    </span>
+
+                    <div className="flex items-center gap-1 text-neutral-400">
+                        <button className="hover:text-neutral-600 p-1 transition-colors">
+                            <ThumbsDown size={13} />
+                        </button>
+                        <button onClick={handleCopyAll} className="hover:text-neutral-600 p-1 transition-colors" title="Copy transcript">
+                            {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                        </button>
+                        <button onClick={() => setIsMinimized(true)} className="hover:text-neutral-600 p-1 transition-colors" title="Minimize">
+                            <Minus size={14} />
                         </button>
                     </div>
                 </div>
 
-                {/* Transcript Body */}
+                {/* Transcript Message List (Image 1) */}
                 <div 
                     ref={scrollRef}
-                    className="p-5 max-h-[45vh] overflow-y-auto space-y-3 bg-[var(--bg)]"
+                    className="p-4 max-h-[38vh] min-h-[160px] overflow-y-auto space-y-2.5 bg-white font-sans"
                 >
+                    {chunks.length === 0 && !interimText && (
+                        <div className="flex flex-col items-center justify-center py-10 text-neutral-400 text-xs">
+                            <p>Listening for meeting audio & speech...</p>
+                        </div>
+                    )}
+
                     <AnimatePresence>
-                        {chunks.map((chunk) => (
+                        {chunks.map((chunk, idx) => (
                             <motion.div 
                                 key={chunk.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className={`relative p-3.5 bg-[var(--surface)] rounded-2xl border ${chunk.tag ? 'border-primary/40 shadow-sm' : 'border-[var(--border)]'}`}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex flex-col"
                             >
-                                {chunk.tag === 'decision' && (
-                                    <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                                        <Target size={10} /> Decision
+                                {idx === 2 && (
+                                    <div className="text-[10px] text-neutral-400 text-center my-1.5 font-mono">
+                                        {formatTime(recordingTime)}
                                     </div>
                                 )}
-                                {chunk.tag === 'action' && (
-                                    <div className="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                                        <CheckSquare size={10} /> Action Item
-                                    </div>
-                                )}
-                                <p className="text-[13px] leading-relaxed text-[var(--text-primary)] font-medium font-sans">
+                                
+                                <div className="bg-[#f4f4ef] rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed text-[#2c2c2c] max-w-[92%]">
                                     {chunk.text}
-                                </p>
+                                </div>
                             </motion.div>
                         ))}
                     </AnimatePresence>
@@ -369,127 +382,75 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="p-3 bg-primary/5 rounded-2xl border border-primary/20 text-[13px] text-[var(--text-primary)] italic"
+                            className="bg-[#f4f4ef] rounded-xl px-3.5 py-2.5 text-[13px] text-neutral-500 italic max-w-[92%]"
                         >
-                            <span className="text-primary font-bold mr-1.5 animate-pulse">●</span> {interimText}...
+                            {interimText} <span className="animate-pulse text-neutral-400">...</span>
                         </motion.div>
                     )}
-                    
-                    {modelStatus === 'loading' && (
-                        <div className="text-xs text-[var(--text-muted)] flex flex-col items-center justify-center py-4">
-                            <Sparkles size={16} className="animate-pulse mb-2" />
-                            <p>Loading AI Speech Model...</p>
-                            {modelProgress && (
-                                <div className="w-full bg-[var(--surface-hover)] h-1 rounded-full mt-2 overflow-hidden">
-                                    <div className="bg-[var(--accent)] h-full" style={{ width: `${Math.max(0, Math.min(100, modelProgress.progress || 0))}%` }} />
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {isStreaming && (modelStatus === 'ready' || modelStatus.startsWith('Processing') || modelStatus.startsWith('Transcribed') || modelStatus.startsWith('ready')) && chunks.length === 0 && !interimText && (
-                        <div className="flex flex-col gap-2 items-center justify-center py-6 text-[var(--text-muted)]">
-                            <div className="flex gap-1 items-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
-                            </div>
-                            <p className="text-xs">Listening for speech...</p>
-                        </div>
-                    )}
-                    
-                    {/* Error Banner */}
-                    {errorMessage && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex flex-col gap-1">
-                            <span className="font-bold">Error Detected:</span>
-                            <span className="font-mono text-[11px]">{errorMessage}</span>
-                        </div>
-                    )}
-
-                    {/* Status & Diagnostics */}
-                    <div className="mt-4 p-3.5 bg-black/40 border border-white/10 rounded-2xl space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${
-                                    modelStatus === 'ready' || modelStatus.startsWith('Processing') || modelStatus.startsWith('ready')
-                                        ? 'bg-emerald-500 animate-pulse' 
-                                        : modelStatus === 'loading' 
-                                        ? 'bg-amber-500 animate-spin' 
-                                        : 'bg-red-500'
-                                }`} />
-                                <span className="font-medium text-white/90">Status: <span className="text-white/70">{modelStatus}</span></span>
-                            </div>
-                            <div className="flex items-center gap-3 text-[11px] text-white/50 font-mono">
-                                <span>Sys: {sysChunks}</span>
-                                <span>Mic: {micChunks}</span>
-                            </div>
-                        </div>
-
-                        {modelStatus === 'loading' && modelProgress && (
-                            <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] text-white/60">
-                                    <span>Downloading Whisper AI weights...</span>
-                                    <span>{Math.round(modelProgress.progress || 0)}%</span>
-                                </div>
-                                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-primary h-full transition-all duration-300" style={{ width: `${Math.max(5, modelProgress.progress || 0)}%` }} />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="pt-2 border-t border-white/5">
-                            <h4 className="text-[9px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Live Diagnostics Activity</h4>
-                            <div className="max-h-24 overflow-y-auto space-y-1 pr-1 font-mono text-[10px] text-white/60">
-                                {debugLogs.map((log, i) => (
-                                    <div key={i} className="truncate">{log}</div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between px-5 py-3.5 bg-[var(--surface)] border-t border-[var(--border)]">
-                    <div className="flex items-center gap-4">
+                {/* Bottom Control Bar (Image 1) */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-t border-neutral-100 bg-white">
+                    {/* Left: Waveform & Stop */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-0.5 h-4 px-1">
+                            <span className={`w-0.5 h-3 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse' : 'opacity-40'}`} />
+                            <span className={`w-0.5 h-4 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.2s]' : 'opacity-40'}`} />
+                            <span className={`w-0.5 h-2.5 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.4s]' : 'opacity-40'}`} />
+                        </div>
+                        
                         <button 
                             onClick={() => setIsStreaming(!isStreaming)}
-                            className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] hover:opacity-80 transition-opacity"
+                            className="text-neutral-500 hover:text-neutral-800 transition-colors p-0.5"
+                            title={isStreaming ? "Pause recording" : "Resume recording"}
                         >
-                            {isStreaming ? (
-                                <><div className="flex items-center gap-0.5"><div className="w-0.5 h-3 bg-red-500 animate-pulse"/><div className="w-0.5 h-2 bg-red-500 animate-pulse"/><div className="w-0.5 h-3.5 bg-red-500 animate-pulse"/><div className="w-0.5 h-1.5 bg-red-500 animate-pulse"/></div> Pause</>
-                            ) : (
-                                <><Mic size={15} /> Resume</>
-                            )}
+                            <Square size={13} className="fill-neutral-500" />
                         </button>
-                        
-                        <div className="h-4 w-px bg-[var(--border)] mx-1" />
-                        
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => handleTagLatest('decision')}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--surface-hover)] text-[11px] font-bold text-primary transition-all focus:outline-none"
-                            >
-                                <Target size={12} /> Tag Decision
-                            </button>
-                            <button 
-                                onClick={() => handleTagLatest('action')}
-                                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--surface-hover)] text-[11px] font-bold text-amber-500 transition-all focus:outline-none"
-                            >
-                                <CheckSquare size={12} /> Tag Action
-                            </button>
-                        </div>
                     </div>
 
-                    <button 
-                        onClick={() => onProcess(chunks.map(c => c.text).join(' '))}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--border)] text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all"
-                    >
-                        <Sparkles size={13} className="text-[var(--text-muted)]" /> 
-                        Multi 
-                        <ChevronDown size={12} />
-                    </button>
+                    {/* Right: Mic & Language Selector (文A Multi ⌵) */}
+                    <div className="flex items-center gap-3">
+                        <button className="text-neutral-500 hover:text-neutral-800 transition-colors p-1">
+                            <Mic size={14} />
+                        </button>
+
+                        <div className="relative">
+                            <button 
+                                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                                className="flex items-center gap-1.5 text-xs text-neutral-600 hover:text-neutral-900 font-medium px-2 py-1 rounded hover:bg-neutral-50 transition-colors"
+                            >
+                                <Languages size={13} className="text-neutral-500" />
+                                <span>
+                                    {selectedLanguage === 'auto'
+                                        ? (detectedLanguage ? `Multi (${detectedLanguage})` : 'Multi')
+                                        : (LANGUAGES.find(l => l.code === selectedLanguage)?.label || 'Language')}
+                                </span>
+                                <ChevronDown size={12} className="text-neutral-400" />
+                            </button>
+
+                            {isLangMenuOpen && (
+                                <div className="absolute bottom-full right-0 mb-1.5 w-44 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 py-1 max-h-56 overflow-y-auto">
+                                    {LANGUAGES.map(lang => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => handleLanguageChange(lang.code)}
+                                            className={`w-full text-left px-3 py-1.5 text-xs flex items-center justify-between hover:bg-neutral-100 transition-colors ${selectedLanguage === lang.code ? 'text-[#3d5a22] font-bold bg-[#f4f7ee]' : 'text-neutral-700'}`}
+                                        >
+                                            <span>{lang.label}</span>
+                                            {selectedLanguage === lang.code && <span className="w-1.5 h-1.5 rounded-full bg-[#3d5a22]" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </motion.div>
+
+            {/* Bottom Caption (Image 1) */}
+            <span className="text-[10px] text-neutral-400 mt-2">
+                Bacham Meeting Assistant uses AI and can make mistakes.
+            </span>
         </div>
     );
 }
