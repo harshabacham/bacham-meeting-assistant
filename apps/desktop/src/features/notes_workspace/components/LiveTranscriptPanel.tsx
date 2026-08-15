@@ -352,11 +352,14 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         </div>
                     )}
 
-                    {isStreaming && modelStatus === 'ready' && (
-                        <div className="flex gap-1 items-center p-3 opacity-50">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-bounce" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:0.2s]" />
-                            <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-bounce [animation-delay:0.4s]" />
+                    {isStreaming && (modelStatus === 'ready' || modelStatus.startsWith('Processing') || modelStatus.startsWith('Transcribed') || modelStatus.startsWith('ready')) && chunks.length === 0 && !interimText && (
+                        <div className="flex flex-col gap-2 items-center justify-center py-6 text-[var(--text-muted)]">
+                            <div className="flex gap-1 items-center">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
+                            </div>
+                            <p className="text-xs">Listening for speech...</p>
                         </div>
                     )}
                     
@@ -372,7 +375,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                     <div className="mt-4 p-3.5 bg-black/40 border border-white/10 rounded-2xl space-y-2">
                         <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${modelStatus === 'ready' || modelStatus.startsWith('ready') || modelStatus.startsWith('Transcribed') ? 'bg-emerald-500 animate-pulse' : modelStatus === 'loading' ? 'bg-amber-500 animate-spin' : 'bg-red-500'}`} />
+                                <span className={`w-2 h-2 rounded-full ${
+                                    modelStatus === 'ready' || modelStatus.startsWith('Processing') || modelStatus.startsWith('ready')
+                                        ? 'bg-emerald-500 animate-pulse' 
+                                        : modelStatus === 'loading' 
+                                        ? 'bg-amber-500 animate-spin' 
+                                        : 'bg-red-500'
+                                }`} />
                                 <span className="font-medium text-white/90">Status: <span className="text-white/70">{modelStatus}</span></span>
                             </div>
                             <div className="flex items-center gap-3 text-[11px] text-white/50 font-mono">
