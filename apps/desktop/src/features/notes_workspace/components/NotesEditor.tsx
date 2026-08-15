@@ -196,22 +196,39 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
 
     const handleProcessTranscript = (transcript: string) => {
         setIsTranscriptOpen(false);
-        if (editor) {
-            editor.commands.insertContent(`
-                <div class="my-4 p-4 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)]">
-                    <h3 class="text-base font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
-                        <span>✨ Meeting Summary</span>
-                    </h3>
-                    <p class="text-sm text-[var(--text-secondary)] leading-relaxed mb-3">${transcript || 'The meeting discussion was captured and synthesized into actionable points.'}</p>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Key Takeaways & Action Items</h4>
-                    <ul data-type="taskList">
-                        <li data-type="taskItem" data-checked="false"><p>Review meeting notes and follow up with team</p></li>
-                        <li data-type="taskItem" data-checked="false"><p>Execute next steps discussed in the conversation</p></li>
-                    </ul>
-                </div>
-            `);
-        }
+        if (!editor) return;
+
+        const cleanLines = transcript
+            .split('\n')
+            .map(l => l.trim())
+            .filter(Boolean);
+
+        const summaryText = cleanLines.length > 0 
+            ? cleanLines.join(' ')
+            : 'The conversation was transcribed and processed locally in real-time.';
+
+        // Insert formatted Granola structured notes into the TipTap document
+        editor.commands.insertContent(`
+            <h2>✨ Executive Summary</h2>
+            <p>${summaryText}</p>
+            
+            <h3>🎯 Key Highlights & Discussion</h3>
+            <ul>
+                ${cleanLines.length > 0 
+                    ? cleanLines.slice(0, 5).map(line => `<li><p>${line}</p></li>`).join('') 
+                    : '<li><p>General discussion on meeting topics and project deliverables.</p></li>'}
+            </ul>
+
+            <h3>✅ Action Items & Tasks</h3>
+            <ul data-type="taskList">
+                <li data-type="taskItem" data-checked="false"><p>Review meeting transcript notes and share takeaways</p></li>
+                <li data-type="taskItem" data-checked="false"><p>Execute pending action items discussed in the session</p></li>
+            </ul>
+
+            <hr/>
+        `);
     };
+
 
     const handleApplyTemplate = (templateType: string) => {
         setTemplateMenuOpen(false);

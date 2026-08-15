@@ -218,6 +218,32 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         };
     }, [isOpen]);
 
+    const toggleStreaming = async () => {
+        if (isStreaming) {
+            // Pause recording - Actually stop native background recording
+            setIsStreaming(false);
+            streamingRef.current = false;
+            await TauriClient.stopNativeRecording().catch(console.error);
+            if (speechRecRef.current) {
+                try { speechRecRef.current.stop(); } catch (_) {}
+            }
+        } else {
+            // Resume recording - Restart native background recording
+            setIsStreaming(true);
+            streamingRef.current = true;
+            await TauriClient.startNativeRecording().catch(console.error);
+            if (speechRecRef.current) {
+                try { speechRecRef.current.start(); } catch (_) {}
+            }
+        }
+    };
+
+    const handleGenerateNotes = () => {
+        const fullText = chunks.map(c => c.text).join('\n');
+        onProcess(fullText);
+    };
+
+
     const handleLanguageChange = (langCode: string) => {
         setSelectedLanguage(langCode);
         setIsLangMenuOpen(false);
@@ -231,7 +257,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 if (langCode !== 'auto' && targetLangObj?.bcp) {
                     speechRecRef.current.lang = targetLangObj.bcp;
                 }
-                speechRecRef.current.start();
+                if (isStreaming) {
+                    speechRecRef.current.start();
+                }
             } catch (_) {}
         }
     };
@@ -255,10 +283,10 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => onProcess(chunks.map(c => c.text).join(' '))}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#3d5a22] hover:bg-[#344d1d] text-white text-xs font-medium shadow-lg transition-all"
+                    onClick={handleGenerateNotes}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#3d5a22] hover:bg-[#344d1d] text-white text-xs font-semibold shadow-xl transition-all"
                 >
-                    <Sparkles size={13} className="text-[#a4e062]" />
+                    <Sparkles size={14} className="text-[#a5e662]" />
                     <span>Generate notes</span>
                 </motion.button>
 
@@ -270,13 +298,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 >
                     {/* Left Audio State Pill */}
                     <button
-                        onClick={() => setIsStreaming(!isStreaming)}
+                        onClick={toggleStreaming}
                         className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-[var(--surface)] dark:bg-[#1c1c1a] border border-[var(--border)] shadow-md text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
                     >
                         <div className="flex items-center gap-0.5">
-                            <span className={`w-0.5 h-3 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse' : ''}`} />
-                            <span className={`w-0.5 h-4 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.2s]' : ''}`} />
-                            <span className={`w-0.5 h-2.5 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.4s]' : ''}`} />
+                            <span className={`w-0.5 h-3 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse' : 'opacity-40'}`} />
+                            <span className={`w-0.5 h-4 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.2s]' : 'opacity-40'}`} />
+                            <span className={`w-0.5 h-2.5 bg-[#44a320] rounded-full ${isStreaming ? 'animate-pulse [animation-delay:0.4s]' : 'opacity-40'}`} />
                         </div>
                         <button 
                             onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }}
@@ -284,7 +312,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         >
                             <ChevronUp size={14} className="text-[var(--text-muted)]" />
                         </button>
-                        <span className="text-[#44a320] font-semibold">{isStreaming ? 'Resume' : 'Paused'}</span>
+                        <span className="text-[#44a320] font-semibold">{isStreaming ? 'Recording' : 'Paused'}</span>
                     </button>
 
                     {/* Right Ask Anything Bar */}
@@ -303,7 +331,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                             className="bg-transparent text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none flex-1 font-sans"
                         />
                         <button 
-                            onClick={() => onProcess(chunks.map(c => c.text).join(' '))}
+                            onClick={handleGenerateNotes}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[var(--border)] text-[11px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
                         >
                             <FileText size={12} className="text-[var(--text-muted)]" />
@@ -317,7 +345,22 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
     // Granola Expanded Live Transcript Card (Image 1)
     return (
-        <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4">
+        <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4 gap-2">
+            {/* Prominent Floating Generate Notes Pill Button when paused or when transcripts exist */}
+            {(!isStreaming || chunks.length > 0) && (
+                <motion.button
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleGenerateNotes}
+                    className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#3d5a22] hover:bg-[#324b1c] text-white shadow-2xl text-xs font-semibold tracking-wide transition-all border border-[#527a2e]"
+                >
+                    <Sparkles size={14} className="text-[#a5e662]" />
+                    <span>Generate notes</span>
+                </motion.button>
+            )}
+
             <motion.div 
                 initial={{ opacity: 0, y: 30, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -354,7 +397,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 >
                     {chunks.length === 0 && !interimText && (
                         <div className="flex flex-col items-center justify-center py-10 text-[var(--text-muted)] text-xs">
-                            <p>Listening for meeting audio & speech...</p>
+                            <p>{isStreaming ? 'Listening for meeting audio & speech...' : 'Recording paused. Click Resume or Generate notes.'}</p>
                         </div>
                     )}
 
@@ -402,11 +445,12 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         </div>
                         
                         <button 
-                            onClick={() => setIsStreaming(!isStreaming)}
-                            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-0.5"
+                            onClick={toggleStreaming}
+                            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1 flex items-center gap-1 text-xs"
                             title={isStreaming ? "Pause recording" : "Resume recording"}
                         >
-                            <Square size={13} className="fill-[var(--text-muted)] hover:fill-[var(--text-primary)]" />
+                            <Square size={13} className={isStreaming ? "fill-[var(--text-muted)] hover:fill-[var(--text-primary)]" : "text-emerald-500 fill-emerald-500"} />
+                            <span className="text-[11px] font-semibold">{isStreaming ? 'Pause' : 'Resume'}</span>
                         </button>
                     </div>
 
@@ -449,10 +493,11 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 </div>
             </motion.div>
 
-            {/* Bottom Caption (Image 1) */}
+            {/* Bottom Caption */}
             <span className="text-[10px] text-[var(--text-muted)] mt-2">
                 Bacham Meeting Assistant uses AI and can make mistakes.
             </span>
         </div>
     );
 }
+
