@@ -314,9 +314,10 @@ Structure your response with:
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
             {/* ── Top Navigation Bar (Matches Dashboard Header Bar Aesthetic) ────── */}
-            <div className="h-14 shrink-0 flex items-center justify-between pl-16 pr-24 sticky top-0 bg-[var(--bg)] z-30 border-b border-[var(--border)] pointer-events-auto">
-                <div className="flex items-center gap-2">
+            <div data-tauri-drag-region="false" className="h-14 shrink-0 flex items-center justify-between pl-16 pr-28 sticky top-0 bg-[var(--bg)] z-[100] border-b border-[var(--border)] pointer-events-auto select-none">
+                <div data-tauri-drag-region="false" className="flex items-center gap-2">
                     <button
+                        data-tauri-drag-region="false"
                         type="button"
                         onClick={() => {
                             if (onBack) onBack();
@@ -331,13 +332,14 @@ Structure your response with:
                 </div>
 
                 {/* ── 3-WAY TOP MODE SWITCHER: Summary | Notes | Transcript ──────────────── */}
-                <div className="flex items-center p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
+                <div data-tauri-drag-region="false" className="flex items-center p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
                     {/* 1. Summary Button */}
                     <button
+                        data-tauri-drag-region="false"
                         type="button"
                         onClick={() => setViewMode('summary')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'summary'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
@@ -350,10 +352,11 @@ Structure your response with:
 
                     {/* 2. Notes Button */}
                     <button
+                        data-tauri-drag-region="false"
                         type="button"
                         onClick={() => setViewMode('notes')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'notes'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
@@ -365,10 +368,11 @@ Structure your response with:
 
                     {/* 3. Transcript Button */}
                     <button
+                        data-tauri-drag-region="false"
                         type="button"
                         onClick={() => setViewMode('transcript')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'transcript'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
@@ -381,9 +385,10 @@ Structure your response with:
                 </div>
 
                 {/* Right Action Controls */}
-                <div className="flex items-center gap-2 pointer-events-auto">
+                <div data-tauri-drag-region="false" className="flex items-center gap-2 pointer-events-auto">
                     {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
+                        data-tauri-drag-region="false"
                         type="button"
                         onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
                         className={cn(

@@ -161,7 +161,7 @@ export function AppLayout() {
         <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 relative z-0">
             <AutoRecordWatcher />
             {/* Invisible Drag Region across the very top */}
-            <div data-tauri-drag-region className="absolute top-0 left-0 right-0 h-8 z-[90]" />
+            <div data-tauri-drag-region className="absolute top-0 left-0 right-0 h-8 z-[5] pointer-events-auto" />
 
             {/* Native-style Window Controls (Top Right) */}
             <div className="absolute top-0 right-0 h-12 z-[100] flex items-center justify-end pr-6">
