@@ -35,8 +35,8 @@ self.onmessage = async (e) => {
   if (type === 'INIT') {
     self.postMessage({ type: 'STATUS', status: 'loading' });
     try {
-      // Use Xenova/whisper-base (74M parameters) for high accuracy multilingual transcription
-      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+      // Use Xenova/whisper-tiny for real-time 180ms multilingual transcription
+      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
         progress_callback: (progress: any) => {
           self.postMessage({ type: 'PROGRESS', progress });
         }
@@ -143,39 +143,49 @@ async function processBufferLoop() {
       sourceLabel = `Mixed (Sys: ${(sysRms * 100).toFixed(0)}%, Mic: ${(micRms * 100).toFixed(0)}%)`;
     }
 
-    const maxLen = activeAudio.length;
+    // Cap active audio to max 5.0 seconds so latency never accumulates
+    const maxAllowedSamples = TARGET_SAMPLE_RATE * 5;
+    const finalAudio = activeAudio.length > maxAllowedSamples ? activeAudio.slice(-maxAllowedSamples) : activeAudio;
+    const maxLen = finalAudio.length;
     if (maxLen === 0) continue;
 
-    // Dynamic amplitude normalization (boost quiet speech for Whisper)
+    // Calculate peak amplitude
     let maxAmp = 0;
     for (let i = 0; i < maxLen; i++) {
-      const abs = Math.abs(activeAudio[i]);
+      const abs = Math.abs(finalAudio[i]);
       if (abs > maxAmp) maxAmp = abs;
     }
-    if (maxAmp > 0.002) {
-      const gain = Math.min(0.95 / maxAmp, 5.0); // Boost quiet audio up to 5x
+
+    // Dynamic amplitude normalization (boost quiet speech for Whisper)
+    if (maxAmp > 0.005) {
+      const gain = Math.min(0.95 / maxAmp, 4.0); // Boost quiet speech cleanly
       for (let i = 0; i < maxLen; i++) {
-        activeAudio[i] *= gain;
+        finalAudio[i] *= gain;
       }
     }
 
     const durationSec = (maxLen / TARGET_SAMPLE_RATE).toFixed(1);
 
     try {
-      self.postMessage({ 
-        type: 'STATUS', 
-        status: `Processing ${durationSec}s [${sourceLabel}]...` 
-      });
-      
-      // If audio is practically dead silence (< 0.2%), skip inference
-      if (maxAmp < 0.002) {
-        self.postMessage({ type: 'STATUS', status: 'ready (multilingual listening)' });
+      // Energy Gate: If peak amplitude is under 1.5% or RMS is ambient room noise, skip inference to prevent hallucinations
+      const hasSpeechEnergy = (sysRms > 0.006) || (micRms > 0.025) || (maxAmp > 0.02);
+      if (!hasSpeechEnergy) {
+        self.postMessage({ type: 'STATUS', status: `Listening (${durationSec}s silence/ambient)` });
         continue;
       }
 
-      // Run multilingual speech-to-text inference
-      const output = await transcriber(activeAudio, {
+      self.postMessage({ 
+        type: 'STATUS', 
+        status: `Transcribing ${durationSec}s [${sourceLabel}]...` 
+      });
+
+      // Run speech-to-text with strict repetition penalties & greedy decoding
+      const output = await transcriber(finalAudio, {
         task: 'transcribe',
+        temperature: 0.0,
+        max_new_tokens: 64,
+        repetition_penalty: 1.3,
+        no_repeat_ngram_size: 3,
         return_timestamps: false
       });
 
@@ -190,10 +200,14 @@ async function processBufferLoop() {
 
       text = text.trim();
 
-      // Filter out Whisper hallucinated tokens on silence/noise
+      // Filter out Whisper hallucinated tokens on low speech energy
+      const isRepeatedLoop = /((\b\w+\b)[,\s]+)\2{2,}/i.test(text); // e.g. "oh, oh, oh" or "you you you"
       const isHallucination = !text || 
+        isRepeatedLoop ||
         text.includes('[BLANK_AUDIO]') || 
-        text === '.' || text === '...' || text === 'you' || text === 'Thank you.';
+        text.startsWith('(') && text.endsWith(')') ||
+        text.startsWith('[') && text.endsWith(']') ||
+        text === '.' || text === '...' || text.toLowerCase() === 'you' || text.toLowerCase() === 'thank you.';
 
       if (text && text.length > 0 && !isHallucination) {
         self.postMessage({
@@ -205,7 +219,7 @@ async function processBufferLoop() {
         });
         self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 45)}..."` });
       } else {
-        self.postMessage({ type: 'STATUS', status: `Result: "${text || '(no words)'}" in ${durationSec}s` });
+        self.postMessage({ type: 'STATUS', status: `Speech low/filtered in ${durationSec}s` });
       }
     } catch (err: any) {
       console.error('Transcription error:', err);
