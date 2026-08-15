@@ -231,61 +231,36 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     return (
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
-            {/* Top Navigation Bar */}
-            <div className="h-12 shrink-0 flex items-center justify-between px-6 sticky top-0 bg-[var(--bg)]/90 backdrop-blur-md z-20 border-b border-[var(--border)]">
+            {/* Minimal Granola Top Header (Clean with right padding for window controls) */}
+            <div className="h-12 shrink-0 flex items-center justify-between pl-6 pr-[140px] sticky top-0 bg-[var(--bg)] z-20">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => {
                             if (onBack) onBack();
                             else navigate('/');
                         }}
-                        className="p-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] flex items-center justify-center"
+                        className="p-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] flex items-center justify-center shadow-sm"
                         title="Back to Notes"
                     >
                         <ArrowLeft size={14} />
                     </button>
-
-                    <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] font-medium">
-                        <span>{folderName}</span>
-                        <span>/</span>
-                        <span className="text-[var(--text-primary)] font-semibold truncate max-w-[200px]">{note.title || 'Untitled'}</span>
-                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    {/* Record Meeting Button */}
-                    <button
-                        onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm",
-                            isTranscriptOpen 
-                                ? "bg-red-500 text-white animate-pulse" 
-                                : "bg-[#3d5a22] hover:bg-[#344d1d] text-white"
-                        )}
-                        title="Record Meeting & Live Transcript"
-                    >
-                        <Mic size={13} />
-                        <span>{isTranscriptOpen ? 'Recording...' : 'Record Meeting'}</span>
-                    </button>
-
-                    {/* Copy Markdown */}
+                <div className="flex items-center gap-1 text-[var(--text-muted)]">
+                    {/* Clean dropdown menu for note actions */}
                     <button
                         onClick={handleCopyMarkdown}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
-                        title="Copy as Markdown"
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+                        title="Copy note markdown"
                     >
-                        {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                        <span>{copied ? 'Copied' : 'Copy'}</span>
+                        {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </button>
-
-                    {/* Export */}
                     <button
                         onClick={handleExportFile}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
-                        title="Export as Markdown"
+                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+                        title="Export markdown file"
                     >
-                        <Download size={13} />
-                        <span>Export</span>
+                        <Download size={14} />
                     </button>
                 </div>
             </div>
@@ -295,31 +270,31 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                 <div className={cn(
                     'w-full pb-48 transition-all',
                     focusMode
-                        ? 'max-w-3xl mx-auto px-8 pt-12'
-                        : 'max-w-3xl mx-auto px-8 pt-8',
+                        ? 'max-w-3xl mx-auto px-8 pt-8'
+                        : 'max-w-3xl mx-auto px-8 pt-4',
                 )}>
-                    {/* Note Title (Granola Serif Typography) */}
-                    <div className="mb-4">
+                    {/* Note Title (Granola Editorial Serif) */}
+                    <div className="mb-3">
                         <input
                             type="text"
                             value={note.title}
                             onChange={handleTitleChange}
                             placeholder="Untitled Note"
-                            className="w-full bg-transparent text-[32px] sm:text-[38px] font-serif font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 focus:outline-none tracking-tight leading-tight"
+                            className="w-full bg-transparent text-[32px] sm:text-[36px] font-serif font-normal text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/30 focus:outline-none tracking-tight leading-tight"
                         />
                     </div>
 
-                    {/* Granola Metadata Row */}
+                    {/* Granola Minimal Metadata Row */}
                     <div className="flex flex-wrap items-center gap-2 mb-8 text-xs">
                         {/* Date Picker Pill */}
                         <div className="relative" ref={dateMenuRef}>
                             <MetaPill onClick={() => setDateMenuOpen(v => !v)}>
                                 <CalendarIcon size={12} className="text-[var(--text-muted)]" />
                                 <span>{note.eventDate || new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                <ChevronDown size={11} className="text-[var(--text-muted)]" />
+                                <ChevronDown size={10} className="text-[var(--text-muted)] opacity-60" />
                             </MetaPill>
                             {dateMenuOpen && (
-                                <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1 w-44">
+                                <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1 w-40">
                                     <button onClick={() => { onUpdate({ eventDate: 'Today' }); setDateMenuOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">Today</button>
                                     <button onClick={() => { onUpdate({ eventDate: 'Yesterday' }); setDateMenuOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">Yesterday</button>
                                     <button onClick={() => { onUpdate({ eventDate: 'Last Week' }); setDateMenuOpen(false); }} className="w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">Last Week</button>
@@ -333,34 +308,12 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                             <span>Me</span>
                         </MetaPill>
 
-                        {/* Template Mode Pill */}
-                        <div className="relative" ref={templateMenuRef}>
-                            <MetaPill onClick={() => setTemplateMenuOpen(v => !v)}>
-                                <Sparkles size={12} className="text-emerald-500" />
-                                <span>Templates</span>
-                                <ChevronDown size={11} className="text-[var(--text-muted)]" />
-                            </MetaPill>
-                            {templateMenuOpen && (
-                                <div className="absolute top-9 left-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1 w-48">
-                                    <button onClick={() => handleApplyTemplate('enhanced')} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-                                        <Sparkles size={12} className="text-emerald-500"/> Meeting Summary
-                                    </button>
-                                    <button onClick={() => handleApplyTemplate('summary')} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-                                        <FileText size={12} className="text-[var(--text-muted)]"/> Executive Brief
-                                    </button>
-                                    <button onClick={() => handleApplyTemplate('raw')} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-                                        <AlignLeft size={12} className="text-[var(--text-muted)]"/> Raw Dialogue
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Folder Move Pill */}
+                        {/* Folder Pill */}
                         <div className="relative" ref={folderMenuRef}>
                             <MetaPill onClick={() => setFolderMenuOpen(v => !v)}>
                                 <Folder size={12} className="text-[var(--text-muted)]" />
                                 <span>{folderName}</span>
-                                <ChevronDown size={11} className="text-[var(--text-muted)]" />
+                                <ChevronDown size={10} className="text-[var(--text-muted)] opacity-60" />
                             </MetaPill>
 
                             {folderMenuOpen && (
@@ -370,7 +323,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
                                     >
                                         <Folder size={12} className="text-[var(--text-muted)]" />
-                                        <span>All Notes (No folder)</span>
+                                        <span>All Notes</span>
                                     </button>
                                     {folders.map(f => (
                                         <button
@@ -385,6 +338,41 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                                 </div>
                             )}
                         </div>
+
+                        {/* Tag Pills */}
+                        {note.tags.filter(t => !t.startsWith('folder:')).map(tag => (
+                            <MetaPill key={tag} onClick={() => handleRemoveTag(tag)}>
+                                <Hash size={11} className="text-emerald-500" />
+                                <span>{tag}</span>
+                                <X size={10} className="text-[var(--text-muted)] hover:text-red-400 transition-colors ml-0.5" />
+                            </MetaPill>
+                        ))}
+
+                        {/* Add Tag */}
+                        {isAddingTag ? (
+                            <div className="flex items-center gap-1 px-2.5 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs">
+                                <Hash size={11} className="text-[var(--text-muted)]" />
+                                <input
+                                    type="text"
+                                    value={tagInput}
+                                    onChange={e => setTagInput(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleAddTag()}
+                                    onBlur={handleAddTag}
+                                    autoFocus
+                                    placeholder="tag..."
+                                    className="bg-transparent border-none outline-none text-[var(--text-primary)] w-16 text-xs"
+                                />
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsAddingTag(true)}
+                                className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-[var(--border)] rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-colors"
+                            >
+                                <Plus size={11} /> Tag
+                            </button>
+                        )}
+                    </div>
+
 
                         {/* Tag Pills */}
                         {note.tags.filter(t => !t.startsWith('folder:')).map(tag => (
