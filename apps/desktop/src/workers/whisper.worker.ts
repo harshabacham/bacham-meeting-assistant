@@ -35,14 +35,14 @@ self.onmessage = async (e) => {
   if (type === 'INIT') {
     self.postMessage({ type: 'STATUS', status: 'loading' });
     try {
-      // Use Xenova/whisper-tiny.en for high accuracy on English YouTube/meetings (~75MB)
-      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
+      // Use Xenova/whisper-base (74M parameters) for high accuracy multilingual transcription
+      transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
         progress_callback: (progress: any) => {
           self.postMessage({ type: 'PROGRESS', progress });
         }
       });
       isModelLoaded = true;
-      self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
+      self.postMessage({ type: 'STATUS', status: 'ready (multilingual listening)' });
       processBufferLoop();
     } catch (err: any) {
       self.postMessage({ type: 'STATUS', status: 'error', error: err.message || String(err) });
@@ -169,12 +169,15 @@ async function processBufferLoop() {
       
       // If audio is practically dead silence (< 0.2%), skip inference
       if (maxAmp < 0.002) {
-        self.postMessage({ type: 'STATUS', status: 'ready (listening)' });
+        self.postMessage({ type: 'STATUS', status: 'ready (multilingual listening)' });
         continue;
       }
 
-      // Run Whisper speech-to-text inference
-      const output = await transcriber(activeAudio);
+      // Run multilingual speech-to-text inference
+      const output = await transcriber(activeAudio, {
+        task: 'transcribe',
+        return_timestamps: false
+      });
 
       let text = '';
       if (typeof output === 'string') {
@@ -200,7 +203,7 @@ async function processBufferLoop() {
             timestamp: Date.now()
           }
         });
-        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 40)}..."` });
+        self.postMessage({ type: 'STATUS', status: `Transcribed: "${text.substring(0, 45)}..."` });
       } else {
         self.postMessage({ type: 'STATUS', status: `Result: "${text || '(no words)'}" in ${durationSec}s` });
       }
@@ -211,7 +214,7 @@ async function processBufferLoop() {
   }
 }
 
-// Robust linear interpolation resampler for arbitrary sample rates
+// High-quality Anti-Aliased Box Resampler (averages all incoming samples in the time window)
 function linearInterpolate(buffer: Float32Array, fromRate: number, toRate: number): Float32Array {
   if (fromRate === toRate) return buffer;
   
@@ -220,15 +223,19 @@ function linearInterpolate(buffer: Float32Array, fromRate: number, toRate: numbe
   const resampled = new Float32Array(newLength);
   
   for (let i = 0; i < newLength; i++) {
-    const position = i * ratio;
-    const index = Math.floor(position);
-    const fraction = position - index;
+    const startPos = i * ratio;
+    const endPos = (i + 1) * ratio;
+    const startIdx = Math.floor(startPos);
+    const endIdx = Math.min(buffer.length, Math.ceil(endPos));
     
-    if (index + 1 < buffer.length) {
-        resampled[i] = buffer[index] * (1 - fraction) + buffer[index + 1] * fraction;
-    } else {
-        resampled[i] = buffer[index];
+    let sum = 0;
+    let count = 0;
+    for (let j = startIdx; j < endIdx; j++) {
+      sum += buffer[j];
+      count++;
     }
+    
+    resampled[i] = count > 0 ? (sum / count) : (buffer[startIdx] || 0);
   }
   return resampled;
 }
