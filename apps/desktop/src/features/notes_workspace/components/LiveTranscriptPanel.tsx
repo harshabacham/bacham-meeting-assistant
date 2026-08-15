@@ -278,6 +278,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 try {
                     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
                     audioCtx = new AudioContextClass({ sampleRate: 16000 });
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
                     const source = audioCtx.createMediaStreamSource(stream);
                     processor = audioCtx.createScriptProcessor(4096, 1, 1);
 
@@ -285,6 +288,17 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         if (!streamingRef.current || !workerRef.current) return;
                         const inputData = e.inputBuffer.getChannelData(0);
                         const floatArray = new Float32Array(inputData);
+                        
+                        // Calculate quick RMS for live audio feedback
+                        let sum = 0;
+                        for (let i = 0; i < floatArray.length; i++) {
+                            sum += floatArray[i] * floatArray[i];
+                        }
+                        const rmsVal = Math.sqrt(sum / floatArray.length);
+                        if (rmsVal > 0.01) {
+                            setModelStatus('Voice detected • Transcribing...');
+                        }
+
                         workerRef.current.postMessage({
                             type: 'AUDIO_CHUNK',
                             stream: 'mic',
@@ -295,6 +309,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
                     source.connect(processor);
                     processor.connect(audioCtx.destination);
+                    (window as any).__audioProcessorRef = processor; // Prevent V8 garbage collection
                 } catch (err) {
                     console.warn("AudioContext init notice:", err);
                 }

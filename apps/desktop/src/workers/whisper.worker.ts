@@ -3,8 +3,9 @@ import { pipeline, env } from '@xenova/transformers';
 // Configure transformers.js for Tauri/WebView2 (100% Free & Local Open Source)
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/';
 
-// CRITICAL for Tauri WebView2 - no SharedArrayBuffer support
+// CRITICAL for Tauri WebView2 - single thread wasm
 if ((env as any).backends?.onnx?.wasm) {
   (env as any).backends.onnx.wasm.numThreads = 1;
   (env as any).backends.onnx.wasm.proxy = false;
