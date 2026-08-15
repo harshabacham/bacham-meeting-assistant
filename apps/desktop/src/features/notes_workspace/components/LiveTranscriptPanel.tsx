@@ -84,6 +84,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [recordingTime, setRecordingTime] = useState(0);
     const [isPolishing, setIsPolishing] = useState(false);
     const [isSystemAudioActive, setIsSystemAudioActive] = useState(false);
+    const [audioLevel, setAudioLevel] = useState<number>(0);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const workerRef = useRef<Worker | null>(null);
@@ -366,14 +367,18 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         } catch (_) {}
                     }
 
-                    // A. Live 2.5s Multimodal Audio Chunk Streamer from Mixed Destination
+                    // A. Live 1.8s Multimodal Audio Chunk Streamer
                     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
                         ? 'audio/webm;codecs=opus' 
                         : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
                     
-                    const recorder = new MediaRecorder(mixedDest.stream, { mimeType });
+                    const streamToRecord = (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) 
+                        ? mixedDest.stream 
+                        : stream;
+
+                    const recorder = new MediaRecorder(streamToRecord, { mimeType });
                     recorder.ondataavailable = async (e) => {
-                        if (!streamingRef.current || !e.data || e.data.size < 1200 || isTranscribingChunk) return;
+                        if (!streamingRef.current || !e.data || e.data.size < 800 || isTranscribingChunk) return;
                         isTranscribingChunk = true;
                         try {
                             const reader = new FileReader();
@@ -419,7 +424,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                             isTranscribingChunk = false;
                         }
                     };
-                    recorder.start(2500);
+                    recorder.start(1800);
                     mediaRecorder = recorder;
 
                     // B. Low-latency ScriptProcessor for RMS and Local Worker
@@ -434,6 +439,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                             sum += floatArray[i] * floatArray[i];
                         }
                         const rmsVal = Math.sqrt(sum / floatArray.length);
+                        setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
                         if (rmsVal > 0.01) {
                             setModelStatus('Voice detected • Transcribing...');
                         }
@@ -940,10 +946,10 @@ Output only the polished, punctuated verbatim dialogue:`;
                 <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-[var(--surface)]">
                     {/* Left: Waveform & Time */}
                     <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-0.5 h-4 px-1">
-                            <span className={cn("w-1 h-3 rounded-full", isStreaming ? "bg-[var(--accent)] animate-pulse" : "bg-[var(--text-muted)] opacity-40")} />
-                            <span className={cn("w-1 h-4 rounded-full", isStreaming ? "bg-[var(--accent)] animate-pulse [animation-delay:0.2s]" : "bg-[var(--text-muted)] opacity-40")} />
-                            <span className={cn("w-1 h-2.5 rounded-full", isStreaming ? "bg-[var(--accent)] animate-pulse [animation-delay:0.4s]" : "bg-[var(--text-muted)] opacity-40")} />
+                        <div className="flex items-center gap-0.5 h-4 px-1" title={`Live Audio Level: ${audioLevel}%`}>
+                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-[var(--accent)]" : "bg-[var(--text-muted)] opacity-40")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.2 + 4))}px` : '4px' }} />
+                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-[var(--accent)]" : "bg-[var(--text-muted)] opacity-40")} style={{ height: isStreaming ? `${Math.max(6, Math.min(16, audioLevel * 0.35 + 6))}px` : '6px' }} />
+                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-[var(--accent)]" : "bg-[var(--text-muted)] opacity-40")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.22 + 4))}px` : '4px' }} />
                         </div>
                         
                         <button 

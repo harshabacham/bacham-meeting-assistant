@@ -865,12 +865,14 @@ impl GeminiService {
             lang_hint_str
         );
 
+        let clean_mime = mime_type.split(';').next().unwrap_or(mime_type).trim();
+
         let payload = serde_json::json!({
             "contents": [{
                 "parts": [
                     {
                         "inlineData": {
-                            "mimeType": mime_type,
+                            "mimeType": clean_mime,
                             "data": audio_base64
                         }
                     },
