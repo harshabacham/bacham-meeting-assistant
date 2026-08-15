@@ -344,7 +344,7 @@ pub struct OpenAiCompatibleProvider {
 impl AiProvider for OpenAiCompatibleProvider {
     async fn generate_stream(&self, app: &AppHandle, request: GenerationRequest, event_name: &str) -> AppResult<GenerationResponse> {
         let pool = &app.state::<crate::database::DbState>().pool;
-        let key = crate::services::universal_ai::UniversalAiService::get_provider_token(&self.name).await?;
+        let key = crate::services::universal_ai::UniversalAiService::get_provider_token(&self.name, pool).await?;
         if key.is_empty() {
             return Err(AppError::Internal(format!("No API key for {}", self.name)));
         }
