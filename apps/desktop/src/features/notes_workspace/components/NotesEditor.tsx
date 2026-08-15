@@ -231,33 +231,33 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     return (
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
-            {/* Minimal Granola Top Header (Clean with right padding for window controls) */}
-            <div className="h-12 shrink-0 flex items-center justify-between pl-6 pr-[140px] sticky top-0 bg-[var(--bg)] z-20">
-                <div className="flex items-center gap-3">
+            {/* Minimal Granola Top Header (Clean spacing with left clearance for sidebar toggle and right clearance for window controls) */}
+            <div className="h-14 shrink-0 flex items-center justify-between pl-16 pr-[140px] sticky top-0 bg-[var(--bg)] z-20">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => {
                             if (onBack) onBack();
                             else navigate('/');
                         }}
-                        className="p-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] flex items-center justify-center shadow-sm"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-sm"
                         title="Back to Notes"
                     >
-                        <ArrowLeft size={14} />
+                        <ArrowLeft size={13} />
+                        <span>Notes</span>
                     </button>
                 </div>
 
-                <div className="flex items-center gap-1 text-[var(--text-muted)]">
-                    {/* Clean dropdown menu for note actions */}
+                <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                     <button
                         onClick={handleCopyMarkdown}
-                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+                        className="p-2 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)]"
                         title="Copy note markdown"
                     >
                         {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </button>
                     <button
                         onClick={handleExportFile}
-                        className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors"
+                        className="p-2 rounded-lg hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)]"
                         title="Export markdown file"
                     >
                         <Download size={14} />
@@ -270,7 +270,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                 <div className={cn(
                     'w-full pb-48 transition-all',
                     focusMode
-                        ? 'max-w-3xl mx-auto px-8 pt-8'
+                        ? 'max-w-3xl mx-auto px-8 pt-6'
                         : 'max-w-3xl mx-auto px-8 pt-4',
                 )}>
                     {/* Note Title (Granola Editorial Serif) */}
@@ -301,12 +301,6 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                                 </div>
                             )}
                         </div>
-
-                        {/* Speaker Pill */}
-                        <MetaPill>
-                            <Users size={12} className="text-[var(--text-muted)]" />
-                            <span>Me</span>
-                        </MetaPill>
 
                         {/* Folder Pill */}
                         <div className="relative" ref={folderMenuRef}>
@@ -347,32 +341,6 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                                 <X size={10} className="text-[var(--text-muted)] hover:text-red-400 transition-colors ml-0.5" />
                             </MetaPill>
                         ))}
-
-                        {/* Add Tag */}
-                        {isAddingTag ? (
-                            <div className="flex items-center gap-1 px-2.5 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-full text-xs">
-                                <Hash size={11} className="text-[var(--text-muted)]" />
-                                <input
-                                    type="text"
-                                    value={tagInput}
-                                    onChange={e => setTagInput(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleAddTag()}
-                                    onBlur={handleAddTag}
-                                    autoFocus
-                                    placeholder="tag..."
-                                    className="bg-transparent border-none outline-none text-[var(--text-primary)] w-16 text-xs"
-                                />
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setIsAddingTag(true)}
-                                className="flex items-center gap-1 px-2.5 py-1 border border-dashed border-[var(--border)] rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)] transition-colors"
-                            >
-                                <Plus size={11} /> Tag
-                            </button>
-                        )}
-                    </div>
-
 
                         {/* Tag Pills */}
                         {note.tags.filter(t => !t.startsWith('folder:')).map(tag => (
