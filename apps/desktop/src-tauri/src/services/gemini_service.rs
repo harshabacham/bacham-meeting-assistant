@@ -29,39 +29,42 @@ pub const REFUSAL_STRING: &str = "I couldn't find that information in this lectu
 
 impl GeminiService {
     pub async fn get_api_key(pool: &sqlx::SqlitePool) -> AppResult<String> {
-        let entry = Entry::new("bacham", "gemini_api_key").map_err(|e| AppError::Internal(e.to_string()))?;
-        
-        if let Ok(key) = entry.get_password() {
-            if !key.trim().is_empty() {
-                return Ok(key.trim().to_string());
+        // 1. Try Keyring safely without bubbling error
+        if let Ok(entry) = Entry::new("bacham", "gemini_api_key") {
+            if let Ok(key) = entry.get_password() {
+                let trimmed = key.trim().to_string();
+                if !trimmed.is_empty() && trimmed != "true" {
+                    return Ok(trimmed);
+                }
             }
         }
 
+        // 2. Try Env variables
         if let Ok(env_key) = std::env::var("GEMINI_API_KEY") {
-            if !env_key.trim().is_empty() {
-                return Ok(env_key.trim().to_string());
+            let trimmed = env_key.trim().to_string();
+            if !trimmed.is_empty() {
+                return Ok(trimmed);
             }
         }
         
-        // Migration fallback: check SQLite
-        let row = sqlx::query("SELECT value FROM settings WHERE key = 'gemini_api_key'")
-            .fetch_optional(pool)
-            .await
-            .map_err(|e| AppError::Internal(e.to_string()))?;
-            
-        if let Some(r) = row {
-            let key = sqlx::Row::get::<String, _>(&r, "value");
-            let key = key.trim().to_string();
-            if !key.is_empty() {
-                // Migrate to keyring if possible, but keep it in DB for dev reliability
-                if let Ok(entry) = Entry::new("bacham", "gemini_api_key") {
-                    let _ = entry.set_password(&key);
+        // 3. Robust SQLite settings search across all possible keys
+        let candidate_keys = ["gemini_api_key", "apiKey", "geminiApiKey", "bacham.gemini", "gemini"];
+        for ck in candidate_keys {
+            if let Ok(Some(row)) = sqlx::query("SELECT value FROM settings WHERE key = ?")
+                .bind(ck)
+                .fetch_optional(pool)
+                .await 
+            {
+                use sqlx::Row;
+                let val: String = row.get("value");
+                let trimmed = val.trim().to_string();
+                if !trimmed.is_empty() && trimmed != "true" {
+                    return Ok(trimmed);
                 }
-                return Ok(key);
             }
         }
         
-        Err(AppError::Internal("No API Key set".into()))
+        Err(AppError::Internal("No API Key set. Please configure your Google Gemini API key in Settings -> Integrations -> Google Gemini.".into()))
     }
 
     /// Dynamically discover all active models available for the user's API key

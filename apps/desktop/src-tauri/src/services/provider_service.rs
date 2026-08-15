@@ -62,11 +62,29 @@ impl ProviderService {
     ) -> AppResult<()> {
         let id = Uuid::new_v4().to_string();
 
-        // 1. Store API key in keyring if provided
+        // 1. Store API key in keyring & SQLite if provided
         if let Some(key) = api_key {
-            let entry = Entry::new("bacham", &format!("{}_api_key", provider))
-                .map_err(|e| AppError::Internal(e.to_string()))?;
-            entry.set_password(&key).map_err(|e| AppError::Internal(e.to_string()))?;
+            let key_trimmed = key.trim().to_string();
+            if !key_trimmed.is_empty() {
+                if let Ok(entry) = Entry::new("bacham", &format!("{}_api_key", provider)) {
+                    let _ = entry.set_password(&key_trimmed);
+                }
+
+                // Write to SQLite settings table for persistent access across Windows
+                let _ = sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+                    .bind(format!("{}_api_key", provider))
+                    .bind(&key_trimmed)
+                    .execute(pool).await;
+
+                if provider == "gemini" || provider == "bacham.gemini" {
+                    let _ = sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('gemini_api_key', ?)")
+                        .bind(&key_trimmed)
+                        .execute(pool).await;
+                    let _ = sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('apiKey', ?)")
+                        .bind(&key_trimmed)
+                        .execute(pool).await;
+                }
+            }
         }
 
         // 2. Disable other providers if this one is being enabled (we only support one active at a time for now)
@@ -75,6 +93,11 @@ impl ProviderService {
                 .execute(pool)
                 .await
                 .map_err(|e| AppError::Internal(e.to_string()))?;
+
+            let canonical_id = if provider.starts_with("bacham.") { provider.to_string() } else { format!("bacham.{}", provider) };
+            let _ = sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('aiProvider', ?)")
+                .bind(canonical_id)
+                .execute(pool).await;
         }
 
         // 3. Upsert config
