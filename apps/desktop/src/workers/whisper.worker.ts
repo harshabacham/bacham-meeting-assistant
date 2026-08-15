@@ -13,6 +13,7 @@ if ((env as any).backends?.onnx?.wasm) {
 let transcriber: any = null;
 let isModelLoaded = false;
 let currentLanguage = 'auto'; // Default to auto-detect
+let currentTask: 'transcribe' | 'translate' = 'transcribe';
 let lockedAutoLang: string | null = null;
 let isLooping = false;
 
@@ -21,67 +22,75 @@ let sysBuffer: Float32Array = new Float32Array(0);
 let micBuffer: Float32Array = new Float32Array(0);
 
 const TARGET_SAMPLE_RATE = 16000;
-const PROCESS_INTERVAL_MS = 3500;              // 3.5s cycle for rich context
-const MIN_SAMPLES = TARGET_SAMPLE_RATE * 1.5;   // at least 1.5s of audio for stable phonemes
+const PROCESS_INTERVAL_MS = 3000;              // 3s cycle for continuous sentence context
+const MIN_SAMPLES = TARGET_SAMPLE_RATE * 1.5;   // at least 1.5s of audio
 const MAX_SAMPLES = TARGET_SAMPLE_RATE * 8;     // up to 8s context for full sentences
 
-const LANGUAGE_MAP: Record<string, { code: string | null; isEnglishOnly: boolean }> = {
-  'english':   { code: 'en', isEnglishOnly: true },
-  'auto':      { code: null, isEnglishOnly: false },
-  'hindi':     { code: 'hi', isEnglishOnly: false },
-  'telugu':    { code: 'te', isEnglishOnly: false },
-  'tamil':     { code: 'ta', isEnglishOnly: false },
-  'kannada':   { code: 'kn', isEnglishOnly: false },
-  'malayalam': { code: 'ml', isEnglishOnly: false },
-  'marathi':   { code: 'mr', isEnglishOnly: false },
-  'bengali':   { code: 'bn', isEnglishOnly: false },
-  'gujarati':  { code: 'gu', isEnglishOnly: false },
-  'punjabi':   { code: 'pa', isEnglishOnly: false },
-  'spanish':   { code: 'es', isEnglishOnly: false },
-  'french':    { code: 'fr', isEnglishOnly: false },
-  'german':    { code: 'de', isEnglishOnly: false },
-  'japanese':  { code: 'ja', isEnglishOnly: false },
-  'chinese':   { code: 'zh', isEnglishOnly: false },
-  'arabic':    { code: 'ar', isEnglishOnly: false },
-  'russian':   { code: 'ru', isEnglishOnly: false },
-  'portuguese':{ code: 'pt', isEnglishOnly: false },
-  'italian':   { code: 'it', isEnglishOnly: false },
-  'korean':    { code: 'ko', isEnglishOnly: false },
+export interface LanguageDef {
+  code: string | null;
+  label: string;
+  flag: string;
+  bcp: string;
+  isEnglishOnly: boolean;
+}
+
+const LANGUAGE_MAP: Record<string, LanguageDef> = {
+  'auto':       { code: null, label: 'Auto (Multi)', flag: '🌐', bcp: 'en-US', isEnglishOnly: false },
+  'english':    { code: 'en', label: 'English (US/UK)', flag: '🇺🇸', bcp: 'en-US', isEnglishOnly: false },
+  'hindi':      { code: 'hi', label: 'Hindi (हिंदी)', flag: '🇮🇳', bcp: 'hi-IN', isEnglishOnly: false },
+  'telugu':     { code: 'te', label: 'Telugu (తెలుగు)', flag: '🇮🇳', bcp: 'te-IN', isEnglishOnly: false },
+  'tamil':      { code: 'ta', label: 'Tamil (தமிழ்)', flag: '🇮🇳', bcp: 'ta-IN', isEnglishOnly: false },
+  'kannada':    { code: 'kn', label: 'Kannada (ಕನ್ನಡ)', flag: '🇮🇳', bcp: 'kn-IN', isEnglishOnly: false },
+  'malayalam':  { code: 'ml', label: 'Malayalam (മലയാളം)', flag: '🇮🇳', bcp: 'ml-IN', isEnglishOnly: false },
+  'marathi':    { code: 'mr', label: 'Marathi (मराठी)', flag: '🇮🇳', bcp: 'mr-IN', isEnglishOnly: false },
+  'bengali':    { code: 'bn', label: 'Bengali (বাংলা)', flag: '🇮🇳', bcp: 'bn-IN', isEnglishOnly: false },
+  'gujarati':   { code: 'gu', label: 'Gujarati (ગુજરાતી)', flag: '🇮🇳', bcp: 'gu-IN', isEnglishOnly: false },
+  'punjabi':    { code: 'pa', label: 'Punjabi (ਪੰਜਾਬੀ)', flag: '🇮🇳', bcp: 'pa-IN', isEnglishOnly: false },
+  'spanish':    { code: 'es', label: 'Spanish (Español)', flag: '🇪🇸', bcp: 'es-ES', isEnglishOnly: false },
+  'french':     { code: 'fr', label: 'French (Français)', flag: '🇫🇷', bcp: 'fr-FR', isEnglishOnly: false },
+  'german':     { code: 'de', label: 'German (Deutsch)', flag: '🇩🇪', bcp: 'de-DE', isEnglishOnly: false },
+  'japanese':   { code: 'ja', label: 'Japanese (日本語)', flag: '🇯🇵', bcp: 'ja-JP', isEnglishOnly: false },
+  'chinese':    { code: 'zh', label: 'Chinese (中文)', flag: '🇨🇳', bcp: 'zh-CN', isEnglishOnly: false },
+  'arabic':     { code: 'ar', label: 'Arabic (العربية)', flag: '🇸🇦', bcp: 'ar-SA', isEnglishOnly: false },
+  'russian':    { code: 'ru', label: 'Russian (Русский)', flag: '🇷🇺', bcp: 'ru-RU', isEnglishOnly: false },
+  'portuguese': { code: 'pt', label: 'Portuguese (Português)', flag: '🇵🇹', bcp: 'pt-PT', isEnglishOnly: false },
+  'italian':    { code: 'it', label: 'Italian (Italiano)', flag: '🇮🇹', bcp: 'it-IT', isEnglishOnly: false },
+  'korean':     { code: 'ko', label: 'Korean (한국어)', flag: '🇰🇷', bcp: 'ko-KR', isEnglishOnly: false },
 };
 
 /**
  * Intelligent Script-to-Language Detector (identifies Unicode script from speech tokens)
  */
-function detectScriptLanguage(text: string): { code: string; label: string } | null {
+function detectScriptLanguage(text: string): { code: string; label: string; flag: string } | null {
   if (!text) return null;
-  // Devanagari (Hindi, Marathi)
-  if (/[\u0900-\u097F]/.test(text)) return { code: 'hi', label: 'Hindi (हिंदी)' };
   // Telugu
-  if (/[\u0C00-\u0C7F]/.test(text)) return { code: 'te', label: 'Telugu (తెలుగు)' };
+  if (/[\u0C00-\u0C7F]/.test(text)) return { code: 'te', label: 'Telugu', flag: '🇮🇳' };
   // Tamil
-  if (/[\u0B80-\u0BFF]/.test(text)) return { code: 'ta', label: 'Tamil (தமிழ்)' };
+  if (/[\u0B80-\u0BFF]/.test(text)) return { code: 'ta', label: 'Tamil', flag: '🇮🇳' };
   // Kannada
-  if (/[\u0C80-\u0CFF]/.test(text)) return { code: 'kn', label: 'Kannada (ಕನ್ನಡ)' };
+  if (/[\u0C80-\u0CFF]/.test(text)) return { code: 'kn', label: 'Kannada', flag: '🇮🇳' };
   // Malayalam
-  if (/[\u0D00-\u0D7F]/.test(text)) return { code: 'ml', label: 'Malayalam (മലയാളം)' };
+  if (/[\u0D00-\u0D7F]/.test(text)) return { code: 'ml', label: 'Malayalam', flag: '🇮🇳' };
+  // Devanagari (Hindi, Marathi)
+  if (/[\u0900-\u097F]/.test(text)) return { code: 'hi', label: 'Hindi', flag: '🇮🇳' };
   // Bengali
-  if (/[\u0980-\u09FF]/.test(text)) return { code: 'bn', label: 'Bengali (বাংলা)' };
+  if (/[\u0980-\u09FF]/.test(text)) return { code: 'bn', label: 'Bengali', flag: '🇮🇳' };
   // Gujarati
-  if (/[\u0A80-\u0AFF]/.test(text)) return { code: 'gu', label: 'Gujarati (ગુજરાતી)' };
+  if (/[\u0A80-\u0AFF]/.test(text)) return { code: 'gu', label: 'Gujarati', flag: '🇮🇳' };
   // Gurmukhi / Punjabi
-  if (/[\u0A00-\u0A7F]/.test(text)) return { code: 'pa', label: 'Punjabi (ਪੰਜਾਬੀ)' };
+  if (/[\u0A00-\u0A7F]/.test(text)) return { code: 'pa', label: 'Punjabi', flag: '🇮🇳' };
   // Arabic / Urdu
-  if (/[\u0600-\u06FF]/.test(text)) return { code: 'ar', label: 'Arabic (العربية)' };
+  if (/[\u0600-\u06FF]/.test(text)) return { code: 'ar', label: 'Arabic', flag: '🇸🇦' };
   // Japanese (Hiragana / Katakana)
-  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return { code: 'ja', label: 'Japanese (日本語)' };
+  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return { code: 'ja', label: 'Japanese', flag: '🇯🇵' };
   // Chinese (Hanzi)
-  if (/[\u4E00-\u9FFF]/.test(text)) return { code: 'zh', label: 'Chinese (中文)' };
+  if (/[\u4E00-\u9FFF]/.test(text)) return { code: 'zh', label: 'Chinese', flag: '🇨🇳' };
   // Hangul / Korean
-  if (/[\uAC00-\uD7AF]/.test(text)) return { code: 'ko', label: 'Korean (한국어)' };
+  if (/[\uAC00-\uD7AF]/.test(text)) return { code: 'ko', label: 'Korean', flag: '🇰🇷' };
   // Cyrillic / Russian
-  if (/[\u0400-\u04FF]/.test(text)) return { code: 'ru', label: 'Russian (Русский)' };
-  // Latin / English
-  if (/[a-zA-Z]/.test(text)) return { code: 'en', label: 'English' };
+  if (/[\u0400-\u04FF]/.test(text)) return { code: 'ru', label: 'Russian', flag: '🇷🇺' };
+  // Latin / English / Spanish / etc.
+  if (/[a-zA-Z]/.test(text)) return { code: 'en', label: 'English', flag: '🌐' };
   return null;
 }
 
@@ -96,9 +105,8 @@ async function loadModel(lang: string) {
   self.postMessage({ type: 'STATUS', status: `loading` });
 
   try {
-    const isEnglishOnly = currentLanguage === 'english';
-    // Upgrade to whisper-base for vastly superior accuracy (>95% vs ~60% with tiny)
-    const modelName = isEnglishOnly ? 'Xenova/whisper-base.en' : 'Xenova/whisper-base';
+    // Always use Xenova/whisper-base for rich 99-language multilingual support
+    const modelName = 'Xenova/whisper-base';
 
     transcriber = await pipeline('automatic-speech-recognition', modelName, {
       quantized: true,
@@ -169,9 +177,10 @@ function normalize(buf: Float32Array): Float32Array {
 }
 
 self.onmessage = async (e) => {
-  const { type, stream, payload, sampleRate, language } = e.data;
+  const { type, stream, payload, sampleRate, language, task } = e.data;
 
   if (type === 'INIT') {
+    if (task) currentTask = task;
     await loadModel(language || 'auto');
     if (!isLooping) {
       isLooping = true;
@@ -183,11 +192,12 @@ self.onmessage = async (e) => {
     const newLang = language || 'auto';
     currentLanguage = newLang;
     lockedAutoLang = null;
-    if (newLang === 'english' && !isModelLoaded) {
-      await loadModel('english');
-    } else {
-      self.postMessage({ type: 'STATUS', status: `ready` });
-    }
+    self.postMessage({ type: 'STATUS', status: `ready` });
+  }
+
+  if (type === 'SET_TASK') {
+    currentTask = task === 'translate' ? 'translate' : 'transcribe';
+    self.postMessage({ type: 'STATUS', status: `ready` });
   }
 
   if (type === 'AUDIO_CHUNK') {
@@ -255,7 +265,7 @@ async function processLoop() {
       const langInfo = LANGUAGE_MAP[currentLanguage] || { code: null, isEnglishOnly: false };
 
       const genOptions: any = {
-        task: 'transcribe',
+        task: currentTask, // 'transcribe' or 'translate' (translates foreign speech to English live)
         temperature: 0.0,
         max_new_tokens: 128,
         repetition_penalty: 1.2,
@@ -264,10 +274,8 @@ async function processLoop() {
       };
 
       // Determine target language:
-      // If user selected explicit language: use it
-      // If user selected auto: use lockedAutoLang once detected
       const targetLangCode = langInfo.code || lockedAutoLang;
-      if (targetLangCode) {
+      if (targetLangCode && currentTask === 'transcribe') {
         genOptions.language = targetLangCode;
       }
 
@@ -304,14 +312,14 @@ async function processLoop() {
             lockedAutoLang = detected.code;
             self.postMessage({
               type: 'LANGUAGE_DETECTED',
-              payload: { language: detected.label, code: detected.code }
+              payload: { language: detected.label, flag: detected.flag, code: detected.code }
             });
           }
         }
 
         self.postMessage({
           type: 'TRANSCRIPT',
-          payload: { text, timestamp: Date.now() }
+          payload: { text, timestamp: Date.now(), isTranslated: currentTask === 'translate' }
         });
       }
       self.postMessage({ type: 'STATUS', status: `ready` });
@@ -322,4 +330,3 @@ async function processLoop() {
     }
   }
 }
-

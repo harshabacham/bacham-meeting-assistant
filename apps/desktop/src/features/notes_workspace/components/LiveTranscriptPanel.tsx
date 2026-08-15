@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, ThumbsDown, Copy, Minus, Mic, Sparkles, ChevronDown, ChevronUp, Check, Languages, Square, FileText, RefreshCw, Wand2 } from 'lucide-react';
+import { 
+    Search, ThumbsDown, Copy, Minus, Mic, Sparkles, ChevronDown, 
+    ChevronUp, Check, Languages, Square, FileText, Wand2, Globe2, ArrowRightLeft
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { cn } from '@/components';
@@ -10,7 +13,49 @@ export interface TranscriptChunk {
     speaker?: 'speaker' | 'me';
     timestamp?: string;
     timeMs?: number;
+    language?: string;
+    isTranslated?: boolean;
 }
+
+export interface LanguageOption {
+    code: string;
+    label: string;
+    nativeName: string;
+    flag: string;
+    bcp: string;
+    category: 'popular' | 'indic' | 'european' | 'asian' | 'middle-eastern';
+}
+
+export const MULTILINGUAL_CATALOG: LanguageOption[] = [
+    { code: 'auto', label: 'Auto (Multi-Language)', nativeName: 'Automatic Detection', flag: '🌐', bcp: 'en-US', category: 'popular' },
+    { code: 'english', label: 'English (US/Global)', nativeName: 'English', flag: '🇺🇸', bcp: 'en-US', category: 'popular' },
+    { code: 'english-in', label: 'English (India)', nativeName: 'Indian English', flag: '🇮🇳', bcp: 'en-IN', category: 'popular' },
+    
+    // Indic Languages
+    { code: 'hindi', label: 'Hindi', nativeName: 'हिंदी', flag: '🇮🇳', bcp: 'hi-IN', category: 'indic' },
+    { code: 'telugu', label: 'Telugu', nativeName: 'తెలుగు', flag: '🇮🇳', bcp: 'te-IN', category: 'indic' },
+    { code: 'tamil', label: 'Tamil', nativeName: 'தமிழ்', flag: '🇮🇳', bcp: 'ta-IN', category: 'indic' },
+    { code: 'kannada', label: 'Kannada', nativeName: 'ಕನ್ನಡ', flag: '🇮🇳', bcp: 'kn-IN', category: 'indic' },
+    { code: 'malayalam', label: 'Malayalam', nativeName: 'മലയാളം', flag: '🇮🇳', bcp: 'ml-IN', category: 'indic' },
+    { code: 'marathi', label: 'Marathi', nativeName: 'मराठी', flag: '🇮🇳', bcp: 'mr-IN', category: 'indic' },
+    { code: 'bengali', label: 'Bengali', nativeName: 'বাংলা', flag: '🇮🇳', bcp: 'bn-IN', category: 'indic' },
+    { code: 'gujarati', label: 'Gujarati', nativeName: 'ગુજરાતી', flag: '🇮🇳', bcp: 'gu-IN', category: 'indic' },
+    { code: 'punjabi', label: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', flag: '🇮🇳', bcp: 'pa-IN', category: 'indic' },
+
+    // European Languages
+    { code: 'spanish', label: 'Spanish', nativeName: 'Español', flag: '🇪🇸', bcp: 'es-ES', category: 'european' },
+    { code: 'french', label: 'French', nativeName: 'Français', flag: '🇫🇷', bcp: 'fr-FR', category: 'european' },
+    { code: 'german', label: 'German', nativeName: 'Deutsch', flag: '🇩🇪', bcp: 'de-DE', category: 'european' },
+    { code: 'portuguese', label: 'Portuguese', nativeName: 'Português', flag: '🇵🇹', bcp: 'pt-PT', category: 'european' },
+    { code: 'italian', label: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', bcp: 'it-IT', category: 'european' },
+    { code: 'russian', label: 'Russian', nativeName: 'Русский', flag: '🇷🇺', bcp: 'ru-RU', category: 'european' },
+
+    // Asian & Middle Eastern
+    { code: 'japanese', label: 'Japanese', nativeName: '日本語', flag: '🇯🇵', bcp: 'ja-JP', category: 'asian' },
+    { code: 'chinese', label: 'Chinese', nativeName: '中文 (Mandarin)', flag: '🇨🇳', bcp: 'zh-CN', category: 'asian' },
+    { code: 'korean', label: 'Korean', nativeName: '한국어', flag: '🇰🇷', bcp: 'ko-KR', category: 'asian' },
+    { code: 'arabic', label: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', bcp: 'ar-SA', category: 'middle-eastern' },
+];
 
 interface LiveTranscriptPanelProps {
     isOpen: boolean;
@@ -23,11 +68,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [interimText, setInterimText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
     const [isMinimized, setIsMinimized] = useState(false);
+    
+    // Multilingual State
     const [selectedLanguage, setSelectedLanguage] = useState<string>('auto');
-    const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+    const [detectedLanguage, setDetectedLanguage] = useState<{ label: string; flag: string } | null>(null);
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+    const [langSearch, setLangSearch] = useState('');
+    const [translateMode, setTranslateMode] = useState<boolean>(false); // false = Original Script, true = Live English Translation
+
     const [modelStatus, setModelStatus] = useState<string>('ready');
-    const [modelProgress, setModelProgress] = useState<any>(null);
     const [copied, setCopied] = useState(false);
     const [askQuery, setAskQuery] = useState('');
     const [recordingTime, setRecordingTime] = useState(0);
@@ -38,36 +87,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const speechRecRef = useRef<any>(null);
     const streamingRef = useRef<boolean>(true);
     const useWebSpeechRef = useRef<boolean>(false);
+    const pendingLangRestartRef = useRef<string | null>(null);
 
-    const LANGUAGES = [
-        { code: 'auto', label: 'Multi (Auto)', bcp: 'en-US' },
-        { code: 'english', label: 'English', bcp: 'en-US' },
-        { code: 'hindi', label: 'Hindi (हिंदी)', bcp: 'hi-IN' },
-        { code: 'telugu', label: 'Telugu (తెలుగు)', bcp: 'te-IN' },
-        { code: 'tamil', label: 'Tamil (தமிழ்)', bcp: 'ta-IN' },
-        { code: 'kannada', label: 'Kannada (ಕನ್ನಡ)', bcp: 'kn-IN' },
-        { code: 'malayalam', label: 'Malayalam (മലയാളം)', bcp: 'ml-IN' },
-        { code: 'marathi', label: 'Marathi (मराठी)', bcp: 'mr-IN' },
-        { code: 'bengali', label: 'Bengali (বাংলা)', bcp: 'bn-IN' },
-        { code: 'gujarati', label: 'Gujarati (ગુજરાતી)', bcp: 'gu-IN' },
-        { code: 'punjabi', label: 'Punjabi (ਪੰਜਾਬੀ)', bcp: 'pa-IN' },
-        { code: 'spanish', label: 'Spanish (Español)', bcp: 'es-ES' },
-        { code: 'french', label: 'French (Français)', bcp: 'fr-FR' },
-        { code: 'german', label: 'German (Deutsch)', bcp: 'de-DE' },
-        { code: 'japanese', label: 'Japanese (日本語)', bcp: 'ja-JP' },
-        { code: 'chinese', label: 'Chinese (中文)', bcp: 'zh-CN' },
-        { code: 'arabic', label: 'Arabic (العربية)', bcp: 'ar-SA' },
-        { code: 'russian', label: 'Russian (Русский)', bcp: 'ru-RU' },
-        { code: 'portuguese', label: 'Portuguese (Português)', bcp: 'pt-PT' },
-        { code: 'italian', label: 'Italian (Italiano)', bcp: 'it-IT' },
-        { code: 'korean', label: 'Korean (한국어)', bcp: 'ko-KR' },
-    ];
+    const activeLanguage = MULTILINGUAL_CATALOG.find(l => l.code === selectedLanguage) || MULTILINGUAL_CATALOG[0];
 
     useEffect(() => {
         streamingRef.current = isStreaming;
     }, [isStreaming]);
 
-    // Live Recording Timer
+    // Live Recording Duration Timer
     useEffect(() => {
         if (!isOpen || !isStreaming) return;
         const interval = setInterval(() => {
@@ -82,12 +110,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    // Initialize Audio Capture and Transcription
+    // Initialize Web Speech Engine and Whisper-Base Local Worker
     useEffect(() => {
         if (!isOpen) {
             setChunks([]);
             setRecordingTime(0);
             setInterimText('');
+            setDetectedLanguage(null);
             TauriClient.stopNativeRecording().catch(console.error);
             if (speechRecRef.current) {
                 try { speechRecRef.current.stop(); } catch (_) {}
@@ -100,17 +129,21 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             return;
         }
 
-        // 1. Start Rust Native Capture for system audio & meeting loopback
+        // 1. Start Rust Native Audio Stream (System loopback + Mic)
         TauriClient.startNativeRecording().catch(console.error);
 
-        // 2. High-Accuracy Web Speech API (Google Neural Cloud Speech - 99% accuracy)
+        // 2. High-Accuracy Web Speech API (Google Neural Cloud Speech - 99%+ accuracy)
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        let isSpeechRecWorking = false;
 
-        if (SpeechRecognition) {
+        const startRecognition = (langCode: string) => {
+            if (!SpeechRecognition) return;
             try {
+                if (speechRecRef.current) {
+                    try { speechRecRef.current.stop(); } catch (_) {}
+                }
+
                 const recognition = new SpeechRecognition();
-                const targetLangObj = LANGUAGES.find(l => l.code === selectedLanguage);
+                const targetLangObj = MULTILINGUAL_CATALOG.find(l => l.code === langCode);
                 recognition.lang = targetLangObj?.bcp || 'en-US';
                 recognition.continuous = true;
                 recognition.interimResults = true;
@@ -118,7 +151,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
                 recognition.onstart = () => {
                     useWebSpeechRef.current = true;
-                    isSpeechRecWorking = true;
                     setModelStatus('Live Transcription Active');
                 };
 
@@ -131,7 +163,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                             const trimmed = transcript.trim();
                             if (trimmed) {
                                 setChunks(prev => {
-                                    // Prevent immediate duplicate lines
                                     if (prev.length > 0 && prev[prev.length - 1].text === trimmed) {
                                         return prev;
                                     }
@@ -139,6 +170,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                                         id: Date.now().toString() + Math.random(),
                                         speaker: 'speaker',
                                         text: trimmed,
+                                        language: targetLangObj?.label,
                                         timeMs: Date.now(),
                                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                                     }];
@@ -156,13 +188,18 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
                 recognition.onerror = (e: any) => {
                     console.warn("SpeechRecognition notice:", e?.error);
-                    // If network error, allow Whisper worker fallback
                     if (e?.error === 'network' || e?.error === 'not-allowed') {
                         useWebSpeechRef.current = false;
                     }
                 };
 
                 recognition.onend = () => {
+                    if (pendingLangRestartRef.current) {
+                        const nextLang = pendingLangRestartRef.current;
+                        pendingLangRestartRef.current = null;
+                        startRecognition(nextLang);
+                        return;
+                    }
                     if (streamingRef.current && isOpen && useWebSpeechRef.current) {
                         try { recognition.start(); } catch (_) {}
                     }
@@ -171,28 +208,28 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 recognition.start();
                 speechRecRef.current = recognition;
             } catch (err) {
-                console.warn("WebSpeech init fallback to Whisper worker:", err);
+                console.warn("WebSpeech init fallback:", err);
                 useWebSpeechRef.current = false;
             }
-        }
+        };
 
-        // 3. High-Accuracy Whisper-Base Local Worker (Used when WebSpeech unavailable or for system loopback)
+        startRecognition(selectedLanguage);
+
+        // 3. Multilingual Whisper-Base Local Worker
         try {
             workerRef.current = new Worker(new URL('../../../workers/whisper.worker.ts', import.meta.url), {
                 type: 'module'
             });
 
             workerRef.current.onmessage = (e) => {
-                const { type, status, progress, payload } = e.data;
+                const { type, status, payload } = e.data;
                 if (type === 'STATUS') {
                     setModelStatus(status);
-                } else if (type === 'PROGRESS') {
-                    setModelProgress(progress);
                 } else if (type === 'LANGUAGE_DETECTED') {
-                    setDetectedLanguage(payload.language);
+                    setDetectedLanguage({ label: payload.language, flag: payload.flag || '🌐' });
                 } else if (type === 'TRANSCRIPT') {
-                    // Only push Whisper chunks if Web Speech API isn't handling it to avoid duplicate collisions
-                    if (!useWebSpeechRef.current && payload?.text) {
+                    // In Translate Mode or Whisper fallback mode
+                    if ((translateMode || !useWebSpeechRef.current) && payload?.text) {
                         const trimmed = payload.text.trim();
                         if (trimmed) {
                             setChunks(prev => {
@@ -203,6 +240,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                                     id: Date.now().toString() + Math.random(),
                                     speaker: 'speaker',
                                     text: trimmed,
+                                    isTranslated: payload.isTranslated,
                                     timeMs: payload.timestamp || Date.now(),
                                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                                 }];
@@ -212,9 +250,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 }
             };
 
-            workerRef.current.postMessage({ type: 'INIT', language: selectedLanguage });
+            workerRef.current.postMessage({ 
+                type: 'INIT', 
+                language: selectedLanguage, 
+                task: translateMode ? 'translate' : 'transcribe' 
+            });
         } catch (err: any) {
-            console.error("Worker error:", err);
+            console.error("Whisper worker error:", err);
         }
 
         // 4. Listen to buffered audio streams from Rust CPAL backend
@@ -288,6 +330,44 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         }
     };
 
+    const handleLanguageChange = (langCode: string) => {
+        setSelectedLanguage(langCode);
+        setIsLangMenuOpen(false);
+        setLangSearch('');
+
+        if (workerRef.current) {
+            workerRef.current.postMessage({ type: 'SET_LANGUAGE', language: langCode });
+        }
+
+        // Safe Hot Language Switching
+        if (speechRecRef.current) {
+            try {
+                pendingLangRestartRef.current = langCode;
+                speechRecRef.current.stop();
+            } catch (_) {
+                // If stop fails or already stopped, re-init immediately
+                const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    const targetLangObj = MULTILINGUAL_CATALOG.find(l => l.code === langCode);
+                    const rec = new SpeechRecognition();
+                    rec.lang = targetLangObj?.bcp || 'en-US';
+                    rec.continuous = true;
+                    rec.interimResults = true;
+                    if (isStreaming) rec.start();
+                    speechRecRef.current = rec;
+                }
+            }
+        }
+    };
+
+    const handleToggleTranslateMode = () => {
+        const nextMode = !translateMode;
+        setTranslateMode(nextMode);
+        if (workerRef.current) {
+            workerRef.current.postMessage({ type: 'SET_TASK', task: nextMode ? 'translate' : 'transcribe' });
+        }
+    };
+
     const handleGenerateNotes = () => {
         const fullText = chunks.map(c => c.text).join('\n');
         onProcess(fullText);
@@ -298,12 +378,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         setIsPolishing(true);
         try {
             const rawText = chunks.map(c => c.text).join('\n');
-            const prompt = `You are an expert speech recognition transcriber. Clean and polish this verbatim audio transcript into high-accuracy, grammatically correct sentences without altering any facts or meanings:
+            const prompt = `You are a world-class multilingual meeting transcriber. Clean and polish this verbatim audio transcript:
+1. Preserve original languages (Hindi, Telugu, Tamil, Spanish, French, German, Japanese, English, or mixed Hinglish/code-switching).
+2. Fix sentence boundaries, capitalize proper nouns, and remove stutter/filler words.
+3. Keep the authentic verbatim meaning accurate.
 
 Raw Audio Transcript:
 ${rawText}
 
-Output only the polished verbatim transcript with clean sentence punctuation:`;
+Output only the polished, punctuated verbatim dialogue:`;
 
             const polished = await TauriClient.sendGlobalMemoryChat(prompt, []);
             if (polished) {
@@ -323,24 +406,6 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
         }
     };
 
-    const handleLanguageChange = (langCode: string) => {
-        setSelectedLanguage(langCode);
-        setIsLangMenuOpen(false);
-        if (workerRef.current) {
-            workerRef.current.postMessage({ type: 'SET_LANGUAGE', language: langCode });
-        }
-        if (speechRecRef.current) {
-            try {
-                speechRecRef.current.stop();
-                const targetLangObj = LANGUAGES.find(l => l.code === langCode);
-                speechRecRef.current.lang = targetLangObj?.bcp || 'en-US';
-                if (isStreaming) {
-                    speechRecRef.current.start();
-                }
-            } catch (_) {}
-        }
-    };
-
     const handleCopyAll = () => {
         const fullText = chunks.map(c => c.text).join('\n\n');
         navigator.clipboard.writeText(fullText);
@@ -348,13 +413,18 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const filteredLanguages = MULTILINGUAL_CATALOG.filter(l => 
+        l.label.toLowerCase().includes(langSearch.toLowerCase()) || 
+        l.nativeName.toLowerCase().includes(langSearch.toLowerCase()) ||
+        l.code.toLowerCase().includes(langSearch.toLowerCase())
+    );
+
     if (!isOpen) return null;
 
     // Minimized Dock Bar
     if (isMinimized) {
         return (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-50">
-                {/* Floating Action Button */}
                 <motion.button
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -367,7 +437,6 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                     <span>Generate notes</span>
                 </motion.button>
 
-                {/* Minimized Dock */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -394,9 +463,12 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                         <span className={cn("font-semibold", isStreaming ? "text-[var(--accent)]" : "text-[var(--text-muted)]")}>
                             {isStreaming ? 'Recording' : 'Paused'}
                         </span>
+                        <span className="text-[11px] text-[var(--text-muted)] font-normal border-l border-[var(--border)] pl-2">
+                            {activeLanguage.flag} {activeLanguage.label.split(' ')[0]}
+                        </span>
                     </button>
 
-                    {/* Quick Action Bar */}
+                    {/* Quick Ask Box */}
                     <div className="flex items-center bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-md pl-4 pr-1.5 py-1 min-w-[380px]">
                         <input
                             type="text"
@@ -425,10 +497,10 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
         );
     }
 
-    // Expanded Live Transcript Card
+    // Expanded Multilingual Live Transcript Card
     return (
         <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4 gap-2">
-            {/* Action Bar when text exists */}
+            {/* Top Action Pills */}
             {(!isStreaming || chunks.length > 0) && (
                 <div className="pointer-events-auto flex items-center gap-2">
                     <motion.button
@@ -451,10 +523,10 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                         onClick={handlePolishTranscript}
                         disabled={isPolishing}
                         className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border)] shadow-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                        title="Correct minor speech errors with Google Gemini"
+                        title="Correct speech errors and format with Google Gemini"
                     >
                         <Wand2 size={13} className={isPolishing ? "animate-spin text-[var(--accent)]" : "text-[var(--accent)]"} />
-                        <span>{isPolishing ? "Polishing..." : "AI Polish"}</span>
+                        <span>{isPolishing ? "Polishing..." : "AI Multilingual Polish"}</span>
                     </motion.button>
                 </div>
             )}
@@ -465,48 +537,88 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                 exit={{ opacity: 0, y: 20 }}
                 className="w-full max-w-xl bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
             >
-                {/* Header */}
+                {/* Header with Multilingual Controls */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)] bg-[var(--surface)]">
                     <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-medium">
                         <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                        <span>99%+ Neural Audio Transcriber</span>
+                        <span className="font-semibold text-[var(--text-primary)]">Multilingual Speech Engine</span>
                         {detectedLanguage && (
-                            <span className="text-[var(--accent)] font-semibold">• {detectedLanguage}</span>
+                            <span className="text-[var(--accent)] font-semibold flex items-center gap-1 bg-[var(--accent-dim)] px-1.5 py-0.5 rounded border border-[var(--border-accent)]">
+                                <span>{detectedLanguage.flag}</span>
+                                <span>{detectedLanguage.label}</span>
+                            </span>
                         )}
                     </div>
 
                     <div className="flex items-center gap-1 text-[var(--text-muted)]">
-                        {/* Language Selector */}
+                        {/* Live Translation Mode Switcher */}
+                        <button
+                            type="button"
+                            onClick={handleToggleTranslateMode}
+                            className={cn(
+                                "flex items-center gap-1 px-2 py-1 rounded text-xs transition-all cursor-pointer",
+                                translateMode 
+                                    ? "bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)] font-semibold" 
+                                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+                            )}
+                            title={translateMode ? "Translating foreign audio to English" : "Transcribing in original native language"}
+                        >
+                            <ArrowRightLeft size={11} />
+                            <span>{translateMode ? 'English Subtitles' : 'Original Script'}</span>
+                        </button>
+
+                        <div className="h-3 w-px bg-[var(--border)] mx-1" />
+
+                        {/* Interactive Language Selector Dropdown */}
                         <div className="relative">
                             <button
                                 type="button"
                                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                                className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] cursor-pointer"
-                                title="Change Language"
+                                className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium cursor-pointer border border-[var(--border)] shadow-xs"
+                                title="Change Spoken Language"
                             >
-                                <Languages size={12} />
-                                <span className="capitalize">{LANGUAGES.find(l => l.code === selectedLanguage)?.label.split(' ')[0] || 'Auto'}</span>
-                                <ChevronDown size={10} />
+                                <span>{activeLanguage.flag}</span>
+                                <span>{activeLanguage.label.split(' ')[0]}</span>
+                                <ChevronDown size={10} className="text-[var(--text-muted)]" />
                             </button>
 
                             {isLangMenuOpen && (
-                                <div className="absolute right-0 bottom-full mb-1 w-44 bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-2xl py-1 z-50 max-h-56 overflow-y-auto">
-                                    {LANGUAGES.map(lang => (
-                                        <button
-                                            type="button"
-                                            key={lang.code}
-                                            onClick={() => handleLanguageChange(lang.code)}
-                                            className={cn(
-                                                "w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between cursor-pointer",
-                                                selectedLanguage === lang.code 
-                                                    ? "text-[var(--accent)] bg-[var(--surface-hover)] font-semibold" 
-                                                    : "text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
-                                            )}
-                                        >
-                                            <span>{lang.label}</span>
-                                            {selectedLanguage === lang.code && <Check size={12} />}
-                                        </button>
-                                    ))}
+                                <div className="absolute right-0 bottom-full mb-1 w-64 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl p-2 z-50">
+                                    {/* Search */}
+                                    <div className="relative mb-2">
+                                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                        <input
+                                            type="text"
+                                            value={langSearch}
+                                            onChange={e => setLangSearch(e.target.value)}
+                                            placeholder="Search 99+ languages..."
+                                            className="w-full pl-7 pr-2 py-1 rounded-md bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="max-h-56 overflow-y-auto space-y-0.5 scroll-smooth">
+                                        {filteredLanguages.map(lang => (
+                                            <button
+                                                type="button"
+                                                key={lang.code}
+                                                onClick={() => handleLanguageChange(lang.code)}
+                                                className={cn(
+                                                    "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between cursor-pointer",
+                                                    selectedLanguage === lang.code 
+                                                        ? "text-[var(--accent)] bg-[var(--surface-hover)] font-semibold" 
+                                                        : "text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-2 truncate">
+                                                    <span>{lang.flag}</span>
+                                                    <span className="truncate">{lang.label}</span>
+                                                    <span className="text-[10px] text-[var(--text-muted)]">({lang.nativeName})</span>
+                                                </div>
+                                                {selectedLanguage === lang.code && <Check size={12} className="shrink-0 text-[var(--accent)]" />}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -523,15 +635,27 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                     </div>
                 </div>
 
-                {/* Transcript Message Stream */}
+                {/* Multilingual Transcript Stream */}
                 <div 
                     ref={scrollRef}
                     className="p-4 max-h-[38vh] min-h-[160px] overflow-y-auto space-y-2.5 bg-[var(--bg)] font-sans"
                 >
                     {chunks.length === 0 && !interimText && (
                         <div className="flex flex-col items-center justify-center py-10 text-[var(--text-muted)] text-xs gap-1">
-                            <p>{isStreaming ? 'Listening for speech with studio-grade clarity...' : 'Recording paused.'}</p>
-                            <p className="text-[10px] text-[var(--text-muted)] opacity-60">Speak naturally into your microphone or play meeting audio</p>
+                            <div className="flex items-center gap-1.5 text-base mb-1">
+                                <span>🌐</span>
+                                <span>🇮🇳</span>
+                                <span>🇪🇸</span>
+                                <span>🇫🇷</span>
+                                <span>🇯🇵</span>
+                                <span>🇩🇪</span>
+                            </div>
+                            <p className="font-medium text-[var(--text-primary)]">
+                                {isStreaming ? `Listening in ${activeLanguage.label}...` : 'Recording paused.'}
+                            </p>
+                            <p className="text-[11px] text-[var(--text-muted)] opacity-80">
+                                Supports Hindi, Telugu, Tamil, Spanish, English, French, Japanese & 99+ languages.
+                            </p>
                         </div>
                     )}
 
@@ -544,8 +668,16 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                                 className="flex flex-col gap-1"
                             >
                                 <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono px-1">
-                                    <span className="text-[var(--accent)] font-semibold">Speaker {Math.floor(idx / 3) + 1}</span>
-                                    <span>{chunk.timestamp || formatTime(recordingTime)}</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[var(--accent)] font-semibold">Speaker {Math.floor(idx / 3) + 1}</span>
+                                        {chunk.language && (
+                                            <span className="text-[var(--text-muted)] font-sans">• {chunk.language}</span>
+                                        )}
+                                        {chunk.isTranslated && (
+                                            <span className="bg-[var(--accent-dim)] text-[var(--accent)] text-[9px] px-1 py-0.2 rounded font-semibold uppercase">Translated</span>
+                                        )}
+                                    </div>
+                                    <span className="tabular-nums">{chunk.timestamp || formatTime(recordingTime)}</span>
                                 </div>
                                 <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3.5 py-2 text-[13.5px] leading-relaxed text-[var(--text-primary)] shadow-xs">
                                     {chunk.text}
@@ -554,7 +686,7 @@ Output only the polished verbatim transcript with clean sentence punctuation:`;
                         ))}
                     </AnimatePresence>
 
-                    {/* Live Streaming Real-time Preview */}
+                    {/* Live Interim Streaming Preview */}
                     {interimText && (
                         <motion.div 
                             initial={{ opacity: 0 }}
