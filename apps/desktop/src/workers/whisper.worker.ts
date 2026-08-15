@@ -156,14 +156,11 @@ async function processBufferLoop() {
         continue;
       }
 
-      // Run speech-to-text inference with raw audio object format
-      const output = await transcriber(
-        { raw: mixed, sampling_rate: TARGET_SAMPLE_RATE },
-        {
-          task: 'transcribe',
-          return_timestamps: false
-        }
-      );
+      // Run speech-to-text inference directly with Float32Array
+      const output = await transcriber(mixed, {
+        task: 'transcribe',
+        return_timestamps: false
+      });
 
       let text = '';
       if (typeof output === 'string') {
