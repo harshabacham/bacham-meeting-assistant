@@ -13,6 +13,7 @@ if ((env as any).backends?.onnx?.wasm) {
 let transcriber: any = null;
 let isModelLoaded = false;
 let currentLanguage = 'auto'; // Default to auto-detect
+let lockedAutoLang: string | null = null;
 let isLooping = false;
 
 // Separate ring-buffers for system audio and microphone
@@ -48,6 +49,42 @@ const LANGUAGE_MAP: Record<string, { code: string | null; isEnglishOnly: boolean
   'korean':    { code: 'ko', isEnglishOnly: false },
 };
 
+/**
+ * Intelligent Script-to-Language Detector (identifies Unicode script from speech tokens)
+ */
+function detectScriptLanguage(text: string): { code: string; label: string } | null {
+  if (!text) return null;
+  // Devanagari (Hindi, Marathi)
+  if (/[\u0900-\u097F]/.test(text)) return { code: 'hi', label: 'Hindi (हिंदी)' };
+  // Telugu
+  if (/[\u0C00-\u0C7F]/.test(text)) return { code: 'te', label: 'Telugu (తెలుగు)' };
+  // Tamil
+  if (/[\u0B80-\u0BFF]/.test(text)) return { code: 'ta', label: 'Tamil (தமிழ்)' };
+  // Kannada
+  if (/[\u0C80-\u0CFF]/.test(text)) return { code: 'kn', label: 'Kannada (ಕನ್ನಡ)' };
+  // Malayalam
+  if (/[\u0D00-\u0D7F]/.test(text)) return { code: 'ml', label: 'Malayalam (മലയാളം)' };
+  // Bengali
+  if (/[\u0980-\u09FF]/.test(text)) return { code: 'bn', label: 'Bengali (বাংলা)' };
+  // Gujarati
+  if (/[\u0A80-\u0AFF]/.test(text)) return { code: 'gu', label: 'Gujarati (ગુજરાતી)' };
+  // Gurmukhi / Punjabi
+  if (/[\u0A00-\u0A7F]/.test(text)) return { code: 'pa', label: 'Punjabi (ਪੰਜਾਬੀ)' };
+  // Arabic / Urdu
+  if (/[\u0600-\u06FF]/.test(text)) return { code: 'ar', label: 'Arabic (العربية)' };
+  // Japanese (Hiragana / Katakana)
+  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return { code: 'ja', label: 'Japanese (日本語)' };
+  // Chinese (Hanzi)
+  if (/[\u4E00-\u9FFF]/.test(text)) return { code: 'zh', label: 'Chinese (中文)' };
+  // Hangul / Korean
+  if (/[\uAC00-\uD7AF]/.test(text)) return { code: 'ko', label: 'Korean (한국어)' };
+  // Cyrillic / Russian
+  if (/[\u0400-\u04FF]/.test(text)) return { code: 'ru', label: 'Russian (Русский)' };
+  // Latin / English
+  if (/[a-zA-Z]/.test(text)) return { code: 'en', label: 'English' };
+  return null;
+}
+
 self.onerror = (e: any) => {
   self.postMessage({ type: 'STATUS', status: 'error', error: e?.message || String(e) });
 };
@@ -55,6 +92,7 @@ self.onerror = (e: any) => {
 async function loadModel(lang: string) {
   isModelLoaded = false;
   currentLanguage = lang || 'auto';
+  lockedAutoLang = null;
   self.postMessage({ type: 'STATUS', status: `loading` });
 
   try {
@@ -78,9 +116,6 @@ async function loadModel(lang: string) {
   }
 }
 
-/**
- * Append a plain number[] from Tauri JSON IPC into a typed Float32Array buffer.
- */
 function appendToBuffer(existing: Float32Array, incoming: number[]): Float32Array {
   if (!incoming || incoming.length === 0) return existing;
   const chunk = new Float32Array(incoming.length);
@@ -116,9 +151,6 @@ function linearInterpolate(buffer: Float32Array, fromRate: number, toRate: numbe
   return resampled;
 }
 
-/**
- * High-accuracy dynamic range normalizer for Whisper mel-spectrogram input
- */
 function normalize(buf: Float32Array): Float32Array {
   let maxAmp = 0;
   for (let i = 0; i < buf.length; i++) {
@@ -127,7 +159,6 @@ function normalize(buf: Float32Array): Float32Array {
   }
   if (maxAmp < 0.0001) return buf; // truly silent
   
-  // Scale audio to target peak 0.9 with adaptive gain up to 40x
   const gain = Math.min(0.9 / maxAmp, 40.0);
   const out = new Float32Array(buf.length);
   for (let i = 0; i < buf.length; i++) {
@@ -149,8 +180,12 @@ self.onmessage = async (e) => {
 
   if (type === 'SET_LANGUAGE') {
     const newLang = language || 'auto';
-    if (newLang !== currentLanguage) {
-      await loadModel(newLang);
+    currentLanguage = newLang;
+    lockedAutoLang = null;
+    if (newLang === 'english' && !isModelLoaded) {
+      await loadModel('english');
+    } else {
+      self.postMessage({ type: 'STATUS', status: `ready` });
     }
   }
 
@@ -175,7 +210,6 @@ async function processLoop() {
     const totalSamples = sysBuffer.length + micBuffer.length;
     if (totalSamples < MIN_SAMPLES) continue;
 
-    // Snapshot buffers atomically and clear them
     const sys = sysBuffer;
     const mic = micBuffer;
     sysBuffer = new Float32Array(0);
@@ -184,8 +218,6 @@ async function processLoop() {
     const sysRms = rms(sys);
     const micRms = rms(mic);
 
-    // Intelligent source selection:
-    // If YouTube / Video is playing, use pristine direct loopback digital audio!
     let activeAudio: Float32Array;
     let activeRate = 48000;
     let sourceLabel: string;
@@ -199,7 +231,6 @@ async function processLoop() {
       activeRate = micSampleRate;
       sourceLabel = `Mic ${(micRms * 100).toFixed(1)}%`;
     } else {
-      // Very low energy - restore samples to avoid wasting audio buffer
       const newSys = new Float32Array(sys.length + sysBuffer.length);
       newSys.set(sys); newSys.set(sysBuffer, sys.length);
       sysBuffer = newSys.length > MAX_SAMPLES ? newSys.slice(-MAX_SAMPLES) : newSys;
@@ -210,10 +241,7 @@ async function processLoop() {
       continue;
     }
 
-    // 1. Continuous Linear Resample to 16kHz
     const resampled16k = linearInterpolate(activeAudio, activeRate, TARGET_SAMPLE_RATE);
-
-    // 2. Dynamic Peak Normalization
     const finalAudio = normalize(resampled16k);
     const durationSec = (finalAudio.length / TARGET_SAMPLE_RATE).toFixed(1);
 
@@ -234,9 +262,12 @@ async function processLoop() {
         return_timestamps: false,
       };
 
-      // Explicitly set language in Whisper generation options so output matches the chosen audio language
-      if (langInfo.code) {
-        genOptions.language = langInfo.code;
+      // Determine target language:
+      // If user selected explicit language: use it
+      // If user selected auto: use lockedAutoLang once detected
+      const targetLangCode = langInfo.code || lockedAutoLang;
+      if (targetLangCode) {
+        genOptions.language = targetLangCode;
       }
 
       const output = await transcriber(finalAudio, genOptions);
@@ -257,7 +288,6 @@ async function processLoop() {
         .replace(/\(.*?\)/g, '')
         .trim();
 
-      // Filter obvious hallucinations
       const isHallucination =
         !text ||
         text.length < 2 ||
@@ -266,6 +296,18 @@ async function processLoop() {
         /(\b\w+\b)(\s*[,.]?\s*\1){3,}/i.test(text);
 
       if (text && !isHallucination) {
+        // Auto-detect language from native script on first sentence
+        if (currentLanguage === 'auto' && !lockedAutoLang) {
+          const detected = detectScriptLanguage(text);
+          if (detected) {
+            lockedAutoLang = detected.code;
+            self.postMessage({
+              type: 'LANGUAGE_DETECTED',
+              payload: { language: detected.label, code: detected.code }
+            });
+          }
+        }
+
         self.postMessage({
           type: 'TRANSCRIPT',
           payload: { text, timestamp: Date.now() }
@@ -276,8 +318,7 @@ async function processLoop() {
     } catch (err: any) {
       console.error('Whisper transcription error:', err);
       self.postMessage({ type: 'STATUS', status: 'error', error: err?.message || String(err) });
-      await new Promise(r => setTimeout(r, 2000));
-      await loadModel(currentLanguage);
     }
   }
 }
+

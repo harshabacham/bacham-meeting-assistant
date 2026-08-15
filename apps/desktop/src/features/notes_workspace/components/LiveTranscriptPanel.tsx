@@ -23,6 +23,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [interimText, setInterimText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
     const [selectedLanguage, setSelectedLanguage] = useState<string>('auto');
+    const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
     const [modelStatus, setModelStatus] = useState<string>('idle');
     const [modelProgress, setModelProgress] = useState<any>(null);
@@ -108,6 +109,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                     }
                 } else if (type === 'PROGRESS') {
                     setModelProgress(progress);
+                } else if (type === 'LANGUAGE_DETECTED') {
+                    setDetectedLanguage(payload.language);
+                    addDebug(`Auto-detected: ${payload.language}`);
                 } else if (type === 'TRANSCRIPT') {
                     addDebug(`Transcript: "${payload.text}"`);
                     setChunks(prev => {
@@ -247,7 +251,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             if (unlistenSys) unlistenSys();
             if (unlistenMic) unlistenMic();
         };
-    }, [isOpen, selectedLanguage]);
+    }, [isOpen]);
 
     const handleLanguageChange = (langCode: string) => {
         setSelectedLanguage(langCode);
@@ -298,7 +302,11 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--surface-hover)] border border-[var(--border)] text-[11px] font-medium text-[var(--text-primary)] hover:border-primary/50 transition-all"
                             >
                                 <Globe size={12} className="text-primary" />
-                                <span>{LANGUAGES.find(l => l.code === selectedLanguage)?.label || 'Language'}</span>
+                                <span>
+                                    {selectedLanguage === 'auto'
+                                        ? (detectedLanguage ? `🌐 Auto (${detectedLanguage})` : '🌐 Auto Detect')
+                                        : (LANGUAGES.find(l => l.code === selectedLanguage)?.label || 'Language')}
+                                </span>
                                 <ChevronDown size={11} className="text-[var(--text-muted)]" />
                             </button>
 
