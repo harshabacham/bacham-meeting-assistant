@@ -25,16 +25,27 @@ const MIN_SAMPLES = TARGET_SAMPLE_RATE * 1.5;   // at least 1.5s of audio for st
 const MAX_SAMPLES = TARGET_SAMPLE_RATE * 8;     // up to 8s context for full sentences
 
 const LANGUAGE_MAP: Record<string, { code: string; isEnglishOnly: boolean }> = {
-  'english':  { code: 'en', isEnglishOnly: true },
-  'auto':     { code: 'auto', isEnglishOnly: false },
-  'hindi':    { code: 'hi', isEnglishOnly: false },
-  'telugu':   { code: 'te', isEnglishOnly: false },
-  'tamil':    { code: 'ta', isEnglishOnly: false },
-  'spanish':  { code: 'es', isEnglishOnly: false },
-  'french':   { code: 'fr', isEnglishOnly: false },
-  'german':   { code: 'de', isEnglishOnly: false },
-  'japanese': { code: 'ja', isEnglishOnly: false },
-  'chinese':  { code: 'zh', isEnglishOnly: false },
+  'english':   { code: 'english', isEnglishOnly: false },
+  'auto':      { code: 'auto', isEnglishOnly: false },
+  'hindi':     { code: 'hindi', isEnglishOnly: false },
+  'telugu':    { code: 'telugu', isEnglishOnly: false },
+  'tamil':     { code: 'tamil', isEnglishOnly: false },
+  'kannada':   { code: 'kannada', isEnglishOnly: false },
+  'malayalam': { code: 'malayalam', isEnglishOnly: false },
+  'marathi':   { code: 'marathi', isEnglishOnly: false },
+  'bengali':   { code: 'bengali', isEnglishOnly: false },
+  'gujarati':  { code: 'gujarati', isEnglishOnly: false },
+  'punjabi':   { code: 'punjabi', isEnglishOnly: false },
+  'spanish':   { code: 'spanish', isEnglishOnly: false },
+  'french':    { code: 'french', isEnglishOnly: false },
+  'german':    { code: 'german', isEnglishOnly: false },
+  'japanese':  { code: 'japanese', isEnglishOnly: false },
+  'chinese':   { code: 'chinese', isEnglishOnly: false },
+  'arabic':    { code: 'arabic', isEnglishOnly: false },
+  'russian':   { code: 'russian', isEnglishOnly: false },
+  'portuguese':{ code: 'portuguese', isEnglishOnly: false },
+  'italian':   { code: 'italian', isEnglishOnly: false },
+  'korean':    { code: 'korean', isEnglishOnly: false },
 };
 
 self.onerror = (e: any) => {
@@ -47,10 +58,8 @@ async function loadModel(lang: string) {
   self.postMessage({ type: 'STATUS', status: `loading` });
 
   try {
-    // Upgraded to whisper-base (74M parameters) for dramatically higher accuracy (3x lower WER)
-    // Runs 100% locally and completely free/open-source
-    const isEnglishOnly = currentLanguage === 'english';
-    const modelName = isEnglishOnly ? 'Xenova/whisper-base.en' : 'Xenova/whisper-base';
+    // Always use Xenova/whisper-base multilingual model so ANY language can be transcribed without English lock-in
+    const modelName = 'Xenova/whisper-base';
 
     transcriber = await pipeline('automatic-speech-recognition', modelName, {
       progress_callback: (progress: any) => {
@@ -189,6 +198,7 @@ async function processLoop() {
       const langInfo = LANGUAGE_MAP[currentLanguage] || { code: 'auto', isEnglishOnly: false };
 
       const genOptions: any = {
+        task: 'transcribe',
         temperature: 0.0,
         max_new_tokens: 128,
         repetition_penalty: 1.2,
@@ -196,11 +206,9 @@ async function processLoop() {
         return_timestamps: false,
       };
 
-      if (!langInfo.isEnglishOnly) {
-        genOptions.task = 'transcribe';
-        if (langInfo.code !== 'auto') {
-          genOptions.language = langInfo.code;
-        }
+      // Explicitly set language in Whisper generation options so output matches the chosen audio language
+      if (langInfo.code && langInfo.code !== 'auto') {
+        genOptions.language = langInfo.code;
       }
 
       const output = await transcriber(finalAudio, genOptions);

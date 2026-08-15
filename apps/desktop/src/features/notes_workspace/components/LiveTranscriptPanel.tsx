@@ -41,11 +41,22 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         { code: 'hindi', label: 'Hindi (हिंदी)', bcp: 'hi-IN' },
         { code: 'telugu', label: 'Telugu (తెలుగు)', bcp: 'te-IN' },
         { code: 'tamil', label: 'Tamil (தமிழ்)', bcp: 'ta-IN' },
+        { code: 'kannada', label: 'Kannada (ಕನ್ನಡ)', bcp: 'kn-IN' },
+        { code: 'malayalam', label: 'Malayalam (മലയാളം)', bcp: 'ml-IN' },
+        { code: 'marathi', label: 'Marathi (मराठी)', bcp: 'mr-IN' },
+        { code: 'bengali', label: 'Bengali (বাংলা)', bcp: 'bn-IN' },
+        { code: 'gujarati', label: 'Gujarati (ગુજરાતી)', bcp: 'gu-IN' },
+        { code: 'punjabi', label: 'Punjabi (ਪੰਜਾਬੀ)', bcp: 'pa-IN' },
         { code: 'spanish', label: 'Spanish (Español)', bcp: 'es-ES' },
         { code: 'french', label: 'French (Français)', bcp: 'fr-FR' },
         { code: 'german', label: 'German (Deutsch)', bcp: 'de-DE' },
         { code: 'japanese', label: 'Japanese (日本語)', bcp: 'ja-JP' },
         { code: 'chinese', label: 'Chinese (中文)', bcp: 'zh-CN' },
+        { code: 'arabic', label: 'Arabic (العربية)', bcp: 'ar-SA' },
+        { code: 'russian', label: 'Russian (Русский)', bcp: 'ru-RU' },
+        { code: 'portuguese', label: 'Portuguese (Português)', bcp: 'pt-PT' },
+        { code: 'italian', label: 'Italian (Italiano)', bcp: 'it-IT' },
+        { code: 'korean', label: 'Korean (한국어)', bcp: 'ko-KR' },
     ];
 
     useEffect(() => {
@@ -241,7 +252,18 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         setIsLangMenuOpen(false);
         if (workerRef.current) {
             workerRef.current.postMessage({ type: 'SET_LANGUAGE', language: langCode });
-            addDebug(`Language switched to: ${langCode}`);
+            addDebug(`Whisper language set to: ${langCode}`);
+        }
+        if (speechRecRef.current) {
+            try {
+                speechRecRef.current.stop();
+                const targetLangObj = LANGUAGES.find(l => l.code === langCode);
+                if (langCode !== 'auto' && targetLangObj?.bcp) {
+                    speechRecRef.current.lang = targetLangObj.bcp;
+                }
+                speechRecRef.current.start();
+                addDebug(`Speech recognition switched to: ${targetLangObj?.label || langCode}`);
+            } catch (_) {}
         }
     };
 
