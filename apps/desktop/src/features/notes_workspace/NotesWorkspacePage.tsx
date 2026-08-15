@@ -10,6 +10,7 @@ export interface Note {
     id: string;
     title: string;
     content: string; // HTML from TipTap
+    transcript?: string; // Verbatim raw transcript
     updatedAt: number;
     createdAt: number;
     isPinned: boolean;
