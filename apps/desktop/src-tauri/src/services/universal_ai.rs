@@ -168,14 +168,17 @@ impl UniversalAiService {
     // Tries multiple Gemini models in order when one hits quota limits (429)
 
     pub async fn call_gemini_with_model_rotation(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
-        // Current working models as of 2026 - ordered by free tier availability
-        // Source: https://ai.google.dev/gemini-api/docs/models
-        let models = [
-            "gemini-1.5-flash",        // Best price-performance with reasoning
-            "gemini-2.0-flash",        // Newer flash version if available
-            "gemini-1.5-pro",          // Frontier-class, reliable
-            "gemini-1.5-flash-8b",     // Fastest, budget-friendly
-        ];
+        // Dynamically discover all valid models for this API key from Google
+        let models = match crate::services::gemini_service::GeminiService::discover_available_models(pool).await {
+            Ok(list) if !list.is_empty() => list,
+            _ => vec![
+                "gemini-2.0-flash".to_string(),
+                "gemini-1.5-flash".to_string(),
+                "gemini-1.5-pro".to_string(),
+                "gemini-1.5-flash-8b".to_string(),
+            ]
+        };
+
         let mut last_err = String::new();
         for model in &models {
             eprintln!("[UniversalAI] Trying Gemini model: {}", model);
@@ -190,8 +193,6 @@ impl UniversalAiService {
                     let msg = e.to_string();
                     eprintln!("[UniversalAI] Gemini model {} failed: {}", model, msg);
                     last_err = msg;
-                    // Only continue to next model on quota/rate errors
-                    // (if it's auth error, all models will fail)
                 }
             }
         }
@@ -202,12 +203,16 @@ impl UniversalAiService {
     }
 
     pub async fn call_gemini_multimodal_with_rotation(prompt: &str, system: &str, images: &[(String, String)], pool: &sqlx::SqlitePool) -> AppResult<String> {
-        // Multimodal capable models from the current lineup
-        let models = [
-            "gemini-1.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-pro",
-        ];
+        // Dynamically discover models from Google
+        let models = match crate::services::gemini_service::GeminiService::discover_available_models(pool).await {
+            Ok(list) if !list.is_empty() => list,
+            _ => vec![
+                "gemini-2.0-flash".to_string(),
+                "gemini-1.5-flash".to_string(),
+                "gemini-1.5-pro".to_string(),
+            ]
+        };
+
         let mut last_err = String::new();
         for model in &models {
             eprintln!("[UniversalAI] Trying Gemini multimodal model: {}", model);

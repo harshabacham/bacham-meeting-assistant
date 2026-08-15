@@ -64,6 +64,63 @@ impl GeminiService {
         Err(AppError::Internal("No API Key set".into()))
     }
 
+    /// Dynamically discover all active models available for the user's API key
+    pub async fn discover_available_models(pool: &sqlx::SqlitePool) -> AppResult<Vec<String>> {
+        let key = Self::get_api_key(pool).await?;
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+        let list_url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", key);
+        
+        let mut discovered = Vec::new();
+        if let Ok(res) = client.get(&list_url).send().await {
+            if res.status().is_success() {
+                if let Ok(body) = res.json::<serde_json::Value>().await {
+                    if let Some(models) = body.get("models").and_then(|m| m.as_array()) {
+                        for m in models {
+                            if let Some(methods) = m.get("supportedGenerationMethods").and_then(|methods| methods.as_array()) {
+                                if methods.iter().any(|method| method.as_str() == Some("generateContent")) {
+                                    if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
+                                        let model_id = name.strip_prefix("models/").unwrap_or(name).to_string();
+                                        discovered.push(model_id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort discovered models so best and fastest price-performance models are prioritized
+        discovered.sort_by(|a, b| {
+            let score = |m: &str| -> i32 {
+                if m.contains("flash-8b") { 4 }
+                else if m.contains("2.0-flash") { 1 }
+                else if m.contains("1.5-flash") { 2 }
+                else if m.contains("flash") { 3 }
+                else if m.contains("2.0-pro") { 5 }
+                else if m.contains("1.5-pro") { 6 }
+                else if m.contains("pro") { 7 }
+                else { 8 }
+            };
+            score(a).cmp(&score(b))
+        });
+
+        if discovered.is_empty() {
+            // Default resilient fallback list
+            discovered = vec![
+                "gemini-2.0-flash".to_string(),
+                "gemini-1.5-flash".to_string(),
+                "gemini-1.5-pro".to_string(),
+                "gemini-1.5-flash-8b".to_string(),
+            ];
+        }
+
+        Ok(discovered)
+    }
+
     pub async fn generate_text(
         prompt: &str,
         system_instruction: &str,
