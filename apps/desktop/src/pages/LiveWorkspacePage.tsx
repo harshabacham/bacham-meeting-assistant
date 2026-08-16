@@ -220,18 +220,25 @@ export function LiveWorkspacePage() {
     };
 
     const pushSamples = async (data: number[] | Float32Array, fromRate: number) => {
-      const ratio = fromRate > 0 ? fromRate / 16000 : 1;
+      if (!data || data.length === 0) return;
+      const targetRate = 16000;
+      const srcRate = fromRate > 8000 ? fromRate : 48000;
+      const ratio = srcRate / targetRate;
       let sum = 0;
 
-      if (ratio === 1) {
+      if (Math.abs(ratio - 1) < 0.05) {
         for (let i = 0; i < data.length; i++) {
           const val = data[i];
           sum += val * val;
           pcmBuffer.push(val);
         }
       } else {
+        // High-fidelity Linear Interpolation Resampling from 48kHz/44.1kHz to 16kHz
         for (let i = 0; i < data.length; i += ratio) {
-          const val = data[Math.floor(i)];
+          const idx0 = Math.floor(i);
+          const idx1 = Math.min(idx0 + 1, data.length - 1);
+          const frac = i - idx0;
+          const val = (data[idx0] || 0) * (1 - frac) + (data[idx1] || 0) * frac;
           sum += val * val;
           pcmBuffer.push(val);
         }
@@ -241,14 +248,14 @@ export function LiveWorkspacePage() {
       if (rms > windowMaxRms) windowMaxRms = rms;
       setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-      // 3.5s natural sentence streaming window (56,000 samples at 16kHz)
-      const WINDOW_SIZE = 56000;
-      const STEP_SIZE = 48000; // 500ms overlap
+      // 4.0s natural sentence streaming window (64,000 samples at 16kHz)
+      const WINDOW_SIZE = 64000;
+      const STEP_SIZE = 51200; // 800ms overlap
 
       if (pcmBuffer.length >= WINDOW_SIZE) {
         const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
         pcmBuffer = pcmBuffer.slice(STEP_SIZE);
-        const hadVoice = windowMaxRms > 0.0006;
+        const hadVoice = windowMaxRms > 0.0004;
         windowMaxRms = 0;
 
         if (hadVoice) {
@@ -262,7 +269,7 @@ export function LiveWorkspacePage() {
 
     listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
       if (event.payload?.data) {
-        pushSamples(event.payload.data, event.payload.rate || 16000);
+        pushSamples(event.payload.data, event.payload.rate || 48000);
       }
     }).then(u => { unlistenSys = u; });
 
@@ -282,17 +289,19 @@ export function LiveWorkspacePage() {
         mediaStream = stream;
         try {
           const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          audioCtx = new AudioContextClass({ sampleRate: 16000 });
+          audioCtx = new AudioContextClass();
           audioCtxRef.current = audioCtx;
           if (audioCtx.state === 'suspended') {
             audioCtx.resume();
           }
 
+          const actualSampleRate = audioCtx.sampleRate || 48000;
           const micSource = audioCtx.createMediaStreamSource(stream);
           processor = audioCtx.createScriptProcessor(4096, 1, 1);
           processor.onaudioprocess = (e) => {
             const inputData = e.inputBuffer.getChannelData(0);
-            pushSamples(inputData, 16000);
+            const rate = e.inputBuffer.sampleRate || actualSampleRate;
+            pushSamples(inputData, rate);
           };
 
           const muteGain = audioCtx.createGain();

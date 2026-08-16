@@ -122,21 +122,53 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                     
                     if (res && res.text && res.text.trim()) {
                         const trimmed = res.text.trim();
+                        const lower = trimmed.toLowerCase();
                         if (
                             trimmed !== '00:00' && 
                             trimmed !== '0:00' && 
                             trimmed !== '00:01' && 
                             trimmed !== '00:02' && 
                             trimmed !== 'one' && 
-                            !trimmed.toLowerCase().startsWith('subtitles')
+                            !lower.startsWith('subtitles') &&
+                            !lower.startsWith('<noise') &&
+                            !lower.startsWith('[noise') &&
+                            !lower.startsWith('[silence') &&
+                            lower !== '<noise>' &&
+                            lower !== '[noise]' &&
+                            lower !== '[silence]' &&
+                            lower !== 'thank you.' &&
+                            lower !== 'thank you'
                         ) {
                             setFullText(prev => {
                                 const cleanPrev = prev.trim();
                                 if (!cleanPrev) return trimmed;
-                                if (cleanPrev.toLowerCase().endsWith(trimmed.toLowerCase())) return prev;
+                                if (cleanPrev.toLowerCase().endsWith(lower)) return prev;
                                 
+                                // Prevent repeating the exact last sentence if overlapped
+                                const prevWords = cleanPrev.split(/\s+/);
+                                const newWords = trimmed.split(/\s+/);
+                                
+                                let overlapCount = 0;
+                                const maxOverlapCheck = Math.min(prevWords.length, newWords.length, 6);
+                                for (let len = maxOverlapCheck; len >= 2; len--) {
+                                    const prevTail = prevWords.slice(-len).join(' ').toLowerCase();
+                                    const newHead = newWords.slice(0, len).join(' ').toLowerCase();
+                                    if (prevTail === newHead) {
+                                        overlapCount = len;
+                                        break;
+                                    }
+                                }
+
+                                const nonOverlappingText = overlapCount > 0 
+                                    ? newWords.slice(overlapCount).join(' ') 
+                                    : trimmed;
+
+                                if (!nonOverlappingText.trim()) return prev;
+
                                 const needsPeriod = !/[.!?]$/.test(cleanPrev);
-                                return needsPeriod ? `${cleanPrev}. ${trimmed}` : `${cleanPrev} ${trimmed}`;
+                                return needsPeriod 
+                                    ? `${cleanPrev}. ${nonOverlappingText}` 
+                                    : `${cleanPrev} ${nonOverlappingText}`;
                             });
 
                             emit('live_caption_received', {
@@ -160,19 +192,25 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         };
 
         const pushSamples = (data: number[] | Float32Array, fromRate: number) => {
-            if (!streamingRef.current) return;
-            const ratio = fromRate > 0 ? fromRate / 16000 : 1;
+            if (!streamingRef.current || !data || data.length === 0) return;
+            const targetRate = 16000;
+            const srcRate = fromRate > 8000 ? fromRate : 48000;
+            const ratio = srcRate / targetRate;
             let sum = 0;
 
-            if (ratio === 1) {
+            if (Math.abs(ratio - 1) < 0.05) {
                 for (let i = 0; i < data.length; i++) {
                     const val = data[i];
                     sum += val * val;
                     pcmBuffer.push(val);
                 }
             } else {
+                // High-fidelity Linear Interpolation Resampling from 48kHz/44.1kHz to 16kHz
                 for (let i = 0; i < data.length; i += ratio) {
-                    const val = data[Math.floor(i)];
+                    const idx0 = Math.floor(i);
+                    const idx1 = Math.min(idx0 + 1, data.length - 1);
+                    const frac = i - idx0;
+                    const val = (data[idx0] || 0) * (1 - frac) + (data[idx1] || 0) * frac;
                     sum += val * val;
                     pcmBuffer.push(val);
                 }
@@ -182,15 +220,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             if (rms > windowMaxRms) windowMaxRms = rms;
             setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-            // 3.5s natural sentence streaming window (56,000 samples at 16kHz)
-            const WINDOW_SIZE = 56000;
-            const STEP_SIZE = 48000; // 500ms overlap
+            // 4.0s natural sentence streaming window (64,000 samples at 16kHz)
+            const WINDOW_SIZE = 64000;
+            const STEP_SIZE = 51200; // 800ms overlap
 
             if (pcmBuffer.length >= WINDOW_SIZE) {
                 const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
                 pcmBuffer = pcmBuffer.slice(STEP_SIZE);
                 // Ultra-sensitive threshold to capture soft and whispered speech
-                const hadVoice = windowMaxRms > 0.0006;
+                const hadVoice = windowMaxRms > 0.0004;
                 windowMaxRms = 0;
 
                 if (hadVoice) {
@@ -206,13 +244,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
         listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
             if (event.payload?.data) {
-                pushSamples(event.payload.data, event.payload.rate || 16000);
+                pushSamples(event.payload.data, event.payload.rate || 48000);
             }
         }).then(u => { unlistenSys = u; });
 
         listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
             if (event.payload?.data) {
-                pushSamples(event.payload.data, event.payload.rate || 16000);
+                pushSamples(event.payload.data, event.payload.rate || 48000);
             }
         }).then(u => { unlistenMic = u; });
 
@@ -233,17 +271,19 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                 mediaStream = stream;
                 try {
                     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-                    audioCtx = new AudioContextClass({ sampleRate: 16000 });
+                    audioCtx = new AudioContextClass();
                     audioCtxRef.current = audioCtx;
                     if (audioCtx.state === 'suspended') {
                         audioCtx.resume();
                     }
 
+                    const actualSampleRate = audioCtx.sampleRate || 48000;
                     const micSource = audioCtx.createMediaStreamSource(stream);
                     processor = audioCtx.createScriptProcessor(4096, 1, 1);
                     processor.onaudioprocess = (e) => {
                         const inputData = e.inputBuffer.getChannelData(0);
-                        pushSamples(inputData, 16000);
+                        const rate = e.inputBuffer.sampleRate || actualSampleRate;
+                        pushSamples(inputData, rate);
                     };
 
                     // Route through 0-gain to avoid speaker feedback loop

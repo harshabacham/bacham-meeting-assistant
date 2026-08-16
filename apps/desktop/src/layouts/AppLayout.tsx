@@ -8,7 +8,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, CheckSquare, Sparkles, Plus, Trash2
+    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, CheckSquare, Sparkles, Plus
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
@@ -327,43 +327,37 @@ export function AppLayout() {
 
                                         <nav className="space-y-0.5">
                                             {[
-                                                { id: 'subjects', label: 'Subjects', icon: BookOpen, to: '/lectures?view=subjects' },
-                                                { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark, to: '/lectures?view=bookmarks' },
-                                                { id: 'recent', label: 'Recent', icon: Clock, to: '/lectures?view=recent' },
-                                                { id: 'archive', label: 'Archive', icon: Archive, to: '/lectures?view=archive' },
-                                                { id: 'trash', label: 'Trash', icon: Trash2, to: '/trash' },
-                                            ].map(item => {
-                                                const isItemActive = item.to === '/trash' 
-                                                    ? location.pathname === '/trash'
-                                                    : location.pathname === '/lectures' && searchParams.get('view') === item.id;
-                                                return (
-                                                    <Link key={item.id} to={item.to} className="block outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring">
-                                                        <div 
-                                                            className={cn(
-                                                                'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-all duration-150',
-                                                                isItemActive
-                                                                    ? 'bg-primary/10 text-primary'
-                                                                    : 'text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground'
-                                                            )}
-                                                            onClick={() => {
-                                                                setSelectedFolderId(null);
-                                                                if (item.id === 'trash') setSystemView('trash');
-                                                                else if (item.id === 'archive') setSystemView('archive');
-                                                                else setSystemView('all');
-                                                            }}
-                                                        >
-                                                            {isItemActive && (
-                                                                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
-                                                            )}
-                                                            <item.icon size={13} strokeWidth={2} className={cn(
-                                                                'transition-colors duration-150',
-                                                                isItemActive ? 'text-primary' : 'text-muted-foreground'
-                                                            )} />
-                                                            <span>{item.label}</span>
-                                                        </div>
-                                                    </Link>
-                                                );
-                                            })}
+                                                { id: 'subjects', label: 'Subjects', icon: BookOpen },
+                                                { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
+                                                { id: 'recent', label: 'Recent', icon: Clock },
+                                                { id: 'archive', label: 'Archive', icon: Archive },
+                                            ].map(item => (
+                                                <Link key={item.id} to={`/lectures?view=${item.id}`} className="block outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring">
+                                                    <div 
+                                                        className={cn(
+                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-all duration-150',
+                                                            location.pathname === '/lectures' && searchParams.get('view') === item.id
+                                                                ? 'bg-primary/10 text-primary'
+                                                                : 'text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground'
+                                                        )}
+                                                        onClick={() => {
+                                                            setSelectedFolderId(null);
+                                                            if (item.id === 'trash') setSystemView('trash');
+                                                            else if (item.id === 'archive') setSystemView('archive');
+                                                            else setSystemView('all');
+                                                        }}
+                                                    >
+                                                        {(location.pathname === '/lectures' && searchParams.get('view') === item.id) && (
+                                                            <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
+                                                        )}
+                                                        <item.icon size={13} strokeWidth={2} className={cn(
+                                                            'transition-colors duration-150',
+                                                            (location.pathname === '/lectures' && searchParams.get('view') === item.id) ? 'text-primary' : 'text-muted-foreground'
+                                                        )} />
+                                                        <span>{item.label}</span>
+                                                    </div>
+                                                </Link>
+                                            ))}
                                         </nav>
 
 
