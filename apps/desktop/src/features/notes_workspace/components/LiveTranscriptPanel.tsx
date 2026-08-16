@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
     Search, Copy, Minus, Sparkles, ChevronDown, 
-    ChevronUp, Check, X, Wand2, Volume2, Plus, Mic, User
+    ChevronUp, Check, X, Wand2, Volume2, Plus, Mic, User, AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -86,6 +86,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
     const [isPolishing, setIsPolishing] = useState(false);
     const [isSystemAudioActive, setIsSystemAudioActive] = useState(false);
     const [audioLevel, setAudioLevel] = useState<number>(0);
+    const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const workerRef = useRef<Worker | null>(null);
@@ -317,7 +318,11 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                 setInterimText('');
                             }
                         }
-                    } catch (apiErr) {
+                    } catch (apiErr: any) {
+                        const errStr = String(apiErr);
+                        if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
+                            setQuotaWarning('Gemini API free quota exceeded. Set up a free Groq key in Settings for 2000 free transcriptions/day.');
+                        }
                         console.warn("Live transcription error:", apiErr);
                     } finally {
                         isTranscribingChunk = false;
@@ -656,6 +661,23 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                 Clear
                             </button>
                         )}
+                    </div>
+                )}
+
+                {/* Quota Warning Alert */}
+                {quotaWarning && (
+                    <div className="mx-4 my-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <AlertCircle size={14} className="shrink-0 text-amber-400" />
+                            <span>{quotaWarning}</span>
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={() => setQuotaWarning(null)} 
+                            className="text-zinc-400 hover:text-white p-1 cursor-pointer"
+                        >
+                            <X size={12} />
+                        </button>
                     </div>
                 )}
 

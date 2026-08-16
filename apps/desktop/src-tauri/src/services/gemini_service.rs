@@ -837,89 +837,243 @@ impl GeminiService {
         app: &AppHandle,
     ) -> AppResult<serde_json::Value> {
         let pool = app.state::<crate::database::DbState>().pool.clone();
-        let key = Self::get_api_key(&pool).await?;
         let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(4))
+            .timeout(std::time::Duration::from_secs(6))
             .build()
             .unwrap_or_else(|_| Client::new());
 
-        let candidate_models = [
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-flash-latest",
-        ];
-
-        let lang_hint_str = match language_hint.as_deref() {
-            Some(l) if l != "auto" => format!("The spoken language is likely {}. ", l),
-            _ => "Identify the spoken language automatically. ".to_string(),
-        };
-
-        let prompt_text = format!(
-            "You are a verbatim speech-to-text transcription engine. \
-            INSTRUCTIONS: \
-            1. Transcribe the exact words spoken in this audio in the speaker's true native script (e.g. if Telugu write in తెలుగు, if Hindi write in हिन्दी, if Tamil write in தமிழ், if English write in English). \
-            2. {} \
-            3. STRICT RULES: NEVER output timestamps (e.g. 00:00, 0:00), subtitle marks, or numbers unless explicitly spoken. \
-            4. If the audio is silence, background hum, breathing, or unclear noise, return an empty string \"\" for text. \
-            Return ONLY a valid JSON object: \
-            {{\"text\": \"<verbatim transcription>\", \"language\": \"<Language Name>\", \"flag\": \"<Single Flag Emoji>\"}}",
-            lang_hint_str
-        );
-
-        let clean_mime = mime_type.split(';').next().unwrap_or(mime_type).trim();
-
-        let payload = serde_json::json!({
-            "contents": [{
-                "parts": [
-                    {
-                        "inlineData": {
-                            "mimeType": clean_mime,
-                            "data": audio_base64
-                        }
-                    },
-                    { "text": prompt_text }
-                ]
-            }],
-            "generationConfig": {
-                "responseMimeType": "application/json",
-                "temperature": 0.0
+        // 1. Try Groq Whisper (Whisper Large v3 Turbo - 2000 RPD, Free & Ultra-Fast)
+        let groq_candidate_keys = ["groq_api_key", "groqApiKey", "groq", "bacham.groq"];
+        let mut groq_key_opt: Option<String> = None;
+        if let Ok(entry) = Entry::new("bacham", "groq_api_key") {
+            if let Ok(k) = entry.get_password() {
+                if !k.trim().is_empty() { groq_key_opt = Some(k.trim().to_string()); }
             }
-        });
+        }
+        if groq_key_opt.is_none() {
+            if let Ok(env_k) = std::env::var("GROQ_API_KEY") {
+                if !env_k.trim().is_empty() { groq_key_opt = Some(env_k.trim().to_string()); }
+            }
+        }
+        if groq_key_opt.is_none() {
+            for gk in groq_candidate_keys {
+                if let Ok(Some(row)) = sqlx::query("SELECT value FROM settings WHERE key = ?")
+                    .bind(gk)
+                    .fetch_optional(&pool)
+                    .await 
+                {
+                    let val: String = row.get("value");
+                    let trimmed = val.trim().to_string();
+                    if !trimmed.is_empty() && trimmed != "true" {
+                        groq_key_opt = Some(trimmed);
+                        break;
+                    }
+                }
+            }
+        }
 
-        for model in &candidate_models {
-            let url = format!(
-                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
-                model, key
-            );
-            if let Ok(res) = client.post(&url).json(&payload).send().await {
-                if res.status().is_success() {
-                    if let Ok(body) = res.json::<serde_json::Value>().await {
-                        if let Some(text) = body.get("candidates")
-                            .and_then(|c| c.get(0))
-                            .and_then(|c| c.get("content"))
-                            .and_then(|c| c.get("parts"))
-                            .and_then(|p| p.get(0))
-                            .and_then(|p| p.get("text"))
-                            .and_then(|t| t.as_str()) {
-                                if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(text) {
-                                    if let Some(t) = parsed.get("text").and_then(|v| v.as_str()) {
-                                        let trimmed = t.trim();
-                                        if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" || trimmed.to_lowercase().starts_with("subtitles") {
-                                            parsed["text"] = serde_json::json!("");
-                                        }
-                                    }
-                                    return Ok(parsed);
-                                } else {
+        if let Some(groq_key) = groq_key_opt {
+            use base64::Engine;
+            if let Ok(audio_bytes) = base64::engine::general_purpose::STANDARD.decode(audio_base64) {
+                if !audio_bytes.is_empty() {
+                    let part = reqwest::multipart::Part::bytes(audio_bytes)
+                        .file_name("audio.wav")
+                        .mime_str("audio/wav")
+                        .unwrap();
+
+                    let mut form = reqwest::multipart::Form::new()
+                        .part("file", part)
+                        .text("model", "whisper-large-v3-turbo")
+                        .text("response_format", "verbose_json");
+
+                    if let Some(ref l) = language_hint {
+                        if l != "auto" && !l.is_empty() {
+                            form = form.text("language", l.to_lowercase());
+                        }
+                    }
+
+                    if let Ok(res) = client.post("https://api.groq.com/openai/v1/audio/transcriptions")
+                        .header("Authorization", format!("Bearer {}", groq_key))
+                        .multipart(form)
+                        .send()
+                        .await 
+                    {
+                        if res.status().is_success() {
+                            if let Ok(body) = res.json::<serde_json::Value>().await {
+                                if let Some(text) = body.get("text").and_then(|t| t.as_str()) {
                                     let trimmed = text.trim();
-                                    if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" {
-                                        return Ok(serde_json::json!({ "text": "", "language": "Auto", "flag": "🌐" }));
+                                    if !trimmed.is_empty() && trimmed != "00:00" && trimmed != "0:00" && !trimmed.to_lowercase().starts_with("subtitles") {
+                                        let lang = body.get("language").and_then(|l| l.as_str()).unwrap_or("Auto");
+                                        return Ok(serde_json::json!({
+                                            "text": trimmed,
+                                            "language": lang,
+                                            "flag": "🌐"
+                                        }));
                                     }
-                                    return Ok(serde_json::json!({
-                                        "text": trimmed,
-                                        "language": "Auto",
-                                        "flag": "🌐"
-                                    }));
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Try OpenAI Whisper (if configured)
+        let openai_candidate_keys = ["openai_api_key", "openaiApiKey", "openai", "bacham.openai"];
+        let mut openai_key_opt: Option<String> = None;
+        if let Ok(entry) = Entry::new("bacham", "openai_api_key") {
+            if let Ok(k) = entry.get_password() {
+                if !k.trim().is_empty() { openai_key_opt = Some(k.trim().to_string()); }
+            }
+        }
+        if openai_key_opt.is_none() {
+            if let Ok(env_k) = std::env::var("OPENAI_API_KEY") {
+                if !env_k.trim().is_empty() { openai_key_opt = Some(env_k.trim().to_string()); }
+            }
+        }
+        if openai_key_opt.is_none() {
+            for ok in openai_candidate_keys {
+                if let Ok(Some(row)) = sqlx::query("SELECT value FROM settings WHERE key = ?")
+                    .bind(ok)
+                    .fetch_optional(&pool)
+                    .await 
+                {
+                    let val: String = row.get("value");
+                    let trimmed = val.trim().to_string();
+                    if !trimmed.is_empty() && trimmed != "true" {
+                        openai_key_opt = Some(trimmed);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if let Some(openai_key) = openai_key_opt {
+            use base64::Engine;
+            if let Ok(audio_bytes) = base64::engine::general_purpose::STANDARD.decode(audio_base64) {
+                if !audio_bytes.is_empty() {
+                    let part = reqwest::multipart::Part::bytes(audio_bytes)
+                        .file_name("audio.wav")
+                        .mime_str("audio/wav")
+                        .unwrap();
+
+                    let mut form = reqwest::multipart::Form::new()
+                        .part("file", part)
+                        .text("model", "whisper-1")
+                        .text("response_format", "verbose_json");
+
+                    if let Some(ref l) = language_hint {
+                        if l != "auto" && !l.is_empty() {
+                            form = form.text("language", l.to_lowercase());
+                        }
+                    }
+
+                    if let Ok(res) = client.post("https://api.openai.com/v1/audio/transcriptions")
+                        .header("Authorization", format!("Bearer {}", openai_key))
+                        .multipart(form)
+                        .send()
+                        .await 
+                    {
+                        if res.status().is_success() {
+                            if let Ok(body) = res.json::<serde_json::Value>().await {
+                                if let Some(text) = body.get("text").and_then(|t| t.as_str()) {
+                                    let trimmed = text.trim();
+                                    if !trimmed.is_empty() && trimmed != "00:00" && trimmed != "0:00" && !trimmed.to_lowercase().starts_with("subtitles") {
+                                        let lang = body.get("language").and_then(|l| l.as_str()).unwrap_or("Auto");
+                                        return Ok(serde_json::json!({
+                                            "text": trimmed,
+                                            "language": lang,
+                                            "flag": "🌐"
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Try Google Gemini Flash Models
+        if let Ok(key) = Self::get_api_key(&pool).await {
+            let candidate_models = [
+                "gemini-2.5-flash",
+                "gemini-3.5-flash-lite",
+                "gemini-flash-latest",
+            ];
+
+            let lang_hint_str = match language_hint.as_deref() {
+                Some(l) if l != "auto" => format!("The spoken language is likely {}. ", l),
+                _ => "Identify the spoken language automatically. ".to_string(),
+            };
+
+            let prompt_text = format!(
+                "You are a verbatim speech-to-text transcription engine. \
+                INSTRUCTIONS: \
+                1. Transcribe the exact words spoken in this audio in the speaker's true native script (e.g. if Telugu write in తెలుగు, if Hindi write in हिन्दी, if Tamil write in தமிழ், if English write in English). \
+                2. {} \
+                3. STRICT RULES: NEVER output timestamps (e.g. 00:00, 0:00), subtitle marks, or numbers unless explicitly spoken. \
+                4. If the audio is silence, background hum, breathing, or unclear noise, return an empty string \"\" for text. \
+                Return ONLY a valid JSON object: \
+                {{\"text\": \"<verbatim transcription>\", \"language\": \"<Language Name>\", \"flag\": \"<Single Flag Emoji>\"}}",
+                lang_hint_str
+            );
+
+            let clean_mime = mime_type.split(';').next().unwrap_or(mime_type).trim();
+
+            let payload = serde_json::json!({
+                "contents": [{
+                    "parts": [
+                        {
+                            "inlineData": {
+                                "mimeType": clean_mime,
+                                "data": audio_base64
+                            }
+                        },
+                        { "text": prompt_text }
+                    ]
+                }],
+                "generationConfig": {
+                    "responseMimeType": "application/json",
+                    "temperature": 0.0
+                }
+            });
+
+            for model in &candidate_models {
+                let url = format!(
+                    "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+                    model, key
+                );
+                if let Ok(res) = client.post(&url).json(&payload).send().await {
+                    if res.status().is_success() {
+                        if let Ok(body) = res.json::<serde_json::Value>().await {
+                            if let Some(text) = body.get("candidates")
+                                .and_then(|c| c.get(0))
+                                .and_then(|c| c.get("content"))
+                                .and_then(|c| c.get("parts"))
+                                .and_then(|p| p.get(0))
+                                .and_then(|p| p.get("text"))
+                                .and_then(|t| t.as_str()) {
+                                    if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(text) {
+                                        if let Some(t) = parsed.get("text").and_then(|v| v.as_str()) {
+                                            let trimmed = t.trim();
+                                            if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" || trimmed.to_lowercase().starts_with("subtitles") {
+                                                parsed["text"] = serde_json::json!("");
+                                            }
+                                        }
+                                        return Ok(parsed);
+                                    } else {
+                                        let trimmed = text.trim();
+                                        if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" {
+                                            return Ok(serde_json::json!({ "text": "", "language": "Auto", "flag": "🌐" }));
+                                        }
+                                        return Ok(serde_json::json!({
+                                            "text": trimmed,
+                                            "language": "Auto",
+                                            "flag": "🌐"
+                                        }));
+                                    }
+                            }
                         }
                     }
                 }
