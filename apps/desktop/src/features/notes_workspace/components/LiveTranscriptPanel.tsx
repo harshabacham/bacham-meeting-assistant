@@ -540,67 +540,10 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                             <span>Mic + System</span>
                         </span>
 
-                        {detectedLanguage && (
-                            <span className="text-[11px] text-zinc-300 font-medium flex items-center gap-1 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
-                                <span>{detectedLanguage.flag}</span>
-                                <span>{detectedLanguage.label}</span>
-                            </span>
-                        )}
                     </div>
 
                     {/* Right: Controls */}
                     <div className="flex items-center gap-1.5 text-zinc-400">
-                        {/* Language Dropdown */}
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-zinc-300 hover:text-white hover:bg-white/[0.06] font-medium cursor-pointer transition-colors"
-                                title="Change Language"
-                            >
-                                <span>{activeLanguage.flag}</span>
-                                <span>{activeLanguage.label.split(' ')[0]}</span>
-                                <ChevronDown size={11} className="text-zinc-400" />
-                            </button>
-
-                            {isLangMenuOpen && (
-                                <div className="absolute right-0 bottom-full mb-2 w-60 bg-[#161619] border border-white/10 rounded-xl shadow-2xl p-2 z-50 backdrop-blur-xl">
-                                    <div className="relative mb-2">
-                                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                                        <input
-                                            type="text"
-                                            value={langSearch}
-                                            onChange={e => setLangSearch(e.target.value)}
-                                            placeholder="Search languages..."
-                                            className="w-full pl-7 pr-2 py-1 rounded-md bg-[#0C0C0E] border border-white/10 text-xs text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-white/20"
-                                            autoFocus
-                                        />
-                                    </div>
-
-                                    <div className="max-h-52 overflow-y-auto space-y-0.5 scroll-smooth">
-                                        {filteredLanguages.map(lang => (
-                                            <button
-                                                type="button"
-                                                key={lang.code}
-                                                onClick={() => handleLanguageChange(lang.code)}
-                                                className={cn(
-                                                    "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between cursor-pointer",
-                                                    selectedLanguage === lang.code 
-                                                        ? "text-white bg-white/10 font-semibold" 
-                                                        : "text-zinc-300 hover:bg-white/[0.05]"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-2 truncate">
-                                                    <span>{lang.flag}</span>
-                                                    <span className="truncate">{lang.label}</span>
-                                                </div>
-                                                {selectedLanguage === lang.code && <Check size={12} className="shrink-0 text-emerald-400" />}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
 
                         {/* Search Toggle */}
                         <button 
@@ -720,11 +663,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                             {isMe ? <Mic size={10} /> : <User size={10} />}
                                             <span>{isMe ? 'You' : `Speaker ${Math.floor(idx / 2) + 1}`}</span>
                                         </span>
-                                        {chunk.language && (
-                                            <span className="text-[11px] text-zinc-500 font-normal">
-                                                {chunk.language}
-                                            </span>
-                                        )}
                                     </div>
 
                                     {/* Hover Actions: Copy & Insert */}

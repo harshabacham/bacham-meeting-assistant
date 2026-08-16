@@ -994,7 +994,7 @@ impl GeminiService {
             }
         }
 
-        // 3. Try Google Gemini Flash Models
+        // 3. Try Google Gemini Flash Models (Direct Verbatim Transcription)
         if let Ok(key) = Self::get_api_key(&pool).await {
             let candidate_models = [
                 "gemini-2.5-flash",
@@ -1002,22 +1002,7 @@ impl GeminiService {
                 "gemini-flash-latest",
             ];
 
-            let lang_hint_str = match language_hint.as_deref() {
-                Some(l) if l != "auto" => format!("The spoken language is likely {}. ", l),
-                _ => "Identify the spoken language automatically. ".to_string(),
-            };
-
-            let prompt_text = format!(
-                "You are a verbatim speech-to-text transcription engine. \
-                INSTRUCTIONS: \
-                1. Transcribe the exact words spoken in this audio in the speaker's true native script (e.g. if Telugu write in తెలుగు, if Hindi write in हिन्दी, if Tamil write in தமிழ், if English write in English). \
-                2. {} \
-                3. STRICT RULES: NEVER output timestamps (e.g. 00:00, 0:00), subtitle marks, or numbers unless explicitly spoken. \
-                4. If the audio is silence, background hum, breathing, or unclear noise, return an empty string \"\" for text. \
-                Return ONLY a valid JSON object: \
-                {{\"text\": \"<verbatim transcription>\", \"language\": \"<Language Name>\", \"flag\": \"<Single Flag Emoji>\"}}",
-                lang_hint_str
-            );
+            let prompt_text = "Transcribe the spoken audio verbatim word-for-word exactly as heard. Do not summarize, do not translate, and do not add timestamps or notes. Output ONLY the raw spoken words. If there is no clear speech, output nothing.";
 
             let clean_mime = mime_type.split(';').next().unwrap_or(mime_type).trim();
 
@@ -1034,7 +1019,6 @@ impl GeminiService {
                     ]
                 }],
                 "generationConfig": {
-                    "responseMimeType": "application/json",
                     "temperature": 0.0
                 }
             });
@@ -1047,30 +1031,19 @@ impl GeminiService {
                 if let Ok(res) = client.post(&url).json(&payload).send().await {
                     if res.status().is_success() {
                         if let Ok(body) = res.json::<serde_json::Value>().await {
-                            if let Some(text) = body.get("candidates")
+                            if let Some(raw_text) = body.get("candidates")
                                 .and_then(|c| c.get(0))
                                 .and_then(|c| c.get("content"))
                                 .and_then(|c| c.get("parts"))
                                 .and_then(|p| p.get(0))
                                 .and_then(|p| p.get("text"))
                                 .and_then(|t| t.as_str()) {
-                                    if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(text) {
-                                        if let Some(t) = parsed.get("text").and_then(|v| v.as_str()) {
-                                            let trimmed = t.trim();
-                                            if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" || trimmed.to_lowercase().starts_with("subtitles") {
-                                                parsed["text"] = serde_json::json!("");
-                                            }
-                                        }
-                                        return Ok(parsed);
-                                    } else {
-                                        let trimmed = text.trim();
-                                        if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" {
-                                            return Ok(serde_json::json!({ "text": "", "language": "Auto", "flag": "🌐" }));
-                                        }
+                                    let trimmed = raw_text.trim();
+                                    if !trimmed.is_empty() && trimmed != "00:00" && trimmed != "0:00" && trimmed != "00:01" && !trimmed.to_lowercase().starts_with("subtitles") {
                                         return Ok(serde_json::json!({
                                             "text": trimmed,
-                                            "language": "Auto",
-                                            "flag": "🌐"
+                                            "language": "",
+                                            "flag": ""
                                         }));
                                     }
                             }
@@ -1080,7 +1053,7 @@ impl GeminiService {
             }
         }
 
-        Ok(serde_json::json!({ "text": "", "language": "Auto", "flag": "🌐" }))
+        Ok(serde_json::json!({ "text": "", "language": "", "flag": "" }))
     }
 
     pub async fn generate_tutor_action(
