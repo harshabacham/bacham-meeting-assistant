@@ -23,16 +23,23 @@ export function LiveTranscriptViewer() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unlistenCaption = listen<{sessionId: string, text: string, timestamp: number}>('live_caption_received', (event) => {
-      if (!activeSessionId) setActiveSessionId(event.payload.sessionId);
+    const unlistenCaption = listen<{sessionId?: string, text: string, timestamp?: number}>('live_caption_received', (event) => {
+      if (!event.payload?.text) return;
+      const text = event.payload.text.trim();
+      if (!text) return;
+
+      if (!activeSessionId && event.payload.sessionId) setActiveSessionId(event.payload.sessionId);
       
-      setTimeline((prev) => [...prev, {
-        id: `cap_${Date.now()}_${Math.random()}`,
-        type: 'caption',
-        timestamp: event.payload.timestamp,
-        content: event.payload.text,
-        speaker: 'Speaker',
-      }]);
+      setTimeline((prev) => {
+        if (prev.length > 0 && prev[prev.length - 1].content.toLowerCase() === text.toLowerCase()) return prev;
+        return [...prev, {
+          id: `cap_${Date.now()}_${Math.random()}`,
+          type: 'caption',
+          timestamp: event.payload.timestamp || Date.now(),
+          content: text,
+          speaker: 'Speaker',
+        }];
+      });
       
       setTimeout(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

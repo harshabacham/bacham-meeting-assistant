@@ -1,12 +1,32 @@
 import { LiveTranscriptViewer } from '@/components/live/LiveTranscriptViewer';
-import { Square, MicVocal, Bot, Sparkles } from 'lucide-react';
+import { Square, MicVocal, Bot, Sparkles, Volume2, VolumeX, ChevronDown, Check, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useEffect, useState, useRef } from 'react';
 import { getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
 import { currentMonitor } from '@tauri-apps/api/window';
-import { listen } from '@tauri-apps/api/event';
+import { listen, emit } from '@tauri-apps/api/event';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const MULTILINGUAL_CATALOG = [
+    { code: 'auto', label: 'Auto Detect (99+ Languages)', nativeName: 'Automatic', flag: '🌐', bcp: 'en-US' },
+    { code: 'te', label: 'Telugu (తెలుగు)', nativeName: 'తెలుగు', flag: '🇮🇳', bcp: 'te-IN' },
+    { code: 'hi', label: 'Hindi (हिन्दी)', nativeName: 'हिन्दी', flag: '🇮🇳', bcp: 'hi-IN' },
+    { code: 'en', label: 'English (US/UK/Global)', nativeName: 'English', flag: '🇺🇸', bcp: 'en-US' },
+    { code: 'ta', label: 'Tamil (தமிழ்)', nativeName: 'தமிழ்', flag: '🇮🇳', bcp: 'ta-IN' },
+    { code: 'kn', label: 'Kannada (ಕನ್ನಡ)', nativeName: 'ಕನ್ನಡ', flag: '🇮🇳', bcp: 'kn-IN' },
+    { code: 'ml', label: 'Malayalam (മലയാളം)', nativeName: 'മലയാളം', flag: '🇮🇳', bcp: 'ml-IN' },
+    { code: 'bn', label: 'Bengali (বাংলা)', nativeName: 'বাংলা', flag: '🇮🇳', bcp: 'bn-IN' },
+    { code: 'mr', label: 'Marathi (मराठी)', nativeName: 'मराठी', flag: '🇮🇳', bcp: 'mr-IN' },
+    { code: 'gu', label: 'Gujarati (ગુજરાતી)', nativeName: 'ગુજરાતી', flag: '🇮🇳', bcp: 'gu-IN' },
+    { code: 'pa', label: 'Punjabi (ਪੰਜਾਬੀ)', nativeName: 'ਪੰਜਾਬੀ', flag: '🇮🇳', bcp: 'pa-IN' },
+    { code: 'es', label: 'Spanish (Español)', nativeName: 'Español', flag: '🇪🇸', bcp: 'es-ES' },
+    { code: 'fr', label: 'French (Français)', nativeName: 'Français', flag: '🇫🇷', bcp: 'fr-FR' },
+    { code: 'de', label: 'German (Deutsch)', nativeName: 'Deutsch', flag: '🇩🇪', bcp: 'de-DE' },
+    { code: 'ja', label: 'Japanese (日本語)', nativeName: '日本語', flag: '🇯🇵', bcp: 'ja-JP' },
+    { code: 'zh', label: 'Chinese (中文)', nativeName: '中文', flag: '🇨🇳', bcp: 'zh-CN' },
+    { code: 'ar', label: 'Arabic (العربية)', nativeName: 'العربية', flag: '🇸🇦', bcp: 'ar-SA' },
+];
 
 interface CopilotAnswer {
   id: string;
@@ -30,29 +50,229 @@ export function LiveWorkspacePage() {
   const [copilotAnswers, setCopilotAnswers] = useState<CopilotAnswer[]>([]);
   const [proposedDecisions, setProposedDecisions] = useState<Decision[]>([]);
   const [, setConfirmedCount] = useState(0);
+  const [isSystemAudioActive, setIsSystemAudioActive] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('auto');
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [langSearch, setLangSearch] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
 
   const transcriptBufferRef = useRef<string>('');
   const decisionBufferRef = useRef<string>('');
   const isAnalyzingRef = useRef<boolean>(false);
   const isDecisionAnalyzingRef = useRef<boolean>(false);
+  const systemStreamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const mixedDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const speechRecRef = useRef<any>(null);
 
+  const activeLangObj = MULTILINGUAL_CATALOG.find(l => l.code === selectedLanguage) || MULTILINGUAL_CATALOG[0];
+
+  const toggleSystemAudio = async () => {
+    if (isSystemAudioActive) {
+      if (systemStreamRef.current) {
+        systemStreamRef.current.getTracks().forEach(t => t.stop());
+        systemStreamRef.current = null;
+      }
+      setIsSystemAudioActive(false);
+      return;
+    }
+    try {
+      const sysStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        }
+      });
+      systemStreamRef.current = sysStream;
+      setIsSystemAudioActive(true);
+
+      if (audioCtxRef.current && mixedDestRef.current) {
+        try {
+          const sysSource = audioCtxRef.current.createMediaStreamSource(sysStream);
+          sysSource.connect(mixedDestRef.current);
+        } catch (err) {
+          console.warn("Error connecting sysSource to mixer:", err);
+        }
+      }
+
+      sysStream.getVideoTracks().forEach(track => track.stop());
+
+      if (sysStream.getAudioTracks().length > 0) {
+        sysStream.getAudioTracks()[0].onended = () => {
+          setIsSystemAudioActive(false);
+          systemStreamRef.current = null;
+        };
+      }
+    } catch (err) {
+      console.warn("System audio share notice:", err);
+    }
+  };
+
+  // Live Hardware Audio Capture & Multimodal Gemini Slicing Pipeline
+  useEffect(() => {
+    TauriClient.startNativeRecording().catch(console.error);
+
+    // 1. High-Accuracy Web Speech API
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = activeLangObj.bcp;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (event: any) => {
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              const text = event.results[i][0].transcript.trim();
+              if (text) {
+                emit('live_caption_received', {
+                  sessionId: lectureId || 'live-session',
+                  text,
+                  timestamp: Date.now(),
+                  platform: 'desktop'
+                }).catch(() => {});
+              }
+            }
+          }
+        };
+        recognition.start();
+        speechRecRef.current = recognition;
+      } catch (err) {
+        console.warn("WebSpeech init notice:", err);
+      }
+    }
+
+    // 2. Multimodal Hardware Audio Streamer (1.8s slices)
+    let mediaStream: MediaStream | null = null;
+    let audioCtx: AudioContext | null = null;
+    let processor: ScriptProcessorNode | null = null;
+    let mediaRecorder: MediaRecorder | null = null;
+    let isTranscribingChunk = false;
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: true,
+          channelCount: 1
+        }
+      }).then((stream) => {
+        mediaStream = stream;
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          audioCtx = new AudioContextClass({ sampleRate: 16000 });
+          audioCtxRef.current = audioCtx;
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+
+          const mixedDest = audioCtx.createMediaStreamDestination();
+          mixedDestRef.current = mixedDest;
+
+          const micSource = audioCtx.createMediaStreamSource(stream);
+          micSource.connect(mixedDest);
+
+          if (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) {
+            try {
+              const sysSource = audioCtx.createMediaStreamSource(systemStreamRef.current);
+              sysSource.connect(mixedDest);
+            } catch (_) {}
+          }
+
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+            ? 'audio/webm;codecs=opus' 
+            : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
+
+          const streamToRecord = (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) 
+            ? mixedDest.stream 
+            : stream;
+
+          const recorder = new MediaRecorder(streamToRecord, { mimeType });
+          recorder.ondataavailable = async (e) => {
+            if (!e.data || e.data.size < 800 || isTranscribingChunk) return;
+            isTranscribingChunk = true;
+            try {
+              const reader = new FileReader();
+              reader.onloadend = async () => {
+                const base64Data = (reader.result as string).split(',')[1];
+                if (base64Data) {
+                  try {
+                    const res = await TauriClient.transcribeLiveAudioChunk(base64Data, mimeType, selectedLanguage);
+                    if (res && res.text && res.text.trim()) {
+                      emit('live_caption_received', {
+                        sessionId: lectureId || 'live-session',
+                        text: res.text.trim(),
+                        timestamp: Date.now(),
+                        platform: 'desktop'
+                      }).catch(() => {});
+                    }
+                  } catch (apiErr) {
+                    console.warn("Live chunk error:", apiErr);
+                  }
+                }
+                isTranscribingChunk = false;
+              };
+              reader.readAsDataURL(e.data);
+            } catch (err) {
+              isTranscribingChunk = false;
+            }
+          };
+          recorder.start(1800);
+          mediaRecorder = recorder;
+
+          processor = audioCtx.createScriptProcessor(4096, 1, 1);
+          processor.onaudioprocess = (e) => {
+            const inputData = e.inputBuffer.getChannelData(0);
+            let sum = 0;
+            for (let i = 0; i < inputData.length; i++) {
+              sum += inputData[i] * inputData[i];
+            }
+            const rms = Math.sqrt(sum / inputData.length);
+            setAudioLevel(Math.min(100, Math.round(rms * 600)));
+          };
+          micSource.connect(processor);
+          processor.connect(audioCtx.destination);
+        } catch (err) {
+          console.warn("AudioContext setup notice:", err);
+        }
+      }).catch(err => {
+        console.warn("Mic access notice:", err);
+      });
+    }
+
+    return () => {
+      TauriClient.stopNativeRecording().catch(console.error);
+      if (speechRecRef.current) {
+        try { speechRecRef.current.stop(); } catch (_) {}
+        speechRecRef.current = null;
+      }
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        try { mediaRecorder.stop(); } catch (_) {}
+      }
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+      }
+      if (processor) {
+        try { processor.disconnect(); } catch (_) {}
+      }
+    };
+  }, [selectedLanguage, lectureId]);
 
   // Handle Companion Mode Lifecycle
   useEffect(() => {
     async function setupCompanionMode() {
       try {
         const win = getCurrentWindow();
-        // Set always on top so it floats above Chrome/Zoom
         await win.setAlwaysOnTop(true);
+        await win.setSize(new LogicalSize(480, 850));
         
-        // Resize to a wider companion sidebar (e.g. 450x850)
-        await win.setSize(new LogicalSize(450, 850));
-        
-        // Move to right edge of screen
         const monitor = await currentMonitor();
         if (monitor) {
-          const x = monitor.size.width - 460; // margin from right
-          const y = 40; // margin from top
+          const x = monitor.size.width - 490;
+          const y = 40;
           await win.setPosition(new PhysicalPosition(x, y));
         }
       } catch (err) {
@@ -63,7 +283,6 @@ export function LiveWorkspacePage() {
     setupCompanionMode();
 
     return () => {
-      // Restore standard mode on unmount
       async function restoreMode() {
         try {
           const win = getCurrentWindow();
@@ -80,11 +299,12 @@ export function LiveWorkspacePage() {
 
   const handleStopRecording = () => {
     sessionStorage.setItem('ignore_live_nav', 'true');
+    if (systemStreamRef.current) {
+      systemStreamRef.current.getTracks().forEach(t => t.stop());
+      systemStreamRef.current = null;
+    }
+    TauriClient.stopNativeRecording().catch(console.error);
     navigate('/');
-    
-    TauriClient.stopNativeRecording().catch(e => {
-      console.error('Failed to stop recording:', e);
-    });
   };
 
   // Listen to live transcripts for Copilot and Decision Tracker
@@ -107,7 +327,7 @@ export function LiveWorkspacePage() {
     const interval = setInterval(async () => {
       if (isAnalyzingRef.current) return;
       const buffer = transcriptBufferRef.current.trim();
-      if (buffer.length < 20) return; // Not enough text to analyze yet
+      if (buffer.length < 20) return;
       
       isAnalyzingRef.current = true;
       try {
@@ -119,10 +339,8 @@ export function LiveWorkspacePage() {
             answer: result.suggestedAnswer!,
             timestamp: Date.now()
           }]);
-          // Clear buffer after a successful question detection to wait for the NEXT question
           transcriptBufferRef.current = ''; 
         } else if (buffer.length > 2000) {
-          // Prevent buffer from growing infinitely if no questions are detected
           transcriptBufferRef.current = buffer.slice(-1000);
         }
       } catch (err) {
@@ -130,17 +348,17 @@ export function LiveWorkspacePage() {
       } finally {
         isAnalyzingRef.current = false;
       }
-    }, 5000); // Check every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [interviewMode]);
 
-  // Periodic Decision Analysis (Evro style)
+  // Periodic Decision Analysis
   useEffect(() => {
     const interval = setInterval(async () => {
       if (isDecisionAnalyzingRef.current) return;
       const buffer = decisionBufferRef.current.trim();
-      if (buffer.length < 50) return; // Wait for enough context
+      if (buffer.length < 50) return;
       
       isDecisionAnalyzingRef.current = true;
       try {
@@ -151,16 +369,16 @@ export function LiveWorkspacePage() {
             text: result.decisionText!,
             timestamp: Date.now()
           }]);
-          decisionBufferRef.current = ''; // Reset on success to wait for next decision
+          decisionBufferRef.current = '';
         } else if (buffer.length > 3000) {
-          decisionBufferRef.current = buffer.slice(-1500); // Prevent infinite growth
+          decisionBufferRef.current = buffer.slice(-1500);
         }
       } catch (err) {
         console.error("Decision analysis failed:", err);
       } finally {
         isDecisionAnalyzingRef.current = false;
       }
-    }, 15000); // Check every 15 seconds (staggered from Copilot)
+    }, 15000);
 
     return () => clearInterval(interval);
   }, []);
@@ -179,6 +397,11 @@ export function LiveWorkspacePage() {
     setProposedDecisions(prev => prev.filter(d => d.id !== id));
   };
 
+  const filteredLanguages = MULTILINGUAL_CATALOG.filter(l => 
+    l.label.toLowerCase().includes(langSearch.toLowerCase()) || 
+    l.nativeName.toLowerCase().includes(langSearch.toLowerCase())
+  );
+
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg)] text-[var(--text-primary)] border border-[var(--border)] overflow-hidden shadow-2xl rounded-2xl relative">
@@ -187,8 +410,78 @@ export function LiveWorkspacePage() {
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
           <h1 className="text-sm font-bold tracking-tight">Meeting Active</h1>
+          
+          {/* Live Audio Level Visualizer */}
+          <div className="flex items-center gap-0.5 h-3.5 px-1 ml-1" title={`Input Level: ${audioLevel}%`}>
+            <span className="w-1 bg-emerald-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(3, Math.min(14, audioLevel * 0.2 + 3))}px` }} />
+            <span className="w-1 bg-emerald-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(4, Math.min(14, audioLevel * 0.3 + 4))}px` }} />
+            <span className="w-1 bg-emerald-500 rounded-full transition-all duration-75" style={{ height: `${Math.max(3, Math.min(14, audioLevel * 0.22 + 3))}px` }} />
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-2">
+          {/* System Audio Toggle */}
+          <button
+            type="button"
+            onClick={toggleSystemAudio}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+              isSystemAudioActive
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)]'
+            }`}
+            title={isSystemAudioActive ? "System & Speaker Voice Active (Zoom/Meet)" : "Click to Capture System/Speaker Audio"}
+          >
+            {isSystemAudioActive ? <Volume2 size={12} className="text-emerald-400 animate-pulse" /> : <VolumeX size={12} />}
+            <span>{isSystemAudioActive ? 'System Voice: ON' : '+ System Voice'}</span>
+          </button>
+
+          {/* Language Selector Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-[var(--text-primary)] bg-[var(--surface-hover)] border border-[var(--border)] cursor-pointer"
+            >
+              <span>{activeLangObj.flag}</span>
+              <span>{activeLangObj.label.split(' ')[0]}</span>
+              <ChevronDown size={10} className="text-[var(--text-muted)]" />
+            </button>
+
+            {isLangMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-60 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl p-2 z-50">
+                <div className="relative mb-2">
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    value={langSearch}
+                    onChange={e => setLangSearch(e.target.value)}
+                    placeholder="Search languages..."
+                    className="w-full pl-7 pr-2 py-1 rounded-md bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                  {filteredLanguages.map(l => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      onClick={() => { setSelectedLanguage(l.code); setIsLangMenuOpen(false); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between cursor-pointer ${
+                        selectedLanguage === l.code ? 'text-[var(--accent)] bg-[var(--surface-hover)] font-semibold' : 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span>{l.flag}</span>
+                        <span className="truncate">{l.label}</span>
+                      </div>
+                      {selectedLanguage === l.code && <Check size={12} className="text-[var(--accent)]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setInterviewMode(!interviewMode)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
@@ -203,7 +496,7 @@ export function LiveWorkspacePage() {
           
           <button 
             onClick={handleStopRecording}
-            className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
           >
             <Square className="w-3 h-3 fill-current" />
             Stop

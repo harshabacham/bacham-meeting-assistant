@@ -89,13 +89,13 @@ export function AppLayout() {
         };
     }, [navigate]);
 
-    // Auto-navigate to live workspace when a meeting starts
+    // Auto-navigate to live workspace ONLY if currently on root dashboard '/'
     useEffect(() => {
         let isNavigating = false;
         
         const unlistenCaption = listen('live_caption_received', () => {
             if (sessionStorage.getItem('ignore_live_nav') === 'true') return;
-            if (!isNavigating && location.pathname !== '/live') {
+            if (!isNavigating && location.pathname === '/') {
                 isNavigating = true;
                 navigate('/live');
                 setTimeout(() => { isNavigating = false; }, 2000); // debounce
@@ -116,9 +116,7 @@ export function AppLayout() {
                 await win.unminimize();
                 await win.show();
                 await win.setFocus();
-            } catch (err) {
-                console.error("Failed to auto wake window:", err);
-            }
+            } catch (_) {}
         });
 
         return () => {
