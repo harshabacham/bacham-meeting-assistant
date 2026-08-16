@@ -239,11 +239,90 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             startRecognition(selectedLanguage);
         }
 
-        // 3. Unified 16kHz PCM WAV Streaming Pipeline (System Audio + Microphone)
+        // 3. Persistent 16kHz PCM Audio Streaming Pipeline with Zero-Drop Queue
         let pcmBuffer: number[] = [];
         let windowMaxRms = 0;
-        let isTranscribingChunk = false;
+        let isProcessingQueue = false;
+        const audioQueue: Float32Array[] = [];
         let currentSpeaker: 'me' | 'speaker' = 'me';
+
+        const processQueue = async () => {
+            if (isProcessingQueue || audioQueue.length === 0 || !streamingRef.current) return;
+            isProcessingQueue = true;
+
+            while (audioQueue.length > 0 && streamingRef.current) {
+                const samples = audioQueue.shift();
+                if (!samples) continue;
+
+                try {
+                    const wavBase64 = encodeWavBase64(samples, 16000);
+                    const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+                    if (res && res.text && res.text.trim()) {
+                        const trimmed = res.text.trim();
+                        // Filter hallucinations
+                        if (
+                            trimmed !== '00:00' && 
+                            trimmed !== '0:00' && 
+                            trimmed !== '00:01' && 
+                            trimmed !== '00:02' && 
+                            trimmed !== 'one' && 
+                            !trimmed.toLowerCase().startsWith('subtitles')
+                        ) {
+                            setChunks(prev => {
+                                const now = Date.now();
+                                const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                                if (prev.length > 0) {
+                                    const last = prev[prev.length - 1];
+                                    const timeDiff = now - (last.timeMs || 0);
+
+                                    // If same speaker spoke within 6 seconds, merge into existing paragraph
+                                    if (last.speaker === currentSpeaker && timeDiff < 6000) {
+                                        // Avoid duplicate phrases
+                                        if (last.text.toLowerCase().endsWith(trimmed.toLowerCase())) {
+                                            return prev;
+                                        }
+                                        const updatedText = `${last.text.replace(/[.\s]+$/, '')}. ${trimmed.charAt(0).toUpperCase() + trimmed.slice(1)}`;
+                                        const updated = [...prev];
+                                        updated[updated.length - 1] = {
+                                            ...last,
+                                            text: updatedText,
+                                            timeMs: now,
+                                        };
+                                        return updated;
+                                    }
+                                }
+
+                                // Start new paragraph block
+                                return [...prev, {
+                                    id: Date.now().toString() + Math.random(),
+                                    speaker: currentSpeaker,
+                                    text: trimmed.charAt(0).toUpperCase() + trimmed.slice(1),
+                                    timeMs: now,
+                                    timestamp: timeStr,
+                                }];
+                            });
+
+                            emit('live_caption_received', {
+                                sessionId: 'live-session',
+                                text: trimmed,
+                                timestamp: Date.now(),
+                                platform: 'desktop'
+                            }).catch(() => {});
+                            setInterimText('');
+                        }
+                    }
+                } catch (apiErr: any) {
+                    const errStr = String(apiErr);
+                    if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
+                        setQuotaWarning('Gemini API free quota exceeded. Set up a free Groq key in Settings for 2000 free transcriptions/day.');
+                    }
+                    console.warn("Live transcription error:", apiErr);
+                }
+            }
+
+            isProcessingQueue = false;
+        };
 
         const pushSamples = async (data: number[] | Float32Array, fromRate: number, speaker: 'me' | 'speaker') => {
             if (!streamingRef.current) return;
@@ -269,64 +348,19 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
             setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
 
-            // 1.5s balanced streaming window (24,000 samples at 16kHz)
-            if (pcmBuffer.length >= 24000) {
-                const samplesToProcess = pcmBuffer.slice(0, 24000);
-                pcmBuffer = pcmBuffer.slice(20800); // 200ms overlap
-                const hadVoice = windowMaxRms > 0.006;
+            // 2.0s streaming window (32,000 samples at 16kHz) with 300ms overlap
+            const WINDOW_SIZE = 32000;
+            const STEP_SIZE = 27200;
+
+            if (pcmBuffer.length >= WINDOW_SIZE) {
+                const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
+                pcmBuffer = pcmBuffer.slice(STEP_SIZE);
+                const hadVoice = windowMaxRms > 0.003; // sensitive threshold to catch quiet speech
                 windowMaxRms = 0;
 
-                if (hadVoice && !isTranscribingChunk) {
-                    isTranscribingChunk = true;
-                    try {
-                        const floatArr = new Float32Array(samplesToProcess);
-                        const wavBase64 = encodeWavBase64(floatArr, 16000);
-                        const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
-                        if (res && res.text && res.text.trim()) {
-                            const trimmed = res.text.trim();
-                            // Filter out known model hallucinations and timestamp artifacts
-                            if (
-                                trimmed !== '00:00' && 
-                                trimmed !== '0:00' && 
-                                trimmed !== '00:01' && 
-                                trimmed !== '00:02' && 
-                                trimmed !== 'one' && 
-                                trimmed.toLowerCase() !== 'subtitles by'
-                            ) {
-                                if (res.language && res.language !== 'Auto') {
-                                    setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
-                                }
-                                setChunks(prev => {
-                                    if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
-                                        return prev;
-                                    }
-                                    return [...prev, {
-                                        id: Date.now().toString() + Math.random(),
-                                        speaker: currentSpeaker,
-                                        text: trimmed,
-                                        language: res.language,
-                                        timeMs: Date.now(),
-                                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                                    }];
-                                });
-                                emit('live_caption_received', {
-                                    sessionId: 'live-session',
-                                    text: trimmed,
-                                    timestamp: Date.now(),
-                                    platform: 'desktop'
-                                }).catch(() => {});
-                                setInterimText('');
-                            }
-                        }
-                    } catch (apiErr: any) {
-                        const errStr = String(apiErr);
-                        if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
-                            setQuotaWarning('Gemini API free quota exceeded. Set up a free Groq key in Settings for 2000 free transcriptions/day.');
-                        }
-                        console.warn("Live transcription error:", apiErr);
-                    } finally {
-                        isTranscribingChunk = false;
-                    }
+                if (hadVoice) {
+                    audioQueue.push(new Float32Array(samplesToProcess));
+                    processQueue();
                 }
             }
         };

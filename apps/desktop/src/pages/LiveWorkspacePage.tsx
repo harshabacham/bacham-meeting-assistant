@@ -178,7 +178,46 @@ export function LiveWorkspacePage() {
     // 2. High-Precision 16kHz PCM WAV Audio Streaming Pipeline (System Audio + Microphone)
     let pcmBuffer: number[] = [];
     let windowMaxRms = 0;
-    let isTranscribingChunk = false;
+    let isProcessingQueue = false;
+    const audioQueue: Float32Array[] = [];
+
+    const processQueue = async () => {
+      if (isProcessingQueue || audioQueue.length === 0) return;
+      isProcessingQueue = true;
+
+      while (audioQueue.length > 0) {
+        const samples = audioQueue.shift();
+        if (!samples) continue;
+
+        try {
+          const wavBase64 = encodeWavBase64(samples, 16000);
+          const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+          
+          if (res && res.text && res.text.trim()) {
+            const trimmed = res.text.trim();
+            if (
+              trimmed !== '00:00' && 
+              trimmed !== '0:00' && 
+              trimmed !== '00:01' && 
+              trimmed !== '00:02' && 
+              trimmed !== 'one' && 
+              !trimmed.toLowerCase().startsWith('subtitles')
+            ) {
+              emit('live_caption_received', {
+                sessionId: lectureId || 'live-session',
+                text: trimmed,
+                timestamp: Date.now(),
+                platform: 'desktop'
+              }).catch(() => {});
+            }
+          }
+        } catch (apiErr) {
+          console.warn("PCM WAV Transcription error:", apiErr);
+        }
+      }
+
+      isProcessingQueue = false;
+    };
 
     const pushSamples = async (data: number[] | Float32Array, fromRate: number) => {
       const ratio = fromRate > 0 ? fromRate / 16000 : 1;
@@ -202,43 +241,19 @@ export function LiveWorkspacePage() {
       if (rms > windowMaxRms) windowMaxRms = rms;
       setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-      // 1.5s balanced streaming window (24,000 samples at 16kHz)
-      if (pcmBuffer.length >= 24000) {
-        const samplesToProcess = pcmBuffer.slice(0, 24000);
-        pcmBuffer = pcmBuffer.slice(20800); // 200ms overlap
-        const hadVoice = windowMaxRms > 0.006;
+      // 2.0s streaming window (32,000 samples at 16kHz)
+      const WINDOW_SIZE = 32000;
+      const STEP_SIZE = 27200;
+
+      if (pcmBuffer.length >= WINDOW_SIZE) {
+        const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
+        pcmBuffer = pcmBuffer.slice(STEP_SIZE);
+        const hadVoice = windowMaxRms > 0.003;
         windowMaxRms = 0;
 
-        if (hadVoice && !isTranscribingChunk) {
-          isTranscribingChunk = true;
-          try {
-            const floatArr = new Float32Array(samplesToProcess);
-            const wavBase64 = encodeWavBase64(floatArr, 16000);
-            const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
-            
-            if (res && res.text && res.text.trim()) {
-              const trimmed = res.text.trim();
-              if (
-                trimmed !== '00:00' && 
-                trimmed !== '0:00' && 
-                trimmed !== '00:01' && 
-                trimmed !== '00:02' && 
-                trimmed !== 'one' && 
-                trimmed.toLowerCase() !== 'subtitles by'
-              ) {
-                emit('live_caption_received', {
-                  sessionId: lectureId || 'live-session',
-                  text: trimmed,
-                  timestamp: Date.now(),
-                  platform: 'desktop'
-                }).catch(() => {});
-              }
-            }
-          } catch (apiErr) {
-            console.warn("PCM WAV Transcription error:", apiErr);
-          } finally {
-            isTranscribingChunk = false;
-          }
+        if (hadVoice) {
+          audioQueue.push(new Float32Array(samplesToProcess));
+          processQueue();
         }
       }
     };
