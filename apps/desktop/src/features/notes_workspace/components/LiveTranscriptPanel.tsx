@@ -238,21 +238,14 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             }
         };
 
-        // 3. Listen to native Rust System Audio Loopback
+        // 3. Listen to native Rust System Audio Loopback (System Sounds, Zoom, Google Meet, YouTube)
         let unlistenSys: (() => void) | undefined;
-        let unlistenMic: (() => void) | undefined;
 
         listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
             if (event.payload?.data) {
                 pushSamples(event.payload.data, event.payload.rate || 48000);
             }
         }).then(u => { unlistenSys = u; });
-
-        listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
-            if (event.payload?.data) {
-                pushSamples(event.payload.data, event.payload.rate || 48000);
-            }
-        }).then(u => { unlistenMic = u; });
 
         // 4. Capture Microphone via WebAudio API directly in WebView
         let mediaStream: MediaStream | null = null;
@@ -303,7 +296,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         return () => {
             TauriClient.stopNativeRecording().catch(() => {});
             if (unlistenSys) unlistenSys();
-            if (unlistenMic) unlistenMic();
             if (mediaStream) {
                 mediaStream.getTracks().forEach(t => t.stop());
             }
