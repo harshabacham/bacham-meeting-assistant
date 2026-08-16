@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
     Search, Copy, Minus, Sparkles, ChevronDown, 
-    ChevronUp, Check, Square, FileText, Wand2, ArrowRightLeft,
-    Volume2, VolumeX, Plus
+    ChevronUp, Check, X, Wand2, Volume2, VolumeX, Plus, Mic, User
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { emit } from '@tauri-apps/api/event';
 import { cn } from '@/components';
@@ -30,8 +29,8 @@ export interface LanguageOption {
 }
 
 export const MULTILINGUAL_CATALOG: LanguageOption[] = [
-    { code: 'auto', label: 'Auto (Multi-Language)', nativeName: 'Automatic Detection', flag: '🌐', bcp: 'en-US', category: 'popular' },
-    { code: 'english', label: 'English (US/Global)', nativeName: 'English', flag: '🇺🇸', bcp: 'en-US', category: 'popular' },
+    { code: 'auto', label: 'Auto Detect', nativeName: 'Automatic Detection', flag: '🌐', bcp: 'en-US', category: 'popular' },
+    { code: 'english', label: 'English (US)', nativeName: 'English', flag: '🇺🇸', bcp: 'en-US', category: 'popular' },
     { code: 'english-in', label: 'English (India)', nativeName: 'Indian English', flag: '🇮🇳', bcp: 'en-IN', category: 'popular' },
     
     // Indic Languages
@@ -55,7 +54,7 @@ export const MULTILINGUAL_CATALOG: LanguageOption[] = [
 
     // Asian & Middle Eastern
     { code: 'japanese', label: 'Japanese', nativeName: '日本語', flag: '🇯🇵', bcp: 'ja-JP', category: 'asian' },
-    { code: 'chinese', label: 'Chinese', nativeName: '中文 (Mandarin)', flag: '🇨🇳', bcp: 'zh-CN', category: 'asian' },
+    { code: 'chinese', label: 'Chinese', nativeName: '中文', flag: '🇨🇳', bcp: 'zh-CN', category: 'asian' },
     { code: 'korean', label: 'Korean', nativeName: '한국어', flag: '🇰🇷', bcp: 'ko-KR', category: 'asian' },
     { code: 'arabic', label: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', bcp: 'ar-SA', category: 'middle-eastern' },
 ];
@@ -79,12 +78,10 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
     const [langSearch, setLangSearch] = useState('');
     const [transcriptSearch, setTranscriptSearch] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [copiedChunkId, setCopiedChunkId] = useState<string | null>(null);
-    const [translateMode, setTranslateMode] = useState<boolean>(false); // false = Original Script, true = Live English Translation
 
-    const [modelStatus, setModelStatus] = useState<string>('ready');
     const [copied, setCopied] = useState(false);
-    const [askQuery, setAskQuery] = useState('');
     const [recordingTime, setRecordingTime] = useState(0);
     const [isPolishing, setIsPolishing] = useState(false);
     const [isSystemAudioActive, setIsSystemAudioActive] = useState(false);
@@ -164,7 +161,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    // Initialize Web Speech Engine and Whisper-Base Local Worker
+    // Initialize Web Speech Engine and PCM Audio Pipeline
     useEffect(() => {
         if (!isOpen) {
             setChunks([]);
@@ -188,10 +185,10 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             return;
         }
 
-        // 1. Start Rust Native Audio Stream (System loopback + Mic)
+        // 1. Start Rust Native Audio Stream
         TauriClient.startNativeRecording().catch(console.error);
 
-        // 2. High-Accuracy Web Speech API (Google Neural Cloud Speech - 99%+ accuracy)
+        // 2. Web Speech API (Google Neural Cloud Speech)
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
         const startRecognition = (langCode: string) => {
@@ -199,37 +196,32 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             try {
                 if (speechRecRef.current) {
                     try { speechRecRef.current.stop(); } catch (_) {}
+                    speechRecRef.current = null;
                 }
 
                 const recognition = new SpeechRecognition();
-                const targetLangObj = MULTILINGUAL_CATALOG.find(l => l.code === langCode);
-                recognition.lang = targetLangObj?.bcp || 'en-US';
                 recognition.continuous = true;
                 recognition.interimResults = true;
-                recognition.maxAlternatives = 1;
-
-                recognition.onstart = () => {
-                    useWebSpeechRef.current = true;
-                    setModelStatus('Live Transcription Active');
-                };
+                
+                const langEntry = MULTILINGUAL_CATALOG.find(l => l.code === langCode);
+                recognition.lang = langEntry?.bcp || 'en-US';
 
                 recognition.onresult = (event: any) => {
                     if (!streamingRef.current) return;
-                    let interim = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    let currentInterim = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
                         const transcript = event.results[i][0].transcript;
                         if (event.results[i].isFinal) {
                             const trimmed = transcript.trim();
                             if (trimmed) {
                                 setChunks(prev => {
-                                    if (prev.length > 0 && prev[prev.length - 1].text === trimmed) {
+                                    if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
                                         return prev;
                                     }
                                     return [...prev, {
                                         id: Date.now().toString() + Math.random(),
                                         speaker: 'speaker',
                                         text: trimmed,
-                                        language: targetLangObj?.label,
                                         timeMs: Date.now(),
                                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                                     }];
@@ -243,18 +235,17 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                 setInterimText('');
                             }
                         } else {
-                            interim += transcript;
+                            currentInterim += transcript;
                         }
                     }
-                    if (interim) {
-                        setInterimText(interim);
+                    if (currentInterim) {
+                        setInterimText(currentInterim);
                     }
                 };
 
                 recognition.onerror = (e: any) => {
-                    console.warn("SpeechRecognition notice:", e?.error);
-                    if (e?.error === 'network' || e?.error === 'not-allowed') {
-                        useWebSpeechRef.current = false;
+                    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+                        console.warn("Speech recognition notice:", e.error);
                     }
                 };
 
@@ -265,7 +256,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         startRecognition(nextLang);
                         return;
                     }
-                    if (streamingRef.current && isOpen && useWebSpeechRef.current) {
+                    if (streamingRef.current && useWebSpeechRef.current) {
                         try { recognition.start(); } catch (_) {}
                     }
                 };
@@ -273,64 +264,16 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                 recognition.start();
                 speechRecRef.current = recognition;
             } catch (err) {
-                console.warn("WebSpeech init fallback:", err);
-                useWebSpeechRef.current = false;
+                console.warn("WebSpeech init notice:", err);
             }
         };
 
-        startRecognition(selectedLanguage);
-
-        // 3. Multilingual Whisper-Base Local Worker
-        try {
-            workerRef.current = new Worker(new URL('../../../workers/whisper.worker.ts', import.meta.url), {
-                type: 'module'
-            });
-
-            workerRef.current.onmessage = (e) => {
-                const { type, status, payload } = e.data;
-                if (type === 'STATUS') {
-                    setModelStatus(status);
-                } else if (type === 'LANGUAGE_DETECTED') {
-                    setDetectedLanguage({ label: payload.language, flag: payload.flag || '🌐' });
-                } else if (type === 'TRANSCRIPT') {
-                    if (payload?.text) {
-                        const trimmed = payload.text.trim();
-                        if (trimmed) {
-                            setChunks(prev => {
-                                if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
-                                    return prev;
-                                }
-                                return [...prev, {
-                                    id: Date.now().toString() + Math.random(),
-                                    speaker: 'speaker',
-                                    text: trimmed,
-                                    isTranslated: payload.isTranslated,
-                                    timeMs: payload.timestamp || Date.now(),
-                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                                }];
-                            });
-                            emit('live_caption_received', {
-                                sessionId: 'live-session',
-                                text: trimmed,
-                                timestamp: Date.now(),
-                                platform: 'desktop'
-                            }).catch(() => {});
-                            setInterimText('');
-                        }
-                    }
-                }
-            };
-
-            workerRef.current.postMessage({ 
-                type: 'INIT', 
-                language: selectedLanguage, 
-                task: translateMode ? 'translate' : 'transcribe' 
-            });
-        } catch (err: any) {
-            console.error("Whisper worker error:", err);
+        if (SpeechRecognition) {
+            useWebSpeechRef.current = true;
+            startRecognition(selectedLanguage);
         }
 
-        // 4. Combined Audio Pipeline: Microphone + System Audio Loopback
+        // 3. 16kHz PCM WAV Audio Streaming Pipeline
         let audioCtx: AudioContext | null = null;
         let mediaStream: MediaStream | null = null;
         let processor: ScriptProcessorNode | null = null;
@@ -358,11 +301,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                     const mixedDest = audioCtx.createMediaStreamDestination();
                     mixedDestRef.current = mixedDest;
 
-                    // Connect mic to mixed destination
                     const micSource = audioCtx.createMediaStreamSource(stream);
                     micSource.connect(mixedDest);
 
-                    // Connect system audio if already active
                     if (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) {
                         try {
                             const sysSource = audioCtx.createMediaStreamSource(systemStreamRef.current);
@@ -370,7 +311,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         } catch (_) {}
                     }
 
-                    // A. High-Precision 16kHz PCM WAV Audio Streaming Pipeline
                     let pcmBuffer: number[] = [];
                     let windowMaxRms = 0;
 
@@ -389,20 +329,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         const rmsVal = Math.sqrt(sum / floatArray.length);
                         if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
                         setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
-                        
-                        if (rmsVal > 0.01) {
-                            setModelStatus('Voice detected • Transcribing...');
-                        }
-
-                        // Also send to local worker
-                        if (workerRef.current) {
-                            workerRef.current.postMessage({
-                                type: 'AUDIO_CHUNK',
-                                stream: 'mic',
-                                payload: Array.from(floatArray),
-                                sampleRate: 16000
-                            });
-                        }
 
                         // Every ~2.0s (32,000 samples at 16kHz)
                         if (pcmBuffer.length >= 32000) {
@@ -428,7 +354,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                             }
                                             return [...prev, {
                                                 id: Date.now().toString() + Math.random(),
-                                                speaker: 'speaker',
+                                                speaker: isSystemAudioActive ? 'speaker' : 'me',
                                                 text: trimmed,
                                                 language: res.language,
                                                 timeMs: Date.now(),
@@ -454,42 +380,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
                     micSource.connect(processor);
                     processor.connect(audioCtx.destination);
-                    (window as any).__audioProcessorRef = processor;
                 } catch (err) {
                     console.warn("AudioContext init notice:", err);
                 }
             }).catch((err) => {
-                console.warn("Direct microphone stream notice:", err);
+                console.warn("Microphone stream notice:", err);
             });
         }
-
-        // 5. Also listen to native background stream from Tauri CPAL backend
-        let unlistenSys: () => void;
-        let unlistenMic: () => void;
-
-        import('@tauri-apps/api/event').then(({ listen }) => {
-            listen<{data: number[], rate: number}>('audio_stream_sys', (event) => {
-                if (streamingRef.current && workerRef.current && event.payload) {
-                    workerRef.current.postMessage({ 
-                        type: 'AUDIO_CHUNK', 
-                        stream: 'sys',
-                        payload: event.payload.data,
-                        sampleRate: event.payload.rate
-                    });
-                }
-            }).then(u => { unlistenSys = u; });
-            
-            listen<{data: number[], rate: number}>('audio_stream_mic', (event) => {
-                if (streamingRef.current && workerRef.current && event.payload) {
-                    workerRef.current.postMessage({ 
-                        type: 'AUDIO_CHUNK', 
-                        stream: 'mic',
-                        payload: event.payload.data,
-                        sampleRate: event.payload.rate
-                    });
-                }
-            }).then(u => { unlistenMic = u; });
-        });
 
         return () => {
             TauriClient.stopNativeRecording().catch(console.error);
@@ -502,343 +399,202 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             if (audioCtx) {
                 try { audioCtx.close(); } catch (_) {}
             }
-            if (speechRecRef.current) {
-                try { speechRecRef.current.stop(); } catch (_) {}
-                speechRecRef.current = null;
-            }
-            if (workerRef.current) {
-                workerRef.current.terminate();
-                workerRef.current = null;
-            }
-            if (unlistenSys) unlistenSys();
-            if (unlistenMic) unlistenMic();
         };
     }, [isOpen]);
-
-    // Auto-scroll transcript container
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTo({
-                top: scrollRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }, [chunks, interimText]);
-
-    const toggleStreaming = async () => {
-        if (isStreaming) {
-            setIsStreaming(false);
-            streamingRef.current = false;
-            await TauriClient.stopNativeRecording().catch(console.error);
-            if (speechRecRef.current) {
-                try { speechRecRef.current.stop(); } catch (_) {}
-            }
-        } else {
-            setIsStreaming(true);
-            streamingRef.current = true;
-            await TauriClient.startNativeRecording().catch(console.error);
-            if (speechRecRef.current) {
-                try { speechRecRef.current.start(); } catch (_) {}
-            }
-        }
-    };
 
     const handleLanguageChange = (langCode: string) => {
         setSelectedLanguage(langCode);
         setIsLangMenuOpen(false);
-        setLangSearch('');
-
-        if (workerRef.current) {
-            workerRef.current.postMessage({ type: 'SET_LANGUAGE', language: langCode });
-        }
-
-        // Safe Hot Language Switching
         if (speechRecRef.current) {
-            try {
-                pendingLangRestartRef.current = langCode;
-                speechRecRef.current.stop();
-            } catch (_) {
-                // If stop fails or already stopped, re-init immediately
-                const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-                if (SpeechRecognition) {
-                    const targetLangObj = MULTILINGUAL_CATALOG.find(l => l.code === langCode);
-                    const rec = new SpeechRecognition();
-                    rec.lang = targetLangObj?.bcp || 'en-US';
-                    rec.continuous = true;
-                    rec.interimResults = true;
-                    if (isStreaming) rec.start();
-                    speechRecRef.current = rec;
-                }
-            }
+            pendingLangRestartRef.current = langCode;
+            try { speechRecRef.current.stop(); } catch (_) {}
         }
     };
 
-    const handleToggleTranslateMode = () => {
-        const nextMode = !translateMode;
-        setTranslateMode(nextMode);
-        if (workerRef.current) {
-            workerRef.current.postMessage({ type: 'SET_TASK', task: nextMode ? 'translate' : 'transcribe' });
-        }
+    const toggleStreaming = () => {
+        setIsStreaming(!isStreaming);
+    };
+
+    const handleCopyAll = () => {
+        const fullText = chunks.map(c => `${c.speaker === 'me' ? 'You' : 'Speaker'}: ${c.text}`).join('\n');
+        navigator.clipboard.writeText(fullText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const handleGenerateNotes = () => {
-        const fullText = chunks.map(c => c.text).join('\n');
-        onProcess(fullText);
+        const fullTranscript = chunks.map(c => c.text).join(' ');
+        onProcess(fullTranscript);
+        onClose();
     };
 
     const handlePolishTranscript = async () => {
         if (chunks.length === 0 || isPolishing) return;
         setIsPolishing(true);
         try {
-            const rawText = chunks.map(c => c.text).join('\n');
-            const prompt = `You are a world-class multilingual meeting transcriber. Clean and polish this verbatim audio transcript:
-1. Preserve original languages (Hindi, Telugu, Tamil, Spanish, French, German, Japanese, English, or mixed Hinglish/code-switching).
-2. Fix sentence boundaries, capitalize proper nouns, and remove stutter/filler words.
-3. Keep the authentic verbatim meaning accurate.
-
-Raw Audio Transcript:
-${rawText}
-
-Output only the polished, punctuated verbatim dialogue:`;
-
-            const polished = await TauriClient.sendGlobalMemoryChat(prompt, []);
+            const raw = chunks.map(c => c.text).join(' ');
+            const polished = await TauriClient.sendGlobalMemoryChat(`Clean up and format this live transcript while preserving meaning:\n\n${raw}`);
             if (polished) {
-                const lines = polished.split('\n').map(l => l.trim()).filter(Boolean);
-                const polishedChunks: TranscriptChunk[] = lines.map((line, i) => ({
-                    id: `polished-${Date.now()}-${i}`,
+                setChunks([{
+                    id: Date.now().toString(),
                     speaker: 'speaker',
-                    text: line,
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                }));
-                setChunks(polishedChunks);
+                    text: polished,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                }]);
             }
-        } catch (err) {
-            console.error("Failed to polish transcript", err);
+        } catch (e) {
+            console.error("Failed to polish:", e);
         } finally {
             setIsPolishing(false);
         }
     };
 
-    const handleCopyAll = () => {
-        const fullText = chunks.map(c => c.text).join('\n\n');
-        navigator.clipboard.writeText(fullText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
     const filteredLanguages = MULTILINGUAL_CATALOG.filter(l => 
         l.label.toLowerCase().includes(langSearch.toLowerCase()) || 
-        l.nativeName.toLowerCase().includes(langSearch.toLowerCase()) ||
-        l.code.toLowerCase().includes(langSearch.toLowerCase())
+        l.nativeName.toLowerCase().includes(langSearch.toLowerCase())
     );
+
+    const visibleChunks = chunks.filter(c => 
+        !transcriptSearch.trim() || c.text.toLowerCase().includes(transcriptSearch.toLowerCase())
+    );
+
+    // Auto-scroll transcript container
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [chunks, interimText]);
 
     if (!isOpen) return null;
 
-    // Minimized Dock Bar
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 1. MINIMIZED GRANOLA FLOATING WAVEFORM PILL
+    // ═══════════════════════════════════════════════════════════════════════════
     if (isMinimized) {
         return (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-50">
-                <motion.button
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleGenerateNotes}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold shadow-xl transition-all cursor-pointer"
-                >
-                    <Sparkles size={14} className="text-[var(--accent)]" />
-                    <span>Generate notes</span>
-                </motion.button>
-
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-2"
+                    initial={{ opacity: 0, scale: 0.9, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    whileHover={{ y: -1 }}
+                    className="flex items-center gap-3 px-4 py-2 rounded-full bg-[#121214]/95 backdrop-blur-xl border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
                 >
-                    {/* Audio State Pill */}
-                    <button
+                    {/* Live Dancing Waveform */}
+                    <div className="flex items-center gap-0.5 h-3.5">
+                        <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(14, audioLevel * 0.2 + 4))}px` : '4px' }} />
+                        <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(6, Math.min(14, audioLevel * 0.35 + 6))}px` : '6px' }} />
+                        <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(14, audioLevel * 0.22 + 4))}px` : '4px' }} />
+                    </div>
+
+                    <span className="text-xs font-mono text-zinc-300 font-medium tabular-nums">
+                        {formatTime(recordingTime)}
+                    </span>
+
+                    <div className="h-3 w-px bg-white/10" />
+
+                    <button 
                         type="button"
-                        onClick={toggleStreaming}
-                        className="flex items-center gap-2 px-3.5 py-2 rounded-md bg-[var(--surface)] border border-[var(--border)] shadow-md text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                        onClick={() => setIsMinimized(false)}
+                        className="flex items-center gap-1 text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
                     >
-                        <div className="flex items-center gap-0.5">
-                            <span className={cn("w-1 h-3 rounded-full", isStreaming ? "bg-[var(--accent)] animate-pulse" : "bg-[var(--text-muted)] opacity-40")} />
-                            <span className={cn("w-1 h-4 rounded-full", isStreaming ? "bg-[var(--accent)] animate-pulse [animation-delay:0.2s]" : "bg-[var(--text-muted)] opacity-40")} />
-                            <span className={cn("w-1 h-2.5 rounded-full", isStreaming ? "bg-[var(--accent)] animate-pulse [animation-delay:0.4s]" : "bg-[var(--text-muted)] opacity-40")} />
-                        </div>
-                        <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }}
-                            className="p-0.5 hover:bg-[var(--surface-hover)] rounded cursor-pointer"
-                        >
-                            <ChevronUp size={14} className="text-[var(--text-muted)]" />
-                        </button>
-                        <span className={cn("font-semibold", isStreaming ? "text-[var(--accent)]" : "text-[var(--text-muted)]")}>
-                            {isStreaming ? 'Recording' : 'Paused'}
-                        </span>
-                        <span className="text-[11px] text-[var(--text-muted)] font-normal border-l border-[var(--border)] pl-2">
-                            {activeLanguage.flag} {activeLanguage.label.split(' ')[0]}
-                        </span>
-                        <span 
-                            onClick={(e) => { e.stopPropagation(); toggleSystemAudio(); }} 
-                            className={cn(
-                                "text-[10px] px-1.5 py-0.5 rounded border transition-colors cursor-pointer ml-1",
-                                isSystemAudioActive ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text-primary)]"
-                            )}
-                            title={isSystemAudioActive ? "System Voice ON" : "Click to enable System Voice"}
-                        >
-                            {isSystemAudioActive ? '🔊 Sys ON' : '+ Sys'}
-                        </span>
+                        <span>Transcript</span>
+                        <ChevronUp size={13} className="text-zinc-400" />
                     </button>
 
-                    {/* Quick Ask Box */}
-                    <div className="flex items-center bg-[var(--surface)] border border-[var(--border)] rounded-md shadow-md pl-4 pr-1.5 py-1 min-w-[380px]">
-                        <input
-                            type="text"
-                            placeholder="Ask AI anything about meeting..."
-                            value={askQuery}
-                            onChange={(e) => setAskQuery(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && askQuery.trim()) {
-                                    onProcess(chunks.map(c => c.text).join(' ') + `\n\nUser Question: ${askQuery}`);
-                                    setAskQuery('');
-                                }
-                            }}
-                            className="bg-transparent text-xs text-[var(--text-primary)] placeholder:[var(--text-muted)] outline-none flex-1 font-sans"
-                        />
-                        <button 
-                            type="button"
-                            onClick={handleGenerateNotes}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-[var(--border)] text-[11px] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
-                        >
-                            <FileText size={12} className="text-[var(--text-muted)]" />
-                            <span>Save Notes</span>
-                        </button>
-                    </div>
+                    <div className="h-3 w-px bg-white/10" />
+
+                    <button
+                        type="button"
+                        onClick={handleGenerateNotes}
+                        className="flex items-center gap-1 px-3 py-1 rounded-full bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                    >
+                        <Sparkles size={11} className="text-amber-600" />
+                        <span>Enhance</span>
+                    </button>
                 </motion.div>
             </div>
         );
     }
 
-    // Expanded Multilingual Live Transcript Card
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 2. EXPANDED GRANOLA CONVERSATIONAL TRANSCRIPT PANEL
+    // ═══════════════════════════════════════════════════════════════════════════
     return (
-        <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4 gap-2">
-            {/* Top Action Pills */}
-            {(!isStreaming || chunks.length > 0) && (
-                <div className="pointer-events-auto flex items-center gap-2">
-                    <motion.button
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleGenerateNotes}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] shadow-xl text-xs font-semibold tracking-wide transition-all cursor-pointer"
-                    >
-                        <Sparkles size={14} className="text-[var(--accent)]" />
-                        <span>Synthesize Executive Notes</span>
-                    </motion.button>
-
-                    <motion.button
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handlePolishTranscript}
-                        disabled={isPolishing}
-                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] border border-[var(--border)] shadow-xl text-xs font-medium transition-all cursor-pointer disabled:opacity-50"
-                        title="Correct speech errors and format with Google Gemini"
-                    >
-                        <Wand2 size={13} className={isPolishing ? "animate-spin text-[var(--accent)]" : "text-[var(--accent)]"} />
-                        <span>{isPolishing ? "Polishing..." : "AI Multilingual Polish"}</span>
-                    </motion.button>
-                </div>
-            )}
-
+        <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4">
             <motion.div 
-                initial={{ opacity: 0, y: 30, scale: 0.98 }}
+                initial={{ opacity: 0, y: 25, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="w-full max-w-xl bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto"
+                transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+                className="w-full max-w-xl bg-[#111113]/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col pointer-events-auto font-sans"
             >
-                {/* Header with Multilingual Controls */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)] bg-[var(--surface)]">
-                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-medium">
-                        <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
-                        <span className="font-semibold text-[var(--text-primary)]">Multilingual Speech Engine</span>
+                {/* Clean Granola Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#161619]/40 shrink-0">
+                    {/* Left: Status & Language */}
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-1">
+                            <span className={cn("w-2 h-2 rounded-full", isStreaming ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />
+                            <span className="text-xs font-semibold text-zinc-200">
+                                {isStreaming ? 'Live Transcription' : 'Paused'}
+                            </span>
+                        </div>
+
                         {detectedLanguage && (
-                            <span className="text-[var(--accent)] font-semibold flex items-center gap-1 bg-[var(--accent-dim)] px-1.5 py-0.5 rounded border border-[var(--border-accent)]">
+                            <span className="text-[11px] text-zinc-300 font-medium flex items-center gap-1 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
                                 <span>{detectedLanguage.flag}</span>
                                 <span>{detectedLanguage.label}</span>
                             </span>
                         )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
-                        {/* System Audio & Speaker Voice Capture Button */}
+                    {/* Right: Controls */}
+                    <div className="flex items-center gap-1.5 text-zinc-400">
+                        {/* System Audio Toggle */}
                         <button
                             type="button"
                             onClick={toggleSystemAudio}
                             className={cn(
-                                "flex items-center gap-1 px-2.5 py-1 rounded text-xs transition-all cursor-pointer border shadow-2xs font-medium",
+                                "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer border",
                                 isSystemAudioActive 
-                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" 
-                                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] border-[var(--border)]"
+                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-2xs" 
+                                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border-transparent"
                             )}
-                            title={isSystemAudioActive ? "System & Speaker Voice Active (Zoom/Meet/YouTube)" : "Click to Capture System/Speaker Audio (Zoom/Meet/YouTube)"}
+                            title={isSystemAudioActive ? "System Voice Active" : "Click to share System Voice (Zoom/Meet/YouTube)"}
                         >
                             {isSystemAudioActive ? <Volume2 size={12} className="text-emerald-400 animate-pulse" /> : <VolumeX size={12} />}
-                            <span>{isSystemAudioActive ? 'System Voice: ON' : '+ System Voice'}</span>
+                            <span>{isSystemAudioActive ? 'System Voice ON' : '+ System Voice'}</span>
                         </button>
 
-                        <div className="h-3 w-px bg-[var(--border)] mx-0.5" />
+                        <div className="h-3 w-px bg-white/[0.08] mx-0.5" />
 
-                        {/* Live Translation Mode Switcher */}
-                        <button
-                            type="button"
-                            onClick={handleToggleTranslateMode}
-                            className={cn(
-                                "flex items-center gap-1 px-2 py-1 rounded text-xs transition-all cursor-pointer",
-                                translateMode 
-                                    ? "bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)] font-semibold" 
-                                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
-                            )}
-                            title={translateMode ? "Translating foreign audio to English" : "Transcribing in original native language"}
-                        >
-                            <ArrowRightLeft size={11} />
-                            <span>{translateMode ? 'English Subtitles' : 'Original Script'}</span>
-                        </button>
-
-                        <div className="h-3 w-px bg-[var(--border)] mx-1" />
-
-                        {/* Interactive Language Selector Dropdown */}
+                        {/* Language Dropdown */}
                         <div className="relative">
                             <button
                                 type="button"
                                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                                className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium cursor-pointer border border-[var(--border)] shadow-xs"
-                                title="Change Spoken Language"
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] text-zinc-300 hover:text-white hover:bg-white/[0.06] font-medium cursor-pointer transition-colors"
+                                title="Change Language"
                             >
                                 <span>{activeLanguage.flag}</span>
                                 <span>{activeLanguage.label.split(' ')[0]}</span>
-                                <ChevronDown size={10} className="text-[var(--text-muted)]" />
+                                <ChevronDown size={11} className="text-zinc-400" />
                             </button>
 
                             {isLangMenuOpen && (
-                                <div className="absolute right-0 bottom-full mb-1 w-64 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-2xl p-2 z-50">
-                                    {/* Search */}
+                                <div className="absolute right-0 bottom-full mb-2 w-60 bg-[#161619] border border-white/10 rounded-xl shadow-2xl p-2 z-50 backdrop-blur-xl">
                                     <div className="relative mb-2">
-                                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
                                         <input
                                             type="text"
                                             value={langSearch}
                                             onChange={e => setLangSearch(e.target.value)}
-                                            placeholder="Search 99+ languages..."
-                                            className="w-full pl-7 pr-2 py-1 rounded-md bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]"
+                                            placeholder="Search languages..."
+                                            className="w-full pl-7 pr-2 py-1 rounded-md bg-[#0C0C0E] border border-white/10 text-xs text-zinc-200 placeholder:text-zinc-500 outline-none focus:border-white/20"
                                             autoFocus
                                         />
                                     </div>
 
-                                    <div className="max-h-56 overflow-y-auto space-y-0.5 scroll-smooth">
+                                    <div className="max-h-52 overflow-y-auto space-y-0.5 scroll-smooth">
                                         {filteredLanguages.map(lang => (
                                             <button
                                                 type="button"
@@ -847,16 +603,15 @@ Output only the polished, punctuated verbatim dialogue:`;
                                                 className={cn(
                                                     "w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between cursor-pointer",
                                                     selectedLanguage === lang.code 
-                                                        ? "text-[var(--accent)] bg-[var(--surface-hover)] font-semibold" 
-                                                        : "text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+                                                        ? "text-white bg-white/10 font-semibold" 
+                                                        : "text-zinc-300 hover:bg-white/[0.05]"
                                                 )}
                                             >
                                                 <div className="flex items-center gap-2 truncate">
                                                     <span>{lang.flag}</span>
                                                     <span className="truncate">{lang.label}</span>
-                                                    <span className="text-[10px] text-[var(--text-muted)]">({lang.nativeName})</span>
                                                 </div>
-                                                {selectedLanguage === lang.code && <Check size={12} className="shrink-0 text-[var(--accent)]" />}
+                                                {selectedLanguage === lang.code && <Check size={12} className="shrink-0 text-emerald-400" />}
                                             </button>
                                         ))}
                                     </div>
@@ -864,93 +619,116 @@ Output only the polished, punctuated verbatim dialogue:`;
                             )}
                         </div>
 
-                        <button type="button" onClick={handleCopyAll} className="hover:text-[var(--text-primary)] p-1 transition-colors cursor-pointer" title="Copy transcript">
-                            {copied ? <Check size={13} className="text-[var(--accent)]" /> : <Copy size={13} />}
+                        {/* Search Toggle */}
+                        <button 
+                            type="button" 
+                            onClick={() => setIsSearchOpen(!isSearchOpen)} 
+                            className={cn("p-1.5 rounded-md transition-colors cursor-pointer", isSearchOpen ? "text-white bg-white/10" : "hover:text-white hover:bg-white/[0.04]")}
+                            title="Search in transcript"
+                        >
+                            <Search size={13} />
                         </button>
-                        <button type="button" onClick={() => setIsMinimized(true)} className="hover:text-[var(--text-primary)] p-1 transition-colors cursor-pointer" title="Minimize">
-                            <Minus size={14} />
+
+                        {/* Copy All */}
+                        <button 
+                            type="button" 
+                            onClick={handleCopyAll} 
+                            className="p-1.5 hover:text-white hover:bg-white/[0.04] rounded-md transition-colors cursor-pointer" 
+                            title="Copy entire transcript"
+                        >
+                            {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                         </button>
-                        <button type="button" onClick={onClose} className="hover:text-[var(--text-primary)] p-1 transition-colors cursor-pointer" title="Close">
-                            <Square size={12} />
+
+                        {/* Minimize */}
+                        <button 
+                            type="button" 
+                            onClick={() => setIsMinimized(true)} 
+                            className="p-1.5 hover:text-white hover:bg-white/[0.04] rounded-md transition-colors cursor-pointer" 
+                            title="Minimize to waveform"
+                        >
+                            <Minus size={13} />
+                        </button>
+
+                        {/* Close */}
+                        <button 
+                            type="button" 
+                            onClick={onClose} 
+                            className="p-1.5 hover:text-white hover:bg-white/[0.04] rounded-md transition-colors cursor-pointer" 
+                            title="Close"
+                        >
+                            <X size={14} />
                         </button>
                     </div>
                 </div>
 
-                {/* Transcript Search Bar */}
-                {chunks.length > 2 && (
-                    <div className="px-4 py-1.5 border-b border-[var(--border)] bg-[var(--surface)]/60 flex items-center gap-2">
-                        <Search size={12} className="text-[var(--text-muted)] shrink-0" />
+                {/* In-Transcript Keyword Filter */}
+                {isSearchOpen && (
+                    <div className="px-4 py-2 border-b border-white/[0.06] bg-[#0E0E10] flex items-center gap-2">
+                        <Search size={12} className="text-zinc-400 shrink-0" />
                         <input
                             type="text"
                             value={transcriptSearch}
                             onChange={e => setTranscriptSearch(e.target.value)}
-                            placeholder="Filter transcript keywords..."
-                            className="w-full bg-transparent border-none outline-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+                            placeholder="Filter keywords in real-time..."
+                            className="w-full bg-transparent border-none outline-none text-xs text-zinc-200 placeholder:text-zinc-500"
+                            autoFocus
                         />
                         {transcriptSearch && (
-                            <button type="button" onClick={() => setTranscriptSearch('')} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">
+                            <button type="button" onClick={() => setTranscriptSearch('')} className="text-[11px] text-zinc-400 hover:text-white cursor-pointer">
                                 Clear
                             </button>
                         )}
                     </div>
                 )}
 
-                {/* Multilingual Transcript Stream */}
+                {/* Conversational Speech Stream */}
                 <div 
                     ref={scrollRef}
-                    className="p-4 max-h-[38vh] min-h-[160px] overflow-y-auto space-y-2 bg-[var(--bg)] font-sans"
+                    className="p-5 max-h-[42vh] min-h-[180px] overflow-y-auto space-y-4 bg-[#0E0E10]/80 font-sans scroll-smooth"
                 >
                     {chunks.length === 0 && !interimText && (
-                        <div className="flex flex-col items-center justify-center py-10 text-[var(--text-muted)] text-xs gap-1.5">
-                            <div className="flex items-center gap-1.5 text-base mb-1">
-                                <span>🌐</span>
-                                <span>🇮🇳</span>
-                                <span>🇪🇸</span>
-                                <span>🇫🇷</span>
-                                <span>🇯🇵</span>
-                                <span>🇩🇪</span>
+                        <div className="flex flex-col items-center justify-center py-12 text-zinc-500 text-xs gap-2 text-center">
+                            <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-zinc-400 mb-1">
+                                <Mic size={15} />
                             </div>
-                            <p className="font-semibold text-[var(--text-primary)]">
-                                {isStreaming ? `Listening in ${activeLanguage.label}...` : 'Recording paused.'}
+                            <p className="font-medium text-zinc-300">
+                                {isStreaming ? `Listening to audio in ${activeLanguage.label}...` : 'Recording paused.'}
                             </p>
-                            <p className="text-[11px] text-[var(--text-muted)] opacity-80">
-                                Native script verbatim transcription & speaker attribution active.
+                            <p className="text-[11px] text-zinc-500 max-w-xs leading-normal">
+                                What you or attendees say will appear here in clean verbatim native script.
                             </p>
                         </div>
                     )}
 
-                    <AnimatePresence>
-                        {chunks
-                            .filter(c => !transcriptSearch.trim() || c.text.toLowerCase().includes(transcriptSearch.toLowerCase()))
-                            .map((chunk, idx) => (
-                            <motion.div 
-                                key={chunk.id}
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="group relative flex flex-col gap-1 rounded-xl p-2 transition-colors hover:bg-[var(--surface-hover)]/40"
+                    {/* Timeline Paragraphs */}
+                    {visibleChunks.map((chunk, idx) => {
+                        const isMe = chunk.speaker === 'me';
+                        return (
+                            <div 
+                                key={chunk.id} 
+                                className="group relative flex flex-col gap-1.5 px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.03]"
                             >
-                                <div className="flex items-center justify-between text-[11px] px-1">
-                                    <div className="flex items-center gap-1.5">
+                                {/* Speaker & Metadata Row */}
+                                <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-2">
                                         <span className={cn(
-                                            "px-2 py-0.5 rounded-full text-[10px] font-semibold border shadow-2xs",
-                                            idx % 2 === 0 
-                                                ? "bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)]" 
-                                                : "bg-[var(--surface-raised)] text-[var(--text-secondary)] border-[var(--border)]"
+                                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide",
+                                            isMe 
+                                                ? "bg-indigo-500/15 text-indigo-400 border border-indigo-500/20" 
+                                                : "bg-white/[0.06] text-zinc-300 border border-white/[0.08]"
                                         )}>
-                                            {idx % 2 === 0 ? 'You' : `Speaker ${Math.floor(idx / 2) + 1}`}
+                                            {isMe ? <Mic size={10} /> : <User size={10} />}
+                                            <span>{isMe ? 'You' : `Speaker ${Math.floor(idx / 2) + 1}`}</span>
                                         </span>
                                         {chunk.language && (
-                                            <span className="text-[11px] text-[var(--text-muted)]">
+                                            <span className="text-[11px] text-zinc-500 font-normal">
                                                 {chunk.language}
                                             </span>
                                         )}
-                                        {chunk.isTranslated && (
-                                            <span className="bg-[var(--accent-dim)] text-[var(--accent)] text-[9px] px-1 py-0.2 rounded font-semibold uppercase">Translated</span>
-                                        )}
                                     </div>
-                                    
+
+                                    {/* Hover Actions: Copy & Insert */}
                                     <div className="flex items-center gap-2">
-                                        {/* Hover Actions: Copy & Insert to Note */}
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                                             <button
                                                 type="button"
@@ -959,79 +737,97 @@ Output only the polished, punctuated verbatim dialogue:`;
                                                     setCopiedChunkId(chunk.id);
                                                     setTimeout(() => setCopiedChunkId(null), 1800);
                                                 }}
-                                                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
-                                                title="Copy Quote"
+                                                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                                title="Copy quote"
                                             >
-                                                {copiedChunkId === chunk.id ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                                                {copiedChunkId === chunk.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                                                 <span>{copiedChunkId === chunk.id ? 'Copied' : 'Copy'}</span>
                                             </button>
+
                                             {onInsertQuote && (
                                                 <button
                                                     type="button"
                                                     onClick={() => onInsertQuote(chunk.text)}
-                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--accent)] hover:bg-[var(--accent-dim)] font-medium transition-colors cursor-pointer"
-                                                    title="Insert directly into notes"
+                                                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-amber-400 hover:bg-amber-400/10 font-medium transition-colors cursor-pointer"
+                                                    title="Insert quote directly into notes"
                                                 >
-                                                    <Plus size={10} />
-                                                    <span>+ Add to Note</span>
+                                                    <Plus size={11} />
+                                                    <span>Insert to Note</span>
                                                 </button>
                                             )}
                                         </div>
-                                        <span className="text-[10px] text-[var(--text-muted)] font-mono tabular-nums">{chunk.timestamp || formatTime(recordingTime)}</span>
+
+                                        <span className="text-[11px] text-zinc-500 font-mono tabular-nums">
+                                            {chunk.timestamp || formatTime(recordingTime)}
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3.5 py-2 text-[13.5px] leading-relaxed text-[var(--text-primary)] shadow-xs">
+
+                                {/* Verbatim Speech Content */}
+                                <div className="text-[13.5px] leading-relaxed text-zinc-100 pl-1 font-normal select-text">
                                     {chunk.text}
                                 </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
+                            </div>
+                        );
+                    })}
 
-                    {/* Live Interim Streaming Preview */}
+                    {/* Interim Live Preview */}
                     {interimText && (
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="bg-[var(--surface)] border border-[var(--border)] border-dashed rounded-xl px-3.5 py-2 text-[13.5px] text-[var(--text-muted)] italic shadow-xs"
-                        >
-                            {interimText} <span className="animate-pulse text-[var(--accent)] font-bold">...</span>
-                        </motion.div>
+                        <div className="px-3 py-1.5 text-[13.5px] text-zinc-400 italic flex items-center gap-1.5">
+                            <span>{interimText}</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        </div>
                     )}
                 </div>
 
-                {/* Bottom Control Strip */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-[var(--surface)]">
-                    {/* Left: Waveform & Time */}
-                    <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-0.5 h-4 px-1" title={`Live Audio Level: ${audioLevel}%`}>
-                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-[var(--accent)]" : "bg-[var(--text-muted)] opacity-40")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.2 + 4))}px` : '4px' }} />
-                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-[var(--accent)]" : "bg-[var(--text-muted)] opacity-40")} style={{ height: isStreaming ? `${Math.max(6, Math.min(16, audioLevel * 0.35 + 6))}px` : '6px' }} />
-                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-[var(--accent)]" : "bg-[var(--text-muted)] opacity-40")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.22 + 4))}px` : '4px' }} />
+                {/* Minimalist Bottom Control Strip */}
+                <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06] bg-[#161619]/60 shrink-0">
+                    {/* Left: Waveform & Pause/Resume */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-0.5 h-4 px-0.5">
+                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.2 + 4))}px` : '4px' }} />
+                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(6, Math.min(16, audioLevel * 0.35 + 6))}px` : '6px' }} />
+                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.22 + 4))}px` : '4px' }} />
                         </div>
                         
                         <button 
                             type="button"
                             onClick={toggleStreaming}
-                            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1 flex items-center gap-1 text-xs cursor-pointer font-medium"
-                            title={isStreaming ? "Pause recording" : "Resume recording"}
+                            className="text-zinc-300 hover:text-white transition-colors text-xs font-medium cursor-pointer"
                         >
-                            <span>{isStreaming ? 'Pause' : 'Resume'}</span>
+                            {isStreaming ? 'Pause' : 'Resume'}
                         </button>
                     </div>
 
-                    {/* Center: Live Duration */}
-                    <span className="text-xs font-mono text-[var(--text-muted)] font-medium tabular-nums">
+                    {/* Center: Live Monospace Timer */}
+                    <span className="text-xs font-mono text-zinc-400 font-medium tabular-nums tracking-wider">
                         {formatTime(recordingTime)}
                     </span>
 
-                    {/* Right: Done Button */}
-                    <button 
-                        type="button"
-                        onClick={handleGenerateNotes}
-                        className="px-3.5 py-1.5 rounded-md bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold transition-all cursor-pointer shadow-xs"
-                    >
-                        Done & Generate Notes
-                    </button>
+                    {/* Right: Polish & Done Buttons */}
+                    <div className="flex items-center gap-2">
+                        {chunks.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handlePolishTranscript}
+                                disabled={isPolishing}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 text-xs font-medium transition-all cursor-pointer disabled:opacity-50 border border-white/[0.08]"
+                                title="Clean up transcription errors with AI"
+                            >
+                                <Wand2 size={12} className={isPolishing ? "animate-spin text-amber-400" : "text-amber-400"} />
+                                <span>{isPolishing ? "Polishing..." : "AI Polish"}</span>
+                            </button>
+                        )}
+
+                        <button 
+                            type="button"
+                            onClick={handleGenerateNotes}
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                        >
+                            <Sparkles size={12} className="text-amber-600" />
+                            <span>Done & Generate Notes</span>
+                        </button>
+                    </div>
                 </div>
             </motion.div>
         </div>
