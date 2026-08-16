@@ -2,84 +2,65 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HelpCircle } from "lucide-react";
 
 const faqs = [
   {
-    q: "Does BACHAM require an internet connection?",
-    a: "No. The core audio transcription (Whisper), slide OCR, note generation, and spaced repetition flashcards run 100% locally on your machine using local compute. If you choose to use Ollama for AI chat, even conversations stay entirely offline."
+    q: "Do I need to leave my computer open during a lecture?",
+    a: "Yes, the Chrome extension needs to be active during the video to capture the data, but it runs silently in the background without affecting your computer's performance."
   },
   {
-    q: "Where are my meeting and lecture recordings stored?",
-    a: "Privacy is built into the architecture. All captured audio, keyframes, transcripts, and study decks are stored strictly in a local SQLite database on your computer. No data is ever dispatched to our servers."
+    q: "Where is my data stored?",
+    a: "Privacy is our priority. All data is processed and stored locally on your machine in a secure SQLite database. No recordings or transcripts are ever sent to a cloud server."
   },
   {
-    q: "Which platforms and video formats does the Chrome Extension support?",
-    a: "BACHAM works with Google Meet, Zoom Web, Microsoft Teams Web, Canvas LMS, Panopto, Coursera, YouTube, and any standard HTML5 browser video player."
+    q: "Does BACHAM work with live Zoom calls?",
+    a: "Currently, BACHAM is optimized for browser-based video players (like YouTube, Panopto, Canvas, and Coursera). Deep native integration for live Zoom and Teams calls is coming in Q4."
   },
   {
-    q: "Can I bring my own Gemini or OpenAI API key?",
-    a: "Yes! You have complete freedom: run 100% free with local Ollama models, or plug in your Gemini, OpenAI, or Anthropic API key in Settings for cloud reasoning."
-  },
-  {
-    q: "Can I export my notes and flashcards to other apps?",
-    a: "Yes. BACHAM exports formatted Markdown directly into Obsidian, Notion, or Apple Notes, and exports Anki-compatible decks (.apkg / .csv) for your active recall sessions."
+    q: "Do I need a Gemini API key?",
+    a: "The core transcription and OCR features run completely locally. However, if you want to use the advanced 'Ask AI' chat feature to converse with your lectures, you will need to provide your own Gemini API key."
   }
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(0); // Open the first one by default for presentation
 
   const toggle = (idx: number) => {
     setOpenIndex(openIndex === idx ? null : idx);
   };
 
   return (
-    <section id="faq" className="py-32 border-t border-white/[0.06] bg-transparent relative z-10">
+    <section id="faq" className="py-32 border-t border-white/5 bg-transparent relative z-10">
       <div className="container mx-auto px-6 max-w-6xl">
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
+        
+        <div className="flex flex-col md:flex-row gap-12 md:gap-24">
           
-          {/* Left Column */}
-          <div className="lg:w-1/3">
-            <div className="lg:sticky lg:top-32">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#A6FF00]/20 bg-[#A6FF00]/5 text-xs font-semibold tracking-widest text-[#A6FF00] uppercase mb-4">
-                <HelpCircle size={12} />
-                Knowledge Base
-              </div>
+          {/* Left Column - Sticky */}
+          <div className="md:w-1/3">
+            <div className="sticky top-32">
               <motion.h2 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="text-4xl md:text-5xl font-extrabold tracking-tighter text-[#F0F0F0] mb-4"
+                className="text-4xl md:text-5xl font-serif tracking-tight text-[#F5F5F5] mb-6"
               >
-                Frequently asked questions
+                FAQs
               </motion.h2>
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="text-[#888888] text-base leading-relaxed mb-6"
+                className="text-[#A0A0A0] text-lg leading-relaxed"
               >
-                Everything you need to know about privacy, offline AI, and workflow integration.
+                Everything you need to know about how BACHAM works, privacy, and integrations. Can't find the answer you're looking for? Reach out on our community Discord.
               </motion.p>
-              <div className="p-5 rounded-2xl glass-card border border-white/[0.07]">
-                <p className="text-xs text-[#888888] mb-2">Have a question not answered here?</p>
-                <a 
-                  href="https://github.com/bacham-app/discussions" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs font-bold text-[#A6FF00] hover:underline"
-                >
-                  Join Community Discussion &rarr;
-                </a>
-              </div>
             </div>
           </div>
 
-          {/* Right Column - Accordion */}
-          <div className="lg:w-2/3">
-            <div className="border-t border-white/[0.08]">
+          {/* Right Column - Accordions */}
+          <div className="md:w-2/3">
+            <div className="border-t border-white/10">
               {faqs.map((faq, idx) => {
                 const isOpen = openIndex === idx;
                 return (
@@ -88,28 +69,24 @@ export default function FAQ() {
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: idx * 0.08 }}
-                    className="border-b border-white/[0.08] transition-colors"
+                    transition={{ delay: idx * 0.1 }}
+                    className="border-b border-white/10"
                   >
                     <button
                       onClick={() => toggle(idx)}
-                      className="w-full py-7 flex items-start justify-between text-left focus:outline-none group"
+                      className="w-full py-8 flex items-start justify-between text-left focus:outline-none group"
                     >
-                      <span className={`text-lg sm:text-xl font-bold pr-8 transition-colors duration-200 ${
-                        isOpen ? "text-[#A6FF00]" : "text-[#D0D0D0] group-hover:text-[#F0F0F0]"
-                      }`}>
+                      <span className={`text-xl font-medium pr-8 transition-colors duration-300 ${isOpen ? "text-[#F5F5F5]" : "text-[#D0D0D0] group-hover:text-[#F5F5F5]"}`}>
                         {faq.q}
                       </span>
                       
-                      {/* Plus/Minus Indicator */}
-                      <div className={`relative w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 transition-colors duration-200 ${
-                        isOpen ? "text-[#A6FF00]" : "text-[#777777] group-hover:text-[#F0F0F0]"
-                      }`}>
-                        <span className="absolute w-3.5 h-[2px] bg-current rounded-full" />
+                      {/* Morphing Plus/Minus Icon */}
+                      <div className={`relative w-6 h-6 flex items-center justify-center flex-shrink-0 mt-1 transition-colors duration-300 ${isOpen ? "text-[#F5F5F5]" : "text-[#A0A0A0] group-hover:text-[#F5F5F5]"}`}>
+                        <span className="absolute w-4 h-[2px] bg-current rounded-full" />
                         <motion.span 
                           animate={{ rotate: isOpen ? 90 : 0, opacity: isOpen ? 0 : 1 }} 
-                          transition={{ duration: 0.25, ease: "easeInOut" }}
-                          className="absolute h-3.5 w-[2px] bg-current rounded-full" 
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="absolute h-4 w-[2px] bg-current rounded-full" 
                         />
                       </div>
                     </button>
@@ -123,7 +100,7 @@ export default function FAQ() {
                           transition={{ duration: 0.3, ease: "easeInOut" }}
                           className="overflow-hidden"
                         >
-                          <div className="pb-7 pr-6 text-[#888888] text-base leading-relaxed">
+                          <div className="pb-8 pr-12 text-[#A0A0A0] text-lg leading-relaxed">
                             {faq.a}
                           </div>
                         </motion.div>
@@ -136,6 +113,7 @@ export default function FAQ() {
           </div>
 
         </div>
+
       </div>
     </section>
   );

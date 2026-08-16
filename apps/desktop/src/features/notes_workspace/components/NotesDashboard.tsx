@@ -128,6 +128,15 @@ export function NotesDashboard({
                         <Folder size={14} />
                     </button>
                 </div>
+                {/* New Note Button — always visible */}
+                <button
+                    onClick={onCreateNote}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-primary)] text-[var(--bg)] text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                    title="Create a new note"
+                >
+                    <Plus size={13} />
+                    New Note
+                </button>
             </div>
 
             {/* Main Content Area */}

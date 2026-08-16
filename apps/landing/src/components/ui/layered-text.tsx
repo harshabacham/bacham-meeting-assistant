@@ -78,8 +78,8 @@ export function LayeredText({
   return (
     <div
       ref={containerRef}
-      className={`mx-auto py-24 font-sans font-black tracking-[-2px] uppercase text-[#A6FF00] antialiased cursor-pointer ${className}`}
-      style={{ fontSize, "--md-font-size": fontSizeMd, textShadow: "0 0 30px rgba(166,255,0,0.2)" } as React.CSSProperties}
+      className={`mx-auto py-24 font-sans font-black tracking-[-2px] uppercase text-[#111111] dark:text-[#A6FF00] antialiased cursor-pointer ${className}`}
+      style={{ fontSize, "--md-font-size": fontSizeMd } as React.CSSProperties}
     >
       <ul className="list-none p-0 m-0 flex flex-col items-center">
         {lines.map((line, index) => {

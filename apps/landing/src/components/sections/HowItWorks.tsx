@@ -3,163 +3,142 @@
 import { motion } from "framer-motion";
 import { Download, MonitorPlay, Send, BrainCircuit, PackageOpen } from "lucide-react";
 
-const steps = [
-  {
-    num: "01",
-    icon: Download,
-    title: "Install",
-    desc: "Add the invisible Chrome Extension to your browser. Takes 30 seconds.",
-    color: "#A6FF00",
-    glowColor: "rgba(166,255,0,0.12)",
-    span: "col-span-1",
-  },
-  {
-    num: "02",
-    icon: MonitorPlay,
-    title: "Record seamlessly",
-    desc: "Open any meeting or video. The extension automatically detects and begins capturing context — no manual intervention needed.",
-    color: "#3B82F6",
-    glowColor: "rgba(59,130,246,0.12)",
-    span: "col-span-1 md:col-span-2",
-  },
-  {
-    num: "03",
-    icon: Send,
-    title: "Sync",
-    desc: "Data streams securely to your desktop app in real-time.",
-    color: "#9B5EFF",
-    glowColor: "rgba(155,94,255,0.12)",
-    span: "col-span-1",
-  },
-  {
-    num: "04",
-    icon: BrainCircuit,
-    title: "Analyze",
-    desc: "Local AI processes audio and context to build deep understanding.",
-    color: "#10B981",
-    glowColor: "rgba(16,185,129,0.12)",
-    span: "col-span-1",
-  },
-  {
-    num: "05",
-    icon: PackageOpen,
-    title: "Master",
-    desc: "Your study package is ready. Smart notes, action items, and AI chat.",
-    color: "#A6FF00",
-    glowColor: "rgba(166,255,0,0.15)",
-    span: "col-span-1",
-    highlight: true,
-  },
-];
-
-const container: any = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } }
-};
-const item: any = {
-  hidden: { opacity: 0, y: 24, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-};
-
 export default function HowItWorks() {
-  return (
-    <section id="how-it-works" className="py-32 border-t border-white/[0.06] bg-transparent overflow-hidden">
-      <div className="container mx-auto px-6 max-w-6xl">
+  const container: any = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
 
-        <div className="mb-16 max-w-2xl">
-          <p className="text-xs font-semibold tracking-[0.2em] text-[#A6FF00] uppercase mb-4">Process</p>
-          <h2 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-[#F0F0F0] mb-4 leading-tight">
+  const item: any = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+  };
+
+  return (
+    <section id="how-it-works" className="py-32 border-t border-white/5 bg-transparent overflow-hidden">
+      <div className="container mx-auto px-6 max-w-6xl">
+        <div className="mb-20 text-center md:text-left">
+          <h2 className="text-4xl md:text-6xl font-serif tracking-tight text-[#F5F5F5] mb-4">
             How it works
           </h2>
-          <p className="text-lg text-[#888888] leading-relaxed">
+          <p className="text-xl text-[#A0A0A0] max-w-2xl">
             From installation to mastery in five seamless stages. Designed for flow.
           </p>
         </div>
 
-        <motion.div
+        <motion.div 
           variants={container}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[280px]"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]"
         >
-          {steps.map((step) => (
-            <motion.div
-              key={step.num}
-              variants={item}
-              className={`${step.span} relative group rounded-3xl p-7 overflow-hidden transition-all duration-500 hover:-translate-y-1 ${
-                step.highlight
-                  ? "bg-[#A6FF00] border-0 animate-pulse-glow"
-                  : "glass-card hover:border-white/12"
-              }`}
+          {/* Step 1 */}
+          <motion.div variants={item} className="md:col-span-1 group relative bg-[#1E1E1E] border border-white/5 rounded-3xl p-8 overflow-hidden hover:border-white/10 transition-colors">
+            <motion.div 
+              animate={{ y: [0, -15, 0] }} 
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-30 transition-opacity"
             >
-              {/* Per-card glow orb */}
-              {!step.highlight && (
-                <div
-                  className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-                  style={{ background: step.glowColor }}
-                />
-              )}
+              <Download size={120} className="text-[#A6FF00]" />
+            </motion.div>
+            <div className="relative z-10 h-full flex flex-col justify-end">
+              <div className="w-12 h-12 rounded-xl bg-[#A6FF00]/10 flex items-center justify-center text-[#A6FF00] mb-4">
+                <span className="font-bold">1</span>
+              </div>
+              <h3 className="text-2xl text-[#F5F5F5] font-semibold mb-2">Install</h3>
+              <p className="text-[#A0A0A0]">Add the invisible Chrome Extension to your browser.</p>
+            </div>
+          </motion.div>
 
-              {/* Floating background icon */}
-              {!step.highlight && (
-                <motion.div
-                  animate={{ y: [0, -12, 0] }}
-                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: parseInt(step.num) * 0.5 }}
-                  className="absolute top-5 right-5 opacity-[0.06] group-hover:opacity-[0.14] transition-opacity duration-500 pointer-events-none"
-                >
-                  <step.icon size={90} />
-                </motion.div>
-              )}
-
-              {/* Content */}
-              <div className={`relative z-10 h-full flex flex-col justify-between ${step.highlight ? "text-[#050505]" : ""}`}>
-                <div className="flex items-center justify-between">
-                  {/* Step number badge */}
-                  <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
-                      step.highlight
-                        ? "bg-black/10 text-[#050505]"
-                        : "border border-white/10 bg-white/[0.04] text-[#888888]"
-                    }`}
-                  >
-                    {step.num}
-                  </div>
-                  {step.highlight && (
-                    <motion.div
-                      animate={{ rotate: [0, -10, 10, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                    >
-                      <PackageOpen size={28} className="text-[#050505]" />
-                    </motion.div>
-                  )}
+          {/* Step 2 */}
+          <motion.div variants={item} className="md:col-span-2 group relative bg-[#1E1E1E] border border-white/5 rounded-3xl p-8 overflow-hidden hover:border-white/10 transition-colors">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#A6FF00]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <motion.div 
+              animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+              className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-500 blur-3xl rounded-full" 
+            />
+            <div className="relative z-10 h-full flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                  <span className="font-bold">2</span>
                 </div>
-
-                <div>
-                  <h3 className={`text-2xl md:text-3xl font-bold mb-2 ${step.highlight ? "text-[#050505]" : "text-[#F0F0F0]"}`}>
-                    {step.title}
-                  </h3>
-                  <p className={step.highlight ? "text-[#050505]/75 font-medium" : "text-[#777777] text-[15px]"}>
-                    {step.desc}
-                  </p>
+                <div className="relative">
+                  <MonitorPlay size={32} className="text-[#A0A0A0] group-hover:text-blue-400 transition-colors" />
+                  <motion.div 
+                    animate={{ opacity: [1, 0, 1] }} 
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"
+                  />
                 </div>
               </div>
+              <div>
+                <h3 className="text-3xl text-[#F5F5F5] font-semibold mb-2">Record seamlessly</h3>
+                <p className="text-[#A0A0A0] max-w-sm">Open any lecture video. The extension automatically detects and begins capturing context without manual intervention.</p>
+              </div>
+            </div>
+          </motion.div>
 
-              {/* Recording dot for step 02 */}
-              {step.num === "02" && (
-                <div className="absolute top-7 right-7">
-                  <div className="relative">
-                    <MonitorPlay size={26} className="text-[#888888] group-hover:text-[#3B82F6] transition-colors" />
-                    <motion.div
-                      animate={{ opacity: [1, 0, 1] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                      className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_6px_rgba(239,68,68,0.8)]"
-                    />
-                  </div>
-                </div>
-              )}
+          {/* Step 3 */}
+          <motion.div variants={item} className="md:col-span-1 group relative bg-[#1E1E1E] border border-white/5 rounded-3xl p-8 overflow-hidden hover:border-white/10 transition-colors">
+            <motion.div 
+              animate={{ x: [0, 15, 0], y: [0, -15, 0] }}
+              transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+              className="absolute inset-0 flex items-center justify-center opacity-[0.03] group-hover:opacity-10 transition-opacity"
+            >
+              <Send size={150} className="text-purple-400 -rotate-12" />
             </motion.div>
-          ))}
+            <div className="relative z-10 h-full flex flex-col justify-end">
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-4">
+                <span className="font-bold">3</span>
+              </div>
+              <h3 className="text-2xl text-[#F5F5F5] font-semibold mb-2">Sync</h3>
+              <p className="text-[#A0A0A0]">Data streams securely to your desktop app in real-time.</p>
+            </div>
+          </motion.div>
+
+          {/* Step 4 */}
+          <motion.div variants={item} className="md:col-span-1 group relative bg-[#1E1E1E] border border-white/5 rounded-3xl p-8 overflow-hidden hover:border-white/10 transition-colors">
+             <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+             <motion.div 
+               animate={{ top: ["0%", "100%", "0%"] }}
+               transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+               className="absolute left-0 w-full h-[1px] bg-emerald-500/50 blur-[1px] hidden group-hover:block"
+             />
+            <div className="relative z-10 h-full flex flex-col justify-end">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-4 overflow-hidden relative">
+                <span className="font-bold relative z-10">4</span>
+              </div>
+              <h3 className="text-2xl text-[#F5F5F5] font-semibold mb-2">Analyze</h3>
+              <p className="text-[#A0A0A0]">AI processes visuals, audio, and slides to build understanding.</p>
+            </div>
+          </motion.div>
+
+          {/* Step 5 */}
+          <motion.div variants={item} className="md:col-span-1 group relative bg-[#A6FF00] rounded-3xl p-8 overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+            <div className="relative z-10 h-full flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-xl bg-black/10 flex items-center justify-center text-[#111111]">
+                  <span className="font-bold">5</span>
+                </div>
+                <motion.div
+                  animate={{ rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                >
+                  <PackageOpen size={32} className="text-[#111111]" />
+                </motion.div>
+              </div>
+              <div>
+                <h3 className="text-3xl text-[#111111] font-bold mb-2">Master</h3>
+                <p className="text-[#111111]/80 font-medium">Your interactive study package is ready. Flashcards, notes, and chat.</p>
+              </div>
+            </div>
+          </motion.div>
+
         </motion.div>
       </div>
     </section>
