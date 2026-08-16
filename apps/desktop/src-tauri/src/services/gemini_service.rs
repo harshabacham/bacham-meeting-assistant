@@ -842,6 +842,31 @@ impl GeminiService {
             .build()
             .unwrap_or_else(|_| Client::new());
 
+        // Resolve language hints: ISO-639-1 code for Whisper, Native language name for Gemini
+        let (iso_lang, lang_desc) = match language_hint.as_deref().map(|s| s.to_lowercase()) {
+            Some(ref s) if s == "hindi" || s == "hi" || s == "hi-in" => (Some("hi"), "Hindi (हिंदी) in Devanagari script"),
+            Some(ref s) if s == "telugu" || s == "te" || s == "te-in" => (Some("te"), "Telugu (తెలుగు) in Telugu script"),
+            Some(ref s) if s == "tamil" || s == "ta" || s == "ta-in" => (Some("ta"), "Tamil (தமிழ்) in Tamil script"),
+            Some(ref s) if s == "kannada" || s == "kn" || s == "kn-in" => (Some("kn"), "Kannada (ಕನ್ನಡ) in Kannada script"),
+            Some(ref s) if s == "malayalam" || s == "ml" || s == "ml-in" => (Some("ml"), "Malayalam (മലയാളം) in Malayalam script"),
+            Some(ref s) if s == "marathi" || s == "mr" || s == "mr-in" => (Some("mr"), "Marathi (मराठी) in Devanagari script"),
+            Some(ref s) if s == "bengali" || s == "bn" || s == "bn-in" => (Some("bn"), "Bengali (বাংলা) in Bengali script"),
+            Some(ref s) if s == "gujarati" || s == "gu" || s == "gu-in" => (Some("gu"), "Gujarati (ગુજરાતી) in Gujarati script"),
+            Some(ref s) if s == "punjabi" || s == "pa" || s == "pa-in" => (Some("pa"), "Punjabi (ਪੰਜਾਬੀ) in Gurmukhi script"),
+            Some(ref s) if s == "spanish" || s == "es" || s == "es-es" => (Some("es"), "Spanish (Español)"),
+            Some(ref s) if s == "french" || s == "fr" || s == "fr-fr" => (Some("fr"), "French (Français)"),
+            Some(ref s) if s == "german" || s == "de" || s == "de-de" => (Some("de"), "German (Deutsch)"),
+            Some(ref s) if s == "portuguese" || s == "pt" || s == "pt-pt" => (Some("pt"), "Portuguese (Português)"),
+            Some(ref s) if s == "italian" || s == "it" || s == "it-it" => (Some("it"), "Italian (Italiano)"),
+            Some(ref s) if s == "russian" || s == "ru" || s == "ru-ru" => (Some("ru"), "Russian (Русский)"),
+            Some(ref s) if s == "japanese" || s == "ja" || s == "ja-jp" => (Some("ja"), "Japanese (日本語)"),
+            Some(ref s) if s == "chinese" || s == "zh" || s == "zh-cn" => (Some("zh"), "Chinese (中文)"),
+            Some(ref s) if s == "korean" || s == "ko" || s == "ko-kr" => (Some("ko"), "Korean (한국어)"),
+            Some(ref s) if s == "arabic" || s == "ar" || s == "ar-sa" => (Some("ar"), "Arabic (العربية)"),
+            Some(ref s) if s == "english" || s == "en" || s == "en-us" || s == "english-in" || s == "en-in" => (Some("en"), "English"),
+            _ => (None, "the spoken language in its original native script"),
+        };
+
         // 1. Try Groq Whisper (Whisper Large v3 Turbo - 2000 RPD, Free & Ultra-Fast)
         let groq_candidate_keys = ["groq_api_key", "groqApiKey", "groq", "bacham.groq"];
         let mut groq_key_opt: Option<String> = None;
@@ -886,10 +911,8 @@ impl GeminiService {
                         .text("model", "whisper-large-v3-turbo")
                         .text("response_format", "verbose_json");
 
-                    if let Some(ref l) = language_hint {
-                        if l != "auto" && !l.is_empty() {
-                            form = form.text("language", l.to_lowercase());
-                        }
+                    if let Some(iso) = iso_lang {
+                        form = form.text("language", iso);
                     }
 
                     if let Ok(res) = client.post("https://api.groq.com/openai/v1/audio/transcriptions")
@@ -962,10 +985,8 @@ impl GeminiService {
                         .text("model", "whisper-1")
                         .text("response_format", "verbose_json");
 
-                    if let Some(ref l) = language_hint {
-                        if l != "auto" && !l.is_empty() {
-                            form = form.text("language", l.to_lowercase());
-                        }
+                    if let Some(iso) = iso_lang {
+                        form = form.text("language", iso);
                     }
 
                     if let Ok(res) = client.post("https://api.openai.com/v1/audio/transcriptions")
@@ -994,7 +1015,7 @@ impl GeminiService {
             }
         }
 
-        // 3. Try Google Gemini Flash Models (Direct Verbatim Transcription)
+        // 3. Try Google Gemini Flash Models (Direct Verbatim Transcription in Native Script)
         if let Ok(key) = Self::get_api_key(&pool).await {
             let candidate_models = [
                 "gemini-3.5-flash-lite",
@@ -1003,7 +1024,12 @@ impl GeminiService {
                 "gemini-flash-latest",
             ];
 
-            let prompt_text = "Transcribe the spoken audio verbatim word-for-word exactly as heard. Do not summarize, do not translate, and do not add timestamps or notes. Output ONLY the raw spoken words. If there is no clear speech, output nothing.";
+            let prompt_text = format!(
+                "You are an expert speech recognition model. Transcribe the spoken audio verbatim in {}. \
+                CRITICAL: Do NOT translate to English. Write ONLY the exact words spoken in their native script (e.g. Devanagari for Hindi, Telugu script for Telugu, etc.). \
+                Do not add notes, timestamps, or formatting. Output ONLY the raw spoken words. If there is no clear speech, output nothing.",
+                lang_desc
+            );
 
             let clean_mime = mime_type.split(';').next().unwrap_or(mime_type).trim();
 
