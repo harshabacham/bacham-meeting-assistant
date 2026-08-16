@@ -182,14 +182,15 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
             if (rms > windowMaxRms) windowMaxRms = rms;
             setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-            // 2.0s streaming window (32,000 samples at 16kHz)
-            const WINDOW_SIZE = 32000;
-            const STEP_SIZE = 27200; // 300ms overlap
+            // 3.5s natural sentence streaming window (56,000 samples at 16kHz)
+            const WINDOW_SIZE = 56000;
+            const STEP_SIZE = 48000; // 500ms overlap
 
             if (pcmBuffer.length >= WINDOW_SIZE) {
                 const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
                 pcmBuffer = pcmBuffer.slice(STEP_SIZE);
-                const hadVoice = windowMaxRms > 0.003; // sensitive threshold
+                // Ultra-sensitive threshold to capture soft and whispered speech
+                const hadVoice = windowMaxRms > 0.0006;
                 windowMaxRms = 0;
 
                 if (hadVoice) {

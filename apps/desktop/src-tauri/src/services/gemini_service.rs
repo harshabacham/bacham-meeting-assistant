@@ -838,7 +838,7 @@ impl GeminiService {
     ) -> AppResult<serde_json::Value> {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(6))
+            .timeout(std::time::Duration::from_secs(20))
             .build()
             .unwrap_or_else(|_| Client::new());
 
@@ -1066,7 +1066,19 @@ impl GeminiService {
                                 .and_then(|p| p.get("text"))
                                 .and_then(|t| t.as_str()) {
                                     let trimmed = raw_text.trim();
-                                    if !trimmed.is_empty() && trimmed != "00:00" && trimmed != "0:00" && trimmed != "00:01" && !trimmed.to_lowercase().starts_with("subtitles") {
+                                    let lower = trimmed.to_lowercase();
+                                    if !trimmed.is_empty() 
+                                        && trimmed != "00:00" 
+                                        && trimmed != "0:00" 
+                                        && trimmed != "00:01" 
+                                        && !lower.starts_with("subtitles") 
+                                        && !lower.starts_with("<noise") 
+                                        && !lower.starts_with("[noise") 
+                                        && !lower.starts_with("[silence")
+                                        && lower != "<noise>"
+                                        && lower != "[noise]"
+                                        && lower != "[silence]"
+                                    {
                                         return Ok(serde_json::json!({
                                             "text": trimmed,
                                             "language": "",
