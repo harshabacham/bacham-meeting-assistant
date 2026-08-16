@@ -260,11 +260,11 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
             setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
 
-            // Dispatch every 1.0s (16,000 samples at 16kHz)
-            if (pcmBuffer.length >= 16000) {
-                const samplesToProcess = pcmBuffer.slice(0, 16000);
-                pcmBuffer = pcmBuffer.slice(14400); // 100ms overlap
-                const hadVoice = windowMaxRms > 0.004;
+            // 1.5s balanced streaming window (24,000 samples at 16kHz)
+            if (pcmBuffer.length >= 24000) {
+                const samplesToProcess = pcmBuffer.slice(0, 24000);
+                pcmBuffer = pcmBuffer.slice(20800); // 200ms overlap
+                const hadVoice = windowMaxRms > 0.006;
                 windowMaxRms = 0;
 
                 if (hadVoice && !isTranscribingChunk) {
@@ -275,29 +275,39 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
                         if (res && res.text && res.text.trim()) {
                             const trimmed = res.text.trim();
-                            if (res.language && res.language !== 'Auto') {
-                                setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
-                            }
-                            setChunks(prev => {
-                                if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
-                                    return prev;
+                            // Filter out known model hallucinations and timestamp artifacts
+                            if (
+                                trimmed !== '00:00' && 
+                                trimmed !== '0:00' && 
+                                trimmed !== '00:01' && 
+                                trimmed !== '00:02' && 
+                                trimmed !== 'one' && 
+                                trimmed.toLowerCase() !== 'subtitles by'
+                            ) {
+                                if (res.language && res.language !== 'Auto') {
+                                    setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
                                 }
-                                return [...prev, {
-                                    id: Date.now().toString() + Math.random(),
-                                    speaker: currentSpeaker,
+                                setChunks(prev => {
+                                    if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
+                                        return prev;
+                                    }
+                                    return [...prev, {
+                                        id: Date.now().toString() + Math.random(),
+                                        speaker: currentSpeaker,
+                                        text: trimmed,
+                                        language: res.language,
+                                        timeMs: Date.now(),
+                                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                    }];
+                                });
+                                emit('live_caption_received', {
+                                    sessionId: 'live-session',
                                     text: trimmed,
-                                    language: res.language,
-                                    timeMs: Date.now(),
-                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                                }];
-                            });
-                            emit('live_caption_received', {
-                                sessionId: 'live-session',
-                                text: trimmed,
-                                timestamp: Date.now(),
-                                platform: 'desktop'
-                            }).catch(() => {});
-                            setInterimText('');
+                                    timestamp: Date.now(),
+                                    platform: 'desktop'
+                                }).catch(() => {});
+                                setInterimText('');
+                            }
                         }
                     } catch (apiErr) {
                         console.warn("Live transcription error:", apiErr);
@@ -308,9 +318,8 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             }
         };
 
-        // Listen to native Rust WASAPI System Audio Loopback & Mic streams
+        // Listen to native Rust WASAPI System Audio Loopback
         let unlistenSys: (() => void) | undefined;
-        let unlistenMic: (() => void) | undefined;
 
         import('@tauri-apps/api/event').then(({ listen }) => {
             listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
@@ -318,15 +327,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                     pushSamples(event.payload.data, event.payload.rate || 16000, 'speaker');
                 }
             }).then(u => { unlistenSys = u; });
-
-            listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
-                if (event.payload?.data) {
-                    pushSamples(event.payload.data, event.payload.rate || 16000, 'me');
-                }
-            }).then(u => { unlistenMic = u; });
         });
 
-        // Also capture web audio microphone for instant redundancy
+        // Capture microphone audio via WebAudio API
         let audioCtx: AudioContext | null = null;
         let mediaStream: MediaStream | null = null;
         let processor: ScriptProcessorNode | null = null;
@@ -334,8 +337,8 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ 
                 audio: { 
-                    echoCancellation: false, 
-                    noiseSuppression: false, 
+                    echoCancellation: true, 
+                    noiseSuppression: true, 
                     autoGainControl: true,
                     channelCount: 1 
                 } 
@@ -369,7 +372,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
         return () => {
             TauriClient.stopNativeRecording().catch(console.error);
             if (unlistenSys) unlistenSys();
-            if (unlistenMic) unlistenMic();
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
             }

@@ -839,7 +839,7 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(12))
+            .timeout(std::time::Duration::from_secs(4))
             .build()
             .unwrap_or_else(|_| Client::new());
 
@@ -847,25 +847,22 @@ impl GeminiService {
             "gemini-2.0-flash",
             "gemini-1.5-flash",
             "gemini-flash-latest",
-            "gemini-flash-lite-latest",
         ];
 
         let lang_hint_str = match language_hint.as_deref() {
             Some(l) if l != "auto" => format!("The spoken language is likely {}. ", l),
-            _ => "Detect the spoken language automatically. ".to_string(),
+            _ => "Identify the spoken language automatically. ".to_string(),
         };
 
         let prompt_text = format!(
-            "You are an expert multilingual speech recognition and language identification engine. \
+            "You are a verbatim speech-to-text transcription engine. \
             INSTRUCTIONS: \
-            1. Listen carefully to this 16kHz audio. Identify the exact spoken language (e.g. Telugu, Hindi, Tamil, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Marathi, Spanish, French, German, Japanese, Chinese, Russian, Arabic, English, etc.). \
-            2. Transcribe EXACTLY what was spoken word-for-word in that language's true native script (e.g. if Telugu write in తెలుగు, if Hindi write in हिन्दी, if Tamil write in தமிழ், if English write in English). Do NOT transliterate unless the speaker actually spoke English loanwords. \
-            3. If the audio contains only silence, background noise, coughing, breathing, or keyboard clicks, return \"\" for text. \
-            {} \
-            Respond ONLY with a valid JSON object with keys: \
-            \"text\" (the verbatim native script transcription string), \
-            \"language\" (the detected language name string), \
-            \"flag\" (the single flag emoji for that language, e.g. 🇮🇳, 🇪🇸, 🇺🇸, 🇫🇷, 🇯🇵).",
+            1. Transcribe the exact words spoken in this audio in the speaker's true native script (e.g. if Telugu write in తెలుగు, if Hindi write in हिन्दी, if Tamil write in தமிழ், if English write in English). \
+            2. {} \
+            3. STRICT RULES: NEVER output timestamps (e.g. 00:00, 0:00), subtitle marks, or numbers unless explicitly spoken. \
+            4. If the audio is silence, background hum, breathing, or unclear noise, return an empty string \"\" for text. \
+            Return ONLY a valid JSON object: \
+            {{\"text\": \"<verbatim transcription>\", \"language\": \"<Language Name>\", \"flag\": \"<Single Flag Emoji>\"}}",
             lang_hint_str
         );
 
@@ -885,7 +882,7 @@ impl GeminiService {
             }],
             "generationConfig": {
                 "responseMimeType": "application/json",
-                "temperature": 0.1
+                "temperature": 0.0
             }
         });
 
@@ -904,11 +901,21 @@ impl GeminiService {
                             .and_then(|p| p.get(0))
                             .and_then(|p| p.get("text"))
                             .and_then(|t| t.as_str()) {
-                                if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(text) {
+                                if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(text) {
+                                    if let Some(t) = parsed.get("text").and_then(|v| v.as_str()) {
+                                        let trimmed = t.trim();
+                                        if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" || trimmed.to_lowercase().starts_with("subtitles") {
+                                            parsed["text"] = serde_json::json!("");
+                                        }
+                                    }
                                     return Ok(parsed);
                                 } else {
+                                    let trimmed = text.trim();
+                                    if trimmed == "00:00" || trimmed == "0:00" || trimmed == "00:01" || trimmed == "00:02" || trimmed == "one" {
+                                        return Ok(serde_json::json!({ "text": "", "language": "Auto", "flag": "🌐" }));
+                                    }
                                     return Ok(serde_json::json!({
-                                        "text": text.trim(),
+                                        "text": trimmed,
                                         "language": "Auto",
                                         "flag": "🌐"
                                     }));

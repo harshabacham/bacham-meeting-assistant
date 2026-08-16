@@ -172,11 +172,11 @@ export function LiveWorkspacePage() {
       if (rms > windowMaxRms) windowMaxRms = rms;
       setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-      // Fast low-latency streaming window (16,000 samples / 1.0s at 16kHz)
-      if (pcmBuffer.length >= 16000) {
-        const samplesToProcess = pcmBuffer.slice(0, 16000);
-        pcmBuffer = pcmBuffer.slice(14400); // 100ms overlap
-        const hadVoice = windowMaxRms > 0.004;
+      // 1.5s balanced streaming window (24,000 samples at 16kHz)
+      if (pcmBuffer.length >= 24000) {
+        const samplesToProcess = pcmBuffer.slice(0, 24000);
+        pcmBuffer = pcmBuffer.slice(20800); // 200ms overlap
+        const hadVoice = windowMaxRms > 0.006;
         windowMaxRms = 0;
 
         if (hadVoice && !isTranscribingChunk) {
@@ -188,12 +188,21 @@ export function LiveWorkspacePage() {
             
             if (res && res.text && res.text.trim()) {
               const trimmed = res.text.trim();
-              emit('live_caption_received', {
-                sessionId: lectureId || 'live-session',
-                text: trimmed,
-                timestamp: Date.now(),
-                platform: 'desktop'
-              }).catch(() => {});
+              if (
+                trimmed !== '00:00' && 
+                trimmed !== '0:00' && 
+                trimmed !== '00:01' && 
+                trimmed !== '00:02' && 
+                trimmed !== 'one' && 
+                trimmed.toLowerCase() !== 'subtitles by'
+              ) {
+                emit('live_caption_received', {
+                  sessionId: lectureId || 'live-session',
+                  text: trimmed,
+                  timestamp: Date.now(),
+                  platform: 'desktop'
+                }).catch(() => {});
+              }
             }
           } catch (apiErr) {
             console.warn("PCM WAV Transcription error:", apiErr);
@@ -205,19 +214,12 @@ export function LiveWorkspacePage() {
     };
 
     let unlistenSys: (() => void) | undefined;
-    let unlistenMic: (() => void) | undefined;
 
     listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
       if (event.payload?.data) {
         pushSamples(event.payload.data, event.payload.rate || 16000);
       }
     }).then(u => { unlistenSys = u; });
-
-    listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
-      if (event.payload?.data) {
-        pushSamples(event.payload.data, event.payload.rate || 16000);
-      }
-    }).then(u => { unlistenMic = u; });
 
     let mediaStream: MediaStream | null = null;
     let audioCtx: AudioContext | null = null;
@@ -261,7 +263,6 @@ export function LiveWorkspacePage() {
     return () => {
       TauriClient.stopNativeRecording().catch(console.error);
       if (unlistenSys) unlistenSys();
-      if (unlistenMic) unlistenMic();
       if (speechRecRef.current) {
         try { speechRecRef.current.stop(); } catch (_) {}
         speechRecRef.current = null;
