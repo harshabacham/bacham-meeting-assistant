@@ -997,8 +997,9 @@ impl GeminiService {
         // 3. Try Google Gemini Flash Models (Direct Verbatim Transcription)
         if let Ok(key) = Self::get_api_key(&pool).await {
             let candidate_models = [
-                "gemini-2.5-flash",
                 "gemini-3.5-flash-lite",
+                "gemini-3.5-flash",
+                "gemini-3.7-flash",
                 "gemini-flash-latest",
             ];
 

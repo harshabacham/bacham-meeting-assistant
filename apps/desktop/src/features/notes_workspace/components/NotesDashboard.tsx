@@ -1,13 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Note } from '../NotesWorkspacePage';
 import { 
-    Folder, CheckSquare, FileText, Plus, Sparkles, Calendar, Lock, 
-    Video, ArrowRight, Link2, X, BookOpen 
+    Folder, CheckSquare, FileText, Plus, Sparkles, Lock, 
+    Video, Calendar, ArrowRight, Link2, X, BookOpen 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
-import { useCalendarStore } from '@/shared/stores/calendarStore';
 
 const DASHBOARD_RECIPES: AiRecipe[] = [
     {
@@ -56,22 +54,6 @@ export function NotesDashboard({
     const [searchQuery] = useState('');
     const [activeTab] = useState<'notes' | 'files'>('notes');
     const [filterMode] = useState<'all' | 'todos' | 'projects'>('all');
-    
-    // Calendar Integration
-    const calendarEvents = useCalendarStore(state => state.events);
-    const isCalendarConnected = useCalendarStore(state => state.isConnected);
-    const todayEvents = useMemo(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        return calendarEvents.filter((event: any) => {
-            if (!event.dateStr) return false;
-            const eventDate = new Date(event.dateStr);
-            return eventDate >= today && eventDate < tomorrow;
-        }).slice(0, 5);
-    }, [calendarEvents]);
 
     // Integrations Modal State
     const [integrationsOpen, setIntegrationsOpen] = useState(false);

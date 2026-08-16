@@ -1,22 +1,13 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
     Copy, Minus, Sparkles, 
-    ChevronUp, Check, X, Wand2, Volume2, Mic
+    ChevronUp, Check, X, Wand2, Volume2, Mic, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
-import { emit } from '@tauri-apps/api/event';
+import { emit, listen } from '@tauri-apps/api/event';
 import { cn } from '@/components';
-
-export interface TranscriptChunk {
-    id: string;
-    text: string;
-    speaker?: 'speaker' | 'me';
-    timestamp?: string;
-    timeMs?: number;
-    language?: string;
-    isTranslated?: boolean;
-}
+import { encodeWavBase64 } from '@/utils/wavEncoder';
 
 export interface LanguageOption {
     code: string;
@@ -59,9 +50,8 @@ interface LiveTranscriptPanelProps {
     onInsertQuote?: (quote: string) => void;
 }
 
-export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote }: LiveTranscriptPanelProps) {
-    const [fullText, setFullText] = useState('');
-    const [interimText, setInterimText] = useState('');
+export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
+    const [fullText, setFullText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
     const [isMinimized, setIsMinimized] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState('auto');
@@ -69,133 +59,221 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
     const [copied, setCopied] = useState(false);
     const [isPolishing, setIsPolishing] = useState(false);
     const [audioLevel, setAudioLevel] = useState(0);
+    const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
 
     const scrollRef = useRef<HTMLDivElement>(null);
-    const recRef = useRef<any>(null);
-    const isActiveRef = useRef(false);
-    const langRef = useRef('en-US');
+    const streamingRef = useRef<boolean>(true);
+    const audioCtxRef = useRef<AudioContext | null>(null);
 
     const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
+    useEffect(() => {
+        streamingRef.current = isStreaming;
+    }, [isStreaming]);
+
+    // Timer
     useEffect(() => {
         if (!isOpen || !isStreaming) return;
         const t = setInterval(() => setRecordingTime(p => p + 1), 1000);
         return () => clearInterval(t);
     }, [isOpen, isStreaming]);
 
+    // Auto-scroll
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-    }, [fullText, interimText]);
+    }, [fullText]);
 
-    useEffect(() => {
-        setAudioLevel(interimText ? Math.min(100, interimText.length * 4) : 0);
-    }, [interimText]);
-
-    const startRecognition = useCallback(() => {
-        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SR || !isActiveRef.current) return;
-
-        if (recRef.current) {
-            try { recRef.current.abort(); } catch (_) {}
-            recRef.current = null;
-        }
-
-        const rec = new SR();
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.maxAlternatives = 1;
-        rec.lang = langRef.current;
-
-        rec.onresult = (e: any) => {
-            if (!isActiveRef.current) return;
-            let interim = '';
-            for (let i = e.resultIndex; i < e.results.length; i++) {
-                const t = e.results[i][0].transcript;
-                if (e.results[i].isFinal) {
-                    const word = t.trim();
-                    if (word) {
-                        setFullText(prev => prev ? prev + ' ' + word : word);
-                        setInterimText('');
-                        emit('live_caption_received', {
-                            sessionId: 'live-session',
-                            text: word,
-                            timestamp: Date.now(),
-                            platform: 'desktop'
-                        }).catch(() => {});
-                    }
-                } else {
-                    interim += t;
-                }
-            }
-            setInterimText(interim);
-        };
-
-        rec.onerror = (e: any) => {
-            if (e.error === 'not-allowed') return;
-            if (isActiveRef.current) setTimeout(() => startRecognition(), 300);
-        };
-
-        rec.onend = () => {
-            recRef.current = null;
-            if (isActiveRef.current) setTimeout(() => startRecognition(), 50);
-        };
-
-        try {
-            rec.start();
-            recRef.current = rec;
-        } catch (_) {
-            setTimeout(() => startRecognition(), 500);
-        }
-    }, []);
-
-    // Start/stop when panel opens or closes
+    // Core Audio Pipeline: Microphone (WebAudio) + System Audio (Rust CPAL WASAPI) -> Non-Dropping Audio Queue -> ASR
     useEffect(() => {
         if (!isOpen) {
-            isActiveRef.current = false;
-            if (recRef.current) {
-                try { recRef.current.abort(); } catch (_) {}
-                recRef.current = null;
-            }
             setFullText('');
-            setInterimText('');
             setRecordingTime(0);
+            setQuotaWarning(null);
             TauriClient.stopNativeRecording().catch(() => {});
+            if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+                audioCtxRef.current.close().catch(() => {});
+                audioCtxRef.current = null;
+            }
             return;
         }
 
-        isActiveRef.current = true;
-        TauriClient.startNativeRecording().catch(() => {});
-        const langEntry = MULTILINGUAL_CATALOG.find(l => l.code === selectedLanguage);
-        langRef.current = langEntry?.bcp || 'en-US';
-        startRecognition();
+        // 1. Start Rust Native WASAPI Loopback (System Audio + Mic)
+        TauriClient.startNativeRecording().catch(console.error);
+
+        // 2. High-Precision 16kHz PCM WAV Audio Streaming Queue
+        let pcmBuffer: number[] = [];
+        let windowMaxRms = 0;
+        let isProcessingQueue = false;
+        const audioQueue: Float32Array[] = [];
+
+        const processQueue = async () => {
+            if (isProcessingQueue || audioQueue.length === 0 || !streamingRef.current) return;
+            isProcessingQueue = true;
+
+            while (audioQueue.length > 0 && streamingRef.current) {
+                const samples = audioQueue.shift();
+                if (!samples) continue;
+
+                try {
+                    const wavBase64 = encodeWavBase64(samples, 16000);
+                    const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+                    
+                    if (res && res.text && res.text.trim()) {
+                        const trimmed = res.text.trim();
+                        if (
+                            trimmed !== '00:00' && 
+                            trimmed !== '0:00' && 
+                            trimmed !== '00:01' && 
+                            trimmed !== '00:02' && 
+                            trimmed !== 'one' && 
+                            !trimmed.toLowerCase().startsWith('subtitles')
+                        ) {
+                            setFullText(prev => {
+                                const cleanPrev = prev.trim();
+                                if (!cleanPrev) return trimmed;
+                                if (cleanPrev.toLowerCase().endsWith(trimmed.toLowerCase())) return prev;
+                                
+                                const needsPeriod = !/[.!?]$/.test(cleanPrev);
+                                return needsPeriod ? `${cleanPrev}. ${trimmed}` : `${cleanPrev} ${trimmed}`;
+                            });
+
+                            emit('live_caption_received', {
+                                sessionId: 'live-session',
+                                text: trimmed,
+                                timestamp: Date.now(),
+                                platform: 'desktop'
+                            }).catch(() => {});
+                        }
+                    }
+                } catch (apiErr: any) {
+                    const errStr = String(apiErr);
+                    if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('RESOURCE_EXHAUSTED')) {
+                        setQuotaWarning('Gemini API daily quota reached. Add a free Groq API key in Settings for 2,000 free transcriptions/day.');
+                    }
+                    console.warn("PCM WAV Transcription error:", apiErr);
+                }
+            }
+
+            isProcessingQueue = false;
+        };
+
+        const pushSamples = (data: number[] | Float32Array, fromRate: number) => {
+            if (!streamingRef.current) return;
+            const ratio = fromRate > 0 ? fromRate / 16000 : 1;
+            let sum = 0;
+
+            if (ratio === 1) {
+                for (let i = 0; i < data.length; i++) {
+                    const val = data[i];
+                    sum += val * val;
+                    pcmBuffer.push(val);
+                }
+            } else {
+                for (let i = 0; i < data.length; i += ratio) {
+                    const val = data[Math.floor(i)];
+                    sum += val * val;
+                    pcmBuffer.push(val);
+                }
+            }
+
+            const rms = Math.sqrt(sum / (data.length || 1));
+            if (rms > windowMaxRms) windowMaxRms = rms;
+            setAudioLevel(Math.min(100, Math.round(rms * 600)));
+
+            // 2.0s streaming window (32,000 samples at 16kHz)
+            const WINDOW_SIZE = 32000;
+            const STEP_SIZE = 27200; // 300ms overlap
+
+            if (pcmBuffer.length >= WINDOW_SIZE) {
+                const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
+                pcmBuffer = pcmBuffer.slice(STEP_SIZE);
+                const hadVoice = windowMaxRms > 0.003; // sensitive threshold
+                windowMaxRms = 0;
+
+                if (hadVoice) {
+                    audioQueue.push(new Float32Array(samplesToProcess));
+                    processQueue();
+                }
+            }
+        };
+
+        // 3. Listen to native Rust System Audio Loopback
+        let unlistenSys: (() => void) | undefined;
+        let unlistenMic: (() => void) | undefined;
+
+        listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
+            if (event.payload?.data) {
+                pushSamples(event.payload.data, event.payload.rate || 16000);
+            }
+        }).then(u => { unlistenSys = u; });
+
+        listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
+            if (event.payload?.data) {
+                pushSamples(event.payload.data, event.payload.rate || 16000);
+            }
+        }).then(u => { unlistenMic = u; });
+
+        // 4. Capture Microphone via WebAudio API directly in WebView
+        let mediaStream: MediaStream | null = null;
+        let processor: ScriptProcessorNode | null = null;
+        let audioCtx: AudioContext | null = null;
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    channelCount: 1,
+                }
+            }).then((stream) => {
+                mediaStream = stream;
+                try {
+                    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+                    audioCtx = new AudioContextClass({ sampleRate: 16000 });
+                    audioCtxRef.current = audioCtx;
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+
+                    const micSource = audioCtx.createMediaStreamSource(stream);
+                    processor = audioCtx.createScriptProcessor(4096, 1, 1);
+                    processor.onaudioprocess = (e) => {
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        pushSamples(inputData, 16000);
+                    };
+
+                    // Route through 0-gain to avoid speaker feedback loop
+                    const muteGain = audioCtx.createGain();
+                    muteGain.gain.value = 0;
+                    micSource.connect(processor);
+                    processor.connect(muteGain);
+                    muteGain.connect(audioCtx.destination);
+                } catch (err) {
+                    console.warn("WebAudio context init notice:", err);
+                }
+            }).catch(err => {
+                console.warn("Microphone access notice:", err);
+            });
+        }
 
         return () => {
-            isActiveRef.current = false;
-            if (recRef.current) {
-                try { recRef.current.abort(); } catch (_) {}
-                recRef.current = null;
-            }
             TauriClient.stopNativeRecording().catch(() => {});
-        };
-    }, [isOpen, selectedLanguage, startRecognition]);
-
-    // Pause / resume
-    useEffect(() => {
-        if (!isOpen) return;
-        if (isStreaming) {
-            isActiveRef.current = true;
-            startRecognition();
-        } else {
-            isActiveRef.current = false;
-            if (recRef.current) {
-                try { recRef.current.abort(); } catch (_) {}
-                recRef.current = null;
+            if (unlistenSys) unlistenSys();
+            if (unlistenMic) unlistenMic();
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
             }
-            setInterimText('');
-        }
-    }, [isStreaming, isOpen, startRecognition]);
+            if (processor) {
+                processor.disconnect();
+            }
+            if (audioCtx && audioCtx.state !== 'closed') {
+                audioCtx.close().catch(() => {});
+            }
+        };
+    }, [isOpen, selectedLanguage]);
 
     const handleCopyAll = () => {
         navigator.clipboard.writeText(fullText);
@@ -213,9 +291,9 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
         setIsPolishing(true);
         try {
             const result = await TauriClient.sendGlobalMemoryChat(
-                `Fix speech-to-text errors in this transcript while preserving all content:\n\n${fullText}`
+                `Fix any speech-to-text transcription errors in this transcript while preserving all content and meaning verbatim:\n\n${fullText}`
             );
-            if (result) setFullText(result);
+            if (result) setFullText(result.trim());
         } catch (_) {} finally {
             setIsPolishing(false);
         }
@@ -251,7 +329,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.97 }}
                         transition={{ duration: 0.15, ease: 'easeOut' }}
-                        className="w-[520px] max-w-[92vw] bg-[#111113] border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col"
+                        className="w-[540px] max-w-[92vw] bg-[#111113] border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col"
                     >
                         {/* Header */}
                         <div className="px-4 py-3 border-b border-white/[0.07] flex items-center justify-between bg-[#141416]">
@@ -261,12 +339,13 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                     {isStreaming ? 'Live Transcript' : 'Paused'}
                                 </span>
 
+                                {/* Equalizer waveform */}
                                 <div className="flex items-center gap-[3px] h-4 ml-1">
                                     {[0.2, 0.5, 0.35, 0.65, 0.45, 0.3, 0.55].map((factor, i) => (
                                         <span
                                             key={i}
-                                            className={cn("w-[3px] rounded-full transition-all duration-75", isStreaming && audioLevel > 5 ? "bg-emerald-400" : "bg-zinc-700")}
-                                            style={{ height: isStreaming && audioLevel > 5 ? `${Math.max(3, Math.min(14, audioLevel * factor * 0.2 + 3))}px` : '3px' }}
+                                            className={cn("w-[3px] rounded-full transition-all duration-75", isStreaming && audioLevel > 3 ? "bg-emerald-400" : "bg-zinc-700")}
+                                            style={{ height: isStreaming && audioLevel > 3 ? `${Math.max(3, Math.min(14, audioLevel * factor * 0.2 + 3))}px` : '3px' }}
                                         />
                                     ))}
                                 </div>
@@ -275,59 +354,79 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
                                 <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                                     <Volume2 size={10} />
-                                    Mic
+                                    Mic + System
                                 </span>
                             </div>
 
                             <div className="flex items-center gap-1">
-                                <button type="button" onClick={handleCopyAll} disabled={!fullText}
+                                <button 
+                                    type="button" 
+                                    onClick={handleCopyAll} 
+                                    disabled={!fullText}
                                     className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer disabled:opacity-30"
-                                    title="Copy transcript">
+                                    title="Copy transcript"
+                                >
                                     {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                                 </button>
-                                <button type="button" onClick={() => setIsMinimized(true)}
-                                    className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsMinimized(true)}
+                                    className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                    title="Minimize"
+                                >
                                     <Minus size={13} />
                                 </button>
-                                <button type="button" onClick={onClose}
-                                    className="p-1.5 rounded-md text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
+                                <button 
+                                    type="button" 
+                                    onClick={onClose}
+                                    className="p-1.5 rounded-md text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                    title="Close"
+                                >
                                     <X size={14} />
                                 </button>
                             </div>
                         </div>
 
+                        {/* Quota Warning Alert */}
+                        {quotaWarning && (
+                            <div className="mx-4 my-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle size={14} className="shrink-0 text-amber-400" />
+                                    <span>{quotaWarning}</span>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setQuotaWarning(null)} 
+                                    className="text-zinc-400 hover:text-white p-1 cursor-pointer"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        )}
+
                         {/* Transcript body — single flowing paragraph */}
                         <div
                             ref={scrollRef}
-                            className="px-6 py-5 max-h-[46vh] min-h-[200px] overflow-y-auto bg-[#0D0D0F] scroll-smooth"
+                            className="px-6 py-5 max-h-[46vh] min-h-[220px] overflow-y-auto bg-[#0D0D0F] scroll-smooth select-text"
                         >
-                            {!fullText && !interimText ? (
-                                <div className="flex flex-col items-center justify-center min-h-[160px] gap-3 text-center select-none">
+                            {!fullText ? (
+                                <div className="flex flex-col items-center justify-center min-h-[170px] gap-3 text-center select-none">
                                     <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center">
                                         <Mic size={15} className="text-zinc-500" />
                                     </div>
                                     <div>
                                         <p className="text-[13px] font-medium text-zinc-400 mb-1">
-                                            {isStreaming ? 'Listening...' : 'Paused'}
+                                            {isStreaming ? 'Listening to audio...' : 'Paused'}
                                         </p>
-                                        <p className="text-[11px] text-zinc-600 max-w-[220px] leading-relaxed">
-                                            Everything spoken will appear here as continuous text.
+                                        <p className="text-[11px] text-zinc-600 max-w-[240px] leading-relaxed">
+                                            Microphone and system audio will flow here in continuous paragraph format.
                                         </p>
                                     </div>
                                 </div>
                             ) : (
-                                <p className="text-[15px] leading-[1.9] text-zinc-100 font-normal select-text tracking-[-0.01em]">
+                                <p className="text-[14.5px] leading-[1.85] text-zinc-100 font-normal select-text tracking-[-0.01em]">
                                     {fullText}
-                                    {fullText && interimText ? ' ' : ''}
-                                    {interimText && (
-                                        <span className="text-zinc-400">
-                                            {interimText}
-                                            <span className="inline-block w-[2px] h-[15px] ml-[2px] bg-emerald-400 animate-pulse align-middle rounded-sm" />
-                                        </span>
-                                    )}
-                                    {!interimText && fullText && (
-                                        <span className="inline-block w-[2px] h-[15px] ml-[2px] bg-zinc-600/60 align-middle rounded-sm" />
-                                    )}
+                                    <span className="inline-block w-[2px] h-[15px] ml-[3px] bg-emerald-400 animate-pulse align-middle rounded-sm" />
                                 </p>
                             )}
                         </div>
@@ -351,7 +450,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                 <select
                                     value={selectedLanguage}
                                     onChange={e => setSelectedLanguage(e.target.value)}
-                                    className="text-[11px] text-zinc-500 bg-transparent border-none outline-none cursor-pointer hover:text-zinc-300 transition-colors"
+                                    className="text-[11px] text-zinc-400 bg-transparent border-none outline-none cursor-pointer hover:text-zinc-200 transition-colors"
                                 >
                                     {MULTILINGUAL_CATALOG.map(l => (
                                         <option key={l.code} value={l.code} className="bg-[#1a1a1c] text-zinc-200">
@@ -363,14 +462,22 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
                             <div className="flex items-center gap-2">
                                 {fullText && (
-                                    <button type="button" onClick={handlePolish} disabled={isPolishing}
-                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.09] text-zinc-300 text-xs font-medium transition-all cursor-pointer disabled:opacity-40 border border-white/[0.07]">
+                                    <button 
+                                        type="button" 
+                                        onClick={handlePolish} 
+                                        disabled={isPolishing}
+                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.09] text-zinc-300 text-xs font-medium transition-all cursor-pointer disabled:opacity-40 border border-white/[0.07]"
+                                    >
                                         <Wand2 size={11} className={cn("text-amber-400", isPolishing && "animate-spin")} />
-                                        {isPolishing ? 'Fixing...' : 'AI Fix'}
+                                        {isPolishing ? 'Fixing...' : 'AI Polish'}
                                     </button>
                                 )}
-                                <button type="button" onClick={handleGenerateNotes} disabled={!fullText}
-                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-100 text-zinc-900 text-xs font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-40">
+                                <button 
+                                    type="button" 
+                                    onClick={handleGenerateNotes} 
+                                    disabled={!fullText}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-100 text-zinc-900 text-xs font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-40"
+                                >
                                     <Sparkles size={11} className="text-amber-600" />
                                     Done & Generate Notes
                                 </button>
