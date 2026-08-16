@@ -85,38 +85,44 @@ export function AiChat({ targetId, mode = 'lecture', onJumpToTime, onViewScreens
     };
 
     return (
-        <div className="flex flex-col h-full bg-[var(--surface)] border-l border-[var(--border)]">
-            <div className="p-3 border-b border-[var(--border)] shrink-0 flex items-center justify-between bg-[var(--overlay-02)]">
-                <div className="flex items-center gap-2 text-[var(--accent)]">
-                    <BrainCircuit size={16} />
-                    <span className="text-sm font-semibold tracking-wide uppercase">AI Assistant</span>
+        <div className="flex flex-col h-full bg-[var(--surface)] border-l border-[var(--border)] font-sans">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-[var(--border)] shrink-0 flex items-center justify-between bg-[var(--surface)]">
+                <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)]">
+                        <BrainCircuit size={13} />
+                    </div>
+                    <span className="text-xs font-semibold text-[var(--text-primary)]">AI Lecture Assistant</span>
                 </div>
                 <div className="group relative">
-                    <Info size={14} className="text-[var(--text-muted)] cursor-help" />
+                    <Info size={13} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer" />
                     <div className="absolute right-0 top-6 w-48 p-2 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] shadow-xl text-xs text-[var(--text-secondary)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                         Ask questions about this lecture. The AI will cite its sources with clickable timestamps.
                     </div>
                 </div>
             </div>
 
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Chat Timeline */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 text-xs leading-relaxed scroll-smooth">
                 {history.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] space-y-3 opacity-60">
-                        <BrainCircuit size={32} />
-                        <p className="text-sm text-center max-w-[200px]">Ask anything about this lecture to get grounded answers.</p>
+                    <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] space-y-2.5 text-center p-6">
+                        <div className="w-9 h-9 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] shadow-xs">
+                            <BrainCircuit size={18} />
+                        </div>
+                        <p className="font-semibold text-[var(--text-primary)] text-xs">How can I help you study?</p>
+                        <p className="text-[11px] text-[var(--text-muted)] max-w-[210px] leading-normal">
+                            Ask questions, clarify concepts, or request chapter summaries from this recording.
+                        </p>
                     </div>
                 ) : (
                     history.map((msg, i) => (
-                        <div key={i} className={cn("flex flex-col max-w-[85%]", msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start')}>
-                            <span className="text-[10px] uppercase font-bold tracking-wider mb-1 opacity-50 px-1">
-                                {msg.role === 'user' ? 'You' : 'BACHAM'}
-                            </span>
+                        <div key={i} className={cn("flex flex-col max-w-[90%]", msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start')}>
                             <div
                                 className={cn(
-                                    "p-3 rounded-2xl text-[13px] leading-relaxed shadow-sm",
+                                    "p-3.5 rounded-2xl text-xs leading-relaxed shadow-xs",
                                     msg.role === 'user' 
-                                        ? 'bg-[var(--accent-dim)] text-[var(--text-primary)] border border-[var(--border-accent)] rounded-tr-sm' 
-                                        : 'bg-[var(--overlay-04)] text-[var(--text-primary)] border border-[var(--border)] rounded-tl-sm'
+                                        ? 'bg-[var(--text-primary)] text-[var(--bg)] font-medium rounded-tr-xs' 
+                                        : 'bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--border)] rounded-tl-xs'
                                 )}
                             >
                                 {msg.role === 'model' && msg.content.startsWith('[ERROR]') ? (
@@ -137,31 +143,32 @@ export function AiChat({ targetId, mode = 'lecture', onJumpToTime, onViewScreens
                 
                 {isSending && (
                     <div className="flex flex-col items-start max-w-[85%] mr-auto">
-                        <span className="text-[10px] uppercase font-bold tracking-wider mb-1 opacity-50 px-1">BACHAM</span>
-                        <div className="p-3 rounded-2xl rounded-tl-sm bg-[var(--overlay-04)] border border-[var(--border)]">
-                            <Loader2 size={14} className="animate-spin text-[var(--text-muted)]" />
+                        <div className="p-3 rounded-2xl rounded-tl-xs bg-[var(--surface)] border border-[var(--border)] shadow-xs flex items-center gap-2">
+                            <Loader2 size={13} className="animate-spin text-[var(--accent)]" />
+                            <span className="text-[11px] text-[var(--text-muted)]">Synthesizing answer...</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="p-3 border-t border-[var(--border)] shrink-0 bg-[var(--overlay-02)]">
-                <div className="relative flex items-center">
+            {/* Input Box */}
+            <div className="p-3 border-t border-[var(--border)] shrink-0 bg-[var(--surface)]">
+                <div className="relative flex items-center bg-[var(--bg)] border border-[var(--border)] focus-within:border-[var(--accent)] rounded-xl pl-3.5 pr-1.5 py-1 transition-all shadow-inner">
                     <input
                         type="text"
                         value={prompt}
                         onChange={e => setPrompt(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                        placeholder="Ask about the lecture..."
+                        placeholder="Ask about this lecture..."
                         disabled={isSending}
-                        className="w-full bg-[var(--overlay-06)] border border-[var(--border)] rounded-xl py-2.5 pl-4 pr-10 text-[13px] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--border-accent)] focus:bg-[var(--overlay-08)] transition-all"
+                        className="flex-1 bg-transparent border-none outline-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium py-1.5"
                     />
                     <button 
                         onClick={handleSend}
                         disabled={isSending || !prompt.trim()}
-                        className="absolute right-2 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-dim)] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-[var(--text-muted)] transition-colors"
+                        className="p-1.5 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] disabled:opacity-30 text-[var(--bg)] rounded-lg transition-all shrink-0 cursor-pointer shadow-xs"
                     >
-                        <Send size={14} />
+                        <Send size={12} />
                     </button>
                 </div>
             </div>
