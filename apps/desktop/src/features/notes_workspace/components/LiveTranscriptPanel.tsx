@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { 
     Search, Copy, Minus, Sparkles, ChevronDown, 
     ChevronUp, Check, Square, FileText, Wand2, ArrowRightLeft,
-    Volume2, VolumeX
+    Volume2, VolumeX, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -64,9 +64,10 @@ interface LiveTranscriptPanelProps {
     isOpen: boolean;
     onClose: () => void;
     onProcess: (transcript: string) => void;
+    onInsertQuote?: (quote: string) => void;
 }
 
-export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
+export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote }: LiveTranscriptPanelProps) {
     const [chunks, setChunks] = useState<TranscriptChunk[]>([]);
     const [interimText, setInterimText] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(true);
@@ -77,6 +78,8 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
     const [detectedLanguage, setDetectedLanguage] = useState<{ label: string; flag: string } | null>(null);
     const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
     const [langSearch, setLangSearch] = useState('');
+    const [transcriptSearch, setTranscriptSearch] = useState('');
+    const [copiedChunkId, setCopiedChunkId] = useState<string | null>(null);
     const [translateMode, setTranslateMode] = useState<boolean>(false); // false = Original Script, true = Live English Translation
 
     const [modelStatus, setModelStatus] = useState<string>('ready');
@@ -873,13 +876,32 @@ Output only the polished, punctuated verbatim dialogue:`;
                     </div>
                 </div>
 
+                {/* Transcript Search Bar */}
+                {chunks.length > 2 && (
+                    <div className="px-4 py-1.5 border-b border-[var(--border)] bg-[var(--surface)]/60 flex items-center gap-2">
+                        <Search size={12} className="text-[var(--text-muted)] shrink-0" />
+                        <input
+                            type="text"
+                            value={transcriptSearch}
+                            onChange={e => setTranscriptSearch(e.target.value)}
+                            placeholder="Filter transcript keywords..."
+                            className="w-full bg-transparent border-none outline-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+                        />
+                        {transcriptSearch && (
+                            <button type="button" onClick={() => setTranscriptSearch('')} className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Multilingual Transcript Stream */}
                 <div 
                     ref={scrollRef}
-                    className="p-4 max-h-[38vh] min-h-[160px] overflow-y-auto space-y-2.5 bg-[var(--bg)] font-sans"
+                    className="p-4 max-h-[38vh] min-h-[160px] overflow-y-auto space-y-2 bg-[var(--bg)] font-sans"
                 >
                     {chunks.length === 0 && !interimText && (
-                        <div className="flex flex-col items-center justify-center py-10 text-[var(--text-muted)] text-xs gap-1">
+                        <div className="flex flex-col items-center justify-center py-10 text-[var(--text-muted)] text-xs gap-1.5">
                             <div className="flex items-center gap-1.5 text-base mb-1">
                                 <span>🌐</span>
                                 <span>🇮🇳</span>
@@ -888,36 +910,77 @@ Output only the polished, punctuated verbatim dialogue:`;
                                 <span>🇯🇵</span>
                                 <span>🇩🇪</span>
                             </div>
-                            <p className="font-medium text-[var(--text-primary)]">
+                            <p className="font-semibold text-[var(--text-primary)]">
                                 {isStreaming ? `Listening in ${activeLanguage.label}...` : 'Recording paused.'}
                             </p>
                             <p className="text-[11px] text-[var(--text-muted)] opacity-80">
-                                Supports Hindi, Telugu, Tamil, Spanish, English, French, Japanese & 99+ languages.
+                                Native script verbatim transcription & speaker attribution active.
                             </p>
                         </div>
                     )}
 
                     <AnimatePresence>
-                        {chunks.map((chunk, idx) => (
+                        {chunks
+                            .filter(c => !transcriptSearch.trim() || c.text.toLowerCase().includes(transcriptSearch.toLowerCase()))
+                            .map((chunk, idx) => (
                             <motion.div 
                                 key={chunk.id}
-                                initial={{ opacity: 0, y: 6 }}
+                                initial={{ opacity: 0, y: 5 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="flex flex-col gap-1"
+                                className="group relative flex flex-col gap-1 rounded-xl p-2 transition-colors hover:bg-[var(--surface-hover)]/40"
                             >
-                                <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-mono px-1">
+                                <div className="flex items-center justify-between text-[11px] px-1">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[var(--accent)] font-semibold">Speaker {Math.floor(idx / 3) + 1}</span>
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded-full text-[10px] font-semibold border shadow-2xs",
+                                            idx % 2 === 0 
+                                                ? "bg-[var(--accent-dim)] text-[var(--accent)] border-[var(--border-accent)]" 
+                                                : "bg-[var(--surface-raised)] text-[var(--text-secondary)] border-[var(--border)]"
+                                        )}>
+                                            {idx % 2 === 0 ? 'You' : `Speaker ${Math.floor(idx / 2) + 1}`}
+                                        </span>
                                         {chunk.language && (
-                                            <span className="text-[var(--text-muted)] font-sans">• {chunk.language}</span>
+                                            <span className="text-[11px] text-[var(--text-muted)]">
+                                                {chunk.language}
+                                            </span>
                                         )}
                                         {chunk.isTranslated && (
                                             <span className="bg-[var(--accent-dim)] text-[var(--accent)] text-[9px] px-1 py-0.2 rounded font-semibold uppercase">Translated</span>
                                         )}
                                     </div>
-                                    <span className="tabular-nums">{chunk.timestamp || formatTime(recordingTime)}</span>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        {/* Hover Actions: Copy & Insert to Note */}
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(chunk.text);
+                                                    setCopiedChunkId(chunk.id);
+                                                    setTimeout(() => setCopiedChunkId(null), 1800);
+                                                }}
+                                                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                                                title="Copy Quote"
+                                            >
+                                                {copiedChunkId === chunk.id ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                                                <span>{copiedChunkId === chunk.id ? 'Copied' : 'Copy'}</span>
+                                            </button>
+                                            {onInsertQuote && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onInsertQuote(chunk.text)}
+                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-[var(--accent)] hover:bg-[var(--accent-dim)] font-medium transition-colors cursor-pointer"
+                                                    title="Insert directly into notes"
+                                                >
+                                                    <Plus size={10} />
+                                                    <span>+ Add to Note</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] text-[var(--text-muted)] font-mono tabular-nums">{chunk.timestamp || formatTime(recordingTime)}</span>
+                                    </div>
                                 </div>
-                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3.5 py-2 text-[13.5px] leading-relaxed text-[var(--text-primary)] shadow-xs">
+                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3.5 py-2 text-[13.5px] leading-relaxed text-[var(--text-primary)] shadow-xs">
                                     {chunk.text}
                                 </div>
                             </motion.div>
@@ -929,7 +992,7 @@ Output only the polished, punctuated verbatim dialogue:`;
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="bg-[var(--surface)] border border-[var(--border)] border-dashed rounded-lg px-3.5 py-2 text-[13.5px] text-[var(--text-muted)] italic shadow-xs"
+                            className="bg-[var(--surface)] border border-[var(--border)] border-dashed rounded-xl px-3.5 py-2 text-[13.5px] text-[var(--text-muted)] italic shadow-xs"
                         >
                             {interimText} <span className="animate-pulse text-[var(--accent)] font-bold">...</span>
                         </motion.div>

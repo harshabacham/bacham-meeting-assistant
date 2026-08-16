@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { Bot, MessageSquare, Loader2, Sparkles, PenTool } from 'lucide-react';
+import { Bot, Loader2, Sparkles, PenTool } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
 
@@ -108,46 +108,51 @@ export function LiveTranscriptViewer() {
     switch (item.type) {
       case 'caption':
         return (
-          <motion.div key={item.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3 my-4">
-            <div className="shrink-0 mt-1">
-              <div className="w-8 h-8 rounded-xl bg-[var(--border)] flex items-center justify-center text-[var(--text-secondary)]">
-                <MessageSquare size={14} />
+          <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group relative flex flex-col gap-1 my-3 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3.5 shadow-xs">
+            <div className="flex items-center justify-between text-xs px-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]">
+                  {item.speaker || 'Speaker'}
+                </span>
+                <span className="text-[10px] text-[var(--text-muted)]">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
               </div>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(item.content)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--surface-hover)] cursor-pointer"
+                title="Copy caption"
+              >
+                Copy
+              </button>
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-semibold tracking-wide text-[var(--text-primary)]">{item.speaker}</span>
-                <span className="text-[10px] text-[var(--text-secondary)]">{new Date(item.timestamp).toLocaleTimeString()}</span>
-              </div>
-              <p className="text-[14px] text-[var(--text-primary)]/90 leading-relaxed">{item.content}</p>
-            </div>
+            <p className="text-[13.5px] text-[var(--text-primary)] leading-relaxed font-sans">{item.content}</p>
           </motion.div>
         );
       case 'screenshot':
         return (
-          <motion.div key={item.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="my-4 ml-11">
-            <div className="rounded-xl overflow-hidden border border-[var(--border)] shadow-md">
-              <img src={item.content} alt="Meeting Screenshot" className="w-full h-auto object-cover max-h-48" />
+          <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="my-3">
+            <div className="rounded-2xl overflow-hidden border border-[var(--border)] shadow-md">
+              <img src={item.content} alt="Meeting Screenshot" className="w-full h-auto object-cover max-h-52" />
             </div>
           </motion.div>
         );
       case 'user_note':
         return (
-          <motion.div key={item.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex justify-end my-4">
-            <div className="max-w-[85%] bg-indigo-500 text-white p-3 rounded-2xl rounded-br-none shadow-md text-sm leading-relaxed">
+          <motion.div key={item.id} initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} className="flex justify-end my-3">
+            <div className="max-w-[85%] bg-[var(--text-primary)] text-[var(--bg)] p-3 rounded-2xl rounded-tr-xs shadow-xs text-xs font-medium leading-relaxed">
               {item.content}
             </div>
           </motion.div>
         );
       case 'ai_response':
         return (
-          <motion.div key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-3 my-4">
+          <motion.div key={item.id} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} className="flex gap-2.5 my-3">
             <div className="shrink-0 mt-1">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                <Sparkles size={14} />
+              <div className="w-7 h-7 rounded-xl bg-[var(--accent-dim)] text-[var(--accent)] flex items-center justify-center">
+                <Sparkles size={13} />
               </div>
             </div>
-            <div className="flex-1 bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-2xl rounded-tl-none shadow-sm text-sm text-[var(--text-primary)] leading-relaxed">
+            <div className="flex-1 bg-[var(--surface)] border border-[var(--border)] p-3.5 rounded-2xl rounded-tl-xs shadow-xs text-xs text-[var(--text-primary)] leading-relaxed font-sans">
               {item.content}
             </div>
           </motion.div>

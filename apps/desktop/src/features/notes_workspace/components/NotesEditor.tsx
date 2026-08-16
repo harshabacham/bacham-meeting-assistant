@@ -886,6 +886,14 @@ Return only the polished transcript text:`;
                 isOpen={isTranscriptOpen}
                 onClose={() => setIsTranscriptOpen(false)}
                 onProcess={handleProcessTranscript}
+                onInsertQuote={(quoteText) => {
+                    if (editor) {
+                        editor.commands.focus();
+                        editor.commands.insertContent(`
+                            <blockquote><p><em>"${quoteText}"</em></p></blockquote><p></p>
+                        `);
+                    }
+                }}
             />
         </div>
     );
