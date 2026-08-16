@@ -737,56 +737,58 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                             )}
                         </div>
 
-                {/* Minimalist Bottom Control Strip */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06] bg-[#161619]/60 shrink-0">
-                    {/* Left: Waveform & Pause/Resume */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-0.5 h-4 px-0.5">
-                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.2 + 4))}px` : '4px' }} />
-                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(6, Math.min(16, audioLevel * 0.35 + 6))}px` : '6px' }} />
-                            <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.22 + 4))}px` : '4px' }} />
+                        {/* Minimalist Bottom Control Strip */}
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06] bg-[#161619]/60 shrink-0">
+                            {/* Left: Waveform & Pause/Resume */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-0.5 h-4 px-0.5">
+                                    <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.2 + 4))}px` : '4px' }} />
+                                    <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(6, Math.min(16, audioLevel * 0.35 + 6))}px` : '6px' }} />
+                                    <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(16, audioLevel * 0.22 + 4))}px` : '4px' }} />
+                                </div>
+                                
+                                <button 
+                                    type="button"
+                                    onClick={handleToggleStreaming}
+                                    className="text-zinc-300 hover:text-white transition-colors text-xs font-medium cursor-pointer"
+                                >
+                                    {isStreaming ? 'Pause' : 'Resume'}
+                                </button>
+                            </div>
+
+                            {/* Center: Live Monospace Timer */}
+                            <span className="text-xs font-mono text-zinc-400 font-medium tabular-nums tracking-wider">
+                                {formatTime(recordingTime)}
+                            </span>
+
+                            {/* Right: Polish & Done Buttons */}
+                            <div className="flex items-center gap-2">
+                                {chunks.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handlePolishTranscript}
+                                        disabled={isPolishing}
+                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 text-xs font-medium transition-all cursor-pointer disabled:opacity-50 border border-white/[0.08]"
+                                        title="Clean up transcription errors with AI"
+                                    >
+                                        <Wand2 size={12} className={isPolishing ? "animate-spin text-amber-400" : "text-amber-400"} />
+                                        <span>{isPolishing ? "Polishing..." : "AI Polish"}</span>
+                                    </button>
+                                )}
+
+                                <button 
+                                    type="button"
+                                    onClick={handleGenerateNotes}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                                >
+                                    <Sparkles size={12} className="text-amber-600" />
+                                    <span>Done & Generate Notes</span>
+                                </button>
+                            </div>
                         </div>
-                        
-                        <button 
-                            type="button"
-                            onClick={handleToggleStreaming}
-                            className="text-zinc-300 hover:text-white transition-colors text-xs font-medium cursor-pointer"
-                        >
-                            {isStreaming ? 'Pause' : 'Resume'}
-                        </button>
-                    </div>
-
-                    {/* Center: Live Monospace Timer */}
-                    <span className="text-xs font-mono text-zinc-400 font-medium tabular-nums tracking-wider">
-                        {formatTime(recordingTime)}
-                    </span>
-
-                    {/* Right: Polish & Done Buttons */}
-                    <div className="flex items-center gap-2">
-                        {chunks.length > 0 && (
-                            <button
-                                type="button"
-                                onClick={handlePolishTranscript}
-                                disabled={isPolishing}
-                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-zinc-200 text-xs font-medium transition-all cursor-pointer disabled:opacity-50 border border-white/[0.08]"
-                                title="Clean up transcription errors with AI"
-                            >
-                                <Wand2 size={12} className={isPolishing ? "animate-spin text-amber-400" : "text-amber-400"} />
-                                <span>{isPolishing ? "Polishing..." : "AI Polish"}</span>
-                            </button>
-                        )}
-
-                        <button 
-                            type="button"
-                            onClick={handleGenerateNotes}
-                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-semibold transition-all cursor-pointer shadow-sm"
-                        >
-                            <Sparkles size={12} className="text-amber-600" />
-                            <span>Done & Generate Notes</span>
-                        </button>
-                    </div>
-                </div>
-            </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
