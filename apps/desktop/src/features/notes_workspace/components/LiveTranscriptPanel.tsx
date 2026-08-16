@@ -330,11 +330,11 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
                         setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
 
-                        // Every ~2.0s (32,000 samples at 16kHz)
-                        if (pcmBuffer.length >= 32000) {
-                            const samplesToProcess = pcmBuffer.slice(0, 32000);
-                            pcmBuffer = pcmBuffer.slice(28800); // 200ms overlap
-                            const hadVoice = windowMaxRms > 0.006;
+                        // Fast 1.0s low-latency streaming window (16,000 samples at 16kHz)
+                        if (pcmBuffer.length >= 16000) {
+                            const samplesToProcess = pcmBuffer.slice(0, 16000);
+                            pcmBuffer = pcmBuffer.slice(14400); // 100ms overlap
+                            const hadVoice = windowMaxRms > 0.005;
                             windowMaxRms = 0;
 
                             if (hadVoice && !isTranscribingChunk) {
@@ -771,11 +771,23 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         );
                     })}
 
-                    {/* Interim Live Preview */}
+                    {/* Active Live Real-Time Speech Stream (0ms latency) */}
                     {interimText && (
-                        <div className="px-3 py-1.5 text-[13.5px] text-zinc-400 italic flex items-center gap-1.5">
-                            <span>{interimText}</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <div className="flex flex-col gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                            <div className="flex items-center gap-2 text-xs">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                                    <Mic size={10} className="animate-pulse" />
+                                    <span>{isSystemAudioActive ? 'Speaker' : 'You'}</span>
+                                </span>
+                                <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                    Live
+                                </span>
+                            </div>
+                            <div className="text-[13.5px] leading-relaxed text-zinc-200 pl-1 font-normal select-text">
+                                {interimText}
+                                <span className="inline-block w-1.5 h-3.5 ml-1 bg-emerald-400 animate-pulse align-middle" />
+                            </div>
                         </div>
                     )}
                 </div>

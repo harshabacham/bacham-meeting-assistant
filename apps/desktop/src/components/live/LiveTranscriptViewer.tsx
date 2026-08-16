@@ -16,6 +16,7 @@ interface TimelineItem {
 
 export function LiveTranscriptViewer() {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [liveInterim, setLiveInterim] = useState('');
   const [query, setQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -23,12 +24,20 @@ export function LiveTranscriptViewer() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const unlistenCaption = listen<{sessionId?: string, text: string, timestamp?: number}>('live_caption_received', (event) => {
+    const unlistenCaption = listen<{sessionId?: string, text: string, timestamp?: number, isInterim?: boolean}>('live_caption_received', (event) => {
       if (!event.payload?.text) return;
       const text = event.payload.text.trim();
       if (!text) return;
 
       if (!activeSessionId && event.payload.sessionId) setActiveSessionId(event.payload.sessionId);
+
+      if (event.payload.isInterim) {
+        setLiveInterim(text);
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        return;
+      }
+
+      setLiveInterim('');
       
       setTimeline((prev) => {
         if (prev.length > 0 && prev[prev.length - 1].content.toLowerCase() === text.toLowerCase()) return prev;
@@ -43,7 +52,7 @@ export function LiveTranscriptViewer() {
       
       setTimeout(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }, 100);
+      }, 50);
     });
 
     // Mock listener for screenshots (assuming native host sends this)
@@ -175,6 +184,20 @@ export function LiveTranscriptViewer() {
         ) : (
           <AnimatePresence initial={false}>
             {timeline.map(renderTimelineItem)}
+            {liveInterim && (
+              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="group relative flex flex-col gap-1 my-3 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3.5 shadow-xs">
+                <div className="flex items-center gap-1.5 text-xs px-0.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                    Live
+                  </span>
+                  <span className="text-[10px] text-[var(--text-muted)] animate-pulse">Speaking...</span>
+                </div>
+                <p className="text-[13.5px] text-[var(--text-primary)] leading-relaxed font-sans">
+                  {liveInterim}
+                  <span className="inline-block w-1.5 h-3.5 ml-1 bg-emerald-400 animate-pulse align-middle" />
+                </p>
+              </motion.div>
+            )}
             {isProcessing && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 my-4">
                 <div className="shrink-0 mt-1">

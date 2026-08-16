@@ -187,12 +187,12 @@ export function LiveWorkspacePage() {
             if (rms > windowMaxRms) windowMaxRms = rms;
             setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-            // When buffer reaches ~2.0s (32,000 samples at 16kHz)
-            if (pcmBuffer.length >= 32000) {
-              const samplesToProcess = pcmBuffer.slice(0, 32000);
-              // Keep 3200 samples (200ms) overlap to avoid cutting words on boundary
-              pcmBuffer = pcmBuffer.slice(28800);
-              const hadVoice = windowMaxRms > 0.006;
+            // Fast low-latency streaming window (16,000 samples / 1.0s at 16kHz)
+            if (pcmBuffer.length >= 16000) {
+              const samplesToProcess = pcmBuffer.slice(0, 16000);
+              // Keep 1600 samples (100ms) overlap to avoid cutting words on boundary
+              pcmBuffer = pcmBuffer.slice(14400);
+              const hadVoice = windowMaxRms > 0.005;
               windowMaxRms = 0;
 
               if (hadVoice && !isTranscribingChunk) {
