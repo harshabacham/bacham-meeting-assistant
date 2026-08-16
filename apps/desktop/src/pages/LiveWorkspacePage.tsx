@@ -145,13 +145,83 @@ export function LiveWorkspacePage() {
       }
     }
 
-    // 2. High-Precision 16kHz PCM WAV Audio Streaming Pipeline
+    // 2. High-Precision 16kHz PCM WAV Audio Streaming Pipeline (System Audio + Microphone)
+    let pcmBuffer: number[] = [];
+    let windowMaxRms = 0;
+    let isTranscribingChunk = false;
+
+    const pushSamples = async (data: number[] | Float32Array, fromRate: number) => {
+      const ratio = fromRate > 0 ? fromRate / 16000 : 1;
+      let sum = 0;
+
+      if (ratio === 1) {
+        for (let i = 0; i < data.length; i++) {
+          const val = data[i];
+          sum += val * val;
+          pcmBuffer.push(val);
+        }
+      } else {
+        for (let i = 0; i < data.length; i += ratio) {
+          const val = data[Math.floor(i)];
+          sum += val * val;
+          pcmBuffer.push(val);
+        }
+      }
+
+      const rms = Math.sqrt(sum / (data.length || 1));
+      if (rms > windowMaxRms) windowMaxRms = rms;
+      setAudioLevel(Math.min(100, Math.round(rms * 600)));
+
+      // Fast low-latency streaming window (16,000 samples / 1.0s at 16kHz)
+      if (pcmBuffer.length >= 16000) {
+        const samplesToProcess = pcmBuffer.slice(0, 16000);
+        pcmBuffer = pcmBuffer.slice(14400); // 100ms overlap
+        const hadVoice = windowMaxRms > 0.004;
+        windowMaxRms = 0;
+
+        if (hadVoice && !isTranscribingChunk) {
+          isTranscribingChunk = true;
+          try {
+            const floatArr = new Float32Array(samplesToProcess);
+            const wavBase64 = encodeWavBase64(floatArr, 16000);
+            const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+            
+            if (res && res.text && res.text.trim()) {
+              const trimmed = res.text.trim();
+              emit('live_caption_received', {
+                sessionId: lectureId || 'live-session',
+                text: trimmed,
+                timestamp: Date.now(),
+                platform: 'desktop'
+              }).catch(() => {});
+            }
+          } catch (apiErr) {
+            console.warn("PCM WAV Transcription error:", apiErr);
+          } finally {
+            isTranscribingChunk = false;
+          }
+        }
+      }
+    };
+
+    let unlistenSys: (() => void) | undefined;
+    let unlistenMic: (() => void) | undefined;
+
+    listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
+      if (event.payload?.data) {
+        pushSamples(event.payload.data, event.payload.rate || 16000);
+      }
+    }).then(u => { unlistenSys = u; });
+
+    listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
+      if (event.payload?.data) {
+        pushSamples(event.payload.data, event.payload.rate || 16000);
+      }
+    }).then(u => { unlistenMic = u; });
+
     let mediaStream: MediaStream | null = null;
     let audioCtx: AudioContext | null = null;
     let processor: ScriptProcessorNode | null = null;
-    let isTranscribingChunk = false;
-    let pcmBuffer: number[] = [];
-    let windowMaxRms = 0;
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({
@@ -173,51 +243,9 @@ export function LiveWorkspacePage() {
 
           const micSource = audioCtx.createMediaStreamSource(stream);
           processor = audioCtx.createScriptProcessor(4096, 1, 1);
-
-          processor.onaudioprocess = async (e) => {
+          processor.onaudioprocess = (e) => {
             const inputData = e.inputBuffer.getChannelData(0);
-            
-            let sum = 0;
-            for (let i = 0; i < inputData.length; i++) {
-              const val = inputData[i];
-              sum += val * val;
-              pcmBuffer.push(val);
-            }
-            const rms = Math.sqrt(sum / inputData.length);
-            if (rms > windowMaxRms) windowMaxRms = rms;
-            setAudioLevel(Math.min(100, Math.round(rms * 600)));
-
-            // Fast low-latency streaming window (16,000 samples / 1.0s at 16kHz)
-            if (pcmBuffer.length >= 16000) {
-              const samplesToProcess = pcmBuffer.slice(0, 16000);
-              // Keep 1600 samples (100ms) overlap to avoid cutting words on boundary
-              pcmBuffer = pcmBuffer.slice(14400);
-              const hadVoice = windowMaxRms > 0.005;
-              windowMaxRms = 0;
-
-              if (hadVoice && !isTranscribingChunk) {
-                isTranscribingChunk = true;
-                try {
-                  const floatArr = new Float32Array(samplesToProcess);
-                  const wavBase64 = encodeWavBase64(floatArr, 16000);
-                  const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
-                  
-                  if (res && res.text && res.text.trim()) {
-                    const trimmed = res.text.trim();
-                    emit('live_caption_received', {
-                      sessionId: lectureId || 'live-session',
-                      text: trimmed,
-                      timestamp: Date.now(),
-                      platform: 'desktop'
-                    }).catch(() => {});
-                  }
-                } catch (apiErr) {
-                  console.warn("PCM WAV Transcription error:", apiErr);
-                } finally {
-                  isTranscribingChunk = false;
-                }
-              }
-            }
+            pushSamples(inputData, 16000);
           };
 
           micSource.connect(processor);
@@ -232,6 +260,8 @@ export function LiveWorkspacePage() {
 
     return () => {
       TauriClient.stopNativeRecording().catch(console.error);
+      if (unlistenSys) unlistenSys();
+      if (unlistenMic) unlistenMic();
       if (speechRecRef.current) {
         try { speechRecRef.current.stop(); } catch (_) {}
         speechRecRef.current = null;
@@ -241,6 +271,9 @@ export function LiveWorkspacePage() {
       }
       if (processor) {
         try { processor.disconnect(); } catch (_) {}
+      }
+      if (audioCtx) {
+        try { audioCtx.close(); } catch (_) {}
       }
     };
   }, [selectedLanguage, lectureId]);

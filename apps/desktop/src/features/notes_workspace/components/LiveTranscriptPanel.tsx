@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
     Search, Copy, Minus, Sparkles, ChevronDown, 
-    ChevronUp, Check, X, Wand2, Volume2, VolumeX, Plus, Mic, User
+    ChevronUp, Check, X, Wand2, Volume2, Plus, Mic, User
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -98,49 +98,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
     const mixedDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
 
     const activeLanguage = MULTILINGUAL_CATALOG.find(l => l.code === selectedLanguage) || MULTILINGUAL_CATALOG[0];
-
-    const toggleSystemAudio = async () => {
-        if (isSystemAudioActive) {
-            if (systemStreamRef.current) {
-                systemStreamRef.current.getTracks().forEach(t => t.stop());
-                systemStreamRef.current = null;
-            }
-            setIsSystemAudioActive(false);
-            return;
-        }
-        try {
-            const sysStream = await navigator.mediaDevices.getDisplayMedia({
-                video: true,
-                audio: {
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false,
-                }
-            });
-            systemStreamRef.current = sysStream;
-            setIsSystemAudioActive(true);
-
-            if (audioCtxRef.current && mixedDestRef.current) {
-                try {
-                    const sysSource = audioCtxRef.current.createMediaStreamSource(sysStream);
-                    sysSource.connect(mixedDestRef.current);
-                } catch (err) {
-                    console.warn("Error connecting sysSource to mixer:", err);
-                }
-            }
-
-            sysStream.getVideoTracks().forEach(track => track.stop());
-
-            if (sysStream.getAudioTracks().length > 0) {
-                sysStream.getAudioTracks()[0].onended = () => {
-                    setIsSystemAudioActive(false);
-                    systemStreamRef.current = null;
-                };
-            }
-        } catch (err) {
-            console.warn("System audio share notice:", err);
-        }
-    };
 
     useEffect(() => {
         streamingRef.current = isStreaming;
@@ -273,11 +230,106 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             startRecognition(selectedLanguage);
         }
 
-        // 3. 16kHz PCM WAV Audio Streaming Pipeline
+        // 3. Unified 16kHz PCM WAV Streaming Pipeline (System Audio + Microphone)
+        let pcmBuffer: number[] = [];
+        let windowMaxRms = 0;
+        let isTranscribingChunk = false;
+        let currentSpeaker: 'me' | 'speaker' = 'me';
+
+        const pushSamples = async (data: number[] | Float32Array, fromRate: number, speaker: 'me' | 'speaker') => {
+            if (!streamingRef.current) return;
+            currentSpeaker = speaker;
+            const ratio = fromRate > 0 ? fromRate / 16000 : 1;
+            let sum = 0;
+
+            if (ratio === 1) {
+                for (let i = 0; i < data.length; i++) {
+                    const val = data[i];
+                    sum += val * val;
+                    pcmBuffer.push(val);
+                }
+            } else {
+                for (let i = 0; i < data.length; i += ratio) {
+                    const val = data[Math.floor(i)];
+                    sum += val * val;
+                    pcmBuffer.push(val);
+                }
+            }
+
+            const rmsVal = Math.sqrt(sum / (data.length || 1));
+            if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
+            setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
+
+            // Dispatch every 1.0s (16,000 samples at 16kHz)
+            if (pcmBuffer.length >= 16000) {
+                const samplesToProcess = pcmBuffer.slice(0, 16000);
+                pcmBuffer = pcmBuffer.slice(14400); // 100ms overlap
+                const hadVoice = windowMaxRms > 0.004;
+                windowMaxRms = 0;
+
+                if (hadVoice && !isTranscribingChunk) {
+                    isTranscribingChunk = true;
+                    try {
+                        const floatArr = new Float32Array(samplesToProcess);
+                        const wavBase64 = encodeWavBase64(floatArr, 16000);
+                        const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+                        if (res && res.text && res.text.trim()) {
+                            const trimmed = res.text.trim();
+                            if (res.language && res.language !== 'Auto') {
+                                setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
+                            }
+                            setChunks(prev => {
+                                if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
+                                    return prev;
+                                }
+                                return [...prev, {
+                                    id: Date.now().toString() + Math.random(),
+                                    speaker: currentSpeaker,
+                                    text: trimmed,
+                                    language: res.language,
+                                    timeMs: Date.now(),
+                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                }];
+                            });
+                            emit('live_caption_received', {
+                                sessionId: 'live-session',
+                                text: trimmed,
+                                timestamp: Date.now(),
+                                platform: 'desktop'
+                            }).catch(() => {});
+                            setInterimText('');
+                        }
+                    } catch (apiErr) {
+                        console.warn("Live transcription error:", apiErr);
+                    } finally {
+                        isTranscribingChunk = false;
+                    }
+                }
+            }
+        };
+
+        // Listen to native Rust WASAPI System Audio Loopback & Mic streams
+        let unlistenSys: (() => void) | undefined;
+        let unlistenMic: (() => void) | undefined;
+
+        import('@tauri-apps/api/event').then(({ listen }) => {
+            listen<{ data: number[]; rate: number }>('audio_stream_sys', (event) => {
+                if (event.payload?.data) {
+                    pushSamples(event.payload.data, event.payload.rate || 16000, 'speaker');
+                }
+            }).then(u => { unlistenSys = u; });
+
+            listen<{ data: number[]; rate: number }>('audio_stream_mic', (event) => {
+                if (event.payload?.data) {
+                    pushSamples(event.payload.data, event.payload.rate || 16000, 'me');
+                }
+            }).then(u => { unlistenMic = u; });
+        });
+
+        // Also capture web audio microphone for instant redundancy
         let audioCtx: AudioContext | null = null;
         let mediaStream: MediaStream | null = null;
         let processor: ScriptProcessorNode | null = null;
-        let isTranscribingChunk = false;
 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ 
@@ -289,7 +341,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                 } 
             }).then((stream) => {
                 mediaStream = stream;
-
                 try {
                     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
                     audioCtx = new AudioContextClass({ sampleRate: 16000 });
@@ -298,98 +349,27 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         audioCtx.resume();
                     }
 
-                    const mixedDest = audioCtx.createMediaStreamDestination();
-                    mixedDestRef.current = mixedDest;
-
                     const micSource = audioCtx.createMediaStreamSource(stream);
-                    micSource.connect(mixedDest);
-
-                    if (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) {
-                        try {
-                            const sysSource = audioCtx.createMediaStreamSource(systemStreamRef.current);
-                            sysSource.connect(mixedDest);
-                        } catch (_) {}
-                    }
-
-                    let pcmBuffer: number[] = [];
-                    let windowMaxRms = 0;
-
                     processor = audioCtx.createScriptProcessor(4096, 1, 1);
-                    processor.onaudioprocess = async (e) => {
-                        if (!streamingRef.current) return;
+                    processor.onaudioprocess = (e) => {
                         const inputData = e.inputBuffer.getChannelData(0);
-                        const floatArray = new Float32Array(inputData);
-                        
-                        let sum = 0;
-                        for (let i = 0; i < floatArray.length; i++) {
-                            const val = floatArray[i];
-                            sum += val * val;
-                            pcmBuffer.push(val);
-                        }
-                        const rmsVal = Math.sqrt(sum / floatArray.length);
-                        if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
-                        setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
-
-                        // Fast 1.0s low-latency streaming window (16,000 samples at 16kHz)
-                        if (pcmBuffer.length >= 16000) {
-                            const samplesToProcess = pcmBuffer.slice(0, 16000);
-                            pcmBuffer = pcmBuffer.slice(14400); // 100ms overlap
-                            const hadVoice = windowMaxRms > 0.005;
-                            windowMaxRms = 0;
-
-                            if (hadVoice && !isTranscribingChunk) {
-                                isTranscribingChunk = true;
-                                try {
-                                    const floatArr = new Float32Array(samplesToProcess);
-                                    const wavBase64 = encodeWavBase64(floatArr, 16000);
-                                    const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
-                                    if (res && res.text && res.text.trim()) {
-                                        const trimmed = res.text.trim();
-                                        if (res.language && res.language !== 'Auto') {
-                                            setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
-                                        }
-                                        setChunks(prev => {
-                                            if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
-                                                return prev;
-                                            }
-                                            return [...prev, {
-                                                id: Date.now().toString() + Math.random(),
-                                                speaker: isSystemAudioActive ? 'speaker' : 'me',
-                                                text: trimmed,
-                                                language: res.language,
-                                                timeMs: Date.now(),
-                                                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                                            }];
-                                        });
-                                        emit('live_caption_received', {
-                                            sessionId: 'live-session',
-                                            text: trimmed,
-                                            timestamp: Date.now(),
-                                            platform: 'desktop'
-                                        }).catch(() => {});
-                                        setInterimText('');
-                                    }
-                                } catch (apiErr) {
-                                    console.warn("WAV transcription error:", apiErr);
-                                } finally {
-                                    isTranscribingChunk = false;
-                                }
-                            }
-                        }
+                        pushSamples(inputData, 16000, 'me');
                     };
 
                     micSource.connect(processor);
                     processor.connect(audioCtx.destination);
                 } catch (err) {
-                    console.warn("AudioContext init notice:", err);
+                    console.warn("WebAudio context init notice:", err);
                 }
             }).catch((err) => {
-                console.warn("Microphone stream notice:", err);
+                console.warn("Microphone access notice:", err);
             });
         }
 
         return () => {
             TauriClient.stopNativeRecording().catch(console.error);
+            if (unlistenSys) unlistenSys();
+            if (unlistenMic) unlistenMic();
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
             }
@@ -532,12 +512,18 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#161619]/40 shrink-0">
                     {/* Left: Status & Language */}
                     <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                             <span className={cn("w-2 h-2 rounded-full", isStreaming ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />
                             <span className="text-xs font-semibold text-zinc-200">
                                 {isStreaming ? 'Live Transcription' : 'Paused'}
                             </span>
                         </div>
+
+                        {/* Automatic Mic + System Active Badge */}
+                        <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-2xs">
+                            <Volume2 size={11} className="text-emerald-400" />
+                            <span>Mic + System</span>
+                        </span>
 
                         {detectedLanguage && (
                             <span className="text-[11px] text-zinc-300 font-medium flex items-center gap-1 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/[0.08]">
@@ -549,24 +535,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
                     {/* Right: Controls */}
                     <div className="flex items-center gap-1.5 text-zinc-400">
-                        {/* System Audio Toggle */}
-                        <button
-                            type="button"
-                            onClick={toggleSystemAudio}
-                            className={cn(
-                                "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer border",
-                                isSystemAudioActive 
-                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-2xs" 
-                                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04] border-transparent"
-                            )}
-                            title={isSystemAudioActive ? "System Voice Active" : "Click to share System Voice (Zoom/Meet/YouTube)"}
-                        >
-                            {isSystemAudioActive ? <Volume2 size={12} className="text-emerald-400 animate-pulse" /> : <VolumeX size={12} />}
-                            <span>{isSystemAudioActive ? 'System Voice ON' : '+ System Voice'}</span>
-                        </button>
-
-                        <div className="h-3 w-px bg-white/[0.08] mx-0.5" />
-
                         {/* Language Dropdown */}
                         <div className="relative">
                             <button
