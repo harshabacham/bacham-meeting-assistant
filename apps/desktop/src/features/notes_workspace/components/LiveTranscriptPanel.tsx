@@ -372,8 +372,11 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         pushSamples(inputData, 16000, 'me');
                     };
 
+                    const muteGain = audioCtx.createGain();
+                    muteGain.gain.value = 0;
                     micSource.connect(processor);
-                    processor.connect(audioCtx.destination);
+                    processor.connect(muteGain);
+                    muteGain.connect(audioCtx.destination);
                 } catch (err) {
                     console.warn("WebAudio context init notice:", err);
                 }

@@ -280,8 +280,11 @@ export function LiveWorkspacePage() {
             pushSamples(inputData, 16000);
           };
 
+          const muteGain = audioCtx.createGain();
+          muteGain.gain.value = 0;
           micSource.connect(processor);
-          processor.connect(audioCtx.destination);
+          processor.connect(muteGain);
+          muteGain.connect(audioCtx.destination);
         } catch (err) {
           console.warn("AudioContext setup notice:", err);
         }
