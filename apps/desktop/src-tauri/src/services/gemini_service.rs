@@ -856,12 +856,16 @@ impl GeminiService {
         };
 
         let prompt_text = format!(
-            "{}Accurately transcribe this audio snippet verbatim. \
-            If spoken in Hindi, Telugu, Tamil, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Spanish, French, German, Japanese, Chinese, Russian, Arabic, or English, transcribe in its true native script. \
-            Output JSON only with keys: \
-            \"text\" (the verbatim transcript text in native script, or empty string if only silence/breathing/noise), \
-            \"language\" (detected language name, e.g. Telugu, Hindi, Spanish, Japanese, English), \
-            \"flag\" (country flag emoji, e.g. 🇮🇳, 🇪🇸, 🇯🇵, 🇺🇸, 🇫🇷).",
+            "You are an expert multilingual speech recognition and language identification engine. \
+            INSTRUCTIONS: \
+            1. Listen carefully to this 16kHz audio. Identify the exact spoken language (e.g. Telugu, Hindi, Tamil, Kannada, Malayalam, Bengali, Gujarati, Punjabi, Marathi, Spanish, French, German, Japanese, Chinese, Russian, Arabic, English, etc.). \
+            2. Transcribe EXACTLY what was spoken word-for-word in that language's true native script (e.g. if Telugu write in తెలుగు, if Hindi write in हिन्दी, if Tamil write in தமிழ், if English write in English). Do NOT transliterate unless the speaker actually spoke English loanwords. \
+            3. If the audio contains only silence, background noise, coughing, breathing, or keyboard clicks, return \"\" for text. \
+            {} \
+            Respond ONLY with a valid JSON object with keys: \
+            \"text\" (the verbatim native script transcription string), \
+            \"language\" (the detected language name string), \
+            \"flag\" (the single flag emoji for that language, e.g. 🇮🇳, 🇪🇸, 🇺🇸, 🇫🇷, 🇯🇵).",
             lang_hint_str
         );
 

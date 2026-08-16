@@ -7,6 +7,7 @@ import { getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api
 import { currentMonitor } from '@tauri-apps/api/window';
 import { listen, emit } from '@tauri-apps/api/event';
 import { motion, AnimatePresence } from 'framer-motion';
+import { encodeWavBase64 } from '@/utils/wavEncoder';
 
 const MULTILINGUAL_CATALOG = [
     { code: 'auto', label: 'Auto Detect (99+ Languages)', nativeName: 'Automatic', flag: '🌐', bcp: 'en-US' },
@@ -144,12 +145,13 @@ export function LiveWorkspacePage() {
       }
     }
 
-    // 2. Multimodal Hardware Audio Streamer (1.8s slices)
+    // 2. High-Precision 16kHz PCM WAV Audio Streaming Pipeline
     let mediaStream: MediaStream | null = null;
     let audioCtx: AudioContext | null = null;
     let processor: ScriptProcessorNode | null = null;
-    let mediaRecorder: MediaRecorder | null = null;
     let isTranscribingChunk = false;
+    let pcmBuffer: number[] = [];
+    let windowMaxRms = 0;
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({
@@ -169,70 +171,55 @@ export function LiveWorkspacePage() {
             audioCtx.resume();
           }
 
-          const mixedDest = audioCtx.createMediaStreamDestination();
-          mixedDestRef.current = mixedDest;
-
           const micSource = audioCtx.createMediaStreamSource(stream);
-          micSource.connect(mixedDest);
-
-          if (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) {
-            try {
-              const sysSource = audioCtx.createMediaStreamSource(systemStreamRef.current);
-              sysSource.connect(mixedDest);
-            } catch (_) {}
-          }
-
-          const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-            ? 'audio/webm;codecs=opus' 
-            : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
-
-          const streamToRecord = (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) 
-            ? mixedDest.stream 
-            : stream;
-
-          const recorder = new MediaRecorder(streamToRecord, { mimeType });
-          recorder.ondataavailable = async (e) => {
-            if (!e.data || e.data.size < 800 || isTranscribingChunk) return;
-            isTranscribingChunk = true;
-            try {
-              const reader = new FileReader();
-              reader.onloadend = async () => {
-                const base64Data = (reader.result as string).split(',')[1];
-                if (base64Data) {
-                  try {
-                    const res = await TauriClient.transcribeLiveAudioChunk(base64Data, mimeType, selectedLanguage);
-                    if (res && res.text && res.text.trim()) {
-                      emit('live_caption_received', {
-                        sessionId: lectureId || 'live-session',
-                        text: res.text.trim(),
-                        timestamp: Date.now(),
-                        platform: 'desktop'
-                      }).catch(() => {});
-                    }
-                  } catch (apiErr) {
-                    console.warn("Live chunk error:", apiErr);
-                  }
-                }
-                isTranscribingChunk = false;
-              };
-              reader.readAsDataURL(e.data);
-            } catch (err) {
-              isTranscribingChunk = false;
-            }
-          };
-          recorder.start(1800);
-          mediaRecorder = recorder;
-
           processor = audioCtx.createScriptProcessor(4096, 1, 1);
-          processor.onaudioprocess = (e) => {
+
+          processor.onaudioprocess = async (e) => {
             const inputData = e.inputBuffer.getChannelData(0);
+            
             let sum = 0;
             for (let i = 0; i < inputData.length; i++) {
-              sum += inputData[i] * inputData[i];
+              const val = inputData[i];
+              sum += val * val;
+              pcmBuffer.push(val);
             }
             const rms = Math.sqrt(sum / inputData.length);
+            if (rms > windowMaxRms) windowMaxRms = rms;
             setAudioLevel(Math.min(100, Math.round(rms * 600)));
+
+            // When buffer reaches ~2.0s (32,000 samples at 16kHz)
+            if (pcmBuffer.length >= 32000) {
+              const samplesToProcess = pcmBuffer.slice(0, 32000);
+              // Keep 3200 samples (200ms) overlap to avoid cutting words on boundary
+              pcmBuffer = pcmBuffer.slice(28800);
+              const hadVoice = windowMaxRms > 0.006;
+              windowMaxRms = 0;
+
+              if (hadVoice && !isTranscribingChunk) {
+                isTranscribingChunk = true;
+                try {
+                  const floatArr = new Float32Array(samplesToProcess);
+                  const wavBase64 = encodeWavBase64(floatArr, 16000);
+                  const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+                  
+                  if (res && res.text && res.text.trim()) {
+                    const trimmed = res.text.trim();
+                    emit('live_caption_received', {
+                      sessionId: lectureId || 'live-session',
+                      text: trimmed,
+                      timestamp: Date.now(),
+                      platform: 'desktop'
+                    }).catch(() => {});
+                  }
+                } catch (apiErr) {
+                  console.warn("PCM WAV Transcription error:", apiErr);
+                } finally {
+                  isTranscribingChunk = false;
+                }
+              }
+            }
           };
+
           micSource.connect(processor);
           processor.connect(audioCtx.destination);
         } catch (err) {
@@ -248,9 +235,6 @@ export function LiveWorkspacePage() {
       if (speechRecRef.current) {
         try { speechRecRef.current.stop(); } catch (_) {}
         speechRecRef.current = null;
-      }
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        try { mediaRecorder.stop(); } catch (_) {}
       }
       if (mediaStream) {
         mediaStream.getTracks().forEach(t => t.stop());

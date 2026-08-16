@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { emit } from '@tauri-apps/api/event';
 import { cn } from '@/components';
+import { encodeWavBase64 } from '@/utils/wavEncoder';
 
 export interface TranscriptChunk {
     id: string;
@@ -330,7 +331,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
         let audioCtx: AudioContext | null = null;
         let mediaStream: MediaStream | null = null;
         let processor: ScriptProcessorNode | null = null;
-        let mediaRecorder: MediaRecorder | null = null;
         let isTranscribingChunk = false;
 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -367,89 +367,86 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                         } catch (_) {}
                     }
 
-                    // A. Live 1.8s Multimodal Audio Chunk Streamer
-                    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-                        ? 'audio/webm;codecs=opus' 
-                        : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4');
-                    
-                    const streamToRecord = (systemStreamRef.current && systemStreamRef.current.getAudioTracks().length > 0) 
-                        ? mixedDest.stream 
-                        : stream;
+                    // A. High-Precision 16kHz PCM WAV Audio Streaming Pipeline
+                    let pcmBuffer: number[] = [];
+                    let windowMaxRms = 0;
 
-                    const recorder = new MediaRecorder(streamToRecord, { mimeType });
-                    recorder.ondataavailable = async (e) => {
-                        if (!streamingRef.current || !e.data || e.data.size < 800 || isTranscribingChunk) return;
-                        isTranscribingChunk = true;
-                        try {
-                            const reader = new FileReader();
-                            reader.onloadend = async () => {
-                                const base64Data = (reader.result as string).split(',')[1];
-                                if (base64Data) {
-                                    try {
-                                        const res = await TauriClient.transcribeLiveAudioChunk(base64Data, mimeType, selectedLanguage);
-                                        if (res && res.text && res.text.trim()) {
-                                            const trimmed = res.text.trim();
-                                            if (res.language && res.language !== 'Auto') {
-                                                setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
-                                            }
-                                            setChunks(prev => {
-                                                if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
-                                                    return prev;
-                                                }
-                                                return [...prev, {
-                                                    id: Date.now().toString() + Math.random(),
-                                                    speaker: 'speaker',
-                                                    text: trimmed,
-                                                    language: res.language,
-                                                    timeMs: Date.now(),
-                                                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                                                }];
-                                            });
-                                            emit('live_caption_received', {
-                                                sessionId: 'live-session',
-                                                text: trimmed,
-                                                timestamp: Date.now(),
-                                                platform: 'desktop'
-                                            }).catch(() => {});
-                                            setInterimText('');
-                                        }
-                                    } catch (apiErr) {
-                                        console.warn("Chunk transcription notice:", apiErr);
-                                    }
-                                }
-                                isTranscribingChunk = false;
-                            };
-                            reader.readAsDataURL(e.data);
-                        } catch (err) {
-                            isTranscribingChunk = false;
-                        }
-                    };
-                    recorder.start(1800);
-                    mediaRecorder = recorder;
-
-                    // B. Low-latency ScriptProcessor for RMS and Local Worker
                     processor = audioCtx.createScriptProcessor(4096, 1, 1);
-                    processor.onaudioprocess = (e) => {
-                        if (!streamingRef.current || !workerRef.current) return;
+                    processor.onaudioprocess = async (e) => {
+                        if (!streamingRef.current) return;
                         const inputData = e.inputBuffer.getChannelData(0);
                         const floatArray = new Float32Array(inputData);
                         
                         let sum = 0;
                         for (let i = 0; i < floatArray.length; i++) {
-                            sum += floatArray[i] * floatArray[i];
+                            const val = floatArray[i];
+                            sum += val * val;
+                            pcmBuffer.push(val);
                         }
                         const rmsVal = Math.sqrt(sum / floatArray.length);
+                        if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
                         setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
+                        
                         if (rmsVal > 0.01) {
                             setModelStatus('Voice detected • Transcribing...');
                         }
 
-                        workerRef.current.postMessage({
-                            type: 'AUDIO_CHUNK',
-                            stream: 'mic',
-                            payload: Array.from(floatArray),
-                            sampleRate: 16000
-                        });
+                        // Also send to local worker
+                        if (workerRef.current) {
+                            workerRef.current.postMessage({
+                                type: 'AUDIO_CHUNK',
+                                stream: 'mic',
+                                payload: Array.from(floatArray),
+                                sampleRate: 16000
+                            });
+                        }
+
+                        // Every ~2.0s (32,000 samples at 16kHz)
+                        if (pcmBuffer.length >= 32000) {
+                            const samplesToProcess = pcmBuffer.slice(0, 32000);
+                            pcmBuffer = pcmBuffer.slice(28800); // 200ms overlap
+                            const hadVoice = windowMaxRms > 0.006;
+                            windowMaxRms = 0;
+
+                            if (hadVoice && !isTranscribingChunk) {
+                                isTranscribingChunk = true;
+                                try {
+                                    const floatArr = new Float32Array(samplesToProcess);
+                                    const wavBase64 = encodeWavBase64(floatArr, 16000);
+                                    const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
+                                    if (res && res.text && res.text.trim()) {
+                                        const trimmed = res.text.trim();
+                                        if (res.language && res.language !== 'Auto') {
+                                            setDetectedLanguage({ label: res.language, flag: res.flag || '🌐' });
+                                        }
+                                        setChunks(prev => {
+                                            if (prev.length > 0 && prev[prev.length - 1].text.toLowerCase() === trimmed.toLowerCase()) {
+                                                return prev;
+                                            }
+                                            return [...prev, {
+                                                id: Date.now().toString() + Math.random(),
+                                                speaker: 'speaker',
+                                                text: trimmed,
+                                                language: res.language,
+                                                timeMs: Date.now(),
+                                                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                            }];
+                                        });
+                                        emit('live_caption_received', {
+                                            sessionId: 'live-session',
+                                            text: trimmed,
+                                            timestamp: Date.now(),
+                                            platform: 'desktop'
+                                        }).catch(() => {});
+                                        setInterimText('');
+                                    }
+                                } catch (apiErr) {
+                                    console.warn("WAV transcription error:", apiErr);
+                                } finally {
+                                    isTranscribingChunk = false;
+                                }
+                            }
+                        }
                     };
 
                     micSource.connect(processor);
@@ -493,9 +490,6 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
 
         return () => {
             TauriClient.stopNativeRecording().catch(console.error);
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                try { mediaRecorder.stop(); } catch (_) {}
-            }
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
             }
