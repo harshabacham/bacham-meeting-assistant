@@ -123,10 +123,14 @@ export function LiveWorkspacePage() {
         recognition.lang = activeLangObj.bcp;
         recognition.continuous = true;
         recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
         recognition.onresult = (event: any) => {
+          let currentInterim = '';
           for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              const text = event.results[i][0].transcript.trim();
+              const text = transcript.trim();
               if (text) {
                 emit('live_caption_received', {
                   sessionId: lectureId || 'live-session',
@@ -135,9 +139,35 @@ export function LiveWorkspacePage() {
                   platform: 'desktop'
                 }).catch(() => {});
               }
+            } else {
+              currentInterim += transcript;
             }
           }
+          if (currentInterim.trim()) {
+            emit('live_caption_received', {
+              sessionId: lectureId || 'live-session',
+              text: currentInterim.trim(),
+              timestamp: Date.now(),
+              platform: 'desktop',
+              isInterim: true
+            }).catch(() => {});
+          }
         };
+
+        recognition.onerror = (e: any) => {
+          if (e.error !== 'no-speech' && e.error !== 'aborted') {
+            console.warn("Speech recognition notice:", e.error);
+          }
+        };
+
+        recognition.onend = () => {
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (_) {}
+          }, 150);
+        };
+
         recognition.start();
         speechRecRef.current = recognition;
       } catch (err) {

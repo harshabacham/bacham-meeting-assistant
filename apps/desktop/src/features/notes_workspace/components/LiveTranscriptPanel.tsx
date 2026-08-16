@@ -145,20 +145,21 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
         // 1. Start Rust Native Audio Stream
         TauriClient.startNativeRecording().catch(console.error);
 
-        // 2. Web Speech API (Google Neural Cloud Speech)
+        // 2. Continuous Web Speech Neural Recognition (0ms Latency, Zero Quota Limit)
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
         const startRecognition = (langCode: string) => {
-            if (!SpeechRecognition) return;
+            if (!SpeechRecognition || !streamingRef.current) return;
             try {
                 if (speechRecRef.current) {
-                    try { speechRecRef.current.stop(); } catch (_) {}
+                    try { speechRecRef.current.abort(); } catch (_) {}
                     speechRecRef.current = null;
                 }
 
                 const recognition = new SpeechRecognition();
                 recognition.continuous = true;
                 recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
                 
                 const langEntry = MULTILINGUAL_CATALOG.find(l => l.code === langCode);
                 recognition.lang = langEntry?.bcp || 'en-US';
@@ -207,21 +208,28 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                 };
 
                 recognition.onend = () => {
+                    if (!streamingRef.current) return;
                     if (pendingLangRestartRef.current) {
                         const nextLang = pendingLangRestartRef.current;
                         pendingLangRestartRef.current = null;
-                        startRecognition(nextLang);
+                        setTimeout(() => startRecognition(nextLang), 100);
                         return;
                     }
-                    if (streamingRef.current && useWebSpeechRef.current) {
-                        try { recognition.start(); } catch (_) {}
-                    }
+                    setTimeout(() => {
+                        if (streamingRef.current) {
+                            try {
+                                recognition.start();
+                            } catch (_) {
+                                setTimeout(() => startRecognition(selectedLanguage), 250);
+                            }
+                        }
+                    }, 100);
                 };
 
                 recognition.start();
                 speechRecRef.current = recognition;
             } catch (err) {
-                console.warn("WebSpeech init notice:", err);
+                console.warn("Speech recognition init notice:", err);
             }
         };
 
