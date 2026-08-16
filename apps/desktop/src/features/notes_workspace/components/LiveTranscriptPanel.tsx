@@ -239,34 +239,40 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
             startRecognition(selectedLanguage);
         }
 
-        // 3. Persistent 16kHz PCM Audio Streaming Pipeline with Zero-Drop Queue
-        let pcmBuffer: number[] = [];
-        let windowMaxRms = 0;
+        // 3. Intelligent Silence-Based Voice Activity Detection (VAD) Phrase Segmenter
+        let activePhraseSamples: number[] = [];
+        let consecutiveSilenceSamples = 0;
+        let isSpeakingDetected = false;
         let isProcessingQueue = false;
-        const audioQueue: Float32Array[] = [];
-        let currentSpeaker: 'me' | 'speaker' = 'me';
+        const audioQueue: { samples: Float32Array; speaker: 'me' | 'speaker' }[] = [];
+
+        const SAMPLE_RATE = 16000;
+        const SILENCE_THRESHOLD_RMS = 0.003; // Sensitive voice detection
+        const SILENCE_HOLD_SAMPLES = SAMPLE_RATE * 0.40; // 400ms pause closes phrase
+        const MIN_PHRASE_LENGTH = SAMPLE_RATE * 0.70; // 700ms minimum speech
+        const MAX_PHRASE_LENGTH = SAMPLE_RATE * 6.0;  // 6.0s maximum speech phrase
 
         const processQueue = async () => {
             if (isProcessingQueue || audioQueue.length === 0 || !streamingRef.current) return;
             isProcessingQueue = true;
 
             while (audioQueue.length > 0 && streamingRef.current) {
-                const samples = audioQueue.shift();
-                if (!samples) continue;
+                const item = audioQueue.shift();
+                if (!item) continue;
 
                 try {
-                    const wavBase64 = encodeWavBase64(samples, 16000);
+                    const wavBase64 = encodeWavBase64(item.samples, 16000);
                     const res = await TauriClient.transcribeLiveAudioChunk(wavBase64, 'audio/wav', selectedLanguage);
                     if (res && res.text && res.text.trim()) {
-                        const trimmed = res.text.trim();
-                        // Filter hallucinations
+                        const rawText = res.text.trim();
+                        // Filter out hallucinations
                         if (
-                            trimmed !== '00:00' && 
-                            trimmed !== '0:00' && 
-                            trimmed !== '00:01' && 
-                            trimmed !== '00:02' && 
-                            trimmed !== 'one' && 
-                            !trimmed.toLowerCase().startsWith('subtitles')
+                            rawText !== '00:00' && 
+                            rawText !== '0:00' && 
+                            rawText !== '00:01' && 
+                            rawText !== '00:02' && 
+                            rawText !== 'one' && 
+                            !rawText.toLowerCase().startsWith('subtitles')
                         ) {
                             setChunks(prev => {
                                 const now = Date.now();
@@ -274,30 +280,38 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
                                 if (prev.length > 0) {
                                     const last = prev[prev.length - 1];
-                                    const timeDiff = now - (last.timeMs || 0);
+                                    const timeSinceLastSpeech = now - (last.timeMs || 0);
 
-                                    // If same speaker spoke within 6 seconds, merge into existing paragraph
-                                    if (last.speaker === currentSpeaker && timeDiff < 6000) {
-                                        // Avoid duplicate phrases
-                                        if (last.text.toLowerCase().endsWith(trimmed.toLowerCase())) {
+                                    // If same speaker spoke within 8 seconds, seamlessly merge into current paragraph
+                                    if (last.speaker === item.speaker && timeSinceLastSpeech < 8000) {
+                                        const cleanLast = last.text.trim();
+                                        const cleanNew = rawText.trim();
+                                        
+                                        // Avoid duplicate phrase
+                                        if (cleanLast.toLowerCase().endsWith(cleanNew.toLowerCase())) {
                                             return prev;
                                         }
-                                        const updatedText = `${last.text.replace(/[.\s]+$/, '')}. ${trimmed.charAt(0).toUpperCase() + trimmed.slice(1)}`;
+
+                                        const needsPeriod = !/[.!?]$/.test(cleanLast);
+                                        const updatedParagraph = needsPeriod 
+                                            ? `${cleanLast}. ${cleanNew.charAt(0).toUpperCase() + cleanNew.slice(1)}`
+                                            : `${cleanLast} ${cleanNew.charAt(0).toUpperCase() + cleanNew.slice(1)}`;
+
                                         const updated = [...prev];
                                         updated[updated.length - 1] = {
                                             ...last,
-                                            text: updatedText,
+                                            text: updatedParagraph,
                                             timeMs: now,
                                         };
                                         return updated;
                                     }
                                 }
 
-                                // Start new paragraph block
+                                // New paragraph block
                                 return [...prev, {
                                     id: Date.now().toString() + Math.random(),
-                                    speaker: currentSpeaker,
-                                    text: trimmed.charAt(0).toUpperCase() + trimmed.slice(1),
+                                    speaker: item.speaker,
+                                    text: rawText.charAt(0).toUpperCase() + rawText.slice(1),
                                     timeMs: now,
                                     timestamp: timeStr,
                                 }];
@@ -305,7 +319,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
                             emit('live_caption_received', {
                                 sessionId: 'live-session',
-                                text: trimmed,
+                                text: rawText,
                                 timestamp: Date.now(),
                                 platform: 'desktop'
                             }).catch(() => {});
@@ -326,41 +340,61 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
 
         const pushSamples = async (data: number[] | Float32Array, fromRate: number, speaker: 'me' | 'speaker') => {
             if (!streamingRef.current) return;
-            currentSpeaker = speaker;
             const ratio = fromRate > 0 ? fromRate / 16000 : 1;
             let sum = 0;
+            const mono16k: number[] = [];
 
             if (ratio === 1) {
                 for (let i = 0; i < data.length; i++) {
                     const val = data[i];
                     sum += val * val;
-                    pcmBuffer.push(val);
+                    mono16k.push(val);
                 }
             } else {
                 for (let i = 0; i < data.length; i += ratio) {
                     const val = data[Math.floor(i)];
                     sum += val * val;
-                    pcmBuffer.push(val);
+                    mono16k.push(val);
                 }
             }
 
-            const rmsVal = Math.sqrt(sum / (data.length || 1));
-            if (rmsVal > windowMaxRms) windowMaxRms = rmsVal;
-            setAudioLevel(Math.min(100, Math.round(rmsVal * 600)));
+            const rms = Math.sqrt(sum / (data.length || 1));
+            setAudioLevel(Math.min(100, Math.round(rms * 600)));
 
-            // 2.0s streaming window (32,000 samples at 16kHz) with 300ms overlap
-            const WINDOW_SIZE = 32000;
-            const STEP_SIZE = 27200;
+            const isVoice = rms > SILENCE_THRESHOLD_RMS;
 
-            if (pcmBuffer.length >= WINDOW_SIZE) {
-                const samplesToProcess = pcmBuffer.slice(0, WINDOW_SIZE);
-                pcmBuffer = pcmBuffer.slice(STEP_SIZE);
-                const hadVoice = windowMaxRms > 0.003; // sensitive threshold to catch quiet speech
-                windowMaxRms = 0;
+            if (isVoice) {
+                isSpeakingDetected = true;
+                consecutiveSilenceSamples = 0;
+                for (let i = 0; i < mono16k.length; i++) {
+                    activePhraseSamples.push(mono16k[i]);
+                }
 
-                if (hadVoice) {
-                    audioQueue.push(new Float32Array(samplesToProcess));
+                // If speech has been continuous for MAX_PHRASE_LENGTH (6s), flush full phrase
+                if (activePhraseSamples.length >= MAX_PHRASE_LENGTH) {
+                    const phraseToTranscribe = new Float32Array(activePhraseSamples);
+                    activePhraseSamples = [];
+                    audioQueue.push({ samples: phraseToTranscribe, speaker });
                     processQueue();
+                }
+            } else {
+                if (isSpeakingDetected) {
+                    consecutiveSilenceSamples += mono16k.length;
+                    for (let i = 0; i < mono16k.length; i++) {
+                        activePhraseSamples.push(mono16k[i]);
+                    }
+
+                    // Natural pause detected! Close the phrase
+                    if (consecutiveSilenceSamples >= SILENCE_HOLD_SAMPLES) {
+                        if (activePhraseSamples.length >= MIN_PHRASE_LENGTH) {
+                            const phraseToTranscribe = new Float32Array(activePhraseSamples);
+                            audioQueue.push({ samples: phraseToTranscribe, speaker });
+                            processQueue();
+                        }
+                        activePhraseSamples = [];
+                        consecutiveSilenceSamples = 0;
+                        isSpeakingDetected = false;
+                    }
                 }
             }
         };
@@ -426,36 +460,39 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                 mediaStream.getTracks().forEach(track => track.stop());
             }
             if (processor) {
-                try { processor.disconnect(); } catch (_) {}
+                processor.disconnect();
             }
-            if (audioCtx) {
-                try { audioCtx.close(); } catch (_) {}
+            if (audioCtx && audioCtx.state !== 'closed') {
+                audioCtx.close().catch(() => {});
+            }
+            if (speechRecRef.current) {
+                try { speechRecRef.current.abort(); } catch (_) {}
+                speechRecRef.current = null;
             }
         };
-    }, [isOpen]);
-
-    const handleLanguageChange = (langCode: string) => {
-        setSelectedLanguage(langCode);
-        setIsLangMenuOpen(false);
-        if (speechRecRef.current) {
-            pendingLangRestartRef.current = langCode;
-            try { speechRecRef.current.stop(); } catch (_) {}
-        }
-    };
-
-    const toggleStreaming = () => {
-        setIsStreaming(!isStreaming);
-    };
+    }, [selectedLanguage]);
 
     const handleCopyAll = () => {
-        const fullText = chunks.map(c => `${c.speaker === 'me' ? 'You' : 'Speaker'}: ${c.text}`).join('\n');
+        const fullText = chunks.map(c => `${c.speaker === 'me' ? 'You' : 'Speaker'} (${c.timestamp || ''}): ${c.text}`).join('\n\n');
         navigator.clipboard.writeText(fullText);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleLanguageChange = (code: string) => {
+        setSelectedLanguage(code);
+        setIsLangMenuOpen(false);
+        setLangSearch('');
+        pendingLangRestartRef.current = code;
+        if (speechRecRef.current) {
+            try { speechRecRef.current.abort(); } catch (_) {}
+        }
+    };
+
+    const handleToggleStreaming = () => setIsStreaming(!isStreaming);
+
     const handleGenerateNotes = () => {
-        const fullTranscript = chunks.map(c => c.text).join(' ');
+        const fullTranscript = chunks.map(c => `${c.speaker === 'me' ? 'You' : 'Speaker'}: ${c.text}`).join('\n\n');
         onProcess(fullTranscript);
         onClose();
     };
@@ -486,225 +523,181 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
         l.nativeName.toLowerCase().includes(langSearch.toLowerCase())
     );
 
-    const visibleChunks = chunks.filter(c => 
-        !transcriptSearch.trim() || c.text.toLowerCase().includes(transcriptSearch.toLowerCase())
-    );
+    const visibleChunks = transcriptSearch.trim() 
+        ? chunks.filter(c => c.text.toLowerCase().includes(transcriptSearch.toLowerCase()))
+        : chunks;
 
-    // Auto-scroll transcript container
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [chunks, interimText]);
-
-    if (!isOpen) return null;
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 1. MINIMIZED GRANOLA FLOATING WAVEFORM PILL
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (isMinimized) {
-        return (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 15 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    whileHover={{ y: -1 }}
-                    className="flex items-center gap-3 px-4 py-2 rounded-full bg-[#121214]/95 backdrop-blur-xl border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
-                >
-                    {/* Live Dancing Waveform */}
-                    <div className="flex items-center gap-0.5 h-3.5">
-                        <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(14, audioLevel * 0.2 + 4))}px` : '4px' }} />
-                        <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(6, Math.min(14, audioLevel * 0.35 + 6))}px` : '6px' }} />
-                        <span className={cn("w-1 rounded-full transition-all duration-75", isStreaming ? "bg-emerald-400" : "bg-zinc-600")} style={{ height: isStreaming ? `${Math.max(4, Math.min(14, audioLevel * 0.22 + 4))}px` : '4px' }} />
-                    </div>
-
-                    <span className="text-xs font-mono text-zinc-300 font-medium tabular-nums">
-                        {formatTime(recordingTime)}
-                    </span>
-
-                    <div className="h-3 w-px bg-white/10" />
-
-                    <button 
-                        type="button"
-                        onClick={() => setIsMinimized(false)}
-                        className="flex items-center gap-1 text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                    >
-                        <span>Transcript</span>
-                        <ChevronUp size={13} className="text-zinc-400" />
-                    </button>
-
-                    <div className="h-3 w-px bg-white/10" />
-
-                    <button
-                        type="button"
-                        onClick={handleGenerateNotes}
-                        className="flex items-center gap-1 px-3 py-1 rounded-full bg-white hover:bg-zinc-200 text-zinc-900 text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                    >
-                        <Sparkles size={11} className="text-amber-600" />
-                        <span>Enhance</span>
-                    </button>
-                </motion.div>
-            </div>
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 2. EXPANDED GRANOLA CONVERSATIONAL TRANSCRIPT PANEL
-    // ═══════════════════════════════════════════════════════════════════════════
     return (
-        <div className="fixed inset-x-0 bottom-6 flex flex-col items-center justify-center z-50 pointer-events-none px-4">
-            <motion.div 
-                initial={{ opacity: 0, y: 25, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 380 }}
-                className="w-full max-w-xl bg-[#111113]/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col pointer-events-auto font-sans"
-            >
-                {/* Clean Granola Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#161619]/40 shrink-0">
-                    {/* Left: Status & Language */}
-                    <div className="flex items-center gap-2.5">
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+            <AnimatePresence>
+                {isMinimized && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        onClick={() => setIsMinimized(false)}
+                        className="bg-[#121214]/90 border border-white/10 rounded-full px-4 py-2 flex items-center gap-3 shadow-2xl backdrop-blur-xl cursor-pointer hover:border-white/20 transition-all group"
+                    >
                         <div className="flex items-center gap-1.5">
                             <span className={cn("w-2 h-2 rounded-full", isStreaming ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />
-                            <span className="text-xs font-semibold text-zinc-200">
-                                {isStreaming ? 'Live Transcription' : 'Paused'}
-                            </span>
+                            <span className="text-xs font-semibold text-zinc-200">Transcript</span>
                         </div>
-
-                        {/* Automatic Mic + System Active Badge */}
-                        <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-2xs">
-                            <Volume2 size={11} className="text-emerald-400" />
-                            <span>Mic + System</span>
-                        </span>
-
-                    </div>
-
-                    {/* Right: Controls */}
-                    <div className="flex items-center gap-1.5 text-zinc-400">
-
-                        {/* Search Toggle */}
-                        <button 
-                            type="button" 
-                            onClick={() => setIsSearchOpen(!isSearchOpen)} 
-                            className={cn("p-1.5 rounded-md transition-colors cursor-pointer", isSearchOpen ? "text-white bg-white/10" : "hover:text-white hover:bg-white/[0.04]")}
-                            title="Search in transcript"
-                        >
-                            <Search size={13} />
-                        </button>
-
-                        {/* Copy All */}
-                        <button 
-                            type="button" 
-                            onClick={handleCopyAll} 
-                            className="p-1.5 hover:text-white hover:bg-white/[0.04] rounded-md transition-colors cursor-pointer" 
-                            title="Copy entire transcript"
-                        >
-                            {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                        </button>
-
-                        {/* Minimize */}
-                        <button 
-                            type="button" 
-                            onClick={() => setIsMinimized(true)} 
-                            className="p-1.5 hover:text-white hover:bg-white/[0.04] rounded-md transition-colors cursor-pointer" 
-                            title="Minimize to waveform"
-                        >
-                            <Minus size={13} />
-                        </button>
-
-                        {/* Close */}
-                        <button 
-                            type="button" 
-                            onClick={onClose} 
-                            className="p-1.5 hover:text-white hover:bg-white/[0.04] rounded-md transition-colors cursor-pointer" 
-                            title="Close"
-                        >
-                            <X size={14} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* In-Transcript Keyword Filter */}
-                {isSearchOpen && (
-                    <div className="px-4 py-2 border-b border-white/[0.06] bg-[#0E0E10] flex items-center gap-2">
-                        <Search size={12} className="text-zinc-400 shrink-0" />
-                        <input
-                            type="text"
-                            value={transcriptSearch}
-                            onChange={e => setTranscriptSearch(e.target.value)}
-                            placeholder="Filter keywords in real-time..."
-                            className="w-full bg-transparent border-none outline-none text-xs text-zinc-200 placeholder:text-zinc-500"
-                            autoFocus
-                        />
-                        {transcriptSearch && (
-                            <button type="button" onClick={() => setTranscriptSearch('')} className="text-[11px] text-zinc-400 hover:text-white cursor-pointer">
-                                Clear
-                            </button>
-                        )}
-                    </div>
+                        <span className="text-xs text-zinc-400 font-mono tabular-nums">{formatTime(recordingTime)}</span>
+                        <ChevronUp size={14} className="text-zinc-400 group-hover:text-white transition-colors" />
+                    </motion.div>
                 )}
+            </AnimatePresence>
 
-                {/* Quota Warning Alert */}
-                {quotaWarning && (
-                    <div className="mx-4 my-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <AlertCircle size={14} className="shrink-0 text-amber-400" />
-                            <span>{quotaWarning}</span>
-                        </div>
-                        <button 
-                            type="button" 
-                            onClick={() => setQuotaWarning(null)} 
-                            className="text-zinc-400 hover:text-white p-1 cursor-pointer"
-                        >
-                            <X size={12} />
-                        </button>
-                    </div>
-                )}
+            <AnimatePresence>
+                {!isMinimized && isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.96, y: 15 }}
+                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        className="w-[520px] max-w-[92vw] bg-[#121214] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden flex flex-col backdrop-blur-2xl"
+                    >
+                        {/* Granola Minimalist Header */}
+                        <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between bg-[#141417]/80">
+                            {/* Left: Status & Audio Badge */}
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex items-center gap-1.5">
+                                    <span className={cn("w-2 h-2 rounded-full", isStreaming ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />
+                                    <span className="text-xs font-semibold text-zinc-200">
+                                        {isStreaming ? 'Live Transcript' : 'Paused'}
+                                    </span>
+                                </div>
 
-                {/* Conversational Speech Stream */}
-                <div 
-                    ref={scrollRef}
-                    className="p-5 max-h-[42vh] min-h-[180px] overflow-y-auto space-y-4 bg-[#0E0E10]/80 font-sans scroll-smooth"
-                >
-                    {chunks.length === 0 && !interimText && (
-                        <div className="flex flex-col items-center justify-center py-12 text-zinc-500 text-xs gap-2 text-center">
-                            <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-zinc-400 mb-1">
-                                <Mic size={15} />
+                                <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-2xs">
+                                    <Volume2 size={11} className="text-emerald-400" />
+                                    <span>Mic + System</span>
+                                </span>
                             </div>
-                            <p className="font-medium text-zinc-300">
-                                {isStreaming ? `Listening to audio in ${activeLanguage.label}...` : 'Recording paused.'}
-                            </p>
-                            <p className="text-[11px] text-zinc-500 max-w-xs leading-normal">
-                                What you or attendees say will appear here in clean verbatim native script.
-                            </p>
+
+                            {/* Right: Controls */}
+                            <div className="flex items-center gap-1.5 text-zinc-400">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSearchOpen(!isSearchOpen)}
+                                    className={cn(
+                                        "p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer",
+                                        isSearchOpen && "bg-white/10 text-white"
+                                    )}
+                                    title="Search Transcript"
+                                >
+                                    <Search size={13} />
+                                </button>
+
+                                <button 
+                                    type="button"
+                                    onClick={handleCopyAll}
+                                    className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                    title="Copy full transcript"
+                                >
+                                    {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                </button>
+
+                                <div className="h-3 w-px bg-white/[0.08] mx-0.5" />
+
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsMinimized(true)}
+                                    className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                    title="Minimize"
+                                >
+                                    <Minus size={13} />
+                                </button>
+
+                                <button 
+                                    type="button"
+                                    onClick={onClose}
+                                    className="p-1.5 rounded-md text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                    title="Close"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
                         </div>
-                    )}
 
-                    {/* Timeline Paragraphs */}
-                    {visibleChunks.map((chunk, idx) => {
-                        const isMe = chunk.speaker === 'me';
-                        return (
-                            <div 
-                                key={chunk.id} 
-                                className="group relative flex flex-col gap-1.5 px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.03]"
-                            >
-                                {/* Speaker & Metadata Row */}
-                                <div className="flex items-center justify-between text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <span className={cn(
-                                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide",
-                                            isMe 
-                                                ? "bg-indigo-500/15 text-indigo-400 border border-indigo-500/20" 
-                                                : "bg-white/[0.06] text-zinc-300 border border-white/[0.08]"
-                                        )}>
-                                            {isMe ? <Mic size={10} /> : <User size={10} />}
-                                            <span>{isMe ? 'You' : `Speaker ${Math.floor(idx / 2) + 1}`}</span>
-                                        </span>
+                        {/* In-Transcript Keyword Filter */}
+                        {isSearchOpen && (
+                            <div className="px-4 py-2 border-b border-white/[0.06] bg-[#0E0E10] flex items-center gap-2">
+                                <Search size={12} className="text-zinc-400 shrink-0" />
+                                <input
+                                    type="text"
+                                    value={transcriptSearch}
+                                    onChange={e => setTranscriptSearch(e.target.value)}
+                                    placeholder="Filter keywords in real-time..."
+                                    className="w-full bg-transparent border-none outline-none text-xs text-zinc-200 placeholder:text-zinc-500"
+                                    autoFocus
+                                />
+                                {transcriptSearch && (
+                                    <button type="button" onClick={() => setTranscriptSearch('')} className="text-[11px] text-zinc-400 hover:text-white cursor-pointer">
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Quota Warning Alert */}
+                        {quotaWarning && (
+                            <div className="mx-4 my-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle size={14} className="shrink-0 text-amber-400" />
+                                    <span>{quotaWarning}</span>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setQuotaWarning(null)} 
+                                    className="text-zinc-400 hover:text-white p-1 cursor-pointer"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Granola Continuous Flowing Prose Document */}
+                        <div 
+                            ref={scrollRef}
+                            className="p-5 max-h-[44vh] min-h-[200px] overflow-y-auto space-y-4 bg-[#0E0E10]/90 font-sans scroll-smooth"
+                        >
+                            {chunks.length === 0 && !interimText && (
+                                <div className="flex flex-col items-center justify-center py-14 text-zinc-500 text-xs gap-2 text-center">
+                                    <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center text-zinc-400 mb-1">
+                                        <Mic size={15} />
                                     </div>
+                                    <p className="font-medium text-zinc-300">
+                                        {isStreaming ? 'Listening to conversation...' : 'Recording paused.'}
+                                    </p>
+                                    <p className="text-[11px] text-zinc-500 max-w-xs leading-normal">
+                                        Spoken conversation will flow here in continuous paragraph format.
+                                    </p>
+                                </div>
+                            )}
 
-                                    {/* Hover Actions: Copy & Insert */}
-                                    <div className="flex items-center gap-2">
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                            {/* Continuous Flowing Paragraphs */}
+                            {visibleChunks.map((chunk) => {
+                                const isMe = chunk.speaker === 'me';
+                                return (
+                                    <div 
+                                        key={chunk.id} 
+                                        className="group relative text-[14px] leading-relaxed text-zinc-200 transition-colors p-2 rounded-lg hover:bg-white/[0.02]"
+                                    >
+                                        <span className={cn(
+                                            "font-semibold mr-2 select-none inline-flex items-center gap-1",
+                                            isMe ? "text-indigo-400" : "text-zinc-300"
+                                        )}>
+                                            {isMe ? 'You' : 'Speaker'}
+                                            <span className="text-[11px] font-normal text-zinc-500 font-mono">
+                                                ({chunk.timestamp})
+                                            </span>:
+                                        </span>
+                                        <span className="text-zinc-100 font-normal select-text">
+                                            {chunk.text}
+                                        </span>
+
+                                        {/* Hover Actions Toolbar */}
+                                        <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 inline-flex items-center gap-1.5 align-middle">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -712,60 +705,37 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                                                     setCopiedChunkId(chunk.id);
                                                     setTimeout(() => setCopiedChunkId(null), 1800);
                                                 }}
-                                                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                                                title="Copy quote"
+                                                className="text-[10px] text-zinc-400 hover:text-white px-1.5 py-0.5 rounded bg-white/[0.06] hover:bg-white/10 transition-colors cursor-pointer"
+                                                title="Copy paragraph"
                                             >
-                                                {copiedChunkId === chunk.id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-                                                <span>{copiedChunkId === chunk.id ? 'Copied' : 'Copy'}</span>
+                                                {copiedChunkId === chunk.id ? 'Copied' : 'Copy'}
                                             </button>
-
                                             {onInsertQuote && (
                                                 <button
                                                     type="button"
                                                     onClick={() => onInsertQuote(chunk.text)}
-                                                    className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-amber-400 hover:bg-amber-400/10 font-medium transition-colors cursor-pointer"
-                                                    title="Insert quote directly into notes"
+                                                    className="text-[10px] text-amber-400 hover:text-amber-300 px-1.5 py-0.5 rounded bg-amber-400/10 hover:bg-amber-400/20 transition-colors cursor-pointer"
+                                                    title="Insert into note"
                                                 >
-                                                    <Plus size={11} />
-                                                    <span>Insert to Note</span>
+                                                    + Insert
                                                 </button>
                                             )}
-                                        </div>
-
-                                        <span className="text-[11px] text-zinc-500 font-mono tabular-nums">
-                                            {chunk.timestamp || formatTime(recordingTime)}
                                         </span>
                                     </div>
-                                </div>
+                                );
+                            })}
 
-                                {/* Verbatim Speech Content */}
-                                <div className="text-[13.5px] leading-relaxed text-zinc-100 pl-1 font-normal select-text">
-                                    {chunk.text}
+                            {/* Live Interim Streaming Sentence */}
+                            {interimText && (
+                                <div className="text-[14px] leading-relaxed text-zinc-400 p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                                    <span className="font-semibold text-indigo-400/80 mr-2 select-none">
+                                        You:
+                                    </span>
+                                    <span className="text-zinc-200">{interimText}</span>
+                                    <span className="inline-block w-1.5 h-3.5 ml-1 bg-emerald-400 animate-pulse align-middle" />
                                 </div>
-                            </div>
-                        );
-                    })}
-
-                    {/* Active Live Real-Time Speech Stream (0ms latency) */}
-                    {interimText && (
-                        <div className="flex flex-col gap-1.5 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                            <div className="flex items-center gap-2 text-xs">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-                                    <Mic size={10} className="animate-pulse" />
-                                    <span>{isSystemAudioActive ? 'Speaker' : 'You'}</span>
-                                </span>
-                                <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                    Live
-                                </span>
-                            </div>
-                            <div className="text-[13.5px] leading-relaxed text-zinc-200 pl-1 font-normal select-text">
-                                {interimText}
-                                <span className="inline-block w-1.5 h-3.5 ml-1 bg-emerald-400 animate-pulse align-middle" />
-                            </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
                 {/* Minimalist Bottom Control Strip */}
                 <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06] bg-[#161619]/60 shrink-0">
@@ -779,7 +749,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess, onInsertQuote 
                         
                         <button 
                             type="button"
-                            onClick={toggleStreaming}
+                            onClick={handleToggleStreaming}
                             className="text-zinc-300 hover:text-white transition-colors text-xs font-medium cursor-pointer"
                         >
                             {isStreaming ? 'Pause' : 'Resume'}
