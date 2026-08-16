@@ -867,6 +867,14 @@ impl GeminiService {
             _ => (None, "the spoken language in its original native script"),
         };
 
+        let (ext, clean_mime) = if mime_type.contains("webm") {
+            ("audio.webm", "audio/webm")
+        } else if mime_type.contains("mp4") {
+            ("audio.mp4", "audio/mp4")
+        } else {
+            ("audio.wav", "audio/wav")
+        };
+
         // 1. Try Groq Whisper (Whisper Large v3 Turbo - 2000 RPD, Free & Ultra-Fast)
         let groq_candidate_keys = ["groq_api_key", "groqApiKey", "groq", "bacham.groq"];
         let mut groq_key_opt: Option<String> = None;
@@ -902,8 +910,8 @@ impl GeminiService {
             if let Ok(audio_bytes) = base64::engine::general_purpose::STANDARD.decode(audio_base64) {
                 if !audio_bytes.is_empty() {
                     let part = reqwest::multipart::Part::bytes(audio_bytes)
-                        .file_name("audio.wav")
-                        .mime_str("audio/wav")
+                        .file_name(ext)
+                        .mime_str(clean_mime)
                         .unwrap();
 
                     let mut form = reqwest::multipart::Form::new()
@@ -976,8 +984,8 @@ impl GeminiService {
             if let Ok(audio_bytes) = base64::engine::general_purpose::STANDARD.decode(audio_base64) {
                 if !audio_bytes.is_empty() {
                     let part = reqwest::multipart::Part::bytes(audio_bytes)
-                        .file_name("audio.wav")
-                        .mime_str("audio/wav")
+                        .file_name(ext)
+                        .mime_str(clean_mime)
                         .unwrap();
 
                     let mut form = reqwest::multipart::Form::new()
@@ -1020,18 +1028,15 @@ impl GeminiService {
             let candidate_models = [
                 "gemini-3.5-flash-lite",
                 "gemini-3.5-flash",
-                "gemini-3.7-flash",
                 "gemini-flash-latest",
             ];
 
             let prompt_text = format!(
-                "You are an expert speech recognition model. Transcribe the spoken audio verbatim in {}. \
-                CRITICAL: Do NOT translate to English. Write ONLY the exact words spoken in their native script (e.g. Devanagari for Hindi, Telugu script for Telugu, etc.). \
+                "Transcribe the spoken audio verbatim in {}. \
+                CRITICAL: Do NOT translate to English. Write ONLY the exact words spoken in their native script. \
                 Do not add notes, timestamps, or formatting. Output ONLY the raw spoken words. If there is no clear speech, output nothing.",
                 lang_desc
             );
-
-            let clean_mime = mime_type.split(';').next().unwrap_or(mime_type).trim();
 
             let payload = serde_json::json!({
                 "contents": [{
