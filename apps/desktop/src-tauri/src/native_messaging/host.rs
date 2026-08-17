@@ -66,8 +66,27 @@ impl NativeHost {
         Ok(())
     }
     
-    fn handle_message(&self, msg: NativeMessage<Value>) {
-        
+    pub fn handle_message(&self, msg: NativeMessage<Value>) {
+        let writer_clone = self.writer.clone();
+        let sender: Option<Arc<dyn Fn(NativeMessage<Value>) + Send + Sync>> = Some(Arc::new(move |reply| {
+            if let Ok(json_str) = serde_json::to_string(&reply) {
+                let bytes = json_str.as_bytes();
+                let len = bytes.len() as u32;
+                if let Ok(mut w) = writer_clone.lock() {
+                    let _ = w.write_all(&len.to_ne_bytes());
+                    let _ = w.write_all(bytes);
+                    let _ = w.flush();
+                }
+            }
+        }));
+        Self::process_message(&self.app, msg, sender);
+    }
+    
+    pub fn process_message(
+        app: &AppHandle,
+        msg: NativeMessage<Value>,
+        response_sender: Option<Arc<dyn Fn(NativeMessage<Value>) + Send + Sync>>,
+    ) {
         if msg.r#type == MessageType::Heartbeat {
             let ack = NativeMessage {
                 version: msg.version,
@@ -78,22 +97,24 @@ impl NativeHost {
             };
             
             // Write heartbeat timestamp for UI to read
-            let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+            let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
             let _ = std::fs::create_dir_all(&temp_dir);
             let heartbeat_path = temp_dir.join("extension_heartbeat.txt");
             let _ = std::fs::write(&heartbeat_path, chrono::Utc::now().timestamp_millis().to_string());
             
-            let _ = self.send_message(&ack);
+            if let Some(ref sender) = response_sender {
+                sender(ack);
+            }
             return;
         }
 
         if msg.r#type == MessageType::SessionStart {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<SessionStartPayload>(msg.payload.clone()) {
-                    let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
                     std::fs::create_dir_all(&temp_dir).unwrap_or_default();
                     
-                    let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                    let pool = app.state::<crate::database::DbState>().pool.clone();
                     let session_id_clone = session_id.clone();
                     
                     let title = if let Some(label) = &payload.course_label {
@@ -107,7 +128,7 @@ impl NativeHost {
                     };
                     let course_label = payload.course_label.clone();
                     
-                    let app_clone = self.app.clone();
+                    let app_clone = app.clone();
                     
                     tauri::async_runtime::spawn(async move {
                         // Immediately wake the app so the user sees the transition
@@ -128,7 +149,7 @@ impl NativeHost {
                         }
                     });
                 } else {
-                    let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
                     let log_path = temp_dir.parent().unwrap().join("debug.log");
                     if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
                         let _ = writeln!(log_file, "Failed to parse SessionStartPayload: {:?}", msg.payload);
@@ -142,7 +163,7 @@ impl NativeHost {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<ChunkReadyPayload>(msg.payload.clone()) {
                     if let Ok(bytes) = STANDARD.decode(&payload.data_base64) {
-                        let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                        let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
                         std::fs::create_dir_all(&temp_dir).unwrap_or_default();
                         
                         let is_transcript = payload.is_transcript_chunk.unwrap_or(false);
@@ -165,7 +186,7 @@ impl NativeHost {
                         }
                     }
                 } else {
-                    let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
                     let log_path = temp_dir.parent().unwrap().join("debug.log");
                     if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
                         let _ = writeln!(log_file, "Failed to parse ChunkReadyPayload!");
@@ -180,12 +201,12 @@ impl NativeHost {
         if msg.r#type == MessageType::SessionStop {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<SessionStopPayload>(msg.payload.clone()) {
-                    let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
                     let file_path = temp_dir.join(format!("{}.webm", session_id));
                     
-                    let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                    let pool = app.state::<crate::database::DbState>().pool.clone();
                     let session_id_clone = session_id.clone();
-                    let app_clone = self.app.clone();
+                    let app_clone = app.clone();
                     
                     tauri::async_runtime::spawn(async move {
                         let log_path = temp_dir.parent().unwrap().join("debug.log");
@@ -345,8 +366,8 @@ impl NativeHost {
         if msg.r#type == MessageType::MetadataReady {
             if let Some(session_id) = &msg.session_id {
                 let session_id = session_id.clone();
-                let pool = self.app.state::<crate::database::DbState>().pool.clone();
-                let app_clone = self.app.clone();
+                let pool = app.state::<crate::database::DbState>().pool.clone();
+                let app_clone = app.clone();
                 let payload = msg.payload.clone();
 
                 tauri::async_runtime::spawn(async move {
@@ -412,9 +433,9 @@ impl NativeHost {
 
         if msg.r#type == MessageType::DeleteLecture {
             if let Ok(payload) = serde_json::from_value::<DeleteLecturePayload>(msg.payload.clone()) {
-                let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                let pool = app.state::<crate::database::DbState>().pool.clone();
                 let lecture_id = payload.lecture_id;
-                let app_clone = self.app.clone();
+                let app_clone = app.clone();
                 
                 tauri::async_runtime::spawn(async move {
                     let _ = sqlx::query!("DELETE FROM lectures WHERE id = ?", lecture_id)
@@ -427,10 +448,10 @@ impl NativeHost {
 
         if msg.r#type == MessageType::RenameLecture {
             if let Ok(payload) = serde_json::from_value::<RenameLecturePayload>(msg.payload.clone()) {
-                let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                let pool = app.state::<crate::database::DbState>().pool.clone();
                 let lecture_id = payload.lecture_id;
                 let new_title = payload.new_title;
-                let app_clone = self.app.clone();
+                let app_clone = app.clone();
                 
                 tauri::async_runtime::spawn(async move {
                     let _ = sqlx::query!("UPDATE lectures SET title = ? WHERE id = ?", new_title, lecture_id)
@@ -444,15 +465,15 @@ impl NativeHost {
         if msg.r#type == MessageType::LiveCaption {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<crate::native_messaging::protocol::LiveCaptionPayload>(msg.payload.clone()) {
-                    let temp_dir = self.app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
                     let log_path = temp_dir.parent().unwrap().join("debug.log");
                     if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
                         let _ = writeln!(log_file, "Received LiveCaption: {} (Platform: {})", payload.text, payload.platform);
                     }
 
-                    let app_clone = self.app.clone();
+                    let app_clone = app.clone();
                     let session_id_clone = session_id.clone();
-                    let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                    let pool = app.state::<crate::database::DbState>().pool.clone();
 
                     tauri::async_runtime::spawn(async move {
                         // ── Persist live caption text to transcripts table ──────────────────
@@ -559,10 +580,10 @@ impl NativeHost {
         if msg.r#type == MessageType::ConfirmDecision {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<crate::native_messaging::protocol::ConfirmDecisionPayload>(msg.payload.clone()) {
-                    let pool = self.app.state::<crate::database::DbState>().pool.clone();
+                    let pool = app.state::<crate::database::DbState>().pool.clone();
                     let session_id_clone = session_id.clone();
                     let decision_text = payload.decision_text;
-                    let app_clone = self.app.clone();
+                    let app_clone = app.clone();
 
                     tauri::async_runtime::spawn(async move {
                         let existing = sqlx::query!(

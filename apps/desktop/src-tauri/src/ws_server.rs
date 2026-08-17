@@ -100,7 +100,20 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
     while let Some(msg) = read.next().await {
         match msg {
             Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
-                if let Ok(parsed) = serde_json::from_str::<WsMessage>(&text) {
+                // 1. First try parsing as full NativeMessage protocol (SESSION_START, CHUNK_READY, SESSION_STOP, HEARTBEAT, etc.)
+                if let Ok(native_msg) = serde_json::from_str::<crate::native_messaging::protocol::NativeMessage<serde_json::Value>>(&text) {
+                    let tx_clone = tx.clone();
+                    let sender: Option<Arc<dyn Fn(crate::native_messaging::protocol::NativeMessage<serde_json::Value>) + Send + Sync>> = Some(Arc::new(move |reply| {
+                        if let Ok(json_str) = serde_json::to_string(&reply) {
+                            let tx_inner = tx_clone.clone();
+                            tokio::spawn(async move {
+                                let _ = tx_inner.send(json_str).await;
+                            });
+                        }
+                    }));
+                    crate::native_messaging::host::NativeHost::process_message(&state.app_handle, native_msg, sender);
+                } else if let Ok(parsed) = serde_json::from_str::<WsMessage>(&text) {
+                    // 2. Legacy fallback for raw ping / auto-record
                     match parsed {
                         WsMessage::Ping => {
                             let _ = tx.send("{\"type\":\"PONG\"}".to_string()).await;
@@ -109,7 +122,6 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
                             let _ = crate::commands::capture::start_native_recording(state.app_handle.clone(), None).await;
                         }
                         WsMessage::ChunkReady { payload } => {
-                            // Forward to Tauri frontend for Live Wingman
                             let _ = state.app_handle.emit("live_chunk_received", &payload);
                         }
                     }
