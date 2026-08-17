@@ -453,20 +453,15 @@ export function LectureViewerPage() {
     setIsGeneratingSummary(true);
     setSummaryError(null);
     try {
-      if (artifacts['lecture_intelligence']) {
-        // This runs asynchronously in the background. The spinner state will be managed
-        // by checking the artifactProgress state.
-        await TauriClient.generateIntelligence(id);
-        setIsGeneratingSummary(false); // Can unset immediately, the artifactProgress listener will take over the loading state
-      } else {
-        // The backend summary_generate command already uses multimodal (transcript + key frame images)
-        const result = await TauriClient.generateSummary(id, transcript || "");
-        setSummary(result);
-        setIsGeneratingSummary(false);
-      }
+      const result = await TauriClient.generateSummary(id, transcript || "");
+      setSummary(result);
       await refreshAllData();
+      showToast('Summary regenerated successfully!', 'success');
     } catch (e) {
+      console.error(e);
       setSummaryError(`Summary generation failed: ${String(e)}`);
+      showToast(`Generation failed: ${String(e)}`, 'error');
+    } finally {
       setIsGeneratingSummary(false);
     }
   };

@@ -282,20 +282,23 @@ pub async fn lecture_intelligence_generate(lecture_id: String, app: AppHandle) -
 }
 
 #[tauri::command]
-pub async fn summary_generate(lecture_id: String, _transcript: String, _app: AppHandle, state: State<'_, DbState>) -> AppResult<String> {
-    // 1. Run the new core multimodal AI pipeline
-    crate::ai::core_engine::coordinator::CoreEngineCoordinator::run_full_pipeline(&lecture_id, &state.pool).await?;
+pub async fn summary_generate(lecture_id: String, _transcript: String, app: AppHandle, state: State<'_, DbState>) -> AppResult<String> {
+    // Run multimodal pipeline with force = true for immediate regeneration
+    let val = crate::ai::multimodal_pipeline::generate_lecture_intelligence_core(&lecture_id, true, &app, &state.pool).await?;
+    let summary_str = val.to_string();
 
-    // 2. Fetch the generated tiered summary from the summaries table
-    let row = sqlx::query!(
-        "SELECT content FROM summaries WHERE lecture_id = ? ORDER BY generated_at DESC LIMIT 1",
-        lecture_id
+    let now = chrono::Utc::now().timestamp_millis();
+    let _ = sqlx::query(
+        "INSERT INTO summaries (id, lecture_id, content, generated_at) VALUES (?, ?, ?, ?)"
     )
-    .fetch_optional(&state.pool)
-    .await?;
+    .bind(uuid::Uuid::new_v4().to_string())
+    .bind(&lecture_id)
+    .bind(&summary_str)
+    .bind(now)
+    .execute(&state.pool)
+    .await;
 
-    let summary = row.map(|r| r.content).unwrap_or_else(|| "Failed to generate summary".to_string());
-    Ok(summary)
+    Ok(summary_str)
 }
 
 #[derive(serde::Deserialize)]
