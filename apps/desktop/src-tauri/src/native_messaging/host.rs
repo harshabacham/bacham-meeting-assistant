@@ -261,7 +261,7 @@ impl NativeHost {
                         };
 
                         let mut full_transcript = String::new();
-                        let mut pipeline_error = false;
+                        let pipeline_error = false;
 
                         if let Some(audio_file) = target_audio {
                             let _ = app_clone.emit("pipeline_progress", serde_json::json!({
