@@ -5,49 +5,68 @@ use crate::error::{AppError, AppResult};
 use super::knowledge_extraction::{ExtractedKnowledgePipeline, ExtractedNode};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct TextbookSummary {
+    #[serde(default)]
     pub overview: String,
-    #[serde(default)]
+    #[serde(default, alias = "quickSummary")]
     pub quick_summary: Option<String>,
-    #[serde(default)]
+    #[serde(default, alias = "standardSummary")]
     pub standard_summary: Option<String>,
-    #[serde(default)]
+    #[serde(default, alias = "deepNotes")]
     pub deep_notes: Option<String>,
-    #[serde(default)]
+    #[serde(default, alias = "textbookNotes")]
     pub textbook_notes: Option<String>,
+    #[serde(default)]
     pub objectives: Vec<String>,
+    #[serde(default, alias = "chapterBreakdown", alias = "chapters")]
     pub chapter_breakdown: Vec<serde_json::Value>,
+    #[serde(default, alias = "conceptsAndDefinitions", alias = "concepts")]
     pub concepts_and_definitions: Vec<serde_json::Value>,
+    #[serde(default, alias = "formulaSheet", alias = "formulas")]
     pub formula_sheet: Vec<serde_json::Value>,
+    #[serde(default, alias = "codeExplained", alias = "code")]
     pub code_explained: Vec<serde_json::Value>,
+    #[serde(default, alias = "visualExplanations", alias = "visuals")]
     pub visual_explanations: Vec<serde_json::Value>,
+    #[serde(default, alias = "cheatSheet")]
     pub cheat_sheet: String,
+    #[serde(default, alias = "revisionTips")]
     pub revision_tips: Vec<String>,
+    #[serde(default, alias = "interviewQuestions")]
     pub interview_questions: Vec<serde_json::Value>,
+    #[serde(default, alias = "examQuestions")]
     pub exam_questions: Vec<serde_json::Value>,
+    #[serde(default, alias = "keyTakeaways")]
     pub key_takeaways: Vec<String>,
-    #[serde(rename = "crm_metadata", default)]
+    #[serde(default, alias = "crmMetadata", alias = "crm_metadata")]
     pub crm_metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct GeneratedFlashcard {
+    #[serde(default)]
     pub question: String,
+    #[serde(default)]
     pub answer: String,
+    #[serde(default)]
     pub difficulty: String,
+    #[serde(default, alias = "conceptNodeId", alias = "node_id", alias = "node_title")]
     pub concept_node_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct GeneratedQuizQuestion {
+    #[serde(default, alias = "quizType", alias = "type")]
     pub quiz_type: String, // 'mcq' | 'true_false' | 'fill_blank' | 'short_answer' | 'code' | 'formula'
+    #[serde(default)]
     pub difficulty: String, // 'easy' | 'medium' | 'hard'
+    #[serde(default)]
     pub question: String,
+    #[serde(default, alias = "answerKey", alias = "answer")]
     pub answer_key: String,
+    #[serde(default)]
     pub options: Vec<String>,
+    #[serde(default)]
     pub explanation: String,
 }
 
