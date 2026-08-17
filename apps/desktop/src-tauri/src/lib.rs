@@ -61,6 +61,9 @@ pub fn run() {
                     }
                 });
                 
+                let _ = main_window.show();
+            }
+            
             let mut db_pool = None;
             match tauri::async_runtime::block_on(database::connection::create_pool(db_path)) {
                 Ok(pool) => {
