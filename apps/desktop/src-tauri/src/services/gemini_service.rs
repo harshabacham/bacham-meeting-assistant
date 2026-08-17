@@ -76,6 +76,23 @@ impl GeminiService {
             .unwrap_or_else(|_| Client::new());
         let list_url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", key);
         
+        let mut user_preferred_model = None;
+        for mk in ["gemini_model", "ai_model", "selected_model", "model"] {
+            if let Ok(Some(row)) = sqlx::query("SELECT value FROM settings WHERE key = ?")
+                .bind(mk)
+                .fetch_optional(pool)
+                .await 
+            {
+                use sqlx::Row;
+                let val: String = row.get("value");
+                let trimmed = val.trim().to_string();
+                if !trimmed.is_empty() && trimmed != "true" {
+                    user_preferred_model = Some(trimmed);
+                    break;
+                }
+            }
+        }
+
         let mut discovered = Vec::new();
         if let Ok(res) = client.get(&list_url).send().await {
             if res.status().is_success() {
@@ -87,17 +104,11 @@ impl GeminiService {
                                     if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
                                         let model_id = name.strip_prefix("models/").unwrap_or(name).to_string();
                                         let lower = model_id.to_lowercase();
-                                        // Exclude audio-only TTS, robotics, image-only generation, and experimental internal models
-                                        if !lower.contains("tts") 
-                                            && !lower.contains("robotics") 
-                                            && !lower.contains("lyria") 
-                                            && !lower.contains("deep-research") 
-                                            && !lower.contains("computer-use") 
-                                            && !lower.contains("image-preview") 
-                                            && !lower.contains("gemma")
-                                            && lower != "gemini-2.5-flash"
-                                        {
-                                            discovered.push(model_id);
+                                        // Exclude only audio-only TTS and embedding models that do not accept text/image generation
+                                        if !lower.contains("tts") && !lower.contains("embedding") && !lower.contains("aqa") {
+                                            if !discovered.contains(&model_id) {
+                                                discovered.push(model_id);
+                                            }
                                         }
                                     }
                                 }
@@ -108,28 +119,41 @@ impl GeminiService {
             }
         }
 
-        // Sort discovered models so best and fastest active flash models are prioritized
+        // Sort discovered models so active flash/fast models come first, pro models next, and all other models follow
         discovered.sort_by(|a, b| {
             let score = |m: &str| -> i32 {
-                if m.contains("3.5-flash-lite") { 1 }
-                else if m.contains("3.5-flash") { 2 }
-                else if m.contains("flash-latest") { 3 }
-                else if m.contains("3.6-flash") { 4 }
-                else if m.contains("3.7-flash") { 5 }
-                else if m.contains("flash") { 6 }
-                else if m.contains("pro") { 7 }
-                else { 8 }
+                let lower = m.to_lowercase();
+                if lower.contains("3.5-flash-lite") { 1 }
+                else if lower.contains("3.5-flash") { 2 }
+                else if lower.contains("flash-latest") { 3 }
+                else if lower.contains("3.6-flash") { 4 }
+                else if lower.contains("3.7-flash") { 5 }
+                else if lower.contains("2.0-flash") { 6 }
+                else if lower.contains("1.5-flash") { 7 }
+                else if lower.contains("flash") { 8 }
+                else if lower.contains("3.5-pro") { 9 }
+                else if lower.contains("2.0-pro") { 10 }
+                else if lower.contains("1.5-pro") { 11 }
+                else if lower.contains("pro") { 12 }
+                else { 13 }
             };
             score(a).cmp(&score(b))
         });
 
+        if let Some(pref) = user_preferred_model {
+            discovered.retain(|m| m != &pref);
+            discovered.insert(0, pref);
+        }
+
         if discovered.is_empty() {
-            // Default resilient fallback list
             discovered = vec![
                 "gemini-3.5-flash-lite".to_string(),
                 "gemini-3.5-flash".to_string(),
                 "gemini-flash-latest".to_string(),
                 "gemini-3.7-flash".to_string(),
+                "gemini-2.0-flash".to_string(),
+                "gemini-1.5-flash".to_string(),
+                "gemini-1.5-pro".to_string(),
             ];
         }
 

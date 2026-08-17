@@ -508,10 +508,7 @@ impl NativeHost {
                                 .fetch_optional(&pool)
                                 .await
                                 .unwrap_or(None);
-                            match latest {
-                                Some(l) => l.id,
-                                None => "live_active_session".to_string(),
-                            }
+                            latest.and_then(|l| l.id).unwrap_or_else(|| "live_active_session".to_string())
                         }
                     };
                         // ── Persist live caption text to transcripts table ──────────────────
@@ -611,9 +608,8 @@ impl NativeHost {
                         }
                     });
                 }
+                return;
             }
-            return;
-        }
 
         if msg.r#type == MessageType::ConfirmDecision {
             if let Some(session_id) = &msg.session_id {
