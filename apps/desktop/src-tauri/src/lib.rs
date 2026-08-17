@@ -61,32 +61,6 @@ pub fn run() {
                     }
                 });
                 
-                let _ = main_window.show();
-            } else {
-                crate::native_messaging::host::start_listener(handle.clone());
-            }
-
-            if !is_native_messaging {
-                use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState, Shortcut};
-                if let Ok(shortcut) = "CmdOrCtrl+Shift+Space".parse::<Shortcut>() {
-                    let _ = app.global_shortcut().on_shortcut(
-                        shortcut,
-                        |app, _shortcut, event| {
-                            if event.state == ShortcutState::Pressed {
-                                if let Some(window) = app.get_webview_window("copilot") {
-                                    if window.is_visible().unwrap_or(false) {
-                                        let _ = window.hide();
-                                    } else {
-                                        let _ = window.show();
-                                        let _ = window.set_focus();
-                                    }
-                                }
-                            }
-                        }
-                    );
-                }
-            }
-            
             let mut db_pool = None;
             match tauri::async_runtime::block_on(database::connection::create_pool(db_path)) {
                 Ok(pool) => {
@@ -99,8 +73,10 @@ pub fn run() {
                     eprintln!("Failed to initialize database: {}", e);
                 }
             }
-            
-            if !is_native_messaging {
+
+            if is_native_messaging {
+                crate::native_messaging::host::start_listener(handle.clone());
+            } else {
                 if let Some(pool) = db_pool {
                     let handle_clone = handle.clone();
                     tauri::async_runtime::spawn(async move {

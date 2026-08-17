@@ -4,6 +4,11 @@
   "path": "C:\\Users\\harsh\\OneDrive\\Desktop\\Meeting\\apps\\desktop\\src-tauri\\target\\debug\\appsdesktop.exe",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://dfgdfahbebfebobomdfepbgjcahpbphk/"
+    "chrome-extension://gohkcjlfbmgbcomjgahjkcdlmhgkkphd/",
+    "chrome-extension://oegpnilkihnhabgpcbgepcnmlgbbcbci/",
+    "chrome-extension://dfgdfahbebfebobomdfepbgjcahpbphk/",
+    "chrome-extension://fihphjchjdimokpleomddhnapnobdphn/",
+    "chrome-extension://ephifgbopdapgehlpnakaddgmmgcbmjp/",
+    "chrome-extension://opaadbjlebbbnmjjgdmdllingedoleml/"
   ]
 }
