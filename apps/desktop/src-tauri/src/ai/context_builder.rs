@@ -129,16 +129,16 @@ impl ContextBuilder {
             }
         }
 
-        // Intelligently select up to 15 frames to include as base64 images to prevent quota exhaustion,
-        // prioritizing those with the most OCR text or significant scene changes.
+        // Intelligently select up to 12 frames to include as base64 images,
+        // prioritizing those with the highest OCR text density and major slide changes.
         let mut ranked_indices: Vec<(usize, usize)> = frame_rows.iter().enumerate().map(|(i, row)| {
-            let score = row.ocr_text.as_ref().map(|t| t.len()).unwrap_or(0) 
-                        + if row.change_reason.is_some() { 500 } else { 0 };
-            (i, score)
+            let ocr_len = row.ocr_text.as_ref().map(|t| t.len()).unwrap_or(0);
+            let reason_score = if row.change_reason.is_some() { 500 } else { 0 };
+            (i, ocr_len + reason_score)
         }).collect();
-        ranked_indices.sort_by(|a, b| b.1.cmp(&a.1)); // descending
+        ranked_indices.sort_by(|a, b| b.1.cmp(&a.1)); // descending by informational score
         
-        let mut load_indices: std::collections::HashSet<usize> = ranked_indices.into_iter().take(5).map(|(i, _)| i).collect();
+        let mut load_indices: std::collections::HashSet<usize> = ranked_indices.into_iter().take(12).map(|(i, _)| i).collect();
         if !load_images {
             load_indices.clear();
         }
@@ -260,6 +260,7 @@ mod tests {
             course: None,
             transcript_segments: vec![],
             key_frames: vec![],
+            user_notes: None,
             has_transcript: false,
             has_frames: false,
             frame_count: 0,
@@ -279,6 +280,7 @@ mod tests {
                 model_used: Some("gemini".into()),
             }],
             key_frames: vec![],
+            user_notes: None,
             has_transcript: true,
             has_frames: false,
             frame_count: 0,
@@ -298,6 +300,7 @@ mod tests {
                 model_used: None,
             }],
             key_frames: vec![],
+            user_notes: None,
             has_transcript: true,
             has_frames: false,
             frame_count: 0,

@@ -324,3 +324,126 @@ Rules:
         Ok(questions)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_textbook_summary_snake_case_deserialization() {
+        let json_data = r###"{
+            "quick_summary": "- [00:05] Standup started\n- [00:15] Completed API refactoring",
+            "standard_summary": "In this daily standup, the team reviewed the API refactoring progress.",
+            "deep_notes": "Deep notes with technical details [Slide @ 00:10].",
+            "textbook_notes": "# Standup Notes\n\n## Summary",
+            "overview": "Daily team check-in and progress review.",
+            "objectives": ["Review API progress", "Plan release"],
+            "chapter_breakdown": [
+                { "title": "API Review", "summary": "Walkthrough of backend changes [00:10]" }
+            ],
+            "concepts_and_definitions": [
+                { "term": "API Refactoring", "definition": "Restructuring existing code", "explanation": "Improves maintainability" }
+            ],
+            "formula_sheet": [],
+            "code_explained": [],
+            "visual_explanations": [],
+            "cheat_sheet": "Key points for standup",
+            "revision_tips": ["Check PR status"],
+            "interview_questions": [],
+            "exam_questions": [],
+            "key_takeaways": ["API refactoring on track"],
+            "crm_metadata": {
+                "action_items": [
+                    { "task": "Review PR 102", "owner": "Alex", "priority": "high", "due_date": "2026-08-18" }
+                ],
+                "key_decisions": ["Merge to main tomorrow"],
+                "bant": null
+            }
+        }"###;
+
+        let parsed: Result<TextbookSummary, _> = serde_json::from_str(json_data);
+        assert!(parsed.is_ok(), "Failed to deserialize snake_case TextbookSummary: {:?}", parsed.err());
+        let summary = parsed.unwrap();
+        assert_eq!(summary.overview, "Daily team check-in and progress review.");
+        assert_eq!(summary.quick_summary.unwrap(), "- [00:05] Standup started\n- [00:15] Completed API refactoring");
+        assert_eq!(summary.chapter_breakdown.len(), 1);
+        assert_eq!(summary.key_takeaways.len(), 1);
+    }
+
+    #[test]
+    fn test_textbook_summary_camel_case_deserialization() {
+        let json_data = r###"{
+            "quickSummary": "Quick summary",
+            "standardSummary": "Standard summary",
+            "deepNotes": "Deep notes",
+            "textbookNotes": "Textbook notes",
+            "overview": "Overview text",
+            "objectives": ["Objective 1"],
+            "chapterBreakdown": [{ "title": "Chapter 1" }],
+            "conceptsAndDefinitions": [{ "term": "Term 1", "definition": "Def 1" }],
+            "formulaSheet": [{ "formula": "E=mc^2" }],
+            "codeExplained": [{ "language": "Rust", "purpose": "Speed" }],
+            "visualExplanations": [{ "title": "Architecture" }],
+            "cheatSheet": "Cheat notes",
+            "revisionTips": ["Tip 1"],
+            "interviewQuestions": [{ "question": "What is ownership?" }],
+            "examQuestions": [{ "question": "Explain borrow checker." }],
+            "keyTakeaways": ["Rust is memory-safe"],
+            "crmMetadata": {
+                "actionItems": [],
+                "keyDecisions": []
+            }
+        }"###;
+
+        let parsed: Result<TextbookSummary, _> = serde_json::from_str(json_data);
+        assert!(parsed.is_ok(), "Failed to deserialize camelCase TextbookSummary: {:?}", parsed.err());
+        let summary = parsed.unwrap();
+        assert_eq!(summary.quick_summary.unwrap(), "Quick summary");
+        assert_eq!(summary.formula_sheet.len(), 1);
+        assert_eq!(summary.code_explained.len(), 1);
+    }
+
+    #[test]
+    fn test_textbook_summary_audio_only_minimal_fields() {
+        let json_data = r###"{
+            "overview": "Blind audio discussion on product roadmap.",
+            "quick_summary": "- [01:20] Pricing discussion",
+            "standard_summary": "Discussed roadmap and tier adjustments."
+        }"###;
+
+        let parsed: Result<TextbookSummary, _> = serde_json::from_str(json_data);
+        assert!(parsed.is_ok(), "Failed to deserialize minimal audio-only TextbookSummary: {:?}", parsed.err());
+        let summary = parsed.unwrap();
+        assert_eq!(summary.overview, "Blind audio discussion on product roadmap.");
+        assert!(summary.formula_sheet.is_empty());
+        assert!(summary.code_explained.is_empty());
+        assert!(summary.visual_explanations.is_empty());
+    }
+
+    #[test]
+    fn test_quiz_and_flashcard_deserialization() {
+        let flashcards_json = r###"[
+            {
+                "question": "What is the capital of France?",
+                "answer": "Paris",
+                "difficulty": "easy",
+                "node_title": "Geography"
+            }
+        ]"###;
+        let cards: Result<Vec<GeneratedFlashcard>, _> = serde_json::from_str(flashcards_json);
+        assert!(cards.is_ok());
+
+        let quiz_json = r###"[
+            {
+                "quizType": "mcq",
+                "difficulty": "medium",
+                "question": "Which sorting algorithm is O(n log n)?",
+                "answerKey": "Merge Sort",
+                "options": ["Merge Sort", "Bubble Sort", "Insertion Sort"],
+                "explanation": "Merge sort divides the array in half each time."
+            }
+        ]"###;
+        let quiz: Result<Vec<GeneratedQuizQuestion>, _> = serde_json::from_str(quiz_json);
+        assert!(quiz.is_ok());
+    }
+}
