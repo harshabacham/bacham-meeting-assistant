@@ -294,7 +294,12 @@ impl NativeHost {
                                                 "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.5-flash-lite')",
                                                 t_id, session_id_clone, text
                                             ).execute(&pool).await;
-                                            full_transcript = text;
+                                            full_transcript = text.clone();
+                                            let _ = app_clone.emit("transcript_update", serde_json::json!({
+                                                "lectureId": session_id_clone,
+                                                "content": text
+                                            }));
+                                            let _ = app_clone.emit("refresh_lectures", ());
                                         }
                                         Err(e) => {
                                             let _ = writeln!(log_file, "Transcription failed: {:?}", e);
@@ -326,7 +331,12 @@ impl NativeHost {
                                 }
                             }
                             if !accumulated.trim().is_empty() {
-                                full_transcript = accumulated;
+                                full_transcript = accumulated.clone();
+                                let _ = app_clone.emit("transcript_update", serde_json::json!({
+                                    "lectureId": session_id_clone,
+                                    "content": accumulated
+                                }));
+                                let _ = app_clone.emit("refresh_lectures", ());
                             }
                         }
                         

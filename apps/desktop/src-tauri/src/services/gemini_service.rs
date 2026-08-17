@@ -846,29 +846,54 @@ impl GeminiService {
         let pool = app.state::<crate::database::DbState>().pool.clone();
         let key = Self::get_api_key(&pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={}", key);
         
+        let models = match Self::discover_available_models(&pool).await {
+            Ok(list) if !list.is_empty() => list,
+            _ => vec![
+                "gemini-3.5-flash-lite".to_string(),
+                "gemini-3.5-flash".to_string(),
+                "gemini-flash-latest".to_string(),
+                "gemini-3.7-flash".to_string(),
+                "gemini-2.0-flash".to_string(),
+                "gemini-1.5-flash".to_string(),
+            ]
+        };
+
         let payload = serde_json::json!({
             "contents": [{
                 "parts": [
                     { "fileData": { "mimeType": mime_type, "fileUri": file_uri } },
-                    { "text": "Please provide a detailed, accurate transcript of the audio in this file. Output native script." }
+                    { "text": "Please provide a complete, detailed, word-for-word transcript of the entire audio in this file. Transcribe all spoken dialogue and speech in full in its native script without summarizing or omitting anything." }
                 ]
             }]
         });
 
-        let res = client.post(&url).json(&payload).send().await.map_err(|e| AppError::Internal(e.to_string()))?;
-        let body: serde_json::Value = res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
-        let text = body.get("candidates")
-            .and_then(|c| c.get(0))
-            .and_then(|c| c.get("content"))
-            .and_then(|c| c.get("parts"))
-            .and_then(|p| p.get(0))
-            .and_then(|p| p.get("text"))
-            .and_then(|t| t.as_str())
-            .unwrap_or_default();
+        let mut last_err = String::new();
+        for model in &models {
+            let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", model, key);
+            if let Ok(res) = client.post(&url).json(&payload).send().await {
+                if res.status().is_success() {
+                    if let Ok(body) = res.json::<serde_json::Value>().await {
+                        let text = body.get("candidates")
+                            .and_then(|c| c.get(0))
+                            .and_then(|c| c.get("content"))
+                            .and_then(|c| c.get("parts"))
+                            .and_then(|p| p.get(0))
+                            .and_then(|p| p.get("text"))
+                            .and_then(|t| t.as_str())
+                            .unwrap_or_default();
+                        let trimmed = text.trim();
+                        if !trimmed.is_empty() {
+                            return Ok(trimmed.to_string());
+                        }
+                    }
+                } else {
+                    last_err = format!("Status {}", res.status());
+                }
+            }
+        }
         
-        Ok(text.to_string())
+        Err(AppError::Internal(format!("Audio transcription failed across all Gemini models. Last error: {}", last_err)))
     }
 
     pub async fn transcribe_audio_chunk(
