@@ -8,6 +8,14 @@ use super::knowledge_extraction::{ExtractedKnowledgePipeline, ExtractedNode};
 #[serde(rename_all = "camelCase")]
 pub struct TextbookSummary {
     pub overview: String,
+    #[serde(default)]
+    pub quick_summary: Option<String>,
+    #[serde(default)]
+    pub standard_summary: Option<String>,
+    #[serde(default)]
+    pub deep_notes: Option<String>,
+    #[serde(default)]
+    pub textbook_notes: Option<String>,
     pub objectives: Vec<String>,
     pub chapter_breakdown: Vec<serde_json::Value>,
     pub concepts_and_definitions: Vec<serde_json::Value>,
@@ -52,12 +60,16 @@ impl PedagogyEngine {
         extracted: &ExtractedKnowledgePipeline,
         pool: &SqlitePool,
     ) -> AppResult<TextbookSummary> {
-        let system_instruction = r#"You are the Pedagogical Note Generation Engine for university-level textbooks.
-Your objective is to generate comprehensive, publication-quality textbook notes from extracted lecture knowledge nodes and chapters.
+        let system_instruction = r#"You are the Pedagogical Note Generation Engine for university-level textbooks and meeting intelligence.
+Your objective is to generate comprehensive, publication-quality notes and multi-tier summaries from extracted lecture knowledge nodes and chapters.
 
 Return ONLY valid JSON matching this schema:
 {
-  "overview": "Comprehensive high-level summary of the entire lecture",
+  "quick_summary": "Crisp 30-second markdown summary with bulleted key takeaways, core decisions, and main outcomes.",
+  "standard_summary": "Balanced 5-minute markdown summary covering executive overview, core discussion topics, definitions, and conclusions.",
+  "deep_notes": "In-depth 15-minute markdown notes covering detailed technical nuances, debates, context, visual explanations, and edge cases.",
+  "textbook_notes": "Comprehensive, highly detailed publication-ready textbook chapter with Introduction, deep derivations, real-world examples, and FAQs.",
+  "overview": "Comprehensive high-level summary of the entire session",
   "objectives": ["Learning objective 1", "Learning objective 2"],
   "chapter_breakdown": [
     { "title": "Chapter title", "summary": "Detailed chapter breakdown with key timestamps" }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Markdown as ReactMarkdown } from '@/components/ui/markdown';
-import { ChevronDown, ChevronRight, BookOpen, Code, Zap, FileText, CheckCircle, Clock, Info, BrainCircuit, Activity, Target, Briefcase, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, BookOpen, Code, Zap, FileText, CheckCircle, Clock, Info, BrainCircuit, Activity, Target, Briefcase, Sparkles, Loader2, Layers, Book } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 
@@ -134,6 +134,7 @@ const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
 };
 
 export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
+  const [summaryTier, setSummaryTier] = useState<'quick' | 'standard' | 'deep' | 'textbook'>('standard');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     executive_summary: true,
     chapter_breakdown: true,
@@ -166,6 +167,81 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
 
   if (!data) return null;
 
+  const hasSummary = Boolean(
+    data.executive_summary ||
+    data.overview ||
+    data.quick_summary ||
+    data.quickSummary ||
+    data.standard_summary ||
+    data.standardSummary ||
+    data.deep_notes ||
+    data.deepNotes ||
+    data.textbook_notes ||
+    data.textbookNotes
+  );
+
+  const getTierContent = (tier: 'quick' | 'standard' | 'deep' | 'textbook') => {
+    if (tier === 'quick') {
+      const q = data.quickSummary || data.quick_summary;
+      if (q && typeof q === 'string' && q.trim()) return q;
+      if (data.keyTakeaways || data.key_takeaways) {
+        const list = (data.keyTakeaways || data.key_takeaways).map((t: string) => `- ${t}`).join('\n');
+        if (list) return `### ⚡ Quick Summary (Key Takeaways)\n\n${list}`;
+      }
+    }
+    if (tier === 'standard') {
+      const s = data.standardSummary || data.standard_summary || data.executive_summary || data.overview;
+      if (s) {
+        if (typeof s === 'string' && s.trim()) return s;
+        if (Array.isArray(s)) {
+          return s.map((sec: any) => `### ${sec.section_title || sec.title || 'Overview'}\n\n${sec.content || sec.summary || ''}`).join('\n\n');
+        }
+      }
+    }
+    if (tier === 'deep') {
+      const d = data.deepNotes || data.deep_notes || data.deepSummary || data.deep_summary;
+      if (d && typeof d === 'string' && d.trim()) return d;
+      const cheat = data.cheatSheet || data.cheat_sheet;
+      const rev = data.revisionTips || data.revision_tips;
+      if (cheat || rev) {
+        let text = cheat ? `### 🔍 Deep Insights & Cheat Sheet\n\n${cheat}` : '';
+        if (rev && Array.isArray(rev) && rev.length > 0) {
+          text += `\n\n### 💡 Key Context & Tips\n\n${rev.map((t: string) => `- ${t}`).join('\n')}`;
+        }
+        return text;
+      }
+    }
+    if (tier === 'textbook') {
+      const tb = data.textbookNotes || data.textbook_notes || data.textbookSummary || data.textbook_summary;
+      if (tb && typeof tb === 'string' && tb.trim()) return tb;
+      
+      let fullTextbook = '';
+      if (data.objectives && Array.isArray(data.objectives) && data.objectives.length > 0) {
+        fullTextbook += `### 🎯 Learning Objectives\n\n${data.objectives.map((o: string) => `1. ${o}`).join('\n')}\n\n`;
+      }
+      if (data.chapterBreakdown || data.chapter_breakdown) {
+        const chs = data.chapterBreakdown || data.chapter_breakdown;
+        if (Array.isArray(chs)) {
+          fullTextbook += `### 📖 Chapter Breakdown\n\n` + chs.map((c: any) => `#### ${c.title || 'Chapter'}\n${c.summary || c.content || ''}`).join('\n\n') + '\n\n';
+        }
+      }
+      if (data.conceptsAndDefinitions || data.concepts_and_definitions) {
+        const concs = data.conceptsAndDefinitions || data.concepts_and_definitions;
+        if (Array.isArray(concs)) {
+          fullTextbook += `### 🧠 Core Concepts & Definitions\n\n` + concs.map((c: any) => `**${c.term || 'Concept'}:** ${c.definition || ''}\n\n*${c.explanation || ''}*`).join('\n\n') + '\n\n';
+        }
+      }
+      if (fullTextbook.trim()) return fullTextbook;
+    }
+
+    const fallback = data.overview || data.executive_summary || data.standard_summary || "Summary content is being generated...";
+    if (typeof fallback === 'string') return fallback;
+    if (Array.isArray(fallback)) {
+      return fallback.map((sec: any) => `### ${sec.section_title || sec.title || 'Section'}\n\n${sec.content || sec.summary || ''}`).join('\n\n');
+    }
+    return JSON.stringify(fallback, null, 2);
+  };
+
   return (
     <div className="flex flex-col gap-6 font-sans" style={{ '--brand-lime': 'var(--accent)' } as any}>
       {/* Header Panel */}
@@ -181,22 +257,58 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
         </div>
       )}
 
-      {/* Executive Summary */}
-      {data.executive_summary && (
+      {/* Multi-Tier Summary Section */}
+      {hasSummary && (
         <section className="bg-background">
-          {renderSectionHeader('executive_summary', 'Executive Summary', <FileText size={16} />)}
+          {renderSectionHeader('executive_summary', 'Multi-Tier Summary', <FileText size={16} />)}
           {expandedSections['executive_summary'] && (
-            <div className="mt-4 px-2 prose prose-sm prose-invert max-w-none">
-              {typeof data.executive_summary === 'string' ? (
-                <ReactMarkdown>{data.executive_summary}</ReactMarkdown>
-              ) : Array.isArray(data.executive_summary) ? (
-                data.executive_summary.map((section: any, idx: number) => (
-                  <div key={idx} className="mb-6">
-                    {section.section_title && <h3 className="text-foreground text-lg font-semibold mt-0 mb-2">{section.section_title}</h3>}
-                    <ReactMarkdown>{section.content}</ReactMarkdown>
-                  </div>
-                ))
-              ) : null}
+            <div className="mt-4 space-y-4">
+              {/* 4-Tier Interactive Mode Switcher */}
+              <div className="flex p-1 bg-surface-raised border border-border/50 rounded-xl overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setSummaryTier('quick')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                    summaryTier === 'quick' ? 'bg-indigo-500/15 text-indigo-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                  }`}
+                >
+                  <Clock size={14} /> Quick (30s)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSummaryTier('standard')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                    summaryTier === 'standard' ? 'bg-blue-500/15 text-blue-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                  }`}
+                >
+                  <BookOpen size={14} /> Standard (5m)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSummaryTier('deep')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                    summaryTier === 'deep' ? 'bg-purple-500/15 text-purple-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                  }`}
+                >
+                  <Layers size={14} /> Deep Notes (15m)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSummaryTier('textbook')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                    summaryTier === 'textbook' ? 'bg-amber-500/15 text-amber-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                  }`}
+                >
+                  <Book size={14} /> Textbook
+                </button>
+              </div>
+
+              {/* Tier Content Display */}
+              <div className="bg-surface border border-border/50 rounded-xl p-6 shadow-sm">
+                <div className="prose prose-sm prose-invert max-w-none">
+                  <ReactMarkdown>{getTierContent(summaryTier)}</ReactMarkdown>
+                </div>
+              </div>
             </div>
           )}
         </section>
