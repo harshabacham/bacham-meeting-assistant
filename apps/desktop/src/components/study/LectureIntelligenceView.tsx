@@ -167,26 +167,97 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
 
   if (!data) return null;
 
+  const isMeaningful = (val: any): boolean => {
+    if (val === null || val === undefined) return false;
+    if (typeof val === 'string') {
+      const s = val.trim().toLowerCase();
+      return s !== '' && s !== 'null' && s !== 'not identified' && s !== 'none' && s !== 'n/a' && s !== 'unknown' && s !== 'none identified' && !s.startsWith('no ');
+    }
+    if (Array.isArray(val)) return val.length > 0;
+    if (typeof val === 'object') return Object.keys(val).length > 0;
+    return Boolean(val);
+  };
+
   const hasSummary = Boolean(
-    data.executive_summary ||
-    data.overview ||
-    data.quick_summary ||
-    data.quickSummary ||
-    data.standard_summary ||
-    data.standardSummary ||
-    data.deep_notes ||
-    data.deepNotes ||
-    data.textbook_notes ||
-    data.textbookNotes
+    isMeaningful(data.executive_summary) ||
+    isMeaningful(data.overview) ||
+    isMeaningful(data.quick_summary) ||
+    isMeaningful(data.quickSummary) ||
+    isMeaningful(data.standard_summary) ||
+    isMeaningful(data.standardSummary) ||
+    isMeaningful(data.deep_notes) ||
+    isMeaningful(data.deepNotes) ||
+    isMeaningful(data.textbook_notes) ||
+    isMeaningful(data.textbookNotes)
   );
+
+  // CRM & Action Items
+  const rawBant = data.crm_metadata?.bant || data.crmMetadata?.bant;
+  const bant = rawBant ? {
+    budget: isMeaningful(rawBant.budget) ? String(rawBant.budget).trim() : null,
+    authority: isMeaningful(rawBant.authority) ? String(rawBant.authority).trim() : null,
+    need: isMeaningful(rawBant.need) ? String(rawBant.need).trim() : null,
+    timeline: isMeaningful(rawBant.timeline) ? String(rawBant.timeline).trim() : null,
+  } : null;
+  const hasBant = Boolean(bant && (bant.budget || bant.authority || bant.need || bant.timeline));
+
+  const actionItems = (data.crm_metadata?.action_items || data.crmMetadata?.action_items || []).filter((item: any) => 
+    item && isMeaningful(item.task)
+  );
+
+  const keyDecisions = (data.crm_metadata?.key_decisions || data.crmMetadata?.key_decisions || []).filter((dec: any) => 
+    isMeaningful(dec)
+  );
+
+  const hasCrmSection = hasBant || actionItems.length > 0 || keyDecisions.length > 0;
+
+  // Study & Tech Items
+  const chapters = (data.chapter_breakdown || data.chapterBreakdown || []).filter((ch: any) => 
+    ch && (isMeaningful(ch.title) || isMeaningful(ch.summary))
+  );
+
+  const formulas = (data.formula_sheet || data.formulaSheet || []).filter((f: any) => 
+    f && isMeaningful(f.formula)
+  );
+
+  const problems = (data.problems_solved || data.problemsSolved || []).filter((p: any) => 
+    p && isMeaningful(p.question)
+  );
+
+  const codeList = (data.code_explained || data.codeExplained || []).filter((c: any) => 
+    c && (isMeaningful(c.logic) || isMeaningful(c.code_snippet) || isMeaningful(c.purpose))
+  );
+
+  const rawCheatSheet = data.cheat_sheet || data.cheatSheet;
+  const hasCheatSheet = isMeaningful(rawCheatSheet);
+
+  const visuals = (data.visual_explanations || data.visualExplanations || []).filter((v: any) => 
+    v && (isMeaningful(v.title) || isMeaningful(v.explanation))
+  );
+
+  const concepts = (data.concepts_and_definitions || data.conceptsAndDefinitions || []).filter((c: any) => 
+    c && isMeaningful(c.term) && isMeaningful(c.definition)
+  );
+
+  const examQuestions = (data.exam_questions || data.examQuestions || []).filter((q: any) => 
+    q && isMeaningful(q.question)
+  );
+  const interviewQuestions = (data.interview_questions || data.interviewQuestions || []).filter((q: any) => 
+    q && isMeaningful(q.question)
+  );
+  const hasPrepSection = examQuestions.length > 0 || interviewQuestions.length > 0;
+
+  const rawTakeaways = data.key_takeaways || data.keyTakeaways || data.key_concepts || [];
+  const takeaways = (Array.isArray(rawTakeaways) ? rawTakeaways : []).filter((t: any) => isMeaningful(t));
+  const revisionNotes = data.revision_notes || data.revisionNotes;
+  const hasRevisionSection = takeaways.length > 0 || isMeaningful(revisionNotes);
 
   const getTierContent = (tier: 'quick' | 'standard' | 'deep' | 'textbook') => {
     if (tier === 'quick') {
       const q = data.quickSummary || data.quick_summary;
       if (q && typeof q === 'string' && q.trim()) return q;
-      if (data.keyTakeaways || data.key_takeaways) {
-        const list = (data.keyTakeaways || data.key_takeaways).map((t: string) => `- ${t}`).join('\n');
-        if (list) return `### ⚡ Quick Summary (Key Takeaways)\n\n${list}`;
+      if (takeaways.length > 0) {
+        return `### ⚡ Quick Summary (Key Takeaways)\n\n${takeaways.map((t: string) => `- ${t}`).join('\n')}`;
       }
     }
     if (tier === 'standard') {
@@ -201,12 +272,10 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
     if (tier === 'deep') {
       const d = data.deepNotes || data.deep_notes || data.deepSummary || data.deep_summary;
       if (d && typeof d === 'string' && d.trim()) return d;
-      const cheat = data.cheatSheet || data.cheat_sheet;
-      const rev = data.revisionTips || data.revision_tips;
-      if (cheat || rev) {
-        let text = cheat ? `### 🔍 Deep Insights & Cheat Sheet\n\n${cheat}` : '';
-        if (rev && Array.isArray(rev) && rev.length > 0) {
-          text += `\n\n### 💡 Key Context & Tips\n\n${rev.map((t: string) => `- ${t}`).join('\n')}`;
+      if (hasCheatSheet || (data.revision_tips && data.revision_tips.length > 0)) {
+        let text = hasCheatSheet ? `### 🔍 Deep Insights & Cheat Sheet\n\n${rawCheatSheet}` : '';
+        if (data.revision_tips && Array.isArray(data.revision_tips) && data.revision_tips.length > 0) {
+          text += `\n\n### 💡 Key Context & Tips\n\n${data.revision_tips.map((t: string) => `- ${t}`).join('\n')}`;
         }
         return text;
       }
@@ -219,17 +288,11 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       if (data.objectives && Array.isArray(data.objectives) && data.objectives.length > 0) {
         fullTextbook += `### 🎯 Learning Objectives\n\n${data.objectives.map((o: string) => `1. ${o}`).join('\n')}\n\n`;
       }
-      if (data.chapterBreakdown || data.chapter_breakdown) {
-        const chs = data.chapterBreakdown || data.chapter_breakdown;
-        if (Array.isArray(chs)) {
-          fullTextbook += `### 📖 Chapter Breakdown\n\n` + chs.map((c: any) => `#### ${c.title || 'Chapter'}\n${c.summary || c.content || ''}`).join('\n\n') + '\n\n';
-        }
+      if (chapters.length > 0) {
+        fullTextbook += `### 📖 Chapter Breakdown\n\n` + chapters.map((c: any) => `#### ${c.title || 'Chapter'}\n${c.summary || c.content || ''}`).join('\n\n') + '\n\n';
       }
-      if (data.conceptsAndDefinitions || data.concepts_and_definitions) {
-        const concs = data.conceptsAndDefinitions || data.concepts_and_definitions;
-        if (Array.isArray(concs)) {
-          fullTextbook += `### 🧠 Core Concepts & Definitions\n\n` + concs.map((c: any) => `**${c.term || 'Concept'}:** ${c.definition || ''}\n\n*${c.explanation || ''}*`).join('\n\n') + '\n\n';
-        }
+      if (concepts.length > 0) {
+        fullTextbook += `### 🧠 Core Concepts & Definitions\n\n` + concepts.map((c: any) => `**${c.term}:** ${c.definition}\n\n*${c.explanation || ''}*`).join('\n\n') + '\n\n';
       }
       if (fullTextbook.trim()) return fullTextbook;
     }
@@ -315,99 +378,101 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* CRM Metadata */}
-      {data.crm_metadata && (
+      {hasCrmSection && (
         <section className="bg-background">
           {renderSectionHeader('crm', 'Auto-CRM & Follow-ups', <Briefcase size={16} />)}
-          {expandedSections['crm'] && (
-            <div className="mt-4 px-2 mb-6">
-              <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg flex items-center gap-3 text-sm text-primary">
-                <CheckCircle size={16} />
-                <span>
-                  <strong>Tip:</strong> Want to focus on execution? Check out the new <strong>Execution</strong> tab for a dedicated view of Action Items and Key Decisions.
-                </span>
-              </div>
-            </div>
-          )}
           {expandedSections['crm'] && (
             <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6 px-2">
               
               {/* BANT Framework */}
-              {data.crm_metadata.bant && (
+              {hasBant && bant && (
                 <div className="bg-surface p-5 rounded-lg border border-border shadow-sm">
                   <h3 className="text-foreground font-medium mb-4 flex items-center gap-2">
                     <Target size={16} className="text-primary" /> BANT Qualification
                   </h3>
                   <div className="space-y-3">
-                    <div className="flex flex-col border-b border-border/50 pb-2">
-                      <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Budget</span>
-                      <span className="text-sm text-foreground mt-1">{data.crm_metadata.bant.budget || 'Not identified'}</span>
-                    </div>
-                    <div className="flex flex-col border-b border-border/50 pb-2">
-                      <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Authority</span>
-                      <span className="text-sm text-foreground mt-1">{data.crm_metadata.bant.authority || 'Not identified'}</span>
-                    </div>
-                    <div className="flex flex-col border-b border-border/50 pb-2">
-                      <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Need</span>
-                      <span className="text-sm text-foreground mt-1">{data.crm_metadata.bant.need || 'Not identified'}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Timeline</span>
-                      <span className="text-sm text-foreground mt-1">{data.crm_metadata.bant.timeline || 'Not identified'}</span>
-                    </div>
+                    {bant.budget && (
+                      <div className="flex flex-col border-b border-border/50 pb-2">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Budget</span>
+                        <span className="text-sm text-foreground mt-1">{bant.budget}</span>
+                      </div>
+                    )}
+                    {bant.authority && (
+                      <div className="flex flex-col border-b border-border/50 pb-2">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Authority</span>
+                        <span className="text-sm text-foreground mt-1">{bant.authority}</span>
+                      </div>
+                    )}
+                    {bant.need && (
+                      <div className="flex flex-col border-b border-border/50 pb-2">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Need</span>
+                        <span className="text-sm text-foreground mt-1">{bant.need}</span>
+                      </div>
+                    )}
+                    {bant.timeline && (
+                      <div className="flex flex-col">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Timeline</span>
+                        <span className="text-sm text-foreground mt-1">{bant.timeline}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Action Items & Decisions */}
-              <div className="flex flex-col gap-4">
-                {data.crm_metadata.action_items && data.crm_metadata.action_items.length > 0 && (
-                  <div className="bg-surface p-5 rounded-lg border border-border shadow-sm flex-1">
-                    <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
-                      <CheckCircle size={16} className="text-[color:var(--accent)]" /> Action Items
-                    </h3>
-                    <div className="space-y-3">
-                      {data.crm_metadata.action_items.map((item: any, i: number) => (
-                        <ActionItemCard key={i} item={item} context={data.executive_summary} />
-                      ))}
+              {(actionItems.length > 0 || keyDecisions.length > 0) && (
+                <div className="flex flex-col gap-4">
+                  {actionItems.length > 0 && (
+                    <div className="bg-surface p-5 rounded-lg border border-border shadow-sm flex-1">
+                      <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
+                        <CheckCircle size={16} className="text-[color:var(--accent)]" /> Action Items
+                      </h3>
+                      <div className="space-y-3">
+                        {actionItems.map((item: any, i: number) => (
+                          <ActionItemCard key={i} item={item} context={data.executive_summary || ''} />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                {data.crm_metadata.key_decisions && data.crm_metadata.key_decisions.length > 0 && (
-                  <div className="bg-surface p-5 rounded-lg border border-border shadow-sm">
-                    <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
-                      <Zap size={16} className="text-yellow-400" /> Key Decisions
-                    </h3>
-                    <ul className="space-y-2">
-                      {data.crm_metadata.key_decisions.map((decision: string, i: number) => (
-                        <li key={i} className="text-sm text-foreground flex items-start gap-2">
-                          <span className="text-[color:var(--accent)] mt-0.5">•</span>
-                          {decision}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+                  )}
+                  
+                  {keyDecisions.length > 0 && (
+                    <div className="bg-surface p-5 rounded-lg border border-border shadow-sm">
+                      <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
+                        <Zap size={16} className="text-yellow-400" /> Key Decisions
+                      </h3>
+                      <ul className="space-y-2">
+                        {keyDecisions.map((decision: string, i: number) => (
+                          <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                            <span className="text-[color:var(--accent)] mt-0.5">•</span>
+                            {decision}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </section>
       )}
 
       {/* Chapters */}
-      {data.chapter_breakdown && data.chapter_breakdown.length > 0 && (
+      {chapters.length > 0 && (
         <section className="bg-background">
           {renderSectionHeader('chapter_breakdown', 'Chapters', <Clock size={16} />)}
           {expandedSections['chapter_breakdown'] && (
             <div className="mt-4 flex flex-col gap-4 px-2 border-l border-border ml-2">
-              {data.chapter_breakdown.map((ch: any, i: number) => (
+              {chapters.map((ch: any, i: number) => (
                 <div key={i} className="relative pl-6">
                   <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full bg-[color:var(--accent)]" />
                   <div className="flex justify-between items-start gap-4">
-                    <h4 className="font-medium text-foreground m-0">{ch.title}</h4>
-                    <span className="text-xs font-mono text-[color:var(--accent)]/80 bg-[color:var(--accent)]/10 px-2 py-0.5 rounded">{ch.timestamp_hint}</span>
+                    <h4 className="font-medium text-foreground m-0">{ch.title || 'Section'}</h4>
+                    {ch.timestamp_hint && (
+                      <span className="text-xs font-mono text-[color:var(--accent)]/80 bg-[color:var(--accent)]/10 px-2 py-0.5 rounded">{ch.timestamp_hint}</span>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{ch.summary}</p>
+                  {ch.summary && <p className="text-sm text-muted-foreground mt-1">{ch.summary}</p>}
                 </div>
               ))}
             </div>
@@ -416,20 +481,20 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* Formulas */}
-      {data.formula_sheet && data.formula_sheet.length > 0 && (
+      {formulas.length > 0 && (
         <section className="bg-background">
           {renderSectionHeader('formula_sheet', 'Formula Sheet', <Activity size={16} />)}
           {expandedSections['formula_sheet'] && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-              {data.formula_sheet.map((f: any, i: number) => (
+              {formulas.map((f: any, i: number) => (
                 <div key={i} className="bg-surface p-4 rounded-lg border border-border hover:border-[color:var(--accent)]/30 transition-colors">
                   <div className="font-mono text-[color:var(--accent)] bg-surface-raised p-3 rounded text-center text-lg mb-3 overflow-x-auto">
                     {f.formula}
                   </div>
-                  <h4 className="text-foreground font-medium mb-1">{f.meaning}</h4>
+                  {f.meaning && <h4 className="text-foreground font-medium mb-1">{f.meaning}</h4>}
                   <div className="text-xs text-muted-foreground space-y-1">
-                    <p><strong>Variables:</strong> {f.variables}</p>
-                    <p><strong>Example:</strong> {f.example}</p>
+                    {f.variables && <p><strong>Variables:</strong> {f.variables}</p>}
+                    {f.example && <p><strong>Example:</strong> {f.example}</p>}
                   </div>
                 </div>
               ))}
@@ -439,30 +504,34 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* Problems Solved */}
-      {data.problems_solved && data.problems_solved.length > 0 && (
+      {problems.length > 0 && (
         <section className="bg-background">
           {renderSectionHeader('problems_solved', 'Problems Solved', <CheckCircle size={16} />)}
           {expandedSections['problems_solved'] && (
             <div className="mt-4 flex flex-col gap-4 px-2">
-              {data.problems_solved.map((p: any, i: number) => (
+              {problems.map((p: any, i: number) => (
                 <div key={i} className="bg-surface p-5 rounded-lg border border-border">
                   <h4 className="text-foreground font-medium mb-3 pb-2 border-b border-border">Q: {p.question}</h4>
-                  <div className="text-sm text-muted-foreground whitespace-pre-wrap mb-4">
-                    <strong className="text-muted-foreground block mb-1">Step-by-step:</strong>
-                    {p.step_by_step}
-                  </div>
-                  <div className="flex flex-wrap gap-4 mt-4 bg-surface-hover p-3 rounded text-sm">
-                    <div className="flex-1 min-w-[200px]">
-                      <strong className="text-[color:var(--accent)] block mb-1">Final Answer:</strong>
-                      <span className="text-foreground">{p.final_answer}</span>
+                  {p.step_by_step && (
+                    <div className="text-sm text-muted-foreground whitespace-pre-wrap mb-4">
+                      <strong className="text-muted-foreground block mb-1">Step-by-step:</strong>
+                      {p.step_by_step}
                     </div>
-                    {p.professors_explanation && (
+                  )}
+                  {p.final_answer && (
+                    <div className="flex flex-wrap gap-4 mt-4 bg-surface-hover p-3 rounded text-sm">
                       <div className="flex-1 min-w-[200px]">
-                        <strong className="text-muted-foreground block mb-1">Notes:</strong>
-                        <span>{p.professors_explanation}</span>
+                        <strong className="text-[color:var(--accent)] block mb-1">Final Answer:</strong>
+                        <span className="text-foreground">{p.final_answer}</span>
                       </div>
-                    )}
-                  </div>
+                      {p.professors_explanation && (
+                        <div className="flex-1 min-w-[200px]">
+                          <strong className="text-muted-foreground block mb-1">Notes:</strong>
+                          <span>{p.professors_explanation}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -471,22 +540,26 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* Code Snippets */}
-      {data.code_explained && data.code_explained.length > 0 && (
+      {codeList.length > 0 && (
         <section className="bg-background">
           {renderSectionHeader('code_explained', 'Code References', <Code size={16} />)}
           {expandedSections['code_explained'] && (
             <div className="mt-4 flex flex-col gap-4 px-2">
-              {data.code_explained.map((c: any, i: number) => (
+              {codeList.map((c: any, i: number) => (
                 <div key={i} className="bg-surface overflow-hidden rounded-lg border border-border">
                   <div className="bg-surface-raised px-4 py-2 flex justify-between items-center border-b border-border">
-                    <span className="text-sm font-medium text-foreground">{c.purpose}</span>
-                    <span className="text-xs text-[color:var(--accent)] bg-[color:var(--accent)]/10 px-2 py-1 rounded font-mono">
-                      {c.language}
-                    </span>
+                    <span className="text-sm font-medium text-foreground">{c.purpose || 'Snippet'}</span>
+                    {c.language && (
+                      <span className="text-xs text-[color:var(--accent)] bg-[color:var(--accent)]/10 px-2 py-1 rounded font-mono">
+                        {c.language}
+                      </span>
+                    )}
                   </div>
-                  <div className="p-4 bg-surface-hover overflow-x-auto">
-                    <pre className="text-sm text-foreground font-mono m-0 whitespace-pre-wrap">{c.logic}</pre>
-                  </div>
+                  {c.logic && (
+                    <div className="p-4 bg-surface-hover overflow-x-auto">
+                      <pre className="text-sm text-foreground font-mono m-0 whitespace-pre-wrap">{c.logic}</pre>
+                    </div>
+                  )}
                   <div className="p-4 text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-2 gap-4">
                     {c.output && <div><strong className="text-muted-foreground">Output:</strong><br/>{c.output}</div>}
                     {c.complexity && <div><strong className="text-muted-foreground">Complexity:</strong><br/>{c.complexity}</div>}
@@ -498,28 +571,28 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
         </section>
       )}
 
-      {/* Cheat Sheet & Cheat Notes */}
-      {data.cheat_sheet && (
+      {/* Cheat Sheet */}
+      {hasCheatSheet && (
         <section className="bg-background">
-          {renderSectionHeader('cheat_sheet', 'Pre-Exam Cheat Sheet', <Zap size={16} />)}
+          {renderSectionHeader('cheat_sheet', 'Key Cheat Sheet', <Zap size={16} />)}
           {expandedSections['cheat_sheet'] && (
             <div className="mt-4 p-5 bg-surface/90 border border-[color:var(--accent)]/30 rounded-xl prose prose-sm prose-invert max-w-none">
-              <ReactMarkdown>{data.cheat_sheet}</ReactMarkdown>
+              <ReactMarkdown>{rawCheatSheet}</ReactMarkdown>
             </div>
           )}
         </section>
       )}
 
       {/* Visual Explanations */}
-      {data.visual_explanations && data.visual_explanations.length > 0 && (
+      {visuals.length > 0 && (
         <section className="bg-background">
           {renderSectionHeader('visual_explanations', 'Visual & Diagram Breakdown', <Activity size={16} />)}
           {expandedSections['visual_explanations'] && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-              {data.visual_explanations.map((v: any, i: number) => (
+              {visuals.map((v: any, i: number) => (
                 <div key={i} className="bg-surface p-4 rounded-lg border border-border">
-                  <h4 className="text-foreground font-medium mb-1">{v.title}</h4>
-                  <p className="text-sm text-muted-foreground mb-3">{v.explanation}</p>
+                  {v.title && <h4 className="text-foreground font-medium mb-1">{v.title}</h4>}
+                  {v.explanation && <p className="text-sm text-muted-foreground mb-3">{v.explanation}</p>}
                   {v.key_takeaway && (
                     <div className="text-xs bg-[color:var(--accent)]/10 text-[color:var(--accent)] p-2 rounded">
                       <strong>Takeaway:</strong> {v.key_takeaway}
@@ -533,12 +606,12 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* Concepts & Definitions */}
-      {data.concepts_and_definitions && data.concepts_and_definitions.length > 0 && (
+      {concepts.length > 0 && (
         <section className="bg-background">
           {renderSectionHeader('concepts_and_definitions', 'Concepts & Definitions', <BookOpen size={16} />)}
           {expandedSections['concepts_and_definitions'] && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-              {data.concepts_and_definitions.map((c: any, i: number) => (
+              {concepts.map((c: any, i: number) => (
                 <div key={i} className="bg-surface p-4 rounded-lg border border-border">
                   <h4 className="text-[color:var(--accent)] font-semibold mb-1">{c.term}</h4>
                   <p className="text-sm text-foreground font-medium mb-2">{c.definition}</p>
@@ -551,36 +624,36 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* Interview & Exam Preparation */}
-      {(data.interview_questions || data.exam_questions) && (
+      {hasPrepSection && (
         <section className="bg-background">
           {renderSectionHeader('exam_prep', 'Exam & Interview Prep', <CheckCircle size={16} />)}
           {expandedSections['exam_prep'] && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
-              {data.exam_questions && (
+              {examQuestions.length > 0 && (
                 <div className="bg-surface p-5 rounded-lg border border-border">
                   <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
                     <FileText size={16} className="text-primary" /> Exam Problems
                   </h3>
                   <div className="space-y-4">
-                    {data.exam_questions.map((q: any, i: number) => (
+                    {examQuestions.map((q: any, i: number) => (
                       <div key={i} className="border-b border-border/50 pb-3 last:border-0">
                         <p className="text-sm font-medium text-foreground mb-1">Q: {q.question}</p>
-                        <p className="text-xs text-muted-foreground"><strong>Solution:</strong> {q.solution}</p>
+                        {q.solution && <p className="text-xs text-muted-foreground"><strong>Solution:</strong> {q.solution}</p>}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {data.interview_questions && (
+              {interviewQuestions.length > 0 && (
                 <div className="bg-surface p-5 rounded-lg border border-border">
                   <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
                     <BrainCircuit size={16} className="text-purple-400" /> Technical Interview Questions
                   </h3>
                   <div className="space-y-4">
-                    {data.interview_questions.map((q: any, i: number) => (
+                    {interviewQuestions.map((q: any, i: number) => (
                       <div key={i} className="border-b border-border/50 pb-3 last:border-0">
                         <p className="text-sm font-medium text-foreground mb-1">Q: {q.question}</p>
-                        <p className="text-xs text-muted-foreground"><strong>Answer:</strong> {q.expected_answer}</p>
+                        {q.expected_answer && <p className="text-xs text-muted-foreground"><strong>Answer:</strong> {q.expected_answer}</p>}
                       </div>
                     ))}
                   </div>
@@ -591,19 +664,19 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
         </section>
       )}
 
-      {/* Key Concepts & Revision */}
-      {(data.key_concepts || data.revision_notes || data.key_takeaways) && (
+      {/* Key Takeaways & Revision */}
+      {hasRevisionSection && (
         <section className="bg-background">
           {renderSectionHeader('revision', 'Revision & Takeaways', <BrainCircuit size={16} />)}
           {expandedSections['revision'] && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
-              {(data.key_concepts || data.key_takeaways) && (
+              {takeaways.length > 0 && (
                 <div className="bg-surface p-5 rounded-lg border border-border">
                   <h3 className="text-[color:var(--accent)] font-medium mb-3 flex items-center gap-2">
                     <Zap size={16} /> Key Takeaways
                   </h3>
                   <ul className="space-y-2 text-sm text-foreground">
-                    {(data.key_takeaways || data.key_concepts).map((kc: string, i: number) => (
+                    {takeaways.map((kc: string, i: number) => (
                       <li key={i} className="flex gap-2 items-start">
                         <span className="text-[color:var(--accent)] mt-1">•</span>
                         <span>{kc}</span>
@@ -612,11 +685,11 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
                   </ul>
                 </div>
               )}
-              {data.revision_notes && (
+              {revisionNotes && isMeaningful(revisionNotes) && (
                 <div className="bg-surface p-5 rounded-lg border border-border">
                   <h3 className="text-foreground font-medium mb-3">Quick Revision</h3>
                   <div className="prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown>{data.revision_notes}</ReactMarkdown>
+                    <ReactMarkdown>{revisionNotes}</ReactMarkdown>
                   </div>
                 </div>
               )}
@@ -626,7 +699,7 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
       )}
 
       {/* Raw Notes Fallback */}
-      {data.detailed_notes && (
+      {data.detailed_notes && isMeaningful(data.detailed_notes) && (
         <section className="bg-background p-2 mt-4 opacity-50 hover:opacity-100 transition-opacity">
           {renderSectionHeader('detailed_notes', 'Raw Detailed Notes', <FileText size={16} />)}
           {expandedSections['detailed_notes'] && (

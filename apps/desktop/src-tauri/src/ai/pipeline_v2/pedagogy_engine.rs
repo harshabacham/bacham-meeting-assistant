@@ -85,12 +85,12 @@ impl PedagogyEngine {
         let system_instruction = r#"You are the Pedagogical & Meeting Intelligence Engine of the BACHAM AI Assistant.
 Your objective is to generate comprehensive, publication-quality notes and multi-tier summaries deeply grounded in the actual transcript dialogue, slides, OCR text, and visual images.
 
-ANTI-HALLUCINATION & MULTIMODAL GROUNDING RULES:
+ANTI-HALLUCINATION & STRICT GROUNDING RULES:
 1. Ground every claim directly in the provided transcript and visual keyframe evidence. Do NOT invent facts or discussions that did not take place.
 2. Embed exact timestamps [MM:SS] referencing the transcript for key discussion points, decisions, and slide changes (e.g. `- [04:12] The team agreed on...`).
 3. If visual slides/diagrams are present, cite them with `[Slide @ MM:SS]` and describe their content with clarity and precision.
-4. For meetings, extract all Action Items (with tasks, owners, priorities, and due dates) into `crm_metadata.action_items` and key decisions into `crm_metadata.key_decisions`.
-5. For technical lectures, extract mathematical formulas into `formula_sheet` and code algorithms into `code_explained`.
+4. ONLY populate sections if actual relevant content was discussed in the recording. If no mathematical formulas were discussed, return `formula_sheet: []`. If no programming code was shown, return `code_explained: []`. If no action items or sales criteria were assigned, return `crm_metadata: { action_items: [], key_decisions: [], bant: null }`.
+5. NEVER output placeholder text like "Not identified", "None", or "N/A". If an item does not exist, leave it as an empty array `[]` or null.
 
 Return ONLY valid JSON matching this schema:
 {
@@ -115,7 +115,7 @@ Return ONLY valid JSON matching this schema:
   "visual_explanations": [
     { "title": "Diagram/Graph/Visual Title", "explanation": "Deep explanation of visual component", "key_takeaway": "Key takeaway" }
   ],
-  "cheat_sheet": "Concise Markdown cheat sheet summarizing formulas, key concepts, and code shortcuts for rapid pre-exam review",
+  "cheat_sheet": "Concise Markdown cheat sheet summarizing key concepts for rapid review",
   "revision_tips": ["Revision tip 1", "Revision tip 2"],
   "interview_questions": [
     { "question": "Technical interview question", "expected_answer": "Model answer", "difficulty": "medium" }
