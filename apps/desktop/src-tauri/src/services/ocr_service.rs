@@ -33,7 +33,7 @@ Format strictly as:
             if let Ok(result_text) = crate::services::universal_ai::UniversalAiService::generate_multimodal(
                 prompt,
                 sys,
-                &[(mime_type.to_string(), b64)],
+                &[(b64, mime_type.to_string())],
                 pool
             ).await {
                 combined_text = result_text;

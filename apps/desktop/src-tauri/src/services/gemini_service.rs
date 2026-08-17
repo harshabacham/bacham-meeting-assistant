@@ -86,7 +86,19 @@ impl GeminiService {
                                 if methods.iter().any(|method| method.as_str() == Some("generateContent")) {
                                     if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
                                         let model_id = name.strip_prefix("models/").unwrap_or(name).to_string();
-                                        discovered.push(model_id);
+                                        let lower = model_id.to_lowercase();
+                                        // Exclude audio-only TTS, robotics, image-only generation, and experimental internal models
+                                        if !lower.contains("tts") 
+                                            && !lower.contains("robotics") 
+                                            && !lower.contains("lyria") 
+                                            && !lower.contains("deep-research") 
+                                            && !lower.contains("computer-use") 
+                                            && !lower.contains("image-preview") 
+                                            && !lower.contains("gemma")
+                                            && lower != "gemini-2.5-flash"
+                                        {
+                                            discovered.push(model_id);
+                                        }
                                     }
                                 }
                             }
@@ -96,15 +108,15 @@ impl GeminiService {
             }
         }
 
-        // Sort discovered models so best and fastest price-performance models are prioritized
+        // Sort discovered models so best and fastest active flash models are prioritized
         discovered.sort_by(|a, b| {
             let score = |m: &str| -> i32 {
-                if m.contains("flash-8b") { 4 }
-                else if m.contains("2.0-flash") { 1 }
-                else if m.contains("1.5-flash") { 2 }
-                else if m.contains("flash") { 3 }
-                else if m.contains("2.0-pro") { 5 }
-                else if m.contains("1.5-pro") { 6 }
+                if m.contains("3.5-flash-lite") { 1 }
+                else if m.contains("3.5-flash") { 2 }
+                else if m.contains("flash-latest") { 3 }
+                else if m.contains("3.6-flash") { 4 }
+                else if m.contains("3.7-flash") { 5 }
+                else if m.contains("flash") { 6 }
                 else if m.contains("pro") { 7 }
                 else { 8 }
             };
@@ -114,10 +126,10 @@ impl GeminiService {
         if discovered.is_empty() {
             // Default resilient fallback list
             discovered = vec![
-                "gemini-2.0-flash".to_string(),
-                "gemini-1.5-flash".to_string(),
-                "gemini-1.5-pro".to_string(),
-                "gemini-1.5-flash-8b".to_string(),
+                "gemini-3.5-flash-lite".to_string(),
+                "gemini-3.5-flash".to_string(),
+                "gemini-flash-latest".to_string(),
+                "gemini-3.7-flash".to_string(),
             ];
         }
 
@@ -323,10 +335,15 @@ impl GeminiService {
 
         let key = Self::get_api_key(pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1/models/{}:generateContent?key={}", model, key);
+        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", model, key);
 
         let mut content_parts = vec![];
-        for (b64, mime) in image_parts {
+        for (part1, part2) in image_parts {
+            let (b64, mime) = if part1.starts_with("image/") || part1.starts_with("audio/") || part1.starts_with("video/") {
+                (part2, part1)
+            } else {
+                (part1, part2)
+            };
             content_parts.push(serde_json::json!({
                 "inlineData": { "mimeType": mime, "data": b64 }
             }));

@@ -199,10 +199,10 @@ impl UniversalAiService {
         let models = match crate::services::gemini_service::GeminiService::discover_available_models(pool).await {
             Ok(list) if !list.is_empty() => list,
             _ => vec![
-                "gemini-2.0-flash".to_string(),
-                "gemini-1.5-flash".to_string(),
-                "gemini-1.5-pro".to_string(),
-                "gemini-1.5-flash-8b".to_string(),
+                "gemini-3.5-flash-lite".to_string(),
+                "gemini-3.5-flash".to_string(),
+                "gemini-flash-latest".to_string(),
+                "gemini-3.7-flash".to_string(),
             ]
         };
 
@@ -234,9 +234,10 @@ impl UniversalAiService {
         let models = match crate::services::gemini_service::GeminiService::discover_available_models(pool).await {
             Ok(list) if !list.is_empty() => list,
             _ => vec![
-                "gemini-2.0-flash".to_string(),
-                "gemini-1.5-flash".to_string(),
-                "gemini-1.5-pro".to_string(),
+                "gemini-3.5-flash-lite".to_string(),
+                "gemini-3.5-flash".to_string(),
+                "gemini-flash-latest".to_string(),
+                "gemini-3.7-flash".to_string(),
             ]
         };
 
