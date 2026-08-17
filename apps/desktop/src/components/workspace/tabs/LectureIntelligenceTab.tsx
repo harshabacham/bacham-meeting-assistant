@@ -1,8 +1,6 @@
-import { BrainCircuit, Loader2, Zap, Clock, BookOpen, Layers, Book } from 'lucide-react';
-import { Markdown as ReactMarkdown } from '@/components/ui/markdown';
+import { BrainCircuit, Loader2, Zap } from 'lucide-react';
 import { LectureIntelligenceView } from '@/components/study/LectureIntelligenceView';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
 
 interface LectureIntelligenceTabProps {
   artifacts: Record<string, any>;
@@ -25,46 +23,7 @@ export function LectureIntelligenceTab({
   hasVisuals,
   isPipelineRunning,
   onGenerateSummary,
-  workspaceType = 'lecture'
 }: LectureIntelligenceTabProps) {
-  const [summaryTier, setSummaryTier] = useState<'quick' | 'standard' | 'deep' | 'textbook'>('standard');
-
-  const renderMultiLevelSummary = (parsed: any) => {
-    const content = parsed[`${summaryTier}_summary`] || parsed[summaryTier === 'deep' ? 'deep_notes' : summaryTier === 'textbook' ? 'textbook_notes' : 'standard_summary'];
-    
-    // We explicitly remove executive_summary from parsed so that LectureIntelligenceView doesn't render it again
-    // since the multi-tier summary (which is acting as our executive summary) is already rendered at the top.
-    const viewData = { ...parsed };
-    delete viewData.executive_summary;
-
-    return (
-      <div className="space-y-6">
-        <div className="flex p-1 bg-surface-raised border border-border/50 rounded-xl overflow-hidden shadow-sm">
-          <button onClick={() => setSummaryTier('quick')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'quick' ? 'bg-indigo-500/10 text-indigo-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <Clock size={14} /> {workspaceType === 'meeting' ? 'Key Decisions' : 'Quick (30s)'}
-          </button>
-          <button onClick={() => setSummaryTier('standard')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'standard' ? 'bg-blue-500/10 text-blue-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <BookOpen size={14} /> {workspaceType === 'meeting' ? 'Executive Overview' : 'Standard (5m)'}
-          </button>
-          <button onClick={() => setSummaryTier('deep')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'deep' ? 'bg-purple-500/10 text-purple-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <Layers size={14} /> {workspaceType === 'meeting' ? 'Debates & Context' : 'Deep Notes (15m)'}
-          </button>
-          <button onClick={() => setSummaryTier('textbook')} className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${summaryTier === 'textbook' ? 'bg-amber-500/10 text-amber-400' : 'text-muted-foreground hover:bg-surface-hover'}`}>
-            <Book size={14} /> {workspaceType === 'meeting' ? 'Full Minutes & Actions' : 'Textbook'}
-          </button>
-        </div>
-
-        <div className="bg-surface border border-border/50 rounded-xl p-8 shadow-sm">
-          <div className="prose prose-sm prose-invert max-w-none">
-            <ReactMarkdown>{content || "This summary level is not available yet."}</ReactMarkdown>
-          </div>
-        </div>
-
-        <LectureIntelligenceView data={viewData} />
-      </div>
-    );
-  };
-
   return (
     <div className="max-w-4xl mx-auto py-6 px-6">
       {artifacts['lecture_intelligence'] ? (
@@ -96,41 +55,10 @@ export function LectureIntelligenceTab({
             {(() => {
               try {
                 const parsed = JSON.parse(summary);
-                
-                // New multi-level summary check
-                if (parsed.quick_summary || parsed.standard_summary || parsed.deep_notes || parsed.textbook_notes) {
-                  return renderMultiLevelSummary(parsed);
-                }
-
-                // Legacy JSON Array fallback
-                if (Array.isArray(parsed)) {
-                  return (
-                    <div className="space-y-6">
-                      {parsed.map((section: any, idx: number) => (
-                        <div key={idx} className="bg-surface border border-border/50 rounded-xl p-6 shadow-sm">
-                          {section.section_title && (
-                            <h2 className="text-lg font-semibold text-foreground mb-4 pb-3 border-b border-border/40">
-                              {section.section_title}
-                            </h2>
-                          )}
-                          <div className="prose prose-sm prose-invert max-w-none">
-                            <ReactMarkdown>{section.content}</ReactMarkdown>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
+                return <LectureIntelligenceView data={parsed} />;
               } catch (e) {
-                // Not JSON, fallback to raw markdown
+                return <LectureIntelligenceView data={{ executive_summary: summary }} />;
               }
-              return (
-                <div className="bg-surface border border-border/50 rounded-xl p-8 shadow-sm">
-                  <div className="prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown>{summary}</ReactMarkdown>
-                  </div>
-                </div>
-              );
             })()}
           </div>
         </>
