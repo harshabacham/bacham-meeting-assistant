@@ -239,6 +239,13 @@ impl NativeHost {
                             duration, now_update, session_id_clone
                         ).execute(&pool).await;
 
+                        use tauri::Manager;
+                        if let Some(window) = app_clone.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
+
                         let _ = app_clone.emit("refresh_lectures", ());
 
                         let _ = app_clone.emit("pipeline_progress", serde_json::json!({
