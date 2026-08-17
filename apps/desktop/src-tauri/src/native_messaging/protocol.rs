@@ -16,6 +16,7 @@ pub enum MessageType {
     TriggerSnapshot,
     LiveCaption,
     ConfirmDecision,
+    OpenApp,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

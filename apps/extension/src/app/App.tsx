@@ -13,11 +13,16 @@ import { SettingsScreen } from '@/popup/screens/SettingsScreen';
 
 import { getExtensionVersion } from '@/infrastructure/browser/runtime';
 
-/** Open BACHAM desktop app via deep link trampoline page. */
+/** Open BACHAM desktop app via native host wake message and trampoline fallback. */
 function openDesktopApp(): void {
-  // Point to the landing page route which handles deep linking and fallbacks.
-  // In production, this would be updated to https://bacham.com/open
-  chrome.tabs.create({ url: 'http://localhost:3000/open', active: true });
+  try {
+    chrome.runtime.sendMessage({ type: 'OPEN_APP' });
+  } catch (e) {
+    console.error('Failed to send OPEN_APP message:', e);
+  }
+  try {
+    chrome.tabs.create({ url: 'http://localhost:3000/open', active: true });
+  } catch {}
 }
 
 function AppInner(): React.ReactElement {

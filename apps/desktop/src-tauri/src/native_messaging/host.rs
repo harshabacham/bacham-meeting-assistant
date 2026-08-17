@@ -108,6 +108,36 @@ impl NativeHost {
             return;
         }
 
+        if msg.r#type == MessageType::OpenApp {
+            if let Some(main_window) = app.get_webview_window("main") {
+                let _ = main_window.show();
+                let _ = main_window.unminimize();
+                let _ = main_window.set_focus();
+            } else {
+                let _ = tauri::webview::WebviewWindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WebviewUrl::default()
+                )
+                .title("BACHAM")
+                .inner_size(1200.0, 800.0)
+                .decorations(false)
+                .transparent(true)
+                .visible(true)
+                .build();
+            }
+            if let Some(ref sender) = response_sender {
+                sender(NativeMessage {
+                    version: msg.version,
+                    r#type: MessageType::Ack,
+                    payload: serde_json::json!({ "status": "app_opened" }),
+                    timestamp: chrono::Utc::now().timestamp_millis(),
+                    session_id: msg.session_id,
+                });
+            }
+            return;
+        }
+
         if msg.r#type == MessageType::SessionStart {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<SessionStartPayload>(msg.payload.clone()) {
@@ -136,6 +166,18 @@ impl NativeHost {
                             let _ = main_window.show();
                             let _ = main_window.unminimize();
                             let _ = main_window.set_focus();
+                        } else {
+                            let _ = tauri::webview::WebviewWindowBuilder::new(
+                                &app_clone,
+                                "main",
+                                tauri::WebviewUrl::default()
+                            )
+                            .title("BACHAM")
+                            .inner_size(1200.0, 800.0)
+                            .decorations(false)
+                            .transparent(true)
+                            .visible(true)
+                            .build();
                         }
                         let _ = app_clone.emit("auto_wake_live", session_id_clone.clone());
 
@@ -690,6 +732,6 @@ pub fn start_listener(app: AppHandle) {
     std::thread::spawn(move || {
         let host = NativeHost::new(app);
         host.start();
-        std::process::exit(0);
+        eprintln!("[NativeHost] Listener thread ended.");
     });
 }

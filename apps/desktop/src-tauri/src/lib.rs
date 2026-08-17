@@ -23,6 +23,19 @@ pub fn run() {
                 let _ = main_window.show();
                 let _ = main_window.unminimize();
                 let _ = main_window.set_focus();
+            } else {
+                let _ = tauri::webview::WebviewWindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WebviewUrl::default()
+                )
+                .title("BACHAM")
+                .inner_size(1200.0, 800.0)
+                .decorations(false)
+                .transparent(true)
+                .visible(true)
+                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .build();
             }
         }))
         .plugin(tauri_plugin_fs::init())
@@ -43,33 +56,32 @@ pub fn run() {
             
             let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
             
-            if is_native_messaging {
-                if let Some(main_window) = app.get_webview_window("main") {
-                    let _ = main_window.hide();
-                }
-            } else {
-                if let Some(main_window) = app.get_webview_window("main") {
+            // Ensure main window is present and visible
+            if let Some(main_window) = app.get_webview_window("main") {
+                if !is_native_messaging {
                     let _ = main_window.show();
                     let _ = main_window.unminimize();
                     let _ = main_window.set_focus();
-                } else {
-                    let main_window = tauri::webview::WebviewWindowBuilder::new(
-                        app,
-                        "main",
-                        tauri::WebviewUrl::default()
-                    )
-                    .title("BACHAM")
-                    .inner_size(1200.0, 800.0)
-                    .decorations(false)
-                    .transparent(true)
-                    .visible(true)
-                    .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                    .on_new_window(move |_url, _features| {
-                        tauri::webview::NewWindowResponse::Allow
-                    })
-                    .build()
-                    .expect("Failed to build main window");
-                    
+                }
+            } else {
+                let main_window = tauri::webview::WebviewWindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WebviewUrl::default()
+                )
+                .title("BACHAM")
+                .inner_size(1200.0, 800.0)
+                .decorations(false)
+                .transparent(true)
+                .visible(true)
+                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .on_new_window(move |_url, _features| {
+                    tauri::webview::NewWindowResponse::Allow
+                })
+                .build()
+                .expect("Failed to build main window");
+                
+                if !is_native_messaging {
                     let _ = main_window.show();
                     let _ = main_window.set_focus();
                 }
@@ -90,15 +102,15 @@ pub fn run() {
 
             if is_native_messaging {
                 crate::native_messaging::host::start_listener(handle.clone());
-            } else {
-                if let Some(pool) = db_pool {
-                    let handle_clone = handle.clone();
-                    tauri::async_runtime::spawn(async move {
-                        crate::ai::queue_worker::QueueWorker::spawn(handle_clone.clone(), pool.clone());
-                        crate::services::search_indexer::SearchIndexer::run_backfill_background(pool.clone());
-                        crate::ws_server::start_ws_server(handle_clone).await;
-                    });
-                }
+            }
+
+            if let Some(pool) = db_pool {
+                let handle_clone = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    crate::ai::queue_worker::QueueWorker::spawn(handle_clone.clone(), pool.clone());
+                    crate::services::search_indexer::SearchIndexer::run_backfill_background(pool.clone());
+                    crate::ws_server::start_ws_server(handle_clone).await;
+                });
             }
             
             Ok(())
