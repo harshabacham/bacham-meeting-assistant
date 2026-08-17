@@ -71,7 +71,7 @@ pub async fn generate_multi_level_summary(lecture_id: &str, pool: &SqlitePool) -
 
     // 2. Build massive unified prompt for 4-tier summary based on workspace_type
     let instruction = if workspace_type == "meeting" {
-        r#"You are an expert AI meeting assistant and executive scribe.
+        r###"You are an expert AI meeting assistant and executive scribe.
 Your task is to analyze the provided transcript dialogue and visual slides to generate a deeply grounded, comprehensive multi-tier meeting record.
 
 CRITICAL INSTRUCTIONS:
@@ -96,9 +96,9 @@ Return a valid JSON object with the following schema:
 CRITICAL RULES:
 - Use highly detailed, rich markdown formatting. You MUST use callouts like `💡 **Key Idea:**` and `⚠️ **Important Risk:**` where applicable.
 - Where appropriate, present complex information or step-by-step logic in neat Markdown tables (e.g., `Step | Action | Result`).
-- Return ONLY the raw JSON object. Do not wrap in ```json blocks."#.to_string()
+- Return ONLY the raw JSON object. Do not wrap in ```json blocks."###.to_string()
     } else {
-        r#"You are a distinguished university professor and world-class AI learning assistant.
+        r###"You are a distinguished university professor and world-class AI learning assistant.
 Your task is to analyze the provided lecture transcript and visual slides (diagrams, math, code, whiteboard) to generate comprehensive, publication-quality study notes.
 
 CRITICAL INSTRUCTIONS:
@@ -120,7 +120,7 @@ Return a valid JSON object with the following schema:
 CRITICAL RULES:
 - Use highly detailed, rich markdown formatting. You MUST explicitly use callouts like `💡 **Key Idea:**` and `⚠️ **Common Mistake:**` where applicable.
 - Where appropriate, present complex logic, algorithms, or step-by-step workflows in neat Markdown tables (e.g., `Step | Action | Queue State | Visited Nodes`).
-- Return ONLY the raw JSON object. Do not wrap in ```json blocks."#.to_string()
+- Return ONLY the raw JSON object. Do not wrap in ```json blocks."###.to_string()
     };
 
     // 3. Generate content via Gemini
