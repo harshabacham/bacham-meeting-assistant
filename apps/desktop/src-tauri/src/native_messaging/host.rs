@@ -131,7 +131,12 @@ impl NativeHost {
                     let app_clone = app.clone();
                     
                     tauri::async_runtime::spawn(async move {
-                        // Immediately wake the app so the user sees the transition
+                        // Immediately wake and show the app so the user sees the transition
+                        if let Some(main_window) = app_clone.get_webview_window("main") {
+                            let _ = main_window.show();
+                            let _ = main_window.unminimize();
+                            let _ = main_window.set_focus();
+                        }
                         let _ = app_clone.emit("auto_wake_live", session_id_clone.clone());
 
                         let now = chrono::Utc::now().to_rfc3339();
