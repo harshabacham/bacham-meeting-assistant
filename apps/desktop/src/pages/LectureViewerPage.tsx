@@ -5,22 +5,18 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { TauriClient, Screenshot, TimelineEvent } from '@/infrastructure/tauri-client';
-import { Play, FileText, BrainCircuit, BookOpen, Zap, ArrowLeft, RefreshCw, Video, ListTree, Loader2, Edit2, Share, Layers, CheckSquare, ExternalLink } from 'lucide-react';
+import { Play, FileText, BrainCircuit, BookOpen, ArrowLeft, RefreshCw, Video, Loader2, Edit2, Share, Layers, CheckSquare, ExternalLink } from 'lucide-react';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
 import { useModeStore } from '@/shared/stores/modeStore';
 
-import { OverviewTab } from '@/components/workspace/tabs/OverviewTab';
 import { Toolbar, ToolbarItem } from '@/components/kokonutui/toolbar';
 import { ProgressiveBlur } from '@/components/ui/skiper-ui/skiper41';
-import { LectureIntelligenceTab } from '@/components/workspace/tabs/LectureIntelligenceTab';
-import { ActionsTab } from '@/components/workspace/tabs/ActionsTab';
 import { TranscriptTab } from '@/components/workspace/tabs/TranscriptTab';
 import { ScreenshotsTab } from '@/components/workspace/tabs/ScreenshotsTab';
 import { FormulaSheetTab } from '@/components/workspace/tabs/FormulaSheetTab';
 import { CodeViewerTab } from '@/components/workspace/tabs/CodeViewerTab';
 import { DiagramsTab } from '@/components/workspace/tabs/DiagramsTab';
 import { NotesTab } from '@/components/workspace/tabs/NotesTab';
-import { LiveArtifactsTab } from '@/components/workspace/tabs/LiveArtifactsTab';
 import { BookmarksTab } from '@/components/workspace/tabs/BookmarksTab';
 import { VideoTab } from '@/components/workspace/tabs/VideoTab';
 import { AiChatTab } from '@/components/workspace/tabs/AiChatTab';
@@ -47,7 +43,7 @@ export function LectureViewerPage() {
   const [localLecture, setLocalLecture] = useState<import('@/shared/types').Lecture | null>(storedLecture ?? null);
   const lecture = storedLecture ?? localLecture;
   
-  const [activeTab, setActiveTab] = useState<string>('overview');
+  const [activeTab, setActiveTab] = useState<string>('notes');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const { showToast } = useToast();
@@ -59,7 +55,7 @@ export function LectureViewerPage() {
     lectureId: id,
     subtitle: `Viewing Tab: ${activeTab.toUpperCase()}`,
   });
-  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['overview']));
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['notes']));
 
   const [transcript, setTranscript] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
@@ -524,36 +520,24 @@ export function LectureViewerPage() {
         <div className="flex-1 flex justify-start min-w-0 overflow-x-auto no-scrollbar">
           {(() => {
             const toolbarItems: ToolbarItem[] = [
-              { id: 'overview', title: 'Overview', icon: BookOpen },
-              { id: 'summary', title: 'Intelligence', icon: BrainCircuit },
-              { id: 'actions', title: 'Execution', icon: CheckSquare },
+              { id: 'notes', title: 'Notes', icon: BookOpen },
               { id: 'transcript', title: 'Transcript', icon: FileText },
-
-              
-              // Only add these tabs in student mode
-              ...(appMode === 'student' ? [
-                  ...(artifacts['formula_sheet']?.formulas?.length ? [{ id: 'formula_sheet', title: 'Formulas', icon: ListTree }] : []),
-                  ...(artifacts['important_code']?.code_blocks?.length ? [{ id: 'code', title: 'Code', icon: Zap }] : []),
-              ] : []),
-
-              { id: 'notes', title: 'Jot & Expand', icon: BookOpen },
-              { id: 'artifacts', title: 'Live Artifacts', icon: Layers },
-
-              { id: 'screenshots', title: 'Screenshots', icon: Video },
-              
+              ...(screenshots.length > 0 ? [{ id: 'screenshots', title: 'Visuals', icon: Video }] : []),
+              ...(videoSrc ? [{ id: 'video', title: 'Video', icon: Play }] : []),
               ...(appMode === 'student' ? [
                   { id: 'flashcards', title: 'Flashcards', icon: Layers },
                   { id: 'quiz', title: 'Quiz', icon: CheckSquare },
               ] : []),
-
-              ...(videoSrc ? [{ id: 'video', title: 'Video', icon: Play }] : []),
             ] as ToolbarItem[];
 
             return (
               <Toolbar 
                 items={toolbarItems} 
                 selected={activeTab} 
-                onSelect={(id) => setActiveTab(id)} 
+                onSelect={(id) => {
+                  setVisitedTabs(prev => new Set(prev).add(id));
+                  setActiveTab(id);
+                }} 
                 className="shadow-none border-none bg-transparent p-0 m-0"
               />
             );
@@ -569,7 +553,7 @@ export function LectureViewerPage() {
             </span>
           )}
           
-          <button onClick={refreshAllData} disabled={isPollingData} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50">
+          <button onClick={refreshAllData} disabled={isPollingData} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50" title="Refresh">
             <RefreshCw size={14} className={isPollingData ? 'animate-spin' : ''} />
           </button>
           <div className="w-px h-4 bg-white/10 mx-1" />
@@ -600,73 +584,32 @@ export function LectureViewerPage() {
             <ProgressiveBlur position="top" height="24px" blurAmount="4px" />
              <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
 
-
-               {visitedTabs.has('overview') && (
-               <motion.div 
-                 initial={false}
-                 animate={{ opacity: activeTab === 'overview' ? 1 : 0, y: activeTab === 'overview' ? 0 : 10, scale: activeTab === 'overview' ? 1 : 0.98 }}
-                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'overview' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
-               >
-                 <OverviewTab 
-                   lecture={lecture}
-                   artifacts={artifacts}
-                   thumbnailSrc={screenshots.length > 0 ? screenshotImages[screenshots[0].id] : undefined}
-                   onJumpToVideo={() => jumpToTime(0)}
-                 />
-               </motion.div>
-             )}
-             {visitedTabs.has('video') && (
+              {/* 1. Unified Notes & Intelligence Canvas (Default) */}
+              {visitedTabs.has('notes') && (
                 <motion.div 
                   initial={false}
-                  animate={{ opacity: activeTab === 'video' ? 1 : 0, y: activeTab === 'video' ? 0 : 10, scale: activeTab === 'video' ? 1 : 0.98 }}
+                  animate={{ opacity: activeTab === 'notes' ? 1 : 0, y: activeTab === 'notes' ? 0 : 10, scale: activeTab === 'notes' ? 1 : 0.98 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${activeTab === 'video' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                  className={`absolute inset-0 overflow-hidden ${activeTab === 'notes' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
                 >
-
-                   <VideoTab 
-                     lectureId={lecture.id}
-                     videoSrc={videoSrc}
-                     videoRef={videoRef}
-                     isPipelineRunning={isPipelineRunning}
-                     isPipelineError={isPipelineError}
-                     pipelineStatusMessage={pipelineStatus?.message}
-                     autoSkipEnabled={autoSkipEnabled}
-                     skipSegments={skipSegments}
-                   />
+                  <NotesTab 
+                    lectureId={lecture.id} 
+                    lectureTitle={lecture.title}
+                    templateType={lecture.workspaceType || 'general'} 
+                    transcript={transcript ?? undefined} 
+                    isAudioSilent={isAudioSilent}
+                    artifacts={artifacts}
+                    summary={summary}
+                    summaryError={summaryError}
+                    isGeneratingSummary={isGeneratingSummary || artifactProgress['lecture_intelligence']?.status === 'generating'}
+                    onGenerateSummary={handleGenerateSummary}
+                    hasVisuals={screenshots.length > 0}
+                  />
                 </motion.div>
               )}
-             {visitedTabs.has('summary') && (
-               <motion.div 
-                 initial={false}
-                 animate={{ opacity: activeTab === 'summary' ? 1 : 0, y: activeTab === 'summary' ? 0 : 10, scale: activeTab === 'summary' ? 1 : 0.98 }}
-                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'summary' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
-               >
-                 <LectureIntelligenceTab 
-                   artifacts={artifacts}
-                   summary={summary}
-                   summaryError={summaryError}
-                   isGeneratingSummary={isGeneratingSummary || artifactProgress['lecture_intelligence']?.status === 'generating'}
-                   transcript={transcript}
-                   hasVisuals={screenshots.length > 0}
-                   isPipelineRunning={isPipelineRunning}
-                   onGenerateSummary={handleGenerateSummary}
-                   workspaceType={lecture.workspaceType || 'lecture'}
-                 />
-               </motion.div>
-             )}
-             {visitedTabs.has('actions') && (
-               <motion.div 
-                 initial={false}
-                 animate={{ opacity: activeTab === 'actions' ? 1 : 0, y: activeTab === 'actions' ? 0 : 10, scale: activeTab === 'actions' ? 1 : 0.98 }}
-                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                 className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'actions' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
-               >
-                 <ActionsTab artifacts={artifacts} lectureId={lecture.id} />
-               </motion.div>
-             )}
-                {visitedTabs.has('transcript') && (
+
+              {/* 2. Transcript Tab */}
+              {visitedTabs.has('transcript') && (
                 <motion.div 
                   initial={false}
                   animate={{ opacity: activeTab === 'transcript' ? 1 : 0, y: activeTab === 'transcript' ? 0 : 10, scale: activeTab === 'transcript' ? 1 : 0.98 }}
@@ -691,43 +634,43 @@ export function LectureViewerPage() {
                 </motion.div>
               )}
 
-              {visitedTabs.has('notes') && (
+              {/* 3. Visuals / Screenshots Tab */}
+              {visitedTabs.has('screenshots') && (
                 <motion.div 
                   initial={false}
-                  animate={{ opacity: activeTab === 'notes' ? 1 : 0, y: activeTab === 'notes' ? 0 : 10, scale: activeTab === 'notes' ? 1 : 0.98 }}
+                  animate={{ opacity: activeTab === 'screenshots' ? 1 : 0, y: activeTab === 'screenshots' ? 0 : 10, scale: activeTab === 'screenshots' ? 1 : 0.98 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className={`absolute inset-0 overflow-hidden ${activeTab === 'notes' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                  className={`absolute inset-0 overflow-y-auto ${activeTab === 'screenshots' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
                 >
-                  <NotesTab lectureId={lecture.id} templateType={lecture.workspaceType || 'general'} transcript={transcript ?? undefined} isAudioSilent={isAudioSilent} />
+                  <ScreenshotsTab 
+                    lectureId={lecture.id}
+                    screenshots={screenshots}
+                    screenshotImages={screenshotImages}
+                    onJumpToTime={jumpToTime}
+                  />
                 </motion.div>
               )}
 
-              {visitedTabs.has('artifacts') && (
+              {/* 4. Video Player Tab */}
+              {visitedTabs.has('video') && (
                 <motion.div 
                   initial={false}
-                  animate={{ opacity: activeTab === 'artifacts' ? 1 : 0, y: activeTab === 'artifacts' ? 0 : 10, scale: activeTab === 'artifacts' ? 1 : 0.98 }}
+                  animate={{ opacity: activeTab === 'video' ? 1 : 0, y: activeTab === 'video' ? 0 : 10, scale: activeTab === 'video' ? 1 : 0.98 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'artifacts' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                  className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${activeTab === 'video' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
                 >
-                  <LiveArtifactsTab lectureId={lecture.id} transcript={transcript ?? undefined} />
+                  <VideoTab 
+                    lectureId={lecture.id}
+                    videoSrc={videoSrc}
+                    videoRef={videoRef}
+                    isPipelineRunning={isPipelineRunning}
+                    isPipelineError={isPipelineError}
+                    pipelineStatusMessage={pipelineStatus?.message}
+                    autoSkipEnabled={autoSkipEnabled}
+                    skipSegments={skipSegments}
+                  />
                 </motion.div>
               )}
-
-             {visitedTabs.has('screenshots') && (
-               <motion.div 
-                 initial={false}
-                 animate={{ opacity: activeTab === 'screenshots' ? 1 : 0, y: activeTab === 'screenshots' ? 0 : 10, scale: activeTab === 'screenshots' ? 1 : 0.98 }}
-                 transition={{ duration: 0.3, ease: 'easeOut' }}
-                 className={`absolute inset-0 overflow-y-auto ${activeTab === 'screenshots' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
-               >
-                 <ScreenshotsTab 
-                   lectureId={lecture.id}
-                   screenshots={screenshots}
-                   screenshotImages={screenshotImages}
-                   onJumpToTime={jumpToTime}
-                 />
-               </motion.div>
-             )}
 
              {appMode === 'student' && (
                  <>

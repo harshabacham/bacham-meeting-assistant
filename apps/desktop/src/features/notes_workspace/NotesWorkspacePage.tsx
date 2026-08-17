@@ -19,6 +19,8 @@ export interface Note {
     folderId?: string | null;
     eventTime?: string;
     eventDate?: string;
+    isMeeting?: boolean;
+    meetingDurationMs?: number;
 }
 
 export function NotesWorkspacePage() {
@@ -63,33 +65,51 @@ export function NotesWorkspacePage() {
     useEffect(() => {
         let mounted = true;
         
-        TauriClient.getWorkspaceNotes()
-            .then(fetched => {
-                if (mounted) {
-                    const mapped = (fetched || []).map((n: any) => {
-                        const folderTag = n.tags?.find((t: string) => t.startsWith('folder:'));
-                        const folderId = folderTag ? folderTag.replace('folder:', '') : null;
-                        const savedSummary = localStorage.getItem(`summary_${n.id}`) || n.summary || undefined;
-                        const savedTranscript = localStorage.getItem(`transcript_${n.id}`) || n.transcript || undefined;
-                        return {
-                            ...n,
-                            folderId,
-                            summary: savedSummary,
-                            transcript: savedTranscript,
-                        };
-                    });
-                    setNotes(mapped);
-                }
-            })
-            .catch(e => console.error('Failed to fetch notes', e));
+        Promise.all([
+            TauriClient.getWorkspaceNotes().catch(() => []),
+            TauriClient.listFolders().catch(() => []),
+            TauriClient.listLectures().catch(() => []),
+        ]).then(([fetchedNotes, fetchedFolders, fetchedLectures]) => {
+            if (!mounted) return;
 
-        TauriClient.listFolders()
-            .then(fetched => { if (mounted) setFolders(fetched || []); })
-            .catch(e => console.error('Failed to fetch folders', e));
+            setFolders(fetchedFolders || []);
+            setLectures(fetchedLectures || []);
 
-        TauriClient.listLectures()
-            .then(fetched => { if (mounted) setLectures(fetched || []); })
-            .catch(e => console.error('Failed to fetch lectures', e));
+            const regularNotes: Note[] = (fetchedNotes || []).map((n: any) => {
+                const folderTag = n.tags?.find((t: string) => t.startsWith('folder:'));
+                const folderId = folderTag ? folderTag.replace('folder:', '') : null;
+                const savedSummary = localStorage.getItem(`summary_${n.id}`) || n.summary || undefined;
+                const savedTranscript = localStorage.getItem(`transcript_${n.id}`) || n.transcript || undefined;
+                return {
+                    ...n,
+                    folderId,
+                    summary: savedSummary,
+                    transcript: savedTranscript,
+                    isMeeting: false,
+                };
+            });
+
+            // Convert lectures to Meeting Notes so they connect seamlessly across the app
+            const meetingNotes: Note[] = (fetchedLectures || []).map((lec: any) => {
+                const savedDraft = localStorage.getItem(`user_notes_draft_${lec.id}`) || '';
+                return {
+                    id: lec.id,
+                    title: lec.title || 'Untitled Meeting',
+                    content: savedDraft,
+                    summary: lec.summary || undefined,
+                    updatedAt: new Date(lec.updatedAt || Date.now()).getTime(),
+                    createdAt: new Date(lec.createdAt || Date.now()).getTime(),
+                    isPinned: false,
+                    tags: ['meeting', ...(lec.courseLabel ? [lec.courseLabel] : [])],
+                    folderId: lec.folderId || null,
+                    isMeeting: true,
+                    meetingDurationMs: lec.durationMs,
+                };
+            });
+
+            const combined = [...regularNotes, ...meetingNotes].sort((a, b) => b.updatedAt - a.updatedAt);
+            setNotes(combined);
+        }).catch(e => console.error('Failed to fetch unified workspace notes', e));
 
         return () => { mounted = false; };
     }, []);
@@ -164,13 +184,20 @@ export function NotesWorkspacePage() {
             try {
                 const currentNote = notesRef.current.find((n: Note) => n.id === id);
                 if (currentNote) {
-                    await TauriClient.updateWorkspaceNote(
-                        id, 
-                        currentNote.title, 
-                        currentNote.content, 
-                        currentNote.isPinned, 
-                        currentNote.tags
-                    );
+                    if (currentNote.isMeeting) {
+                        await TauriClient.updateNotes(id, currentNote.content);
+                        if (patch.title) {
+                            await TauriClient.updateLecture({ id, title: currentNote.title });
+                        }
+                    } else {
+                        await TauriClient.updateWorkspaceNote(
+                            id, 
+                            currentNote.title, 
+                            currentNote.content, 
+                            currentNote.isPinned, 
+                            currentNote.tags
+                        );
+                    }
                 }
             } catch (e) {
                 console.error('Failed to update note in database', e);

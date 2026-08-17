@@ -15,7 +15,7 @@ import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { 
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
-    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2
+    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, ExternalLink
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
@@ -458,6 +458,26 @@ Return only the polished transcript text:`;
                     </div>
                 </div>
             </div>
+
+            {/* Connected Meeting Session Banner */}
+            {note.isMeeting && (
+                <div className="max-w-3xl mx-auto w-full px-8 pt-4 pb-0">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl text-xs">
+                        <div className="flex items-center gap-2 text-primary font-medium">
+                            <Sparkles size={14} className="text-primary shrink-0" />
+                            <span>Connected Meeting Recording {note.meetingDurationMs ? `• ${Math.round(note.meetingDurationMs / 60000)} min` : ''}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/lecture/${note.id}`)}
+                            className="flex items-center gap-1.5 font-bold text-primary hover:underline hover:opacity-90 transition-opacity cursor-pointer"
+                        >
+                            <span>Open Full Meeting Workspace</span>
+                            <ExternalLink size={12} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {/* VIEW 1: ✨ SUMMARY MODE CANVAS                                              */}

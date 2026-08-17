@@ -1,23 +1,24 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BookOpen, Save, Clock, Sparkles, Loader2, Copy, Check,
-  FileText, Zap, RotateCcw, Mic, Activity, ChevronDown,
-  Layout, AlignLeft, Bot, LayoutTemplate
+  FileText, Mic, Activity, ChevronDown,
+  Layout, AlignLeft, Bot, LayoutTemplate, BrainCircuit
 } from 'lucide-react';
 import { TauriClient } from '@/infrastructure/tauri-client';
-import { Markdown as ReactMarkdown } from '@/components/ui/markdown';
+import { LectureIntelligenceView } from '@/components/study/LectureIntelligenceView';
+import { Button } from '@/components/ui/button';
 
 // ────────────────────────────────────────────────────────────
 //  Templates
 // ────────────────────────────────────────────────────────────
 
 const TEMPLATES: Record<string, { label: string; icon: string; content: string }> = {
-  general:        { label: 'General',        icon: '📋', content: `## Key Points\n- \n\n## Decisions Made\n- \n\n## Action Items\n- [ ] \n\n## Questions\n- ` },
-  one_on_one:     { label: '1-on-1',         icon: '👥', content: `## How is [Name] doing?\n- \n\n## Updates\n- \n\n## Blockers\n- \n\n## Action Items\n- [ ] ` },
-  user_interview: { label: 'User Interview', icon: '🎤', content: `## Participant\n- Name: \n- Role: \n\n## Goals\n- \n\n## Key Insights\n- \n\n## Pain Points\n- \n\n## Quotes\n> ` },
-  sales_call:     { label: 'Sales Call',     icon: '💼', content: `## Account\n- Company: \n- Contact: \n\n## Needs Identified\n- \n\n## Objections\n- \n\n## Next Steps\n- [ ] ` },
-  stand_up:       { label: 'Stand-up',       icon: '⚡', content: `## Yesterday\n- \n\n## Today\n- \n\n## Blockers\n- ` },
-  lecture:        { label: 'Lecture',        icon: '📚', content: `## Topic\n\n## Key Concepts\n- \n\n## Definitions\n- \n\n## Examples\n- \n\n## Questions for Later\n- ` },
+  general:        { label: 'General Meeting',  icon: '📋', content: `## Key Discussion\n- \n\n## Decisions Made\n- \n\n## Action Items\n- [ ] \n\n## Questions / Follow-ups\n- ` },
+  one_on_one:     { label: '1-on-1 Sync',      icon: '👥', content: `## How are things going?\n- \n\n## Priorities & Progress\n- \n\n## Roadblocks / Challenges\n- \n\n## Action Items\n- [ ] ` },
+  user_interview: { label: 'User Interview',  icon: '🎤', content: `## Participant Info\n- Name: \n- Role / Background: \n\n## Key Insights & Feedback\n- \n\n## Pain Points\n- \n\n## Direct Quotes\n> ` },
+  sales_call:     { label: 'Sales / Client',   icon: '💼', content: `## Client & Stakeholders\n- Company: \n- Contact: \n\n## Needs & Objectives\n- \n\n## Objections / Concerns\n- \n\n## Next Steps\n- [ ] ` },
+  stand_up:       { label: 'Daily Stand-up',   icon: '⚡', content: `## Done Yesterday\n- \n\n## Planned for Today\n- \n\n## Blockers\n- ` },
+  lecture:        { label: 'Lecture / Class',  icon: '📚', content: `## Core Topic\n\n## Key Concepts & Theorems\n- \n\n## Definitions\n- \n\n## Important Examples\n- \n\n## Questions for Review\n- ` },
 };
 
 // ────────────────────────────────────────────────────────────
@@ -26,9 +27,16 @@ const TEMPLATES: Record<string, { label: string; icon: string; content: string }
 
 interface NotesTabProps {
   lectureId: string;
+  lectureTitle?: string;
   templateType?: string;
   transcript?: string;
   isAudioSilent?: boolean;
+  artifacts?: Record<string, any>;
+  summary?: string | null;
+  summaryError?: string | null;
+  isGeneratingSummary?: boolean;
+  onGenerateSummary?: () => void;
+  hasVisuals?: boolean;
 }
 
 // ────────────────────────────────────────────────────────────
@@ -36,16 +44,7 @@ interface NotesTabProps {
 // ────────────────────────────────────────────────────────────
 
 const JOT_PLACEHOLDER =
-  'Type your shorthand notes as the meeting happens…\n\nExamples:\n  deploy next week\n  john owns auth\n  - revisit pricing Q3\n\nThe AI will silently expand each point using the live transcript.';
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debouncedValue;
-}
+  'Type your shorthand meeting notes in real-time…\n\n• Key discussion points\n• Assigned action items (e.g. John to review API)\n• Critical decisions and deadlines\n\nThe AI automatically cross-references your notes with the live audio and visual slides.';
 
 // ────────────────────────────────────────────────────────────
 //  Template Picker dropdown
@@ -106,10 +105,20 @@ function TemplatePicker({
 }
 
 // ────────────────────────────────────────────────────────────
-//  Component
+//  Unified Granola Notes Canvas Component
 // ────────────────────────────────────────────────────────────
 
-export function NotesTab({ lectureId, templateType = 'general', transcript: propTranscript, isAudioSilent }: NotesTabProps) {
+export function NotesTab({
+  lectureId,
+  templateType = 'general',
+  transcript: propTranscript,
+  isAudioSilent,
+  artifacts = {},
+  summary,
+  summaryError,
+  isGeneratingSummary = false,
+  onGenerateSummary,
+}: NotesTabProps) {
   const storageKey = `user_notes_draft_${lectureId}`;
 
   // Active template key
@@ -123,26 +132,17 @@ export function NotesTab({ lectureId, templateType = 'general', transcript: prop
   });
 
   // UI state
-  const [augmented, setAugmented] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [isAugmenting, setIsAugmenting] = useState(false);
-  const [isAutoExpanding, setIsAutoExpanding] = useState(false);
-  const [augmentError, setAugmentError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [view, setView] = useState<'split' | 'draft' | 'ai'>('split');
-  const [autoExpandEnabled, setAutoExpandEnabled] = useState(true);
-  const [lastAutoAt, setLastAutoAt] = useState<number | null>(null);
+  const [copiedDraft, setCopiedDraft] = useState(false);
 
   // Live transcript rolling buffer (from real-time captions)
-  const liveTranscriptBufferRef = useRef('');
+  const liveTranscriptBufferRef = useRef(propTranscript || '');
   const [captionCount, setCaptionCount] = useState(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
-
-  // Debounced draft for auto-expand trigger
-  const debouncedDraft = useDebounce(draft, 2500);
 
   // ── Live transcript subscription ───────────────────────────
   useEffect(() => {
@@ -170,7 +170,7 @@ export function NotesTab({ lectureId, templateType = 'general', transcript: prop
       localStorage.setItem(storageKey, draft);
       TauriClient.updateNotes(lectureId, draft).catch(console.error);
       setSaveStatus('saved');
-    }, 1200);
+    }, 1000);
     return () => clearTimeout(timer);
   }, [draft, storageKey, lectureId]);
 
@@ -184,166 +184,102 @@ export function NotesTab({ lectureId, templateType = 'general', transcript: prop
     }).catch(console.error);
   }, [lectureId, storageKey]);
 
-  // ── Auto-expand when draft stops changing ──────────────────
-  useEffect(() => {
-    if (!autoExpandEnabled) return;
-    if (!debouncedDraft.trim() || debouncedDraft === (TEMPLATES[activeTemplate]?.content || TEMPLATES.general.content)) return;
-    if (debouncedDraft.length < 25) return;
-    triggerExpand(true);
-  }, [debouncedDraft]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Core expand function ───────────────────────────────────
-  const triggerExpand = useCallback(async (silent = false) => {
-    const currentDraft = draftRef.current;
-    if (!currentDraft.trim()) return;
-    if (isAugmenting || isAutoExpanding) return;
-
-    // Supress auto-expand during silence to avoid hallucinating on an empty transcript
-    if (silent && isAudioSilent) {
-      console.log('Skipping auto-expand: Audio watchdog reports silence');
+  // ── Insert Timestamp Helper ────────────────────────────────
+  const insertTimestamp = () => {
+    const now = new Date();
+    const ts = `[${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}] `;
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setDraft(d => d + '\n' + ts);
       return;
     }
-
-    silent ? setIsAutoExpanding(true) : setIsAugmenting(true);
-    setAugmentError(null);
-
-    try {
-      const extraContext = liveTranscriptBufferRef.current || propTranscript || '';
-      const draftWithHint = extraContext
-        ? `[LIVE TRANSCRIPT CONTEXT]:\n${extraContext.slice(-3000)}\n\n[USER NOTES]:\n${currentDraft}`
-        : currentDraft;
-      const result = await TauriClient.notesAiAugment(lectureId, draftWithHint);
-      setAugmented(result);
-      setLastAutoAt(Date.now());
-      if (view === 'draft' && !silent) setView('split');
-    } catch (e: any) {
-      if (!silent) setAugmentError(String(e));
-    } finally {
-      setIsAugmenting(false);
-      setIsAutoExpanding(false);
-    }
-  }, [lectureId, isAugmenting, isAutoExpanding, view, propTranscript, isAudioSilent]);
-
-  // ── Timestamp insert ───────────────────────────────────────
-  const insertTimestamp = () => {
-    const textarea = textareaRef.current;
-    const now = new Date();
-    const timeStr = `[${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}]`;
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newContent = draft.substring(0, start) + `\n**${timeStr}** ` + draft.substring(end);
-      setDraft(newContent);
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + timeStr.length + 6;
-        textarea.focus();
-      }, 10);
-    } else {
-      setDraft(prev => prev + `\n**${timeStr}** `);
-    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const next = draft.slice(0, start) + ts + draft.slice(end);
+    setDraft(next);
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + ts.length;
+      textarea.focus();
+    }, 0);
   };
 
+  // ── Template selection ─────────────────────────────────────
   const handleTemplateSelect = (key: string, content: string) => {
     setActiveTemplate(key);
-    if (!draft.trim() || draft === (TEMPLATES[activeTemplate]?.content || '')) {
+    if (!draft.trim() || draft === TEMPLATES.general.content) {
       setDraft(content);
-    } else if (window.confirm('Replace current draft with this template?')) {
+    } else if (window.confirm('Replace your current notes with this template?')) {
       setDraft(content);
     }
   };
 
-  const copyAugmented = () => {
-    if (augmented) {
-      navigator.clipboard.writeText(augmented);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const copyDraftContent = () => {
+    navigator.clipboard.writeText(draft);
+    setCopiedDraft(true);
+    setTimeout(() => setCopiedDraft(false), 2000);
+  };
+
+  // Check if AI Intelligence data exists
+  const aiIntelligenceData = artifacts['lecture_intelligence'] || (() => {
+    if (!summary) return null;
+    try {
+      return JSON.parse(summary);
+    } catch {
+      return { executive_summary: summary };
     }
-  };
-
-  const adoptAugmented = () => {
-    if (augmented) {
-      setDraft(augmented);
-      setAugmented(null);
-      setView('draft');
-    }
-  };
-
-  const formatLastAuto = () => {
-    if (!lastAutoAt) return null;
-    const secs = Math.round((Date.now() - lastAutoAt) / 1000);
-    if (secs < 60) return `${secs}s ago`;
-    return `${Math.round(secs / 60)}m ago`;
-  };
-
-  // ────────────────────────────────────────────────────────────
-  //  Render
-  // ────────────────────────────────────────────────────────────
+  })();
 
   return (
-    <div className="flex flex-col h-full gap-0">
+    <div className="flex flex-col h-full gap-0 bg-background overflow-hidden">
 
-      {/* ── Top Header Bar ───────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-5 pt-5 pb-3 border-b border-border/40 shrink-0 flex-wrap gap-y-2">
-        {/* Left: title + status */}
-        <div className="flex items-center gap-2.5 mr-auto min-w-0">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 shrink-0">
-            <BookOpen size={14} className="text-violet-400" />
+      {/* ── Granola Top Toolbar Bar ──────────────────────────── */}
+      <div className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border/40 bg-surface/30 shrink-0 flex-wrap gap-y-2">
+        {/* Left: Section Indicator & Live Sync Status */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
+            <BookOpen size={14} className="text-primary" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-foreground leading-none">Jot &amp; Expand</h3>
-            <div className="flex items-center gap-2 mt-0.5">
+            <h3 className="text-sm font-semibold text-foreground leading-none">Meeting Notes</h3>
+            <div className="flex items-center gap-2 mt-1">
               {saveStatus === 'saved' ? (
-                <span className="text-[10px] text-emerald-400/80 flex items-center gap-1">
-                  <Save size={9} /> Saved
+                <span className="text-[10px] text-emerald-400/90 flex items-center gap-1 font-medium">
+                  <Save size={9} /> Auto-saved
                 </span>
               ) : (
-                <span className="text-[10px] text-amber-400/80">● Saving…</span>
+                <span className="text-[10px] text-amber-400/90 font-medium animate-pulse">● Saving changes…</span>
               )}
               {captionCount > 0 && (
-                <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded-full">
-                  <Activity size={8} className="animate-pulse" />
-                  {captionCount} live captions
+                <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded-full font-medium">
+                  <Activity size={8} className={isAudioSilent ? '' : 'animate-pulse'} />
+                  {isAudioSilent ? 'Silence' : 'Live Listening'}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right: action buttons */}
+        {/* Right: Actions, Template, View Switcher & Generate */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Template picker */}
+          {/* Template Picker */}
           <TemplatePicker current={activeTemplate} onSelect={handleTemplateSelect} />
 
-          {/* Timestamp */}
+          {/* Insert Timestamp */}
           <button
             onClick={insertTimestamp}
             title="Insert timestamp at cursor"
             className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg border border-border/50 bg-surface hover:bg-surface-hover transition-colors text-foreground font-medium"
           >
             <Clock size={11} className="text-muted-foreground" />
-            Timestamp
+            <span className="hidden sm:inline">Timestamp</span>
           </button>
 
-          {/* Auto-expand toggle */}
-          <button
-            onClick={() => setAutoExpandEnabled(v => !v)}
-            title={autoExpandEnabled ? 'Disable auto-expand' : 'Enable auto-expand'}
-            className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg border transition-all font-medium ${
-              autoExpandEnabled
-                ? 'bg-violet-500/10 border-violet-500/30 text-violet-300'
-                : 'bg-surface border-border/50 text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Zap size={11} className={autoExpandEnabled ? 'text-violet-400' : ''} />
-            {autoExpandEnabled ? 'Auto ON' : 'Auto OFF'}
-          </button>
-
-          {/* View toggle */}
+          {/* View Mode Toggle: Split | My Notes | AI Notes */}
           <div className="flex items-center bg-surface border border-border/50 rounded-lg p-0.5 gap-0.5">
             {([
-              { id: 'draft', icon: AlignLeft, label: 'Draft' },
               { id: 'split', icon: Layout, label: 'Split' },
-              { id: 'ai',    icon: Bot,      label: 'AI' },
+              { id: 'draft', icon: AlignLeft, label: 'My Notes' },
+              { id: 'ai',    icon: Bot,      label: 'AI Notes' },
             ] as const).map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
@@ -351,171 +287,134 @@ export function NotesTab({ lectureId, templateType = 'general', transcript: prop
                 title={label}
                 className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
                   view === id
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-primary/15 text-primary border border-primary/20'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Icon size={11} />
-                <span className="hidden sm:inline">{label}</span>
+                <span>{label}</span>
               </button>
             ))}
           </div>
 
-          {/* Expand Now */}
-          <button
-            onClick={() => triggerExpand(false)}
-            disabled={isAugmenting || !draft.trim()}
-            className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg font-semibold transition-all bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm shadow-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isAugmenting ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
-            {isAugmenting ? 'Expanding…' : 'Expand Now'}
-          </button>
+          {/* Generate / Regenerate AI Summary Button */}
+          {onGenerateSummary && (
+            <Button
+              onClick={onGenerateSummary}
+              disabled={isGeneratingSummary}
+              className="flex items-center gap-1.5 text-[11px] px-3.5 py-1.5 h-auto rounded-lg font-semibold transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 disabled:opacity-50"
+            >
+              {isGeneratingSummary ? (
+                <>
+                  <Loader2 size={12} className="animate-spin mr-1" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <Sparkles size={12} className="mr-1" />
+                  {aiIntelligenceData ? 'Regenerate Notes' : 'Generate Notes'}
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* ── Auto-expand status strip ─────────────────────────── */}
-      {(isAutoExpanding || lastAutoAt) && (
-        <div className="flex items-center gap-2 px-5 py-2 bg-violet-500/5 border-b border-violet-500/10 text-[11px] text-violet-400/80 shrink-0">
-          {isAutoExpanding ? (
-            <>
-              <Loader2 size={10} className="animate-spin shrink-0" />
-              <span>Silently cross-referencing your notes with the meeting transcript…</span>
-            </>
-          ) : (
-            <>
-              <RotateCcw size={10} className="shrink-0" />
-              <span>Last auto-expanded <strong className="text-violet-300">{formatLastAuto()}</strong></span>
-              {captionCount > 0 && (
-                <span className="flex items-center gap-1 ml-auto">
-                  <Mic size={9} className="animate-pulse" /> Listening live
-                </span>
-              )}
-            </>
+      {/* ── Error Strip if Generation Failed ─────────────────── */}
+      {summaryError && (
+        <div className="px-6 py-2.5 bg-destructive/10 border-b border-destructive/20 text-xs text-destructive shrink-0 flex items-center justify-between">
+          <span>⚠️ {summaryError}</span>
+          {onGenerateSummary && (
+            <button onClick={onGenerateSummary} className="underline font-semibold ml-2 hover:opacity-80">
+              Retry
+            </button>
           )}
         </div>
       )}
 
-      {/* ── Error strip ──────────────────────────────────────── */}
-      {augmentError && (
-        <div className="px-5 py-2.5 bg-destructive/5 border-b border-destructive/20 text-xs text-destructive shrink-0">
-          ⚠️ {augmentError}
-        </div>
-      )}
-
-      {/* ── Main Content Area ─────────────────────────────────── */}
+      {/* ── Main Notes Canvas ─────────────────────────────────── */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
 
-        {/* Draft panel */}
+        {/* Left Pane: User Shorthand Notes */}
         {(view === 'draft' || view === 'split') && (
-          <div className={`flex flex-col min-h-0 min-w-0 ${view === 'split' ? 'flex-1' : 'w-full'}`}>
-            {/* Panel header */}
-            <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
-              <FileText size={12} className="text-muted-foreground" />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Your Shorthand</span>
-              <span className="ml-auto text-[10px] text-muted-foreground/40 tabular-nums">{draft.length} chars</span>
+          <div className={`flex flex-col min-h-0 min-w-0 ${view === 'split' ? 'w-1/2 border-r border-border/40' : 'w-full'}`}>
+            {/* Shorthand Header */}
+            <div className="flex items-center justify-between px-6 pt-3 pb-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <FileText size={12} className="text-muted-foreground" />
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Your Notes</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-muted-foreground/50 tabular-nums">{draft.length} characters</span>
+                <button
+                  onClick={copyDraftContent}
+                  title="Copy your notes"
+                  className="p-1 rounded hover:bg-surface text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {copiedDraft ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
             </div>
-            {/* Textarea */}
-            <div className="flex-1 mx-4 mb-4 relative rounded-xl border border-border/40 bg-surface/30 hover:border-border/70 focus-within:border-violet-500/40 transition-colors overflow-hidden group">
+
+            {/* Shorthand Textarea */}
+            <div className="flex-1 mx-6 mb-6 relative rounded-2xl border border-border/40 bg-surface/20 hover:border-border/70 focus-within:border-primary/40 transition-colors overflow-hidden group">
               <textarea
                 ref={textareaRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder={JOT_PLACEHOLDER}
-                className="w-full h-full bg-transparent px-4 py-4 text-sm text-foreground resize-none focus:outline-none placeholder:text-muted-foreground/25 leading-relaxed font-mono"
+                className="w-full h-full bg-transparent px-5 py-5 text-sm text-foreground resize-none focus:outline-none placeholder:text-muted-foreground/30 leading-relaxed font-sans"
                 style={{ minHeight: 0 }}
               />
               {captionCount > 0 && (
-                <div className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] text-emerald-400/60 bg-emerald-400/5 border border-emerald-400/10 rounded-full px-2 py-0.5">
-                  <Mic size={8} className="animate-pulse" /> Listening…
+                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 text-[10px] text-emerald-400/80 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2.5 py-1">
+                  <Mic size={9} className="animate-pulse" /> Live Captions Connected
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Divider for split view */}
-        {view === 'split' && (
-          <div className="w-px bg-border/30 shrink-0 my-4 self-stretch" />
-        )}
-
-        {/* AI Output panel */}
+        {/* Right Pane: AI Structured Intelligence */}
         {(view === 'ai' || view === 'split') && (
-          <div className={`flex flex-col min-h-0 min-w-0 ${view === 'split' ? 'flex-1' : 'w-full'}`}>
-            {/* Panel header */}
-            <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
-              <Sparkles size={12} className="text-violet-400" />
-              <span className="text-[11px] font-semibold text-violet-400/80 uppercase tracking-wider">AI Expanded</span>
-              {augmented && (
-                <div className="ml-auto flex items-center gap-1.5">
-                  <button
-                    onClick={copyAugmented}
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md bg-surface border border-border/50"
-                  >
-                    {copied ? <><Check size={10} className="text-emerald-400" /> Copied</> : <><Copy size={10} /> Copy</>}
-                  </button>
-                  <button
-                    onClick={adoptAugmented}
-                    className="flex items-center gap-1 text-[10px] text-violet-300 hover:text-violet-200 transition-colors px-2 py-1 rounded-md bg-violet-500/10 border border-violet-500/20 font-medium"
-                  >
-                    Use as Draft
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* Content */}
-            <div className="flex-1 mx-4 mb-4 overflow-y-auto rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-indigo-500/5 min-h-0">
-              {(isAugmenting || isAutoExpanding) ? (
-                <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-2xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center">
-                      <Sparkles className="h-6 w-6 text-violet-400 animate-pulse" />
-                    </div>
-                    <div className="absolute -inset-2 rounded-3xl border border-violet-500/10 animate-ping opacity-60" />
+          <div className={`flex flex-col min-h-0 min-w-0 overflow-y-auto ${view === 'split' ? 'w-1/2' : 'w-full'}`}>
+            <div className="p-6">
+              {aiIntelligenceData ? (
+                <LectureIntelligenceView data={aiIntelligenceData} />
+              ) : isGeneratingSummary ? (
+                <div className="flex flex-col items-center justify-center py-24 space-y-4 text-center">
+                  <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
+                    <BrainCircuit className="h-8 w-8 text-primary animate-spin" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-violet-300 mb-1">
-                      {isAutoExpanding ? 'Auto-expanding your notes…' : 'Expanding with transcript context…'}
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 max-w-[220px]">
-                      Cross-referencing your shorthand with what was said in the meeting
+                  <div className="space-y-1">
+                    <h4 className="text-base font-semibold text-foreground">Synthesizing Notes &amp; Intelligence</h4>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      Analyzing audio transcript, visual keyframes, and shorthand notes…
                     </p>
                   </div>
-                </div>
-              ) : augmented ? (
-                <div className="prose prose-sm prose-invert max-w-none px-5 py-5">
-                  <ReactMarkdown>{augmented}</ReactMarkdown>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-5 p-8 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-violet-500/10 border border-violet-500/20 border-dashed flex items-center justify-center">
-                    <Sparkles size={22} className="text-violet-400/35" />
+                <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center border border-dashed border-border/60 rounded-2xl p-8 bg-surface/10">
+                  <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center">
+                    <Sparkles className="h-7 w-7 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground/60 mb-2">
-                      {autoExpandEnabled ? 'Waiting for your notes…' : 'Ready to expand'}
-                    </p>
-                    <p className="text-xs text-muted-foreground/50 leading-relaxed max-w-[230px]">
-                      {autoExpandEnabled
-                        ? 'Auto-expand will fire 2.5s after you stop typing. Or click Expand Now to run it immediately.'
-                        : 'Write your shorthand in the draft panel, then click Expand Now to enhance it with the transcript.'
-                      }
+                  <div className="space-y-1 max-w-md">
+                    <h4 className="text-sm font-semibold text-foreground">AI Intelligence Not Yet Generated</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Click below to generate grounded meeting notes, chapter breakdowns, decisions, and action items using the multimodal AI engine.
                     </p>
                   </div>
-                  {!autoExpandEnabled && (
-                    <button
-                      onClick={() => triggerExpand(false)}
-                      disabled={!draft.trim() || isAugmenting}
-                      className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-all disabled:opacity-40"
-                    >
-                      <Sparkles size={12} />
-                      Expand Now
-                    </button>
+                  {onGenerateSummary && (
+                    <Button onClick={onGenerateSummary} className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs px-5 py-2 h-auto shadow-sm">
+                      <Sparkles size={13} className="mr-1.5" /> Generate Meeting Intelligence
+                    </Button>
                   )}
                 </div>
               )}
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
