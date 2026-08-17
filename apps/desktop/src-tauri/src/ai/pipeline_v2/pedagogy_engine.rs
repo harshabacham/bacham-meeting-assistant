@@ -54,25 +54,35 @@ pub struct GeneratedQuizQuestion {
 pub struct PedagogyEngine;
 
 impl PedagogyEngine {
-    /// Module 12: Generate Textbook-Style Summary
+    /// Module 12: Generate Multimodal Grounded Multi-Tier Summary
     pub async fn generate_textbook_summary(
         lecture_id: &str,
         extracted: &ExtractedKnowledgePipeline,
+        full_transcript: &str,
+        visual_context: &str,
+        image_parts: &[(String, String)],
         pool: &SqlitePool,
     ) -> AppResult<TextbookSummary> {
-        let system_instruction = r#"You are the Pedagogical Note Generation Engine for university-level textbooks and meeting intelligence.
-Your objective is to generate comprehensive, publication-quality notes and multi-tier summaries from extracted lecture knowledge nodes and chapters.
+        let system_instruction = r#"You are the Pedagogical & Meeting Intelligence Engine of the BACHAM AI Assistant.
+Your objective is to generate comprehensive, publication-quality notes and multi-tier summaries deeply grounded in the actual transcript dialogue, slides, OCR text, and visual images.
+
+ANTI-HALLUCINATION & MULTIMODAL GROUNDING RULES:
+1. Ground every claim directly in the provided transcript and visual keyframe evidence. Do NOT invent facts or discussions that did not take place.
+2. Embed exact timestamps [MM:SS] referencing the transcript for key discussion points, decisions, and slide changes (e.g. `- [04:12] The team agreed on...`).
+3. If visual slides/diagrams are present, cite them with `[Slide @ MM:SS]` and describe their content with clarity and precision.
+4. For meetings, extract all Action Items (with tasks, owners, priorities, and due dates) into `crm_metadata.action_items` and key decisions into `crm_metadata.key_decisions`.
+5. For technical lectures, extract mathematical formulas into `formula_sheet` and code algorithms into `code_explained`.
 
 Return ONLY valid JSON matching this schema:
 {
-  "quick_summary": "Crisp 30-second markdown summary with bulleted key takeaways, core decisions, and main outcomes.",
-  "standard_summary": "Balanced 5-minute markdown summary covering executive overview, core discussion topics, definitions, and conclusions.",
-  "deep_notes": "In-depth 15-minute markdown notes covering detailed technical nuances, debates, context, visual explanations, and edge cases.",
-  "textbook_notes": "Comprehensive, highly detailed publication-ready textbook chapter with Introduction, deep derivations, real-world examples, and FAQs.",
+  "quick_summary": "Crisp 30-second markdown summary with punchy bulleted key takeaways, core decisions, and main outcomes with [MM:SS] timestamps.",
+  "standard_summary": "Balanced 5-minute markdown summary covering executive overview, core discussion topics, definitions, outcomes, and next steps.",
+  "deep_notes": "In-depth 15-minute markdown notes covering detailed technical nuances, debates, context, visual slide explanations [Slide @ MM:SS], and edge cases.",
+  "textbook_notes": "Comprehensive, highly detailed publication-ready textbook chapter or exhaustive meeting minutes with Introduction, deep derivations, real-world examples, and FAQs.",
   "overview": "Comprehensive high-level summary of the entire session",
   "objectives": ["Learning objective 1", "Learning objective 2"],
   "chapter_breakdown": [
-    { "title": "Chapter title", "summary": "Detailed chapter breakdown with key timestamps" }
+    { "title": "Chapter title", "summary": "Detailed chapter breakdown with key timestamps [MM:SS]" }
   ],
   "concepts_and_definitions": [
     { "term": "Concept or Term", "definition": "Formal definition", "explanation": "Detailed explanation with real-world analogy" }
@@ -81,7 +91,7 @@ Return ONLY valid JSON matching this schema:
     { "formula": "LaTeX formula string", "meaning": "Meaning", "variables": "Variables breakdown", "derivation": "Derivation steps", "exam_tip": "Common exam trap" }
   ],
   "code_explained": [
-    { "language": "Python/C++/Java", "purpose": "Algorithm purpose", "logic": "Step-by-step logic", "code_snippet": "Clean code", "complexity": "Big-O time & space" }
+    { "language": "Python/C++/Java/Rust/TS", "purpose": "Algorithm purpose", "logic": "Step-by-step logic", "code_snippet": "Clean code", "complexity": "Big-O time & space" }
   ],
   "visual_explanations": [
     { "title": "Diagram/Graph/Visual Title", "explanation": "Deep explanation of visual component", "key_takeaway": "Key takeaway" }
@@ -96,26 +106,31 @@ Return ONLY valid JSON matching this schema:
   ],
   "key_takeaways": ["Takeaway 1", "Takeaway 2"],
   "crm_metadata": { 
-    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low" } ] 
+    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low", "due_date": "string or null" } ],
+    "key_decisions": ["string"],
+    "bant": { "budget": "string|null", "authority": "string|null", "need": "string|null", "timeline": "string|null" }
   }
 }
 
-Rules:
-1. DO NOT simply summarize the transcript. Synthesize visual slides, formulas, code algorithms, and teacher explanations into textbook notes.
-2. Ensure mathematical rigor for formulas and clean syntax for code blocks.
-3. If this is a meeting, extract any action items or tasks into crm_metadata.action_items.
-4. Raw JSON only, no markdown fencing."#;
+Raw JSON only, no markdown fencing."#;
 
         let nodes_json = serde_json::to_string_pretty(&extracted.nodes).unwrap_or_default();
         let chapters_json = serde_json::to_string_pretty(&extracted.chapters).unwrap_or_default();
 
         let prompt = format!(
-            "Extracted Chapters:\n{}\n\nExtracted Knowledge Nodes:\n{}",
+            "=== FULL TRANSCRIPT WITH TIMESTAMPS ===\n{}\n\n=== VISUAL SLIDES & OCR CONTEXT ===\n{}\n\n=== TOPIC CHAPTERS ===\n{}\n\n=== EXTRACTED KNOWLEDGE NODES ===\n{}",
+            if full_transcript.trim().is_empty() { "No transcript audio recorded." } else { full_transcript },
+            if visual_context.trim().is_empty() { "No visual slides recorded." } else { visual_context },
             chapters_json,
             nodes_json
         );
 
-        let raw_res = crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?;
+        let raw_res = if image_parts.is_empty() {
+            crate::services::universal_ai::UniversalAiService::generate_text(&prompt, system_instruction, pool).await?
+        } else {
+            crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system_instruction, image_parts, pool).await?
+        };
+
         let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
 
         let parsed: TextbookSummary = serde_json::from_str(clean_res).map_err(|e| {
