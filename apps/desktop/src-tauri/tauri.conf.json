@@ -12,6 +12,19 @@
   "app": {
     "windows": [
       {
+        "title": "BACHAM",
+        "label": "main",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true,
+        "visible": true
+      },
+      {
         "title": "Ambient Co-Pilot",
         "label": "copilot",
         "width": 450,

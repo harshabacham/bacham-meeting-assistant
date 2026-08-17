@@ -36,32 +36,36 @@ pub fn run() {
             
             let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
             
-            // Show window IMMEDIATELY to prevent white flash and block, letting React hydrate while DB connects
-            if !is_native_messaging {
-                let main_window = tauri::webview::WebviewWindowBuilder::new(
-                    app,
-                    "main",
-                    tauri::WebviewUrl::App("index.html".into())
-                )
-                .title("appsdesktop")
-                .inner_size(1200.0, 800.0)
-                .decorations(false)
-                .transparent(true)
-                .visible(false)
-                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .on_new_window(move |_url, _features| {
-                    tauri::webview::NewWindowResponse::Allow
-                })
-                .build()
-                .expect("Failed to build main window");
-                
-                main_window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { .. } = event {
-                        std::process::exit(0);
-                    }
-                });
-                
-                let _ = main_window.show();
+            if is_native_messaging {
+                if let Some(main_window) = app.get_webview_window("main") {
+                    let _ = main_window.hide();
+                }
+            } else {
+                if let Some(main_window) = app.get_webview_window("main") {
+                    let _ = main_window.show();
+                    let _ = main_window.unminimize();
+                    let _ = main_window.set_focus();
+                } else {
+                    let main_window = tauri::webview::WebviewWindowBuilder::new(
+                        app,
+                        "main",
+                        tauri::WebviewUrl::default()
+                    )
+                    .title("BACHAM")
+                    .inner_size(1200.0, 800.0)
+                    .decorations(false)
+                    .transparent(true)
+                    .visible(true)
+                    .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .on_new_window(move |_url, _features| {
+                        tauri::webview::NewWindowResponse::Allow
+                    })
+                    .build()
+                    .expect("Failed to build main window");
+                    
+                    let _ = main_window.show();
+                    let _ = main_window.set_focus();
+                }
             }
             
             let mut db_pool = None;
