@@ -248,18 +248,35 @@ impl NativeHost {
                         }));
 
                         let chunk_path = temp_dir.join(format!("{}_transcript.webm", session_id_clone));
+                        let video_temp_path = temp_dir.join(format!("{}.webm", session_id_clone));
+                        
+                        let target_audio = if chunk_path.exists() {
+                            Some(chunk_path)
+                        } else if perm_file_path.exists() {
+                            Some(perm_file_path.clone())
+                        } else if video_temp_path.exists() {
+                            Some(video_temp_path)
+                        } else {
+                            None
+                        };
+
                         let mut full_transcript = String::new();
                         let mut pipeline_error = false;
 
-                        if chunk_path.exists() {
+                        if let Some(audio_file) = target_audio {
                             let _ = app_clone.emit("pipeline_progress", serde_json::json!({
                                 "sessionId": session_id_clone,
                                 "status": "transcribing",
                                 "message": "Transcribing audio..."
                             }));
 
-                            let processing_path = temp_dir.join(format!("{}_transcript_processing_{}.webm", session_id_clone, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
-                            let _ = std::fs::rename(&chunk_path, &processing_path);
+                            let processing_path = temp_dir.join(format!("{}_transcript_proc_{}.webm", session_id_clone, std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()));
+                            let is_chunk = audio_file == temp_dir.join(format!("{}_transcript.webm", session_id_clone));
+                            if is_chunk {
+                                let _ = std::fs::rename(&audio_file, &processing_path);
+                            } else {
+                                let _ = std::fs::copy(&audio_file, &processing_path);
+                            }
 
                             match crate::services::gemini_service::GeminiService::upload_file(&processing_path, "audio/webm", &app_clone).await {
                                 Ok(file_uri) => {
@@ -268,40 +285,49 @@ impl NativeHost {
                                         Ok(mut text) => {
                                             let _ = writeln!(log_file, "Transcription successful, length: {}", text.len());
                                             
-                                            // Handle completely silent/empty transcripts so the UI doesn't break
                                             if text.trim().is_empty() {
                                                 text = "[No speech detected in this recording]".to_string();
                                             }
 
                                             let t_id = uuid::Uuid::new_v4().to_string();
                                             let _ = sqlx::query!(
-                                                "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-2.0-flash-lite')",
+                                                "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.5-flash-lite')",
                                                 t_id, session_id_clone, text
                                             ).execute(&pool).await;
                                             full_transcript = text;
                                         }
                                         Err(e) => {
-                                            pipeline_error = true;
                                             let _ = writeln!(log_file, "Transcription failed: {:?}", e);
-                                            let _ = app_clone.emit("pipeline_progress", serde_json::json!({
-                                                "sessionId": session_id_clone,
-                                                "status": "error",
-                                                "message": format!("Transcription failed: {:?}", e)
-                                            }));
                                         }
                                     }
                                 }
                                 Err(e) => {
-                                    pipeline_error = true;
                                     let _ = writeln!(log_file, "Upload failed: {:?}", e);
-                                    let _ = app_clone.emit("pipeline_progress", serde_json::json!({
-                                        "sessionId": session_id_clone,
-                                        "status": "error",
-                                        "message": format!("Upload failed: {:?}", e)
-                                    }));
                                 }
                             }
                             let _ = tokio::fs::remove_file(&processing_path).await;
+                        }
+
+                        // Fallback: If AI audio transcription didn't produce text, check if live captions exist in the database!
+                        if full_transcript.trim().is_empty() {
+                            let rows = sqlx::query!(
+                                "SELECT content FROM transcripts WHERE lecture_id = ? ORDER BY generated_at ASC",
+                                session_id_clone
+                            )
+                            .fetch_all(&pool)
+                            .await
+                            .unwrap_or_default();
+
+                            let mut accumulated = String::new();
+                            for r in rows {
+                                if !r.content.trim().is_empty() {
+                                    accumulated.push_str(&r.content);
+                                    accumulated.push_str("\n\n");
+                                }
+                            }
+                            if !accumulated.trim().is_empty() {
+                                full_transcript = accumulated;
+                            }
                         }
                         
                         if !pipeline_error {
@@ -463,19 +489,31 @@ impl NativeHost {
         }
 
         if msg.r#type == MessageType::LiveCaption {
-            if let Some(session_id) = &msg.session_id {
-                if let Ok(payload) = serde_json::from_value::<crate::native_messaging::protocol::LiveCaptionPayload>(msg.payload.clone()) {
-                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
-                    let log_path = temp_dir.parent().unwrap().join("debug.log");
-                    if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
-                        let _ = writeln!(log_file, "Received LiveCaption: {} (Platform: {})", payload.text, payload.platform);
-                    }
+            if let Ok(payload) = serde_json::from_value::<crate::native_messaging::protocol::LiveCaptionPayload>(msg.payload.clone()) {
+                let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                let log_path = temp_dir.parent().unwrap().join("debug.log");
+                if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                    let _ = writeln!(log_file, "Received LiveCaption: {} (Platform: {})", payload.text, payload.platform);
+                }
 
-                    let app_clone = app.clone();
-                    let session_id_clone = session_id.clone();
-                    let pool = app.state::<crate::database::DbState>().pool.clone();
+                let app_clone = app.clone();
+                let session_id_opt = msg.session_id.clone();
+                let pool = app.state::<crate::database::DbState>().pool.clone();
 
-                    tauri::async_runtime::spawn(async move {
+                tauri::async_runtime::spawn(async move {
+                    let session_id_clone = match session_id_opt {
+                        Some(ref s) if !s.trim().is_empty() => s.clone(),
+                        _ => {
+                            let latest = sqlx::query!("SELECT id FROM lectures ORDER BY created_at DESC LIMIT 1")
+                                .fetch_optional(&pool)
+                                .await
+                                .unwrap_or(None);
+                            match latest {
+                                Some(l) => l.id,
+                                None => "live_active_session".to_string(),
+                            }
+                        }
+                    };
                         // ── Persist live caption text to transcripts table ──────────────────
                         // We accumulate captions into a single "live_captions" transcript row
                         // so the Transcript tab can display content immediately during/after recording.

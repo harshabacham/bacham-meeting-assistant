@@ -411,10 +411,12 @@ export function createMessageHandler(
 
       case MessageType.LIVE_CAPTION: {
         const payload = message.payload as import('@/shared/types').LiveCaptionPayload;
+        const activeSession = sessionService.getSession();
         const nativeMsg: NativeMessage<import('@/shared/types').LiveCaptionPayload> = {
           version: NATIVE_MESSAGING_PROTOCOL_VERSION,
           type: MessageType.LIVE_CAPTION,
           payload,
+          sessionId: message.sessionId ?? activeSession?.sessionId,
           timestamp: Date.now(),
         };
         messagingClient.send(nativeMsg);
@@ -435,6 +437,7 @@ export function createMessageHandler(
 
       case MessageType.LOCAL_TRANSCRIPT_SEGMENT: {
         const payload = message.payload as import('@/shared/types').LiveCaptionPayload;
+        const activeSession = sessionService.getSession();
         // The local transcript segment represents the user's microphone.
         // We package it as a LIVE_CAPTION so the Desktop App records it and routes it through the Interview Engine.
         const nativeMsg: NativeMessage<import('@/shared/types').LiveCaptionPayload> = {
@@ -446,6 +449,7 @@ export function createMessageHandler(
             platform: 'native_mic', // Indicates this came from the local user's microphone
             speakerName: 'You'
           },
+          sessionId: message.sessionId ?? activeSession?.sessionId,
           timestamp: Date.now(),
         };
         messagingClient.send(nativeMsg);
