@@ -94,7 +94,7 @@ module.exports = {
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
         lime: "var(--shadow-lime)",
-        "lime-strong": "0 0 40px rgba(166,255,0,0.3)",
+        "lime-strong": "0 0 12px rgba(166,255,0,0.08)",
       },
       keyframes: {
         breathe: {

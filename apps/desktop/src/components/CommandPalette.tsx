@@ -162,7 +162,7 @@ export function CommandPalette() {
     return (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
             <div className="absolute inset-0 bg-[var(--glass-bg)] backdrop-blur-sm" onClick={close} />
-            <div className="relative w-full max-w-2xl bg-surface border border-border/60 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+            <div className="relative w-full max-w-2xl bg-surface border border-border/80 rounded-2xl shadow-lg overflow-hidden animate-fade-in-up">
                 
                 {/* Search Input */}
                 <div className="flex items-center px-4 py-3 border-b border-border/50 bg-surface/50">

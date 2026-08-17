@@ -570,7 +570,7 @@ export function LectureViewerPage() {
           {/* Wingman Toggle */}
           <button 
             onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-2 font-medium text-[12px] shadow-sm ${isChatOpen ? 'bg-primary text-primary-foreground shadow-lime' : 'bg-surface border border-white/5 text-foreground hover:border-white/10'}`}
+            className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-2 font-medium text-[12px] shadow-xs ${isChatOpen ? 'bg-primary text-primary-foreground' : 'bg-surface border border-white/5 text-foreground hover:border-white/10'}`}
           >
              <BrainCircuit size={14} className={isChatOpen ? 'text-primary-foreground' : 'text-primary'} />
              Wingman

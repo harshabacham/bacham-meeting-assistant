@@ -50,7 +50,7 @@ export function QuickLookPreview({ lecture, onClose }: QuickLookPreviewProps) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-2xl bg-surface border border-border/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+          className="w-full max-w-2xl bg-surface border border-border/80 rounded-2xl shadow-lg overflow-hidden flex flex-col max-h-[85vh]"
         >
           {/* Header */}
           <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between bg-surface-raised/50 shrink-0">

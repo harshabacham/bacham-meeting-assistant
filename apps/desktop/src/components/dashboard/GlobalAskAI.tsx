@@ -144,7 +144,7 @@ export const GlobalAskAI: React.FC = () => {
             initial={{ opacity: 0, y: 30, scale: 0.95, filter: 'blur(10px)' }}
             animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: 30, scale: 0.95, filter: 'blur(10px)' }}
-            className="fixed bottom-6 right-6 w-[400px] h-[550px] bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] rounded-[2rem] shadow-2xl z-50 flex flex-col overflow-hidden ring-1 ring-[var(--border)]/50"
+            className="fixed bottom-6 right-6 w-[400px] h-[550px] bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] rounded-[2rem] shadow-lg z-50 flex flex-col overflow-hidden ring-1 ring-[var(--border)]/30"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-[var(--border)] bg-[var(--surface-hover)]/30 backdrop-blur-md relative overflow-hidden shrink-0">

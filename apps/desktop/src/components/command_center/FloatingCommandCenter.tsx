@@ -203,7 +203,7 @@ export function FloatingCommandCenter() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0.9 }}
             transition={{ type: 'spring', damping: 26, stiffness: 220 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-[420px] max-w-[100vw] bg-surface/95 backdrop-blur-2xl border-l border-border shadow-2xl flex flex-col pointer-events-auto"
+            className="fixed top-0 right-0 bottom-0 z-50 w-[420px] max-w-[100vw] bg-surface/95 backdrop-blur-2xl border-l border-border shadow-lg flex flex-col pointer-events-auto"
           >
             {/* Header */}
             <div className="px-5 py-4 border-b border-border bg-surface-raised/40 flex items-center justify-between shrink-0">

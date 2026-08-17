@@ -60,10 +60,10 @@
   --radius-pill: 999px;
 
   /* Shadows / Elevation */
-  --shadow-sm:  0 1px 4px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4);
-  --shadow-lg:  0 16px 48px rgba(0,0,0,0.9), 0 4px 16px rgba(0,0,0,0.5);
-  --shadow-lime: 0 0 20px rgba(186, 255, 41, 0.15), 0 0 40px rgba(186, 255, 41, 0.08);
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md:  0 2px 6px rgba(0,0,0,0.20);
+  --shadow-lg:  0 4px 16px rgba(0,0,0,0.25);
+  --shadow-lime: 0 0 10px rgba(186, 255, 41, 0.06);
 
   /* Scrollbar */
   --scrollbar-thumb: rgba(255,255,255,0.10);
@@ -128,10 +128,10 @@
   --overlay-pressed: rgba(0,0,0,0.06);
   --overlay-02:      rgba(0,0,0,0.02);
 
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
-  --shadow-lg:  0 16px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
-  --shadow-lime: 0 0 24px rgba(5, 150, 105, 0.15);
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md:  0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg:  0 4px 12px rgba(0,0,0,0.05);
+  --shadow-lime: 0 0 8px rgba(5, 150, 105, 0.06);
 
   /* Scrollbar */
   --scrollbar-thumb: rgba(0,0,0,0.12);
@@ -342,7 +342,7 @@
 
   /* Lime glow on active/selected elements */
   .lime-glow {
-    box-shadow: 0 0 0 1px var(--border-accent), var(--shadow-lime);
+    box-shadow: 0 0 0 1px var(--border-accent);
   }
 
   /* Shimmer loading state */
@@ -425,7 +425,7 @@
   }
   .card.interactive:hover {
     border-color: var(--border-accent);
-    box-shadow: var(--shadow-lime);
+    box-shadow: var(--shadow-sm);
     transform: translateY(-1px);
     transition: all var(--duration-normal) var(--ease-out);
   }
@@ -458,7 +458,7 @@
   }
   .btn-primary:hover {
     background: #b8ff1a;
-    box-shadow: var(--shadow-lime);
+    box-shadow: var(--shadow-sm);
   }
   .btn-secondary {
     background: rgba(255,255,255,0.06);
@@ -549,7 +549,7 @@
     border: 1px solid var(--border-accent);
     border-radius: var(--radius-pill);
     backdrop-filter: blur(20px);
-    box-shadow: var(--shadow-lg), var(--shadow-lime);
+    box-shadow: var(--shadow-md);
     animation: slide-up 0.2s var(--ease-spring) both;
     z-index: 50;
   }
@@ -668,8 +668,8 @@
     margin: 0 2px;
   }
   .reference-chip:hover {
-    background: rgba(166,255,0,0.25);
-    box-shadow: var(--shadow-lime);
+    background: rgba(166,255,0,0.2);
+    border-color: var(--accent);
   }
 
   /* Connection status indicator */
