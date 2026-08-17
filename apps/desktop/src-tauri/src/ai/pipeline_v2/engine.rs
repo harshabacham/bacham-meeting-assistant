@@ -27,21 +27,21 @@ pub async fn run_v2(
     // 1. Context & Multimodal Builder
     let ctx = crate::ai::context_builder::ContextBuilder::build(pool, lecture_id, true).await?;
     
-    // Construct rich timestamped transcript
+    // Construct rich transcript
     let mut full_transcript = String::new();
     for seg in &ctx.transcript_segments {
-        let mm = seg.start_ms / 60000;
-        let ss = (seg.start_ms % 60000) / 1000;
-        full_transcript.push_str(&format!("[{:02}:{:02}] {}\n", mm, ss, seg.content));
+        full_transcript.push_str(&seg.content);
+        full_transcript.push('\n');
     }
 
     // Construct visual OCR and slide context
     let mut visual_context = String::new();
     let mut image_parts: Vec<(String, String)> = Vec::new();
     for kf in &ctx.key_frames {
-        let mm = kf.timestamp_ms / 60000;
-        let ss = (kf.timestamp_ms % 60000) / 1000;
-        visual_context.push_str(&format!("[Slide @ {:02}:{:02}] OCR: {}\n", mm, ss, kf.ocr_text.as_deref().unwrap_or("No OCR detected")));
+        let mm = kf.captured_at / 60000;
+        let ss = (kf.captured_at % 60000) / 1000;
+        let reason = kf.change_reason.as_deref().unwrap_or("Slide");
+        visual_context.push_str(&format!("[Slide @ {:02}:{:02} — {}] OCR: {}\n", mm, ss, reason, kf.ocr_text.as_deref().unwrap_or("No OCR detected")));
         if let Some(b64) = &kf.image_base64 {
             if image_parts.len() < 12 {
                 image_parts.push(("image/png".to_string(), b64.clone()));
