@@ -71,42 +71,48 @@ pub async fn generate_multi_level_summary(lecture_id: &str, pool: &SqlitePool) -
 
     // 2. Build massive unified prompt for 4-tier summary based on workspace_type
     let instruction = if workspace_type == "meeting" {
-        r#"You are an expert AI meeting assistant.
-Your task is to understand the meeting comprehensively from the transcript and visuals.
-Generate a multi-level summary that participants can use as a complete record of the meeting.
+        r#"You are an expert AI meeting assistant and executive scribe.
+Your task is to analyze the provided transcript dialogue and visual slides to generate a deeply grounded, comprehensive multi-tier meeting record.
 
-You MUST return your response as a valid JSON object matching this schema exactly:
+CRITICAL INSTRUCTIONS:
+- You MUST write REAL, detailed, insightful Markdown content for EVERY field below based on the actual recorded transcript and visual slides.
+- Do NOT output schema descriptions, placeholder text, or filler.
+- Ground every statement directly in the transcript. Embed exact timestamps [MM:SS] for all key decisions and discussion points.
+
+Return a valid JSON object with the following schema:
 {
-  "quick_summary": "Markdown text for a 30-second read. Include Key Decisions and Topics Discussed.",
-  "standard_summary": "Markdown text for a 5-minute read. Include Executive Overview, Discussion Points, and Outcomes.",
-  "deep_notes": "Markdown text for a 15-minute read. Include deep explanations of debates, options considered, and nuanced context.",
-  "textbook_notes": "Highly detailed meeting minutes. Include full Action Items with deadlines/owners, Risks, Open Questions, and Follow-ups.",
-  "chapter_breakdown": [ { "title": "string", "summary": "string", "timestamp_hint": "string (e.g. '12:30')" } ],
+  "quick_summary": "# ⚡ Key Takeaways & Executive Decisions\n- Detailed bullet points of main decisions and core outcomes with [MM:SS] timestamps...",
+  "standard_summary": "# 📋 Executive Meeting Summary\n## Context & Agenda\nDetailed summary...\n## Key Discussion Points\nIn-depth review of topics discussed...\n## Outcomes & Next Steps\nActionable conclusions...",
+  "deep_notes": "# 🔍 Comprehensive Discussion Notes & Context\n## Topic Breakdown & Debates\nExhaustive analysis of debates, alternatives considered, technical trade-offs...\n## Visual Slide Analysis\nDetailed explanation of diagrams or shared slides...",
+  "textbook_notes": "# 📑 Full Meeting Minutes & Governance Record\n## Meeting Objectives\n...\n## In-Depth Discussion Record\n...\n## Open Questions & Risks\n...",
+  "chapter_breakdown": [ { "title": "string", "summary": "Detailed chapter summary with timestamps", "timestamp_hint": "MM:SS" } ],
   "crm_metadata": { 
-    "bant": { "budget": "string|null", "authority": "string|null", "need": "string|null", "timeline": "string|null" }, 
-    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low", "due_date": "string (YYYY-MM-DD) or null", "status": "pending|completed" } ], 
+    "bant": { "budget": "string or null", "authority": "string or null", "need": "string or null", "timeline": "string or null" }, 
+    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low", "due_date": "string or null", "status": "pending" } ], 
     "key_decisions": ["string"] 
   }
 }
 
 CRITICAL RULES:
-- Use highly detailed, rich markdown formatting. You MUST use callouts like `💡 **Key Idea:**` and `⚠️ **Common Mistake:**` or `⚠️ **Important Risk:**` where applicable.
+- Use highly detailed, rich markdown formatting. You MUST use callouts like `💡 **Key Idea:**` and `⚠️ **Important Risk:**` where applicable.
 - Where appropriate, present complex information or step-by-step logic in neat Markdown tables (e.g., `Step | Action | Result`).
-- If a concept refers to a visual diagram or slide, embed markdown image links like ![Slide X](path/to/screenshot) where possible.
-- Do not output generic AI filler. Structure with headings, bold text, bullet points.
 - Return ONLY the raw JSON object. Do not wrap in ```json blocks."#.to_string()
     } else {
-        r#"You are an expert professor and a world-class AI learning assistant attending this lecture.
-Your task is to understand the lecture comprehensively from the transcript and visuals (slides, whiteboard, diagrams).
-Generate a multi-level summary that students can use as a complete replacement for revisiting the lecture.
+        r#"You are a distinguished university professor and world-class AI learning assistant.
+Your task is to analyze the provided lecture transcript and visual slides (diagrams, math, code, whiteboard) to generate comprehensive, publication-quality study notes.
 
-You MUST return your response as a valid JSON object matching this schema exactly:
+CRITICAL INSTRUCTIONS:
+- You MUST write REAL, rich, publication-quality Markdown content for EVERY field below based on what the instructor actually taught in the transcript and visual slides.
+- Do NOT output schema descriptions, placeholder text, or filler.
+- Ground every concept, formula, and code example directly in the lecture. Embed exact timestamps [MM:SS].
+
+Return a valid JSON object with the following schema:
 {
-  "quick_summary": "Markdown text for a 30-second read. Include Key Takeaways, Topics Covered.",
-  "standard_summary": "Markdown text for a 5-minute read. Include Overview, Concepts, Definitions, Examples.",
-  "deep_notes": "Markdown text for a 15-minute read. Include deep explanations, Visual explanations, common mistakes, exam tips.",
-  "textbook_notes": "Comprehensive, highly detailed textbook-style chapter. Include Introduction, Learning Objectives, in-depth derivations, FAQs, Real-world applications, Interview Questions.",
-  "chapter_breakdown": [ { "title": "string", "summary": "string", "timestamp_hint": "string (e.g. '12:30')" } ],
+  "quick_summary": "# ⚡ Rapid Revision (30s Read)\n- Core takeaways, fundamental concepts, and essential summary points with [MM:SS] timestamps...",
+  "standard_summary": "# 📖 Standard Lecture Notes (5m Read)\n## Lecture Overview\nDetailed overview of the topic...\n## Core Concepts & Definitions\nKey definitions and explanations...\n## Key Examples & Applications\nReal-world applications...",
+  "deep_notes": "# 🔬 In-Depth Academic Breakdown (15m Read)\n## Rigorous Explanations & Theory\nDeep dive into the underlying theory...\n## Visual & Diagram Walkthroughs\nStep-by-step walkthrough of visuals...\n## Common Traps & Exam Tips\nCritical traps and insights...",
+  "textbook_notes": "# 📚 Textbook Chapter\n## Introduction & Learning Objectives\nObjectives...\n## In-Depth Derivations & Logic\nComprehensive derivations...\n## Frequently Asked Questions\nDetailed FAQs...",
+  "chapter_breakdown": [ { "title": "string", "summary": "Detailed chapter summary with timestamps", "timestamp_hint": "MM:SS" } ],
   "formula_sheet": [ { "formula": "LaTeX string (e.g. O(V+E))", "meaning": "string", "variables": "string", "example": "string" } ],
   "problems_solved": [ { "question": "string", "step_by_step": "string", "final_answer": "string", "professors_explanation": "string" } ]
 }
@@ -114,8 +120,6 @@ You MUST return your response as a valid JSON object matching this schema exactl
 CRITICAL RULES:
 - Use highly detailed, rich markdown formatting. You MUST explicitly use callouts like `💡 **Key Idea:**` and `⚠️ **Common Mistake:**` where applicable.
 - Where appropriate, present complex logic, algorithms, or step-by-step workflows in neat Markdown tables (e.g., `Step | Action | Queue State | Visited Nodes`).
-- If a concept refers to a visual diagram or slide, embed markdown image links like ![Slide X](path/to/screenshot) where possible. (Use local placeholders like ![Slide 1](#) if path is unknown, we will replace it later).
-- Do not output generic AI filler. Structure with headings, bold text, bullet points.
 - Return ONLY the raw JSON object. Do not wrap in ```json blocks."#.to_string()
     };
 

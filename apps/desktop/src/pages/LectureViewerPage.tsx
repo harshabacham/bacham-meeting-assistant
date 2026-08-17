@@ -455,6 +455,12 @@ export function LectureViewerPage() {
     try {
       const result = await TauriClient.generateSummary(id, transcript || "");
       setSummary(result);
+      try {
+        const parsed = JSON.parse(result);
+        setArtifacts(prev => ({ ...prev, lecture_intelligence: parsed }));
+      } catch (e) {
+        // Not JSON
+      }
       await refreshAllData();
       showToast('Summary regenerated successfully!', 'success');
     } catch (e) {
