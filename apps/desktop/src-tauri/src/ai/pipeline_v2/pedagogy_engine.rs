@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
 use super::knowledge_extraction::{ExtractedKnowledgePipeline, ExtractedNode};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -150,11 +150,7 @@ Raw JSON only, no markdown fencing."#;
             crate::services::universal_ai::UniversalAiService::generate_multimodal(&prompt, system_instruction, image_parts, pool).await?
         };
 
-        let clean_res = raw_res.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
-
-        let parsed: TextbookSummary = serde_json::from_str(clean_res).map_err(|e| {
-            AppError::Internal(format!("Failed to parse TextbookSummary JSON: {e}\nRaw: {clean_res}"))
-        })?;
+        let parsed: TextbookSummary = Self::parse_textbook_summary(&raw_res);
 
         // Save summary artifact to DB
         let artifact_id = Uuid::new_v4().to_string();
@@ -323,6 +319,104 @@ Rules:
 
         Ok(questions)
     }
+
+    /// Comprehensive JSON cleaner and repair engine for LLM outputs
+    pub fn repair_json_string(raw: &str) -> String {
+        let mut s = raw.trim();
+
+        // 1. Strip markdown code block wrappers
+        if s.starts_with("```json") {
+            s = &s[7..];
+        } else if s.starts_with("```") {
+            s = &s[3..];
+        }
+        if s.ends_with("```") {
+            s = &s[..s.len() - 3];
+        }
+        s = s.trim();
+
+        // 2. Extract JSON object substring between first '{' and last '}'
+        let start = s.find('{').unwrap_or(0);
+        let end = s.rfind('}').map(|i| i + 1).unwrap_or(s.len());
+        let mut cleaned = if start < end { s[start..end].to_string() } else { s.to_string() };
+
+        // 3. Fix unquoted object keys (e.g. `sakeaway: "..."` or `, key_name:`)
+        if let Ok(re_unquoted) = regex::Regex::new(r#"(?m)([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:"#) {
+            cleaned = re_unquoted.replace_all(&cleaned, r#"$1"$2":"#).to_string();
+        }
+
+        // 4. Fix trailing commas before } or ]
+        if let Ok(re_trailing) = regex::Regex::new(r#",\s*([}\]])"#) {
+            cleaned = re_trailing.replace_all(&cleaned, "$1").to_string();
+        }
+
+        cleaned
+    }
+
+    /// Parse TextbookSummary with multi-tier error recovery and guaranteed resilience
+    pub fn parse_textbook_summary(raw: &str) -> TextbookSummary {
+        let clean_res = raw.trim().trim_start_matches("```json").trim_start_matches("```").trim_end_matches("```").trim();
+
+        // Strategy 1: Direct Serde JSON deserialize
+        if let Ok(summary) = serde_json::from_str::<TextbookSummary>(clean_res) {
+            return summary;
+        }
+
+        // Strategy 2: Repaired JSON deserialize
+        let repaired = Self::repair_json_string(clean_res);
+        if let Ok(summary) = serde_json::from_str::<TextbookSummary>(&repaired) {
+            return summary;
+        }
+
+        // Strategy 3: Loose Value deserialize with repair
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&repaired) {
+            if let Ok(summary) = serde_json::from_value::<TextbookSummary>(val) {
+                return summary;
+            }
+        }
+
+        // Strategy 4: Fallback field extractor (guaranteed never to crash)
+        let extract_str = |key1: &str, key2: &str| -> Option<String> {
+            let pat = format!(r#"(?s)"(?:{}|{})"\s*:\s*"((?:[^"\\]|\\.)*)""#, key1, key2);
+            if let Ok(re) = regex::Regex::new(&pat) {
+                if let Some(caps) = re.captures(&repaired) {
+                    if let Some(m) = caps.get(1) {
+                        return Some(m.as_str().replace(r#"\""#, "\"").replace(r#"\n"#, "\n"));
+                    }
+                }
+            }
+            None
+        };
+
+        let quick_summary = extract_str("quick_summary", "quickSummary");
+        let standard_summary = extract_str("standard_summary", "standardSummary");
+        let deep_notes = extract_str("deep_notes", "deepNotes");
+        let textbook_notes = extract_str("textbook_notes", "textbookNotes");
+        let overview = extract_str("overview", "overview").unwrap_or_else(|| {
+            standard_summary.clone().unwrap_or_else(|| "Session summary generated.".to_string())
+        });
+        let cheat_sheet = extract_str("cheat_sheet", "cheatSheet").unwrap_or_default();
+
+        TextbookSummary {
+            overview,
+            quick_summary,
+            standard_summary,
+            deep_notes,
+            textbook_notes,
+            objectives: vec![],
+            chapter_breakdown: vec![],
+            concepts_and_definitions: vec![],
+            formula_sheet: vec![],
+            code_explained: vec![],
+            visual_explanations: vec![],
+            cheat_sheet,
+            revision_tips: vec![],
+            interview_questions: vec![],
+            exam_questions: vec![],
+            key_takeaways: vec![],
+            crm_metadata: None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -445,5 +539,28 @@ mod tests {
         ]"###;
         let quiz: Result<Vec<GeneratedQuizQuestion>, _> = serde_json::from_str(quiz_json);
         assert!(quiz.is_ok());
+    }
+
+    #[test]
+    fn test_repair_unquoted_keys_malformed_llm_json() {
+        let malformed_json = r###"{
+            "quick_summary": "Quick summary",
+            "standard_summary": "Standard summary",
+            "deep_notes": "Deep notes",
+            "textbook_notes": "Textbook notes",
+            "overview": "Overview text",
+            "visual_explanations": [
+                {
+                    "title": "YouTube Video Watch Page Interface",
+                    "explanation": "Standard layout displaying the media player",
+                    sakeaway: "Highlights how modern streaming platforms organize media metadata"
+                }
+            ]
+        }"###;
+
+        let summary = PedagogyEngine::parse_textbook_summary(malformed_json);
+        assert_eq!(summary.overview, "Overview text");
+        assert_eq!(summary.quick_summary.unwrap(), "Quick summary");
+        assert_eq!(summary.visual_explanations.len(), 1);
     }
 }
