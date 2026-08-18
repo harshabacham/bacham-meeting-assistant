@@ -16,7 +16,7 @@
   --bg:              var(--color-black);
   --surface:         var(--color-dark-gray);
   --surface-raised:  #1A1C20;
-  --surface-hover:   #23252A;
+  --surface-hover:   rgba(255, 255, 255, 0.05);
   
   --text-primary:    var(--color-white);
   --text-secondary:  rgba(248, 249, 250, 0.7);
@@ -97,7 +97,7 @@
   --bg:              #F7F7F2;
   --surface:         #FCFCF9;
   --surface-raised:  #F2F2ED;
-  --surface-hover:   #EFEFEA;
+  --surface-hover:   rgba(0, 0, 0, 0.04);
 
   --text-primary:    #09090b;
   --text-secondary:  #3f3f46;
