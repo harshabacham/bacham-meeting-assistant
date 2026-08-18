@@ -93,44 +93,44 @@
 }
 
 .light {
-  /* High-end "Clean. Modern. Premium." Granola Warm Light Mode */
-  --bg:              #F7F7F2;
-  --surface:         #FCFCF9;
-  --surface-raised:  #F2F2ED;
-  --surface-hover:   #ECECE5;
+  /* High-end "Clean. Modern. Premium." Light Mode (Granola / Linear / Apple standard) */
+  --bg:              #FAFAFA;
+  --surface:         #FFFFFF;
+  --surface-raised:  #F4F4F5;
+  --surface-hover:   #ECECEE;
 
-  --text-primary:    #09090b;
-  --text-secondary:  #3f3f46;
-  --text-muted:      #71717a;
+  --text-primary:    #09090B;
+  --text-secondary:  #52525B;
+  --text-muted:      #71717A;
 
-  --accent:          #059669;
-  --accent-hover:    #047857;
-  --accent-dim:      rgba(5, 150, 105, 0.10);
-  --accent-glow:     rgba(5, 150, 105, 0.18);
+  --accent:          #09090B;
+  --accent-hover:    #27272A;
+  --accent-dim:      rgba(0, 0, 0, 0.05);
+  --accent-glow:     rgba(0, 0, 0, 0.08);
   
-  --border:          #E3E3DD;
-  --border-accent:   rgba(5, 150, 105, 0.35);
+  --border:          #E4E4E7;
+  --border-accent:   rgba(0, 0, 0, 0.15);
 
   /* Semantic Status Colors */
-  --destructive:     #EF4444; 
-  --destructive-dim: rgba(239, 68, 68, 0.10);
-  --success:         #10B981; 
-  --success-dim:     rgba(16, 185, 129, 0.10);
-  --warning:         #F59E0B; 
-  --warning-dim:     rgba(245, 158, 11, 0.10);
-  --info:            #3B82F6; 
-  --info-dim:        rgba(59, 130, 246, 0.10);
+  --destructive:     #DC2626; 
+  --destructive-dim: rgba(220, 38, 38, 0.08);
+  --success:         #16A34A; 
+  --success-dim:     rgba(22, 163, 74, 0.08);
+  --warning:         #D97706; 
+  --warning-dim:     rgba(217, 119, 6, 0.08);
+  --info:            #2563EB; 
+  --info-dim:        rgba(37, 99, 235, 0.08);
 
-  --glass-bg:        rgba(252, 252, 249, 0.88);
-  --glass-border:    #E3E3DD;
+  --glass-bg:        rgba(255, 255, 255, 0.90);
+  --glass-border:    #E4E4E7;
 
   --overlay-hover:   rgba(0, 0, 0, 0.035);
   --overlay-pressed: rgba(0, 0, 0, 0.07);
   --overlay-02:      rgba(0, 0, 0, 0.02);
 
   --shadow-sm:  0 1px 2px rgba(0,0,0,0.03);
-  --shadow-md:  0 1px 3px rgba(0,0,0,0.04);
-  --shadow-lg:  0 4px 12px rgba(0,0,0,0.05);
+  --shadow-md:  0 1px 3px rgba(0,0,0,0.05);
+  --shadow-lg:  0 4px 12px rgba(0,0,0,0.06);
   --shadow-lime: none;
 
   /* Scrollbar */
