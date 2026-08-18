@@ -81,7 +81,7 @@ function TemplatePicker({
         <ChevronDown size={10} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 bg-popover border border-border/60 rounded-xl shadow-lg overflow-hidden w-52 py-1">
+        <div className="absolute top-full left-0 mt-1.5 z-50 bg-popover border border-border/60 rounded-xl shadow-2xl overflow-hidden w-52 py-1">
           {Object.entries(TEMPLATES).map(([key, tmpl]) => (
             <button
               key={key}
@@ -302,7 +302,7 @@ export function NotesTab({
             <Button
               onClick={onGenerateSummary}
               disabled={isGeneratingSummary}
-              className="flex items-center gap-1.5 text-[11px] px-3.5 py-1.5 h-auto rounded-lg font-semibold transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] px-3.5 py-1.5 h-auto rounded-lg font-semibold transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 disabled:opacity-50"
             >
               {isGeneratingSummary ? (
                 <>

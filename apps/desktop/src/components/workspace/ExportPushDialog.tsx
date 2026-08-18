@@ -173,7 +173,7 @@ export function ExportPushDialog({ isOpen, onClose, lectureTitle, summary, artif
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-[var(--surface)] border border-border/80 rounded-3xl shadow-lg w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden"
+        className="relative bg-[var(--surface)] border border-border/60 rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

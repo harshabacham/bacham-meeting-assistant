@@ -46,7 +46,7 @@ export function ConfirmProvider() {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="bg-surface border border-border/80 rounded-2xl p-6 w-full max-w-sm shadow-lg relative z-10 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-surface border border-border/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative z-10 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex gap-4">
           <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
             <AlertTriangle size={20} className="text-red-500" />
