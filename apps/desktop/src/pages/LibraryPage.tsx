@@ -519,8 +519,8 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
     return (
         <div
             className={cn(
-                'group relative flex flex-col text-left bg-surface hover:bg-surface-hover border rounded-xl p-4 transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-full',
-                isSelected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border/70 hover:border-[var(--border-accent)]'
+                'group relative flex flex-col text-left bg-surface hover:bg-surface-hover border rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-full',
+                isSelected ? 'border-primary ring-1 ring-primary shadow-sm bg-primary/5' : 'border-border/60 hover:border-border'
             )}
             onClick={onClick}
             draggable={true}
@@ -630,8 +630,8 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
 
     return (
         <div
-            className={cn('group relative flex items-center px-4 py-2.5 cursor-pointer rounded-xl transition-colors duration-150', 
-                isSelected ? 'bg-primary/5 ring-1 ring-primary' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-border/70 hover:border-[var(--border-accent)]'
+            className={cn('group relative flex items-center px-4 py-2.5 cursor-pointer rounded-xl transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5', 
+                isSelected ? 'bg-primary/5 ring-1 ring-primary shadow-sm' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-border/60 hover:border-border'
             )}
             onClick={onClick}
             draggable={true}

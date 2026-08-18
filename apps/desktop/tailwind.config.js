@@ -90,17 +90,11 @@ module.exports = {
         pill: "var(--radius-pill)",
       },
       boxShadow: {
-        none: "none",
-        xs: "0 1px 2px 0 rgba(0, 0, 0, 0.04)",
         sm: "var(--shadow-sm)",
-        DEFAULT: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
-        xl: "var(--shadow-lg)",
-        '2xl': "var(--shadow-lg)",
-        inner: "inset 0 1px 2px 0 rgba(0, 0, 0, 0.04)",
-        lime: "none",
-        "lime-strong": "none",
+        lime: "var(--shadow-lime)",
+        "lime-strong": "0 0 12px rgba(166,255,0,0.08)",
       },
       keyframes: {
         breathe: {

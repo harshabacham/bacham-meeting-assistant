@@ -118,9 +118,10 @@ export function UpcomingMeetingsWidget() {
                             key={nextEvent.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="relative group bg-primary/5 border border-primary/20 rounded-2xl p-4 flex flex-col gap-3 overflow-hidden"
+                            className="relative group bg-primary/10 border border-primary/30 rounded-2xl p-4 flex flex-col gap-3 overflow-hidden shadow-[0_0_20px_rgba(var(--primary),0.1)]"
                         >
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                            <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/20 blur-2xl rounded-full pointer-events-none group-hover:scale-150 transition-transform duration-700" />
                             
                             <div className="flex justify-between items-start z-10">
                                 <div>
@@ -158,7 +159,7 @@ export function UpcomingMeetingsWidget() {
                                 
                                 <button
                                     onClick={handleRecord}
-                                    className="py-2.5 bg-primary text-primary-foreground text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity active:scale-95"
+                                    className="py-2.5 bg-primary text-primary-foreground text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 hover:shadow-[0_0_15px_rgba(var(--primary),0.4)] hover:scale-[1.02] transition-all active:scale-95"
                                 >
                                     Record
                                 </button>

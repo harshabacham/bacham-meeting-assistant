@@ -552,7 +552,7 @@ Return only the polished transcript text:`;
                         {aiSummary ? (
                             <div className="text-sm text-[var(--text-primary)] leading-relaxed font-sans prose prose-neutral dark:prose-invert max-w-none">
                                 <div 
-                                    className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] space-y-4"
+                                    className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-4"
                                     dangerouslySetInnerHTML={{ 
                                         __html: aiSummary
                                             .replace(/^## (.*$)/gim, '<h3 class="text-[15px] font-semibold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">$1</h3>')
@@ -847,7 +847,7 @@ Return only the polished transcript text:`;
                                     filteredTranscriptLines.map((line, idx) => (
                                         <div 
                                             key={idx} 
-                                            className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex flex-col gap-1.5 transition-colors hover:bg-[var(--surface-hover)]"
+                                            className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
                                         >
                                             <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
                                                 <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
