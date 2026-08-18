@@ -1,68 +1,64 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLectureStore } from "@/shared/stores/lectureStore";
 import { useFolderStore } from "@/shared/stores/folderStore";
-import { TauriClient } from "@/infrastructure/tauri-client";
-import { Lecture } from "@/shared/types";
+import { TauriClient, Flashcard } from "@/infrastructure/tauri-client";
+import { DashboardSummary, Lecture } from "@/shared/types";
 import { useAuthStore } from "@/shared/stores/authStore";
 import { useLearningContext } from "@/shared/hooks/useLearningContext";
-import { 
-  Clock, ChevronRight, Bookmark, Zap, CheckSquare, 
-  Mic, Plus, ArrowUpRight, FileText
-} from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { ArrowIcon } from "@/components/ui/skiper-ui/skiper99";
+import { Folder } from "@/components/ui/Folder";
+import { Clock, ChevronRight, Bookmark, Zap, BookOpen, CheckSquare } from "lucide-react";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import { ComingUpCalendarWidget } from "@/components/dashboard/ComingUpCalendarWidget";
 import { GlobalAskAI } from "@/components/dashboard/GlobalAskAI";
 import { useGlobalTasks } from "@/shared/hooks/useGlobalTasks";
+import { useTranslation } from "react-i18next";
 
-// ─── Metric Pill ────────────────────────────────────────────────────────────
+/**
+ * DESIGN NOTES — read before touching this file
+ * ------------------------------------------------
+ * Identity: "Lime" — deep slate surfaces (#141517), lime green accent 
+ * (#BAFF29) used ONLY for: (1) an active recording, (2) the single
+ * primary CTA on the page, (3) an AI-in-progress indicator. Everywhere else
+ * the accent is absent — that scarcity is what makes it mean something when
+ * it appears. If you're reaching for `text-primary` / `bg-primary` for a
+ * fourth thing, that's a sign the layout needs rethinking, not another
+ * accent use.
+ *
+ * Structural rule: most content here does NOT live in a bordered card.
+ * A card/surface is reserved for things that are genuinely a distinct
+ * object floating on the page (the continue-learning action, a lecture
+ * thumbnail). Everything else — the greeting, stats, section groupings —
+ * is separated with space and a single hairline rule, never a box.
+ *
+ * There is exactly one recording status surface on this page, not two.
+ * If desktop-capture and "recording in progress" both need UI, they are
+ * two states of the same strip, never two competing banners.
+ */
 
-function MetricPill({ value, label, icon: Icon }: { value: string | number; label: string; icon?: any }) {
+// ─── Small building blocks ──────────────────────────────────────────────────
+
+function Stat({ value, label }: { value: string | number; label: string }) {
   const isNumber = typeof value === "number" || (!isNaN(Number(value)) && value !== "");
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs">
-      {Icon && <Icon size={12} className="text-[var(--text-muted)]" />}
-      <span className="font-semibold text-[var(--text-primary)] tabular-nums">
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className="text-[13px] font-medium text-[var(--text-secondary)] tabular-nums">
         {isNumber ? <NumberFlow value={Number(value)} /> : value}
       </span>
-      <span className="text-[var(--text-muted)]">{label}</span>
-    </div>
+      <span className="text-[12px] text-[var(--text-muted)]">{label}</span>
+    </span>
   );
 }
 
-function SectionHeading({ title, count, actionLabel, onAction }: { 
-  title: string; 
-  count?: number; 
-  actionLabel?: string; 
-  onAction?: () => void 
-}) {
+function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-2">
-        <h2 className="text-base font-serif font-medium text-[var(--text-primary)] tracking-tight">
-          {title}
-        </h2>
-        {count !== undefined && (
-          <span className="text-[10px] font-mono text-[var(--text-muted)] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] border border-[var(--border)]">
-            {count}
-          </span>
-        )}
-      </div>
-      {actionLabel && onAction && (
-        <button
-          onClick={onAction}
-          className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors cursor-pointer"
-        >
-          <span>{actionLabel}</span>
-          <ChevronRight size={12} />
-        </button>
-      )}
-    </div>
+    <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] select-none">
+      {children}
+    </p>
   );
 }
-
-// ─── Modern Minimalist Lecture Card (Zero Muddy Shadows, Clean Neutral Hover) ─
 
 function LectureCard({ lecture, onClick }: { lecture: Lecture; onClick: () => void }) {
   const mins = Math.round((lecture.durationMs ?? 0) / 60000);
@@ -70,47 +66,27 @@ function LectureCard({ lecture, onClick }: { lecture: Lecture; onClick: () => vo
     month: "short",
     day: "numeric",
   });
-
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left rounded-xl p-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] hover:border-[var(--border-accent)] transition-colors duration-150 relative flex flex-col justify-between min-h-[120px] cursor-pointer"
+      className="group shrink-0 w-[188px] text-left rounded-xl p-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] relative"
+      aria-label={`Open lecture: ${lecture.title || "Untitled lecture"}`}
     >
-      <div>
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-[var(--text-muted)]">
-            {mins > 0 && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--surface-raised)] border border-[var(--border)]">
-                <Clock size={9} />
-                {mins}m
-              </span>
-            )}
-            <span>{dateStr}</span>
-          </div>
-
-          <div className="w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-opacity">
-            <ArrowUpRight size={12} />
-          </div>
-        </div>
-
-        <p className="text-[13px] font-medium text-[var(--text-primary)] leading-snug line-clamp-2 transition-colors">
-          {lecture.title || "Untitled Recording"}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[var(--border)]/40 text-[11px] text-[var(--text-muted)]">
-        <span className="truncate max-w-[140px]">
-          {lecture.courseLabel || lecture.course || "Meeting"}
-        </span>
-        {lecture.isFavorite && (
-          <Bookmark size={10} className="text-[var(--accent)] fill-current ml-auto shrink-0" />
-        )}
+      {lecture.isFavorite && (
+        <Bookmark size={12} className="absolute top-3.5 right-3.5 text-[var(--accent)] fill-current" aria-hidden="true" />
+      )}
+      <p className="text-[12.5px] font-medium text-[var(--text-primary)] leading-snug line-clamp-3 pr-4 min-h-[52px]">
+        {lecture.title || "Untitled lecture"}
+      </p>
+      <div className="flex items-center gap-2.5 mt-3 text-[11px] text-[var(--text-muted)]">
+        {mins > 0 && <span className="flex items-center gap-1"><Clock size={10} aria-hidden="true" />{mins}m</span>}
+        <span>{dateStr}</span>
       </div>
     </button>
   );
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────
 
 function getTimeOfDay(): string {
   const h = new Date().getHours();
@@ -119,7 +95,20 @@ function getTimeOfDay(): string {
   return "evening";
 }
 
-// ─── Main Dashboard Page ────────────────────────────────────────────────────
+function formatRelativeDate(isoString: string): string {
+  const date = new Date(isoString);
+  const diffMins = Math.round((Date.now() - date.getTime()) / 60000);
+  const diffHours = Math.round(diffMins / 60);
+  const diffDays = Math.round(diffHours / 24);
+  if (diffMins < 2) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const { lectures, fetchLectures } = useLectureStore();
@@ -127,10 +116,20 @@ export function DashboardPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotion();
+  const { t } = useTranslation();
 
   useLearningContext({ type: "home", title: "Dashboard", subtitle: "Today's Focus & Study Companion" });
 
-  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [dueCards, setDueCards] = useState<Flashcard[]>([]);
+  const [analytics, setAnalytics] = useState<{
+    currentStreakDays: number;
+    longestStreakDays: number;
+    totalHoursStudied: number;
+    conceptsMastered: number;
+    weakTopics: any[];
+    strongTopics: any[];
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isStartingRecording, setIsStartingRecording] = useState(false);
 
@@ -140,7 +139,11 @@ export function DashboardPage() {
       await Promise.all([
         fetchLectures(),
         fetchFolders(),
+        TauriClient.getDashboardSummary().then(setSummary).catch(console.error),
+        TauriClient.getDueFlashcards().then(setDueCards).catch(console.error),
+        TauriClient.getDailyLearningPlan().catch(console.error),
         TauriClient.getLearningAnalytics().then(setAnalytics).catch(console.error),
+        TauriClient.getSpacedRepetitionQueue().catch(console.error),
       ]);
       setIsLoading(false);
     };
@@ -153,17 +156,29 @@ export function DashboardPage() {
       t.owner.toLowerCase() === 'me' || 
       t.owner.toLowerCase() === 'you' || 
       t.owner.toLowerCase() === user?.displayName?.toLowerCase()
-    ).slice(0, 4);
+    ).slice(0, 3);
   }, [globalTasks, user]);
 
   const recordingSession = lectures.find((l) => l.status === "RECORDING");
+
+  const continueLecture = useMemo<Lecture | null>(() => {
+    if (summary?.continueLearning) return summary.continueLearning;
+    const sorted = [...lectures]
+      .filter((l) => l.status !== "RECORDING" && !l.isArchived && !l.trashedAt)
+      .sort((a, b) => {
+        const tA = a.lastOpenedAt ? new Date(a.lastOpenedAt).getTime() : new Date(a.createdAt).getTime();
+        const tB = b.lastOpenedAt ? new Date(b.lastOpenedAt).getTime() : new Date(b.createdAt).getTime();
+        return tB - tA;
+      });
+    return sorted[0] ?? null;
+  }, [summary, lectures]);
 
   const recentLectures = useMemo(
     () =>
       [...lectures]
         .filter((l) => l.status !== "RECORDING" && !l.isArchived && !l.trashedAt)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 6),
+        .slice(0, 10),
     [lectures]
   );
 
@@ -179,19 +194,23 @@ export function DashboardPage() {
     }
   };
 
-  const animProps = shouldReduceMotion
+  const fadeUp = shouldReduceMotion
     ? {}
-    : { initial: { opacity: 0, y: 6 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.2 } };
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as any } };
 
   if (isLoading) {
     return (
-      <div className="flex-1 h-full overflow-y-auto bg-[var(--bg)]" aria-busy="true">
-        <div className="w-full max-w-[1200px] mx-auto px-8 py-10 flex flex-col gap-8">
-          <div className="h-6 w-40 rounded bg-[var(--surface)] animate-pulse" />
-          <div className="h-28 w-full rounded-xl bg-[var(--surface)] animate-pulse" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 rounded-xl bg-[var(--surface)] animate-pulse" />
+      <div className="flex-1 h-full overflow-y-auto bg-[var(--bg)]" aria-busy="true" aria-label="Loading dashboard">
+        <div className="w-full max-w-[1300px] mx-auto px-8 py-10 flex flex-col gap-8">
+          <div className="flex flex-col gap-3 pb-6 border-b border-[var(--border)]">
+            <div className="h-3 w-28 rounded bg-[var(--surface)] animate-pulse" />
+            <div className="h-7 w-56 rounded bg-[var(--surface)] animate-pulse" />
+            <div className="h-3 w-40 rounded bg-[var(--surface)] animate-pulse mt-1" />
+          </div>
+          <div className="h-32 w-full rounded-lg bg-[var(--surface)] animate-pulse" />
+          <div className="flex gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-28 w-[188px] shrink-0 rounded-lg bg-[var(--surface)] animate-pulse" />
             ))}
           </div>
         </div>
@@ -202,222 +221,316 @@ export function DashboardPage() {
   const isRecordingLive = Boolean(recordingSession);
 
   return (
-    <div className="flex-1 overflow-y-auto h-full bg-[var(--bg)] relative text-[var(--text-primary)]">
-      <div className="w-full max-w-[1200px] mx-auto px-8 py-10 flex flex-col gap-9">
+    <div className="flex-1 overflow-y-auto h-full bg-[var(--bg)] relative">
 
-        {/* ── 1. Editorial Header Bar ───────────────────────────────── */}
-        <motion.div {...animProps} className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 pb-6 border-b border-[var(--border)]">
-          <div className="flex flex-col gap-1.5">
-            <p className="text-[11px] font-mono uppercase tracking-widest text-[var(--text-muted)] font-semibold">
-              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-            </p>
-            <h1 className="text-2xl sm:text-3xl font-serif font-normal text-[var(--text-primary)] tracking-tight">
-              Good {getTimeOfDay()}, <span className="font-semibold">{firstName}</span>
+      <div className="w-full max-w-[1300px] mx-auto px-8 py-10 flex gap-10">
+        <div className="flex-1 flex flex-col gap-9 min-w-0">
+          {/* ── Greeting ─────────────────────────────────────────────── */}
+          <motion.div {...fadeUp} className="flex flex-col gap-2 pb-7 border-b border-[var(--border)]">
+            <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</Eyebrow>
+            <h1 className="text-[27px] font-semibold text-[var(--text-primary)] tracking-tight leading-tight">
+              {t('dashboard.title')}
             </h1>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <MetricPill value={lectures.length} label={lectures.length === 1 ? "recording" : "recordings"} icon={FileText} />
-              {!!analytics?.currentStreakDays && (
-                <MetricPill value={`${analytics.currentStreakDays}d`} label="streak" icon={Zap} />
-              )}
-              {globalTasks.length > 0 && (
-                <MetricPill value={globalTasks.filter(t => t.status !== 'done').length} label="pending tasks" icon={CheckSquare} />
-              )}
-            </div>
-          </div>
-
-          {/* Quick Action Controls */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => navigate('/notes')}
-              className="px-3.5 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus size={13} />
-              <span>New Note</span>
-            </button>
-
-            <button
-              onClick={handleStartRecording}
-              disabled={isStartingRecording || isRecordingLive}
-              className="px-4 py-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg)] hover:opacity-90 transition-opacity text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {isStartingRecording ? (
-                <span>Starting...</span>
-              ) : (
-                <>
-                  <Mic size={13} className="text-red-500" />
-                  <span>Start Recording</span>
-                </>
-              )}
-            </button>
-          </div>
-        </motion.div>
-
-        {/* ── 2. Live Recording Strip (if active) ───────────────────── */}
-        {isRecordingLive && (
-          <motion.div {...animProps}>
-            <button
-              onClick={() => navigate(`/lectures/${recordingSession!.id}`)}
-              className="w-full flex items-center justify-between p-4 rounded-xl bg-[var(--accent-dim)] border border-[var(--border-accent)] transition-colors group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-                <div className="text-left">
-                  <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-wider">Recording in progress</span>
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">{recordingSession?.title || "Live Meeting"}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-[var(--accent)]">
-                <span>Open Canvas</span>
-                <ChevronRight size={13} />
-              </div>
-            </button>
-          </motion.div>
-        )}
-
-        {/* ── 3. Coming Up / Agenda Widget ─────────────────────────── */}
-        <motion.div {...animProps}>
-          <ComingUpCalendarWidget />
-        </motion.div>
-
-        {/* ── 4. Recent Meetings & Lectures ─────────────────────────── */}
-        <motion.div {...animProps} className="flex flex-col">
-          <SectionHeading 
-            title="Recent Meetings & Notes" 
-            count={recentLectures.length} 
-            actionLabel="View all" 
-            onAction={() => navigate('/lectures')} 
-          />
-
-          {recentLectures.length === 0 ? (
-            <div className="py-12 px-6 border border-[var(--border)] rounded-xl bg-[var(--surface)] text-center flex flex-col items-center gap-2">
-              <FileText size={20} className="text-[var(--text-muted)] opacity-50" />
-              <p className="text-sm font-medium text-[var(--text-primary)]">No recordings yet</p>
-              <p className="text-xs text-[var(--text-muted)] max-w-sm">
-                Start a recording or use the browser extension to capture your first meeting.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-              {recentLectures.map((lecture) => (
-                <LectureCard
-                  key={lecture.id}
-                  lecture={lecture}
-                  onClick={() => navigate(`/lectures/${lecture.id}`)}
-                />
-              ))}
-            </div>
-          )}
-        </motion.div>
-
-        {/* ── 5. Workspaces & Action Items 2-Column Section ─────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* Left Column: Workspaces / Folders */}
-          <motion.div {...animProps} className="flex flex-col">
-            <SectionHeading 
-              title="Workspaces" 
-              count={folders.length} 
-              actionLabel="Manage" 
-              onAction={() => navigate('/lectures')} 
-            />
-
-            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 flex flex-col divide-y divide-[var(--border)]">
-              {folders.length === 0 ? (
-                <p className="py-6 text-center text-xs text-[var(--text-muted)]">No workspaces created yet.</p>
-              ) : (
-                folders.slice(0, 4).map((f) => {
-                  const folderCount = lectures.filter((l) => l.folderId === f.id).length;
-                  return (
-                    <button
-                      key={f.id}
-                      onClick={() => {
-                        useLectureStore.getState().setSelectedFolderId(f.id);
-                        navigate('/lectures');
-                      }}
-                      className="py-2.5 px-2 flex items-center justify-between group hover:bg-[var(--surface-hover)] rounded-lg transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div 
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: f.color || '#3b82f6' }}
-                        />
-                        <span className="text-xs font-medium text-[var(--text-primary)] transition-colors truncate">
-                          {f.name}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-mono text-[var(--text-muted)] tabular-nums">
-                        {folderCount} note{folderCount !== 1 ? 's' : ''}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
+            <p className="text-sm text-[var(--text-secondary)]">
+              {t('dashboard.subtitle')} - {getTimeOfDay()}, {firstName}.
+            </p>
+            <div className="flex items-center gap-5 mt-1 flex-wrap">
+              {!!summary?.totalLectures && <Stat value={summary.totalLectures} label={summary.totalLectures === 1 ? "lecture" : "lectures"} />}
+              {!!analytics?.currentStreakDays && <Stat value={`${analytics.currentStreakDays}d`} label="streak" />}
+              {!!analytics?.totalHoursStudied && <Stat value={`${analytics.totalHoursStudied}h`} label="studied" />}
+              {dueCards.length > 0 && <Stat value={dueCards.length} label={dueCards.length === 1 ? "card due" : "cards due"} />}
             </div>
           </motion.div>
 
-          {/* Right Column: Pending Action Items */}
-          <motion.div {...animProps} className="flex flex-col">
-            <SectionHeading 
-              title="Action Items" 
-              count={myTasks.length} 
-              actionLabel="View all" 
-              onAction={() => navigate('/tasks')} 
-            />
-
-            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 flex flex-col divide-y divide-[var(--border)] min-h-[140px]">
-              {loadingTasks ? (
-                <div className="py-8 flex items-center justify-center">
-                  <div className="w-4 h-4 rounded-full border-2 border-[var(--border)] border-t-[var(--accent)] animate-spin" />
-                </div>
-              ) : myTasks.length === 0 ? (
-                <div className="py-8 text-center text-xs text-[var(--text-muted)]">
-                  All caught up! No open tasks.
-                </div>
+          {/* ── Recording status — single strip, two states ───────────── */}
+          <motion.div {...fadeUp}>
+            <AnimatePresence mode="wait" initial={false}>
+              {isRecordingLive ? (
+                <motion.button
+                  key="live"
+                  initial={shouldReduceMotion ? {} : { opacity: 0 }}
+                  animate={shouldReduceMotion ? {} : { opacity: 1 }}
+                  exit={shouldReduceMotion ? {} : { opacity: 0 }}
+                  onClick={() => navigate(`/lectures/${recordingSession!.id}`)}
+                  className="w-full flex items-center gap-4 px-5 py-4 rounded-lg bg-[var(--accent-dim)] transition-colors duration-150 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] border border-[var(--border-accent)]"
+                  aria-label={`Active recording: ${recordingSession?.title || "Untitled"}. Click to open.`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse shrink-0" aria-hidden="true" />
+                  <span className="flex-1 text-left flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-[0.16em]">Recording in progress</span>
+                    <span className="text-[13px] text-[var(--text-primary)] font-medium">{recordingSession?.title || "Untitled"}</span>
+                  </span>
+                  <div className="w-4 h-4 text-[var(--accent)] transition-all shrink-0">
+                    <ArrowIcon />
+                  </div>
+                </motion.button>
               ) : (
-                myTasks.map((item) => {
-                  const isDone = item.status === 'done';
-                  return (
-                    <div 
-                      key={item.id} 
-                      onClick={() => item.lectureId && navigate(`/lectures/${item.lectureId}`)}
-                      className={`py-2 px-2 flex items-center gap-3 group hover:bg-[var(--surface-hover)] rounded-lg transition-colors cursor-pointer ${isDone ? 'opacity-50' : ''}`}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleTaskStatus(item);
-                        }}
-                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                          isDone 
-                            ? 'bg-[var(--text-muted)] border-transparent text-[var(--bg)]' 
-                            : 'border-[var(--border)] group-hover:border-[var(--text-primary)]'
-                        }`}
-                      >
-                        {isDone && <CheckSquare className="w-2.5 h-2.5" />}
-                      </button>
+                <motion.div
+                  key="idle"
+                  initial={shouldReduceMotion ? {} : { opacity: 0 }}
+                  animate={shouldReduceMotion ? {} : { opacity: 1 }}
+                  exit={shouldReduceMotion ? {} : { opacity: 0 }}
+                  className="flex items-center justify-between p-5 rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+                >
+                  <div>
+                    <h2 className="text-[14px] font-medium text-[var(--text-primary)]">Desktop Capture</h2>
+                    <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Record system audio and screen natively.</p>
+                  </div>
+                  <button
+                    onClick={handleStartRecording}
+                    disabled={isStartingRecording}
+                    className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-[12px] font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-50"
+                  >
+                    {isStartingRecording ? (
+                      "Starting..."
+                    ) : (
+                      <>
+                        <div className="w-1.5 h-1.5 rounded-full bg-white opacity-80" />
+                        Start Recording
+                      </>
+                    )}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium truncate ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
-                          {item.task}
-                        </p>
-                      </div>
-
-                      {item.lectureTitle && (
-                        <span className="text-[10px] text-[var(--text-muted)] bg-[var(--surface-raised)] border border-[var(--border)] px-1.5 py-0.5 rounded truncate max-w-[100px]">
-                          {item.lectureTitle}
+          {/* ── Grid Layout ────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
+            
+            {/* Continue Learning */}
+            <motion.div {...fadeUp} className="flex flex-col gap-3">
+              <Eyebrow>Continue learning</Eyebrow>
+              {continueLecture ? (
+                <button
+                  onClick={() => navigate(`/lectures/${continueLecture.id}`)}
+                  className="flex-1 text-left group relative flex flex-col justify-center px-6 py-6 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  aria-label={`Continue lecture: ${continueLecture.title || "Untitled"}`}
+                >
+                  <span className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-[var(--accent)]" aria-hidden="true" />
+                  <div className="pl-3">
+                    {(continueLecture.courseLabel || continueLecture.course) && (
+                      <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.15em] mb-1.5">
+                        {continueLecture.courseLabel || continueLecture.course}
+                      </p>
+                    )}
+                    <h2 className="text-[15px] font-medium text-[var(--text-primary)] leading-snug tracking-tight">
+                      {continueLecture.title || "Untitled Lecture"}
+                    </h2>
+                    <div className="flex items-center gap-4 mt-2.5 text-[11px] text-[var(--text-muted)]">
+                      {(continueLecture.durationMs ?? 0) > 0 && (
+                        <span className="flex items-center gap-1.5">
+                          <Clock size={11} aria-hidden="true" />
+                          {Math.round(continueLecture.durationMs / 60000)}m
                         </span>
                       )}
+                      {continueLecture.lastOpenedAt && (
+                        <span>Opened {formatRelativeDate(continueLecture.lastOpenedAt)}</span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ) : (
+                <div className="flex-1 flex flex-col justify-center items-start gap-3 px-5 py-6 rounded-lg border border-[var(--border)] border-dashed bg-transparent">
+                  <BookOpen size={18} className="text-[var(--text-muted)] opacity-50" aria-hidden="true" />
+                  <div>
+                    <p className="text-[13px] font-medium text-[var(--text-secondary)]">No lectures yet</p>
+                    <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Record a lecture to start learning.</p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Smart Revision */}
+            <motion.div {...fadeUp} className="flex flex-col gap-3">
+              <Eyebrow>Today's focus</Eyebrow>
+              {dueCards.length > 0 ? (
+                <button
+                  onClick={() => navigate("/lectures")}
+                  className="flex-1 text-left group flex items-center gap-5 px-6 py-6 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                >
+                  <div className="p-2.5 rounded bg-[var(--surface-raised)] shrink-0">
+                    <Zap size={16} className="text-[var(--text-primary)]" aria-hidden="true" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-medium text-[var(--text-primary)]">
+                      {dueCards.length} {dueCards.length === 1 ? "card" : "cards"} due
+                    </p>
+                    <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
+                      Review now to strengthen retention.
+                    </p>
+                  </div>
+                  <div className="w-4 h-4 text-[var(--text-muted)] transition-all shrink-0">
+                    <ArrowIcon />
+                  </div>
+                </button>
+              ) : (
+                <div className="flex-1 flex flex-col justify-center items-start gap-3 px-5 py-6 rounded-lg border border-[var(--border)] bg-transparent">
+                  <Zap size={18} className="text-[var(--text-muted)] opacity-30" aria-hidden="true" />
+                  <div>
+                    <p className="text-[13px] font-medium text-[var(--text-secondary)]">All caught up</p>
+                    <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Keep recording to build your queue.</p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Action Items for YOU */}
+            <motion.div {...fadeUp} className="flex flex-col gap-3">
+              <Eyebrow>Action items for you</Eyebrow>
+              <div className="flex-1 flex flex-col gap-2 p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm overflow-hidden min-h-[140px]">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare size={14} className="text-[var(--accent)]" />
+                    <span className="text-[12px] font-semibold text-[var(--text-primary)] uppercase tracking-wider">Your Tasks</span>
+                  </div>
+                  {myTasks.length > 0 && (
+                    <button 
+                      onClick={() => navigate('/tasks')}
+                      className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                    >
+                      View all
+                    </button>
+                  )}
+                </div>
+                
+                {loadingTasks ? (
+                  <div className="flex-1 flex flex-col justify-center items-center gap-2 opacity-50">
+                    <div className="w-4 h-4 rounded-full border-2 border-[var(--border)] border-t-[var(--accent)] animate-spin" />
+                  </div>
+                ) : myTasks.length === 0 ? (
+                  <div className="flex-1 flex flex-col justify-center items-center gap-2 mt-4 text-center">
+                    <CheckSquare size={20} className="text-[var(--text-muted)] opacity-30" />
+                    <p className="text-[12px] text-[var(--text-muted)]">No action items assigned to you.</p>
+                  </div>
+                ) : (
+                  myTasks.map(item => {
+                    const isDone = item.status === 'done';
+                    return (
+                      <div key={item.id} onClick={() => item.lectureId && navigate(`/lectures/${item.lectureId}`)} className={`flex items-start gap-3 p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors group cursor-pointer border border-transparent hover:border-[var(--border)] ${isDone ? 'opacity-50' : ''}`}>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleTaskStatus(item);
+                          }}
+                          className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                            isDone 
+                              ? 'bg-[var(--text-muted)] border-transparent text-[var(--bg)]' 
+                              : 'border-[var(--border)] group-hover:border-[var(--accent)]/50 text-transparent'
+                          }`}
+                        >
+                          {isDone && <CheckSquare className="w-2.5 h-2.5" />}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[13px] font-medium truncate ${isDone ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]'}`}>
+                            {item.task}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[10px] text-[var(--text-muted)] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] truncate max-w-[120px]">
+                            {item.lectureTitle}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-muted)] opacity-50">• {item.priority}</span>
+                        </div>
+                      </div>
                     </div>
                   );
                 })
-              )}
-            </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* ── Coming Up / Calendar ────────────────────────────────────── */}
+          <motion.div {...fadeUp} className="mt-8 mb-6">
+            <ComingUpCalendarWidget />
           </motion.div>
 
+          {/* ── Recent Lectures ────────────────────────────────────────── */}
+          {recentLectures.length > 0 && (
+            <motion.div {...fadeUp} className="mt-4">
+              <div className="flex items-center justify-between mb-4">
+                <Eyebrow>Recent Lectures</Eyebrow>
+                <button
+                  onClick={() => {
+                    useLectureStore.getState().setSelectedFolderId(null);
+                    navigate("/lectures");
+                  }}
+                  className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors focus-visible:outline-none"
+                >
+                  View all <ChevronRight size={11} aria-hidden="true" />
+                </button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2" role="list">
+                {recentLectures.map((lecture) => (
+                  <div key={lecture.id} role="listitem">
+                    <LectureCard lecture={lecture} onClick={() => navigate(`/lectures/${lecture.id}`)} />
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Collections ────────────────────────────────────────────── */}
+          {folders.length > 0 && (
+            <motion.div {...fadeUp} className="mt-2">
+              <div className="flex items-center justify-between mb-5">
+                <Eyebrow>Collections</Eyebrow>
+                <button
+                  onClick={() => navigate("/lectures")}
+                  className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors focus-visible:outline-none"
+                >
+                  All <ChevronRight size={11} aria-hidden="true" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-8 items-start">
+                {folders.slice(0, 8).map((folder, index) => {
+                  const defaultColors = ["#52A8FF", "#9C73F8", "#FF7E79", "#F5A623", "#52D189", "#F06292", "#26C6DA", "#AB47BC"];
+                  const folderColor = folder.color || defaultColors[index % defaultColors.length];
+                  const folderLectures = lectures.filter((l) => l.folderId === folder.id).slice(0, 3);
+                  
+                  // A simplified render card for the folder visualization
+                  const renderCard = (l: Lecture) => (
+                    <div
+                      key={l.id}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/lectures/${l.id}`); }}
+                      className="w-full h-full bg-[var(--surface-raised)] flex flex-col p-1.5 rounded-sm border border-[var(--border)]"
+                    >
+                      <span className="text-[6px] sm:text-[8px] font-bold text-[var(--text-primary)] leading-tight line-clamp-2">
+                        {l.title || "Untitled"}
+                      </span>
+                    </div>
+                  );
+                  
+                  let items: React.ReactNode[] = [null, null, null];
+                  if (folderLectures.length === 1) items[2] = renderCard(folderLectures[0]);
+                  else if (folderLectures.length === 2) { items[0] = renderCard(folderLectures[1]); items[2] = renderCard(folderLectures[0]); }
+                  else if (folderLectures.length >= 3) { items[0] = renderCard(folderLectures[2]); items[1] = renderCard(folderLectures[1]); items[2] = renderCard(folderLectures[0]); }
+                  
+                  return (
+                    <div
+                      key={folder.id}
+                      onClick={() => {
+                        useLectureStore.getState().setSelectedFolderId(folder.id);
+                        navigate('/lectures');
+                      }}
+                      className="flex flex-col items-center gap-3 cursor-pointer group focus-visible:outline-none p-1"
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <Folder size={1} color={folderColor} items={items} />
+                      <span className="text-[12px] font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors max-w-[90px] text-center truncate">
+                        {folder.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          <div className="h-6" aria-hidden="true" />
         </div>
-
       </div>
-
       <GlobalAskAI />
     </div>
   );
