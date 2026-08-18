@@ -20,7 +20,7 @@ const DASHBOARD_RECIPES: AiRecipe[] = [
         shortTitle: 'List recent todos',
         title: 'Extract Action Items & Todos',
         icon: CheckSquare,
-        prompt: (folderName: string) => `Extract every single pending action item, todo, task, and deadline mentioned across the notes in "${folderName}". Present them as a bulleted checklist grouped by note title.`,
+        prompt: (folderName: string) => `Extract all pending action items, deliverables, and follow-ups across the notes in "${folderName}". Format with markdown checkboxes \`- [ ]\`, explicit owners (@<Name>), and deadlines. Group them into Immediate Priorities, Follow-ups, and Open Deliverables.`,
     },
     {
         id: 'insights',

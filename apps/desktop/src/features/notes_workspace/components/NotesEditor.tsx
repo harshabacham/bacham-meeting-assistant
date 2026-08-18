@@ -34,7 +34,17 @@ const NOTE_RECIPES: AiRecipe[] = [
         shortTitle: 'Extract action items',
         title: 'Extract Action Items & Todos',
         icon: CheckSquare,
-        prompt: (noteTitle: string) => `Extract every single pending action item, todo, task, and deadline mentioned in this note: "${noteTitle}".`,
+        prompt: (noteTitle: string) => `Analyze "${noteTitle}" and extract every single concrete action item and commitment. Format output cleanly as:
+## 📋 Action Items & Deliverables
+For each item, format as a markdown checklist with owner and due date if mentioned:
+- [ ] **<Imperative Task>** — @<Owner> (Due: <Deadline>)
+  > 💬 Context: "<Brief verbatim quote or reference>"
+
+Group tasks by category:
+1. 🚀 Immediate Next Steps
+2. ✉️ Follow-ups & Emails
+3. 💻 Dev & Specs
+4. 📅 Scheduling & Meetings`,
     },
     {
         id: 'email',

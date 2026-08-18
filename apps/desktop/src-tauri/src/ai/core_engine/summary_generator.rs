@@ -88,8 +88,20 @@ Return a valid JSON object with the following schema:
   "chapter_breakdown": [ { "title": "string", "summary": "Detailed chapter summary with timestamps", "timestamp_hint": "MM:SS" } ],
   "crm_metadata": { 
     "bant": { "budget": "string or null", "authority": "string or null", "need": "string or null", "timeline": "string or null" }, 
-    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low", "due_date": "string or null", "status": "pending" } ], 
-    "key_decisions": ["string"] 
+    "action_items": [ 
+      { 
+        "task": "string", 
+        "owner": "string", 
+        "raw_quote": "string", 
+        "timestamp": "[MM:SS]", 
+        "due_date": "string or null", 
+        "due_date_iso": "YYYY-MM-DD or null", 
+        "priority": "urgent|high|medium|low", 
+        "category": "follow_up|development|documentation|scheduling|review|general", 
+        "status": "todo" 
+      } 
+    ], 
+    "key_decisions": ["string with [MM:SS] timestamp citations"] 
   }
 }
 

@@ -91,6 +91,19 @@ ANTI-HALLUCINATION & STRICT GROUNDING RULES:
 3. If visual slides/diagrams are present, cite them with `[Slide @ MM:SS]` and describe their content with clarity and precision.
 4. ONLY populate sections if actual relevant content was discussed in the recording. If no mathematical formulas were discussed, return `formula_sheet: []`. If no programming code was shown, return `code_explained: []`. If no action items or sales criteria were assigned, return `crm_metadata: { action_items: [], key_decisions: [], bant: null }`.
 5. NEVER output placeholder text like "Not identified", "None", or "N/A". If an item does not exist, leave it as an empty array `[]` or null.
+6. ACTION ITEM EXTRACTION RULES:
+   - Extract only explicit commitments, assignments, and follow-up deliverables (e.g., 'I will send...', 'Please review...', 'Let's schedule...').
+   - Do NOT extract hypothetical brainstorming, general advice, or past completed tasks.
+   - For every action item:
+     * `task`: An active, imperative summary (e.g., 'Send updated API documentation to frontend team').
+     * `owner`: Name or role of the person responsible ('Harsha', 'Client Team', 'Me', or 'Unassigned').
+     * `raw_quote`: The exact verbatim sentence from the transcript evidencing the commitment.
+     * `timestamp`: The exact [MM:SS] timecode where the commitment occurred.
+     * `due_date`: Human-readable natural deadline (e.g., 'By Friday EOD', 'Tomorrow 2 PM', 'Next sprint') or null.
+     * `due_date_iso`: Normalized ISO date YYYY-MM-DD if determinable, or null.
+     * `priority`: 'urgent' (blocker or <24h), 'high', 'medium', or 'low'.
+     * `category`: 'follow_up' (emails/reach outs), 'development' (code/PRs/bugs), 'documentation' (docs/specs/PRDs), 'scheduling' (calendar/meetings), 'review' (feedback/reviewing work), or 'general'.
+     * `status`: 'todo'.
 
 Return ONLY valid JSON matching this schema:
 {
@@ -125,8 +138,20 @@ Return ONLY valid JSON matching this schema:
   ],
   "key_takeaways": ["Takeaway 1", "Takeaway 2"],
   "crm_metadata": { 
-    "action_items": [ { "task": "string", "owner": "string", "priority": "high|medium|low", "due_date": "string or null" } ],
-    "key_decisions": ["string"],
+    "action_items": [ 
+      { 
+        "task": "string", 
+        "owner": "string", 
+        "raw_quote": "string", 
+        "timestamp": "[MM:SS]", 
+        "due_date": "string or null", 
+        "due_date_iso": "YYYY-MM-DD or null", 
+        "priority": "urgent|high|medium|low", 
+        "category": "follow_up|development|documentation|scheduling|review|general", 
+        "status": "todo" 
+      } 
+    ],
+    "key_decisions": ["string with [MM:SS] timestamp"],
     "bant": { "budget": "string|null", "authority": "string|null", "need": "string|null", "timeline": "string|null" }
   }
 }

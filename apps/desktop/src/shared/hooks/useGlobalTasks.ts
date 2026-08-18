@@ -7,7 +7,12 @@ export interface GlobalActionItem {
   lectureTitle?: string;
   task: string;
   owner: string;
-  priority: 'high' | 'medium' | 'low';
+  rawQuote?: string;
+  timestamp?: string;
+  dueDate?: string;
+  dueDateIso?: string;
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  category?: 'follow_up' | 'development' | 'documentation' | 'scheduling' | 'review' | 'general';
   status: 'todo' | 'done';
   createdAt: number;
 }
@@ -31,15 +36,17 @@ export function useGlobalTasks() {
         const lines = text.split('\n');
         lines.forEach((line: string, idx: number) => {
           const trimmed = line.trim();
-          if (trimmed.startsWith('[ ]') || trimmed.startsWith('- [ ]')) {
+          if (trimmed.startsWith('[ ]') || trimmed.startsWith('- [ ]') || trimmed.startsWith('[x]') || trimmed.startsWith('- [x]')) {
+            const isChecked = trimmed.startsWith('[x]') || trimmed.startsWith('- [x]');
             parsedNoteTasks.push({
               id: `note_task_${n.id}_${idx}`,
               lectureId: n.id,
               lectureTitle: n.title || 'Workspace Note',
-              task: trimmed.replace(/^-\s*\[\s*\]/, '').replace(/^\[\s*\]/, '').trim(),
+              task: trimmed.replace(/^-\s*\[[ x]\]/, '').replace(/^\[[ x]\]/, '').trim(),
               owner: 'Me',
               priority: 'medium',
-              status: 'todo',
+              category: 'general',
+              status: isChecked ? 'done' : 'todo',
               createdAt: n.updatedAt || Date.now(),
             });
           }
@@ -52,12 +59,17 @@ export function useGlobalTasks() {
 
       // Combine real backend items + real note tasks + user created tasks
       const mappedBackendItems: GlobalActionItem[] = (items || []).map((t: any, idx: number) => ({
-        id: `backend_item_${t.lectureId}_${idx}`,
+        id: t.id || `backend_item_${t.lectureId}_${idx}`,
         lectureId: t.lectureId,
         lectureTitle: t.lectureTitle || 'Meeting Note',
         task: t.task,
-        owner: t.owner || 'AI Assistant',
+        owner: t.owner || 'Me',
+        rawQuote: t.rawQuote || t.raw_quote,
+        timestamp: t.timestamp || t.timestamp_str,
+        dueDate: t.dueDate || t.due_date,
+        dueDateIso: t.dueDateIso || t.due_date_iso,
         priority: (t.priority?.toLowerCase() as any) || 'medium',
+        category: (t.category?.toLowerCase() as any) || 'general',
         status: t.status === 'done' ? 'done' : 'todo',
         createdAt: Date.now() - idx * 1000,
       }));

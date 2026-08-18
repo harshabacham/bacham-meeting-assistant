@@ -10,9 +10,19 @@ interface Props {
 
 import { useCalendarStore } from '@/shared/stores/calendarStore';
 
+const CATEGORY_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  follow_up: { label: 'Follow-up', icon: FileText, color: 'text-sky-500 bg-sky-500/10 border-sky-500/20' },
+  development: { label: 'Development', icon: Code, color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
+  documentation: { label: 'Docs & Specs', icon: FileText, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
+  scheduling: { label: 'Scheduling', icon: Clock, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
+  review: { label: 'Review', icon: CheckCircle, color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
+  general: { label: 'Action Item', icon: Target, color: 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20' },
+};
+
 const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
   const [isExecuting, setIsExecuting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(item.status === 'completed');
+  const [isCompleted, setIsCompleted] = useState(item.status === 'done' || item.status === 'completed');
+  const [showQuote, setShowQuote] = useState(false);
   const { addEvent, setSyncModalOpen, isConnected } = useCalendarStore();
 
   const handleExecute = async () => {
@@ -38,17 +48,17 @@ const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
       return;
     }
 
-    if (!item.due_date) {
+    const dueStr = item.dueDate || item.due_date;
+    if (!dueStr) {
       alert("No due date found to set a reminder for.");
       return;
     }
 
     const today = new Date();
-    // basic assumption that it's next day if due date is raw text, otherwise parse
     addEvent({
       title: `Task: ${item.task}`,
-      description: `Action item assigned to ${item.owner}`,
-      dateStr: item.due_date,
+      description: `Action item assigned to ${item.owner || 'Me'}${item.rawQuote ? `\n\nQuote: "${item.rawQuote}"` : ''}`,
+      dateStr: dueStr,
       dayNum: today.getDate() + 1,
       monthStr: today.toLocaleString('default', { month: 'short' }),
       dayOfWeek: today.toLocaleString('default', { weekday: 'short' }),
@@ -58,29 +68,71 @@ const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
     alert(`Reminder for "${item.task}" added to your calendar!`);
   };
 
+  const category = (item.category?.toLowerCase() as string) || 'general';
+  const categoryMeta = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.general;
+  const CategoryIcon = categoryMeta.icon;
+
+  const rawQuote = item.rawQuote || item.raw_quote;
+  const timestamp = item.timestamp || item.timestamp_str;
+  const dueDate = item.dueDate || item.due_date;
+  const priority = item.priority?.toLowerCase() || 'medium';
+
   return (
-    <div className={`flex flex-col bg-background/50 p-3 rounded border border-border/50 group hover:border-primary/30 transition-colors ${isCompleted ? 'opacity-50' : ''}`}>
+    <div className={`flex flex-col p-4 rounded-xl border transition-all shadow-xs relative overflow-hidden group ${
+      isCompleted 
+        ? 'bg-[var(--surface)]/40 border-[var(--border)] opacity-60' 
+        : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--border-accent)]'
+    }`}>
       <div className="flex justify-between items-start gap-3">
-        <div className="flex items-start gap-2 flex-1 mt-1">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
           <input 
             type="checkbox" 
             checked={isCompleted}
             onChange={(e) => setIsCompleted(e.target.checked)}
-            className="mt-0.5 shrink-0 accent-[var(--accent)] cursor-pointer"
+            className="mt-1 shrink-0 accent-[var(--accent)] cursor-pointer rounded"
           />
-          <span className={`text-sm font-medium leading-relaxed ${isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-            {item.task}
-          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              {/* Category */}
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${categoryMeta.color}`}>
+                <CategoryIcon size={11} />
+                <span>{categoryMeta.label}</span>
+              </span>
+
+              {/* Priority */}
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                priority === 'urgent' ? 'text-red-500 bg-red-500/10 border border-red-500/20' :
+                priority === 'high' ? 'text-amber-500 bg-amber-500/10 border border-amber-500/20' :
+                priority === 'medium' ? 'text-blue-500 bg-blue-500/10 border border-blue-500/20' :
+                'text-zinc-500 bg-zinc-500/10 border border-zinc-500/20'
+              }`}>
+                {priority}
+              </span>
+
+              {/* Timestamp citation */}
+              {timestamp && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[var(--text-muted)] bg-[var(--surface-raised)] px-2 py-0.5 rounded-md border border-[var(--border)]">
+                  <Clock size={10} />
+                  <span>{timestamp}</span>
+                </span>
+              )}
+            </div>
+
+            <p className={`text-sm font-medium leading-relaxed ${isCompleted ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+              {item.task}
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 shrink-0 max-w-[200px]">
+
+        <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
           <button 
             onClick={handleExecute}
             disabled={isExecuting}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)] hover:opacity-90 transition-colors text-[11px] font-semibold"
             title="Execute with AI"
           >
             {isExecuting ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-            Execute
+            <span>{isExecuting ? '...' : 'Run'}</span>
           </button>
           
           <button 
@@ -99,36 +151,53 @@ const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
                 console.error(e);
               }
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)]/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-[11px] font-medium"
             title="Push to Linear via Composio"
           >
-            <Briefcase size={12} /> Push
+            <Briefcase size={12} />
+            <span>Linear</span>
           </button>
 
           <button 
             onClick={handleSetReminder}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 hover:bg-blue-500/20 transition-colors text-[11px] font-medium"
             title="Set Reminder on Calendar"
           >
-            <Clock size={12} /> Remind
+            <Clock size={12} />
+            <span>Remind</span>
           </button>
         </div>
       </div>
-      <div className="flex flex-wrap justify-between items-center mt-3 text-xs gap-2">
+
+      {/* Metadata bar: Owner, Due Date, Quote toggle */}
+      <div className="flex flex-wrap justify-between items-center mt-3 pt-2.5 border-t border-[var(--border)]/60 text-xs gap-2">
         <div className="flex gap-2 items-center">
-          <span className="text-muted-foreground bg-surface px-2 py-0.5 rounded border border-border/50">Owner: {item.owner || 'Unassigned'}</span>
-          {item.due_date && (
-             <span className="text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded border border-orange-400/20 font-medium">Due: {item.due_date}</span>
+          <span className="text-[var(--text-secondary)] bg-[var(--surface-raised)] px-2 py-0.5 rounded-md border border-[var(--border)] font-medium">
+            Owner: {item.owner || 'Unassigned'}
+          </span>
+          {dueDate && (
+             <span className="text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 font-medium">
+               Due: {dueDate}
+             </span>
           )}
         </div>
-        <span className={`px-2 py-0.5 rounded uppercase tracking-wider font-bold ${
-          item.priority === 'high' ? 'text-red-400 bg-red-400/10' :
-          item.priority === 'medium' ? 'text-yellow-400 bg-yellow-400/10' :
-          'text-blue-400 bg-blue-400/10'
-        }`}>
-          {item.priority}
-        </span>
+
+        {rawQuote && (
+          <button
+            type="button"
+            onClick={() => setShowQuote(!showQuote)}
+            className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium transition-colors"
+          >
+            {showQuote ? 'Hide quote' : 'View quote'}
+          </button>
+        )}
       </div>
+
+      {showQuote && rawQuote && (
+        <div className="mt-2.5 p-2 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] text-xs text-[var(--text-secondary)] italic leading-relaxed">
+          "{rawQuote}"
+        </div>
+      )}
     </div>
   );
 };

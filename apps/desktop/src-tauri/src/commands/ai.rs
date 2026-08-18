@@ -1122,15 +1122,21 @@ pub async fn transcript_comments_delete(id: String, app: AppHandle) -> AppResult
     Ok(())
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GlobalActionItem {
+    pub id: Option<String>,
     pub lecture_id: String,
     pub lecture_title: String,
     pub task: String,
     pub owner: String,
-    pub priority: String,
-    pub status: String, // "todo" or "done"
+    pub raw_quote: Option<String>,
+    pub timestamp: Option<String>,
+    pub due_date: Option<String>,
+    pub due_date_iso: Option<String>,
+    pub priority: String, // "urgent" | "high" | "medium" | "low"
+    pub category: String, // "follow_up" | "development" | "documentation" | "scheduling" | "review" | "general"
+    pub status: String,   // "todo" | "in_progress" | "done"
 }
 
 #[tauri::command]
@@ -1154,24 +1160,47 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                     if let Some(task_text) = item.as_str() {
                         let text = task_text.trim_start_matches("[Key Decision]").trim();
                         all_items.push(GlobalActionItem {
+                            id: None,
                             lecture_id: row.lecture_id.clone(),
                             lecture_title: row.title.clone(),
                             task: text.to_string(),
                             owner: "Me".to_string(),
+                            raw_quote: None,
+                            timestamp: None,
+                            due_date: None,
+                            due_date_iso: None,
                             priority: "high".to_string(),
+                            category: "general".to_string(),
                             status: "todo".to_string(),
                         });
                     } else if let Some(obj) = item.as_object() {
                         let task = obj.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let owner = obj.get("owner").and_then(|v| v.as_str()).unwrap_or("Me").to_string();
+                        let raw_quote = obj.get("raw_quote").or_else(|| obj.get("rawQuote")).and_then(|v| v.as_str()).map(String::from);
+                        let timestamp = obj.get("timestamp").or_else(|| obj.get("timestamp_str")).and_then(|v| v.as_str()).map(String::from);
+                        let due_date = obj.get("due_date").or_else(|| obj.get("dueDate")).and_then(|v| v.as_str()).map(String::from);
+                        let due_date_iso = obj.get("due_date_iso").or_else(|| obj.get("dueDateIso")).and_then(|v| v.as_str()).map(String::from);
+                        let priority = obj.get("priority").and_then(|v| v.as_str()).unwrap_or("medium").to_string();
+                        let category = obj.get("category").and_then(|v| v.as_str()).unwrap_or("general").to_string();
                         let status = obj.get("status").and_then(|v| v.as_str()).unwrap_or("todo").to_string();
-                        all_items.push(GlobalActionItem {
-                            lecture_id: row.lecture_id.clone(),
-                            lecture_title: row.title.clone(),
-                            task,
-                            owner: "Me".to_string(),
-                            priority: "high".to_string(),
-                            status,
-                        });
+                        let id = obj.get("id").and_then(|v| v.as_str()).map(String::from);
+
+                        if !task.is_empty() {
+                            all_items.push(GlobalActionItem {
+                                id,
+                                lecture_id: row.lecture_id.clone(),
+                                lecture_title: row.title.clone(),
+                                task,
+                                owner,
+                                raw_quote,
+                                timestamp,
+                                due_date,
+                                due_date_iso,
+                                priority,
+                                category,
+                                status,
+                            });
+                        }
                     }
                 }
             }
@@ -1181,8 +1210,14 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                     let mut modified = false;
                     for item in items.iter_mut() {
                         let task = item.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                        let owner = item.get("owner").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let owner = item.get("owner").and_then(|v| v.as_str()).unwrap_or("Me").to_string();
+                        let raw_quote = item.get("raw_quote").or_else(|| item.get("rawQuote")).and_then(|v| v.as_str()).map(String::from);
+                        let timestamp = item.get("timestamp").or_else(|| item.get("timestamp_str")).and_then(|v| v.as_str()).map(String::from);
+                        let due_date = item.get("due_date").or_else(|| item.get("dueDate")).and_then(|v| v.as_str()).map(String::from);
+                        let due_date_iso = item.get("due_date_iso").or_else(|| item.get("dueDateIso")).and_then(|v| v.as_str()).map(String::from);
                         let priority = item.get("priority").and_then(|v| v.as_str()).unwrap_or("medium").to_string();
+                        let category = item.get("category").and_then(|v| v.as_str()).unwrap_or("general").to_string();
+                        let id = item.get("id").and_then(|v| v.as_str()).map(String::from);
                         
                         if item.get("status").is_none() {
                             item.as_object_mut().unwrap().insert("status".to_string(), serde_json::json!("todo"));
@@ -1192,11 +1227,17 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
 
                         if !task.is_empty() {
                             all_items.push(GlobalActionItem {
+                                id,
                                 lecture_id: row.lecture_id.clone(),
                                 lecture_title: row.title.clone(),
                                 task,
                                 owner,
+                                raw_quote,
+                                timestamp,
+                                due_date,
+                                due_date_iso,
                                 priority,
+                                category,
                                 status,
                             });
                         }
