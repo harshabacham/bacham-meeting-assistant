@@ -192,7 +192,7 @@ export function AppLayout() {
                         animate={{ width: 200, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 350, damping: 38, mass: 0.8 }}
-                        className="bg-surface shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full shadow-[2px_0_8px_rgba(0,0,0,0.05)]"
+                        className="bg-surface shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full"
                     >
                         {/* Absolutely positioned Sidebar Toggle to perfectly align horizontally with h-12 Window Controls */}
                         <div className="absolute top-0 right-0 h-12 w-16 flex items-center justify-end pr-4 z-50">
