@@ -28,6 +28,7 @@ export function NotesWorkspacePage() {
     const eventTitle = searchParams.get('eventTitle');
     const eventTime = searchParams.get('eventTime');
     const eventDate = searchParams.get('eventDate');
+    const eventFolderId = searchParams.get('folderId');
 
     const [notes, setNotes] = useState<Note[]>([]);
     const [folders, setFolders] = useState<any[]>([]);
@@ -62,16 +63,12 @@ export function NotesWorkspacePage() {
     });
 
     // ── Fetch workspace data ──────────────────────────────────────────────────────────
-    useEffect(() => {
-        let mounted = true;
-        
-        Promise.all([
+    const refreshWorkspaceData = useCallback(() => {
+        return Promise.all([
             TauriClient.getWorkspaceNotes().catch(() => []),
             TauriClient.listFolders().catch(() => []),
             TauriClient.listLectures().catch(() => []),
         ]).then(([fetchedNotes, fetchedFolders, fetchedLectures]) => {
-            if (!mounted) return;
-
             setFolders(fetchedFolders || []);
             setLectures(fetchedLectures || []);
 
@@ -110,9 +107,11 @@ export function NotesWorkspacePage() {
             const combined = [...regularNotes, ...meetingNotes].sort((a, b) => b.updatedAt - a.updatedAt);
             setNotes(combined);
         }).catch(e => console.error('Failed to fetch unified workspace notes', e));
-
-        return () => { mounted = false; };
     }, []);
+
+    useEffect(() => {
+        refreshWorkspaceData();
+    }, [refreshWorkspaceData]);
 
     // Open or create calendar event note if query params are present
     const createdEventRef = useRef<string | null>(null);
@@ -121,27 +120,39 @@ export function NotesWorkspacePage() {
         createdEventRef.current = eventTitle;
 
         const cleanTitle = eventTitle.endsWith('📅') ? eventTitle : `${eventTitle} 📅`;
+        const targetFolder = eventFolderId || activeFolderId || null;
+        const initialTags = targetFolder ? [`folder:${targetFolder}`] : [];
+
         const existing = notes.find(n => n.title.toLowerCase().includes(eventTitle.toLowerCase()));
         
         if (existing) {
+            if (targetFolder && existing.folderId !== targetFolder) {
+                const updatedTags = [...existing.tags.filter(t => !t.startsWith('folder:')), `folder:${targetFolder}`];
+                TauriClient.updateWorkspaceNote(existing.id, undefined, undefined, undefined, updatedTags).catch(() => {});
+                setNotes(prev => prev.map(n => n.id === existing.id ? { ...n, folderId: targetFolder, tags: updatedTags } : n));
+            }
             setActiveNoteId(existing.id);
         } else {
             TauriClient.createWorkspaceNote(cleanTitle, '')
-                .then(newNote => {
+                .then(async newNote => {
+                    if (initialTags.length > 0) {
+                        await TauriClient.updateWorkspaceNote(newNote.id, undefined, undefined, undefined, initialTags).catch(() => {});
+                    }
                     const noteObj: Note = {
                         ...newNote,
                         title: cleanTitle,
                         content: '',
                         eventTime: eventTime || '12:00 PM',
                         eventDate: eventDate || 'Friday',
-                        tags: [],
+                        tags: initialTags,
+                        folderId: targetFolder,
                     };
                     setNotes(prev => [noteObj, ...prev]);
                     setActiveNoteId(newNote.id);
                 })
                 .catch(console.error);
         }
-    }, [eventTitle, eventTime, eventDate, notes]);
+    }, [eventTitle, eventTime, eventDate, eventFolderId, activeFolderId, notes]);
 
     // Filter lectures by active folder
     const displayLectures = useMemo(() => {
@@ -189,6 +200,10 @@ export function NotesWorkspacePage() {
                         if (patch.title) {
                             await TauriClient.updateLecture({ id, title: currentNote.title });
                         }
+                        if (patch.folderId !== undefined) {
+                            await TauriClient.moveLectures([id], patch.folderId);
+                            useLectureStore.getState().fetchLectures();
+                        }
                     } else {
                         await TauriClient.updateWorkspaceNote(
                             id, 
@@ -228,6 +243,10 @@ export function NotesWorkspacePage() {
         }
     }, [activeFolderId]);
 
+    const activeNoteFolderName = activeNote?.folderId 
+        ? folders.find(f => f.id === activeNote.folderId)?.name || 'Folder'
+        : (activeFolder?.name || 'All Notes');
+
     return (
         <div className="flex h-full w-full bg-[var(--bg)] overflow-hidden text-[var(--text-primary)]">
             <div className="flex-1 flex flex-col min-w-0 h-full relative">
@@ -236,8 +255,11 @@ export function NotesWorkspacePage() {
                         key={activeNote.id}
                         note={activeNote}
                         folders={folders}
-                        folderName={activeFolder?.name || 'My Notes'}
-                        onBack={() => setActiveNoteId(null)}
+                        folderName={activeNoteFolderName}
+                        onBack={() => {
+                            setActiveNoteId(null);
+                            refreshWorkspaceData();
+                        }}
                         onUpdate={(patch) => handleUpdateNote(activeNote.id, patch)}
                     />
                 ) : (

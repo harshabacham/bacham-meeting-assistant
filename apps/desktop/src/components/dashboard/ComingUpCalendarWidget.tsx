@@ -45,7 +45,8 @@ export function ComingUpCalendarWidget() {
     const title = evt.title || 'Meeting Note';
     const time = evt.timeRange || evt.startTime || '12:00 PM';
     const date = evt.dayOfWeek || evt.monthStr || 'Today';
-    navigate(`/notes?eventTitle=${encodeURIComponent(title)}&eventTime=${encodeURIComponent(time)}&eventDate=${encodeURIComponent(date)}`);
+    const folderId = eventFolderMapping[evt.id] || '';
+    navigate(`/notes?eventTitle=${encodeURIComponent(title)}&eventTime=${encodeURIComponent(time)}&eventDate=${encodeURIComponent(date)}&folderId=${encodeURIComponent(folderId)}`);
   };
 
   const filteredFolders = folders.filter(f => !folderSearch || f.name.toLowerCase().includes(folderSearch.toLowerCase()));

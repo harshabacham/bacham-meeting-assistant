@@ -128,7 +128,36 @@ pub async fn get_folder_dashboard(state: State<'_, DbState>, id: String) -> AppR
 
     let pinned_lectures = Vec::new();
     let recent_chats = Vec::new();
-    let recent_notes = Vec::new();
+
+    // Fetch actual workspace notes tagged with this folder
+    let folder_tag_pattern = format!("%\"folder:{}\"%", id);
+    let note_rows = sqlx::query(
+        "SELECT id, title, content_html, is_pinned, tags_json, created_at, updated_at 
+         FROM workspace_notes 
+         WHERE tags_json LIKE ? 
+         ORDER BY updated_at DESC 
+         LIMIT 10"
+    ).bind(&folder_tag_pattern).fetch_all(&mut *tx).await.unwrap_or_default();
+
+    let mut recent_notes = Vec::new();
+    for r in note_rows {
+        let note_id: String = sqlx::Row::try_get(&r, "id").unwrap_or_default();
+        let title: String = sqlx::Row::try_get(&r, "title").unwrap_or_default();
+        let content: String = sqlx::Row::try_get(&r, "content_html").unwrap_or_default();
+        let created_at: String = sqlx::Row::try_get(&r, "created_at").unwrap_or_default();
+        let updated_at: String = sqlx::Row::try_get(&r, "updated_at").unwrap_or_default();
+
+        recent_notes.push(FolderNote {
+            id: note_id,
+            folder_id: id.clone(),
+            title: Some(title),
+            body_md: content,
+            kind: "custom".into(),
+            created_at,
+            updated_at,
+        });
+    }
+
     let continue_learning = None;
 
     tx.commit().await?;
@@ -148,12 +177,14 @@ pub async fn get_folder_dashboard(state: State<'_, DbState>, id: String) -> AppR
 pub async fn recompute_folder_statistics(state: State<'_, DbState>, id: String) -> AppResult<FolderStatisticsCache> {
     let mut tx = state.pool.begin().await?;
     
-    // Aggregate data for this folder (and maybe its subfolders if needed, but for now just this folder)
+    // Aggregate data for this folder
     let lecture_count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM lectures WHERE folder_id = ?", id)
         .fetch_one(&mut *tx).await?;
         
-    let note_count: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM folder_notes WHERE folder_id = ?", id)
-        .fetch_one(&mut *tx).await?;
+    let folder_tag_pattern = format!("%\"folder:{}\"%", id);
+    let note_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM workspace_notes WHERE tags_json LIKE ?"
+    ).bind(&folder_tag_pattern).fetch_one(&mut *tx).await.unwrap_or(0);
 
     // (Dummy queries for other stats until full schema is known for flashcards/quizzes)
     let flashcard_count: i64 = 0;
