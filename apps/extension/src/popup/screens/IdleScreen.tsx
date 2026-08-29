@@ -127,9 +127,9 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     }
     if (!tab?.id) return;
 
-    // Show Chrome's native source picker (Tabs, Windows, Entire Screen)
+    // Show Chrome's native source picker (Tabs, Windows, Entire Screen) for the extension
     const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
-      chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], tab, (id, opts) => {
+      (chrome.desktopCapture.chooseDesktopMedia as any)(['tab', 'window', 'screen', 'audio'], (id: string, opts: any) => {
         if (chrome.runtime.lastError || !id) {
           resolve({});
         } else {

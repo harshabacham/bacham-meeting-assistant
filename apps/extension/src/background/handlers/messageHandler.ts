@@ -149,7 +149,7 @@ export function createMessageHandler(
           ? { streamId: intent.streamId, hasAudio: intent.streamHasAudio ?? true }
           : await new Promise<{streamId?: string, hasAudio?: boolean}>((resolve) => {
               if (intent.captureMode === 'screen' || intent.captureMode === 'window' || intent.captureMode === 'walkthrough') {
-                chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab', 'audio'], tab, (id, options) => {
+                (chrome.desktopCapture.chooseDesktopMedia as any)(['screen', 'window', 'tab', 'audio'], (id: string, options: any) => {
                   if (chrome.runtime.lastError || !id) {
                     log.error(MODULE, 'desktopCapture.chooseDesktopMedia failed', {
                       error: chrome.runtime.lastError?.message,
