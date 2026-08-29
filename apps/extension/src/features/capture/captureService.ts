@@ -156,7 +156,9 @@ export function createCaptureService(
     let acquiredStream: MediaStream | null = null;
 
     if (streamId) {
+      // 1. Try with audio + video for primary then fallback source
       for (const source of [primarySource, fallbackSource]) {
+        if (acquiredStream) break;
         try {
           const constraints: MediaStreamConstraints = {
             audio: config.audio
@@ -177,26 +179,39 @@ export function createCaptureService(
               : false,
           };
           acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
-          log.info(MODULE, `Acquired stream via getUserMedia using source ${source}`, { tracks: acquiredStream.getTracks().length });
+          log.info(MODULE, `Acquired full stream via getUserMedia using source ${source}`, { tracks: acquiredStream.getTracks().length });
           break;
         } catch (err: any) {
-          log.warn(MODULE, `getUserMedia with source ${source} failed`, { err: err.message });
+          log.warn(MODULE, `getUserMedia (with audio) source ${source} failed`, { err: err.message });
+        }
+      }
+
+      // 2. If audio constraint failed (common with window/screen capture without shared audio), retry video-only with streamId
+      if (!acquiredStream && (config.video || config.screenshotIntervalMs || isDesktop)) {
+        for (const source of [primarySource, fallbackSource]) {
+          if (acquiredStream) break;
+          try {
+            const constraints: MediaStreamConstraints = {
+              audio: false,
+              video: {
+                mandatory: {
+                  chromeMediaSource: source,
+                  chromeMediaSourceId: streamId,
+                },
+              } as unknown as MediaTrackConstraints,
+            };
+            acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
+            log.info(MODULE, `Acquired video-only stream via getUserMedia using source ${source}`, { tracks: acquiredStream.getTracks().length });
+            break;
+          } catch (err: any) {
+            log.warn(MODULE, `getUserMedia (video-only) source ${source} failed`, { err: err.message });
+          }
         }
       }
     }
 
     if (!acquiredStream) {
-      try {
-        log.info(MODULE, 'Attempting getDisplayMedia stream acquisition...');
-        acquiredStream = await navigator.mediaDevices.getDisplayMedia({
-          video: config.video || !!config.screenshotIntervalMs,
-          audio: config.audio,
-        });
-        log.info(MODULE, 'Acquired stream via getDisplayMedia', { tracks: acquiredStream.getTracks().length });
-      } catch (err: any) {
-        log.error(MODULE, 'Both getUserMedia and getDisplayMedia failed', { err: err.message, name: err.name });
-        throw new Error(`Capture failed: ${err.message || err.name || 'Unknown error'}`);
-      }
+      throw new Error('Failed to acquire media stream with the selected capture source.');
     }
 
     mediaStream = acquiredStream;
