@@ -317,7 +317,7 @@ export function createCaptureService(
         updateState({ currentChunkBytes: videoChunkBufferBytes });
       };
       videoRecorder.onerror = (event) => log.error(MODULE, 'videoRecorder error', { error: event.error?.message });
-      videoRecorder.start(); // Continuous recording
+      videoRecorder.start(1000); // Continuous recording with 1s timeslice
     }
 
     // 3. Transcript Recorder (audio only)
@@ -339,7 +339,7 @@ export function createCaptureService(
         log.error(MODULE, 'transcriptRecorder error', { error: (event as any).error?.message });
       };
 
-      transcriptRecorder.start(); // Continuous recording
+      transcriptRecorder.start(1000); // Continuous recording with 1s timeslice
     } else if (config.audio) {
       log.warn(MODULE, 'No audio tracks found for transcript recording.');
     }
@@ -424,38 +424,44 @@ export function createCaptureService(
       return;
     }
 
+    console.log(`[BACHAM:stopCapture] Stopping capture for sessionId: ${currentSessionId}`);
+
     // Request final data from both recorders before stopping
     if (videoRecorder && videoRecorder.state !== 'inactive') {
-      try {
-        videoRecorder.requestData();
-      } catch {}
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 800);
+        videoRecorder!.addEventListener('stop', () => {
+          clearTimeout(timer);
+          setTimeout(resolve, 100);
+        }, { once: true });
+        try { videoRecorder!.requestData(); } catch {}
+        videoRecorder!.stop();
+      });
     }
+
     if (transcriptRecorder && transcriptRecorder.state !== 'inactive') {
-      try {
-        transcriptRecorder.requestData();
-      } catch {}
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 800);
+        transcriptRecorder!.addEventListener('stop', () => {
+          clearTimeout(timer);
+          setTimeout(resolve, 100);
+        }, { once: true });
+        try { transcriptRecorder!.requestData(); } catch {}
+        transcriptRecorder!.stop();
+      });
     }
 
-    // Stop both recorders and wait for their onstop to fire
-    await new Promise<void>((resolve) => {
-      if (!videoRecorder || videoRecorder.state === 'inactive') { resolve(); return; }
-      videoRecorder.onstop = () => resolve();
-      videoRecorder.stop();
-    });
+    console.log(`[BACHAM:stopCapture] Buffers after stop: videoChunks=${videoChunkBuffer.length} (${videoChunkBufferBytes} bytes), transcriptChunks=${transcriptChunkBuffer.length}`);
 
-    await new Promise<void>((resolve) => {
-      if (!transcriptRecorder || transcriptRecorder.state === 'inactive') { resolve(); return; }
-      transcriptRecorder.onstop = () => resolve();
-      transcriptRecorder.stop();
-    });
-
-    if (videoRecorder && videoChunkBuffer.length > 0) {
-      const blob = new Blob(videoChunkBuffer, { type: videoRecorder.mimeType || 'video/webm' });
+    if (videoChunkBuffer.length > 0) {
+      const blob = new Blob(videoChunkBuffer, { type: videoRecorder?.mimeType || 'video/webm' });
       await uploadBlob(blob, 'video');
+    } else {
+      log.warn(MODULE, 'No video chunks captured to upload');
     }
     
-    if (transcriptRecorder && transcriptChunkBuffer.length > 0) {
-      const blob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder.mimeType || 'audio/webm' });
+    if (transcriptChunkBuffer.length > 0) {
+      const blob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder?.mimeType || 'audio/webm' });
       await uploadBlob(blob, 'transcript');
     } else if (videoChunkBuffer.length > 0) {
       // The video WebM file contains the audio track — upload for Gemini transcription
