@@ -14,9 +14,6 @@
  *   - Any user-generated content
  */
 
-
-import { createRoot } from 'react-dom/client';
-import { FloatingActionMenu } from './components/FloatingActionMenu';
 import { MessageType } from '@/shared/types';
 import type { InternalMessage, InternalResponse } from '@/shared/types';
 
@@ -77,17 +74,13 @@ let lastSlideChangeTimestamp = 0;
 function initializeSlideObserver() {
   const platform = detectPlatform();
   
-  // Basic heuristic: look for large DOM changes or specific class name changes
-  // typical in Google Meet / Zoom Web presentation areas.
   const observer = new MutationObserver((mutations) => {
     const now = Date.now();
-    // Debounce slide change detection (e.g., at most once every 5 seconds)
+    // Debounce slide change detection (at most once every 5 seconds)
     if (now - lastSlideChangeTimestamp < 5000) return;
 
     let significantChange = false;
     for (const mutation of mutations) {
-      // In Google Meet, presentation changes often involve massive node tree changes 
-      // or attribute changes on specific canvas/video/div elements.
       if (mutation.type === 'childList' && mutation.addedNodes.length > 5) {
         significantChange = true;
         break;
@@ -100,15 +93,13 @@ function initializeSlideObserver() {
 
     if (significantChange) {
       lastSlideChangeTimestamp = now;
-      console.log('[BACHAM] Significant visual change detected (possible slide change).');
-      // Forward this trigger to the background script to take a snapshot
       chrome.runtime.sendMessage({
         type: MessageType.TRIGGER_SNAPSHOT,
         payload: {
           reason: 'slide_change',
-          platform
-        }
-      });
+          platform,
+        },
+      }).catch(() => {});
     }
   });
 
@@ -116,26 +107,11 @@ function initializeSlideObserver() {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['src', 'style', 'class'] // Common attributes that change during presentation
+    attributeFilter: ['src', 'style', 'class'],
   });
 }
 
 // --- Feature 4: Mute-Aware Recording Pause ---
-/**
- * MuteObserver
- *
- * Watches for mic mute/unmute state changes in major meeting platforms
- * using known DOM attribute patterns. Fires MUTE_STATE_CHANGE so the
- * background script can pause/resume the transcript recorder.
- *
- * Degrades gracefully: if no known selector found, nothing happens.
- *
- * Platform selectors (best-effort, may need updating on major redesigns):
- *  - Google Meet: button[data-is-muted]
- *  - Zoom Web: button[aria-label*="Mute"] or button[aria-label*="Unmute"]  
- *  - Teams: button[data-tid="toggle-mute-button"]
- *  - Webex: button[aria-label*="Mute"]
- */
 function initializeMuteObserver() {
   const platform = detectPlatform();
   if (platform === 'unknown') return;
@@ -183,49 +159,19 @@ function initializeMuteObserver() {
       chrome.runtime.sendMessage({
         type: MessageType.MUTE_STATE_CHANGE,
         payload: { muted, platform },
-      }).catch(() => {/* background may not be listening */});
+      }).catch(() => {});
     }
   }
 
-  // Poll every 2 seconds — light enough to not impact performance
+  // Poll every 2 seconds
   setInterval(checkMuteState, 2000);
-  console.log('[BACHAM] Mute Observer initialized for platform:', platform);
 }
 
-// Initialize features
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  initializeSlideObserver();
-  initializeCaptionObserver();
-  initializeMuteObserver();
-  injectFloatingUI();
-} else {
-  document.addEventListener('DOMContentLoaded', () => {
-    initializeSlideObserver();
-    initializeCaptionObserver();
-    initializeMuteObserver();
-    injectFloatingUI();
-  });
-}
-
-function injectFloatingUI() {
-  const containerId = 'bacham-floating-ui-root';
-  if (document.getElementById(containerId)) return;
-
-  const container = document.createElement('div');
-  container.id = containerId;
-  document.body.appendChild(container);
-
-  const root = createRoot(container);
-  root.render(<FloatingActionMenu />);
-}
-
-// --- Feature 2: Live "Agentic" Knowledge Retrieval (Live Captions) ---
+// --- Feature 2: Live Captions Observer ---
 function initializeCaptionObserver() {
   const platform = detectPlatform();
-  if (platform !== 'google-meet') return; // For now, specifically targeting Google Meet
+  if (platform !== 'google-meet') return;
 
-  // Google Meet captions are typically rendered in a specific container.
-  // We look for text being added rapidly to the DOM.
   let lastCaptionText = '';
 
   const observer = new MutationObserver((mutations) => {
@@ -234,30 +180,24 @@ function initializeCaptionObserver() {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
-            // Google Meet caption text heuristic:
-            // Usually, they are deep in the DOM tree, often within a known class but classes are obfuscated.
-            // We can look for divs with a certain role, or just monitor all text additions and debounce.
             const textContent = element.textContent?.trim();
             
-            // Basic heuristic for demo: if it's a short burst of text in a deep div
             if (textContent && textContent.length > 3 && textContent !== lastCaptionText && element.tagName !== 'SCRIPT' && element.tagName !== 'STYLE') {
-              // Ignore massive DOM changes (likely not a caption)
               if (textContent.length > 200) return;
 
-              // Attempt to find speaker name in a previous sibling or parent
               let speakerName = 'Unknown Speaker';
               try {
                 const parent = element.parentElement?.parentElement;
                 if (parent && parent.textContent) {
-                    const fullText = parent.textContent;
-                    if (fullText.length > textContent.length) {
-                       const possibleName = fullText.substring(0, fullText.indexOf(textContent)).trim();
-                       if (possibleName && possibleName.length < 30) {
-                           speakerName = possibleName;
-                       }
+                  const fullText = parent.textContent;
+                  if (fullText.length > textContent.length) {
+                    const possibleName = fullText.substring(0, fullText.indexOf(textContent)).trim();
+                    if (possibleName && possibleName.length < 30) {
+                      speakerName = possibleName;
                     }
+                  }
                 }
-              } catch (e) { /* ignore */ }
+              } catch {}
 
               lastCaptionText = textContent;
               
@@ -267,9 +207,9 @@ function initializeCaptionObserver() {
                   text: textContent,
                   speakerName: speakerName,
                   timestamp: Date.now(),
-                  platform
-                }
-              });
+                  platform,
+                },
+              }).catch(() => {});
             }
           }
         });
@@ -281,8 +221,17 @@ function initializeCaptionObserver() {
     childList: true,
     subtree: true,
   });
-  console.log('[BACHAM] Live Caption Observer initialized');
 }
 
-
-
+// Initialize observers (No injected floating UI into webpage DOM)
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  initializeSlideObserver();
+  initializeCaptionObserver();
+  initializeMuteObserver();
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeSlideObserver();
+    initializeCaptionObserver();
+    initializeMuteObserver();
+  });
+}

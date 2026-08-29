@@ -440,11 +440,21 @@ export function createMessageHandler(
       case MessageType.TRIGGER_SNAPSHOT: {
         const { currentSession } = await storage.get(['currentSession']);
         if (currentSession && currentSession.state === 'recording') {
-          log.info(MODULE, 'Triggering immediate snapshot based on visual context event.');
-          // Fire and forget so we don't block
-          void screenshotService.takeScreenshot(currentSession.id);
+          log.info(MODULE, 'Triggering immediate snapshot.');
+          try {
+            const response = await chrome.runtime.sendMessage({
+              target: 'offscreen',
+              type: 'TAKE_SCREENSHOT',
+            });
+            if (response?.success && response.base64) {
+              void screenshotService.processScreenshot(currentSession.id, response.base64);
+              return { success: true, data: { base64: response.base64 } };
+            }
+          } catch (err) {
+            log.warn(MODULE, 'Failed to capture frame from offscreen', { err });
+          }
         }
-        return { success: true };
+        return { success: false, error: 'No active recording stream' };
       }
 
       case MessageType.LIVE_CAPTION: {

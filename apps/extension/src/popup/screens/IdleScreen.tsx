@@ -49,33 +49,19 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
   // Selected saved note to view details
   const [selectedNote, setSelectedNote] = useState<SavedNoteItem | null>(null);
 
-  // Mock / Loaded Notes
-  const [savedNotes, setSavedNotes] = useState<SavedNoteItem[]>([
-    {
-      id: 'n1',
-      title: 'System',
-      date: '08/22, 13:06',
-      timestamp: Date.now() - 86400000 * 2,
-      duration: '45:12',
-      notes: 'Reviewed system design, pipeline coordinator, and media constraints.',
-      snapshots: [
-        { url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format&fit=crop&q=60', time: '00:18' },
-        { url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=60', time: '00:19' },
-      ],
-    },
-    {
-      id: 'n2',
-      title: 'New Song',
-      date: '08/19, 09:47',
-      timestamp: Date.now() - 86400000 * 5,
-      duration: '03:42',
-      notes: 'Audio recording clip and melody notes.',
-      snapshots: [],
-    },
-  ]);
+  // Real Saved Notes (Starts empty, loads from local storage / desktop history)
+  const [savedNotes, setSavedNotes] = useState<SavedNoteItem[]>([]);
 
-  // Load history from desktop app
+  // Load saved notes from storage & desktop companion app
   useEffect(() => {
+    // 1. Load locally saved notes
+    chrome.storage.local.get(['bacham_saved_notes'], (res) => {
+      if (res.bacham_saved_notes && Array.isArray(res.bacham_saved_notes)) {
+        setSavedNotes(res.bacham_saved_notes);
+      }
+    });
+
+    // 2. Fetch history from desktop app
     fetchHistory?.().then((data) => {
       if (data?.lectures && data.lectures.length > 0) {
         const mapped: SavedNoteItem[] = data.lectures.map((l: LectureSummary) => {
@@ -92,7 +78,10 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
               : '00:00',
           };
         });
-        setSavedNotes(mapped);
+        setSavedNotes((prev) => {
+          const ids = new Set(prev.map(p => p.id));
+          return [...prev, ...mapped.filter(m => !ids.has(m.id))];
+        });
       }
     });
   }, [fetchHistory]);
@@ -402,29 +391,38 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
 
         {/* 5. Clean Rounded Notes Cards List */}
         <div className="space-y-3 pb-6">
-          {savedNotes
-            .filter((n) => !searchQuery || n.title.toLowerCase().includes(searchQuery.toLowerCase()))
-            .map((note) => (
-              <motion.div
-                key={note.id}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => setSelectedNote(note)}
-                className="p-4 rounded-2xl border border-slate-200/90 bg-white hover:border-purple-300 transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
-              >
-                <h3 className="text-[14.5px] font-bold text-slate-900 leading-tight">
-                  {note.title}
-                </h3>
-                <div className="flex items-center justify-between mt-3 text-[12px] text-slate-400 font-medium">
-                  <span>{note.date}</span>
-                  {note.duration && (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-semibold text-[10.5px]">
-                      {note.duration}
-                    </span>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+          {savedNotes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed border-slate-200 text-center bg-slate-50/50">
+              <span className="text-[13px] font-bold text-slate-700">No notes recorded yet</span>
+              <span className="text-[11.5px] text-slate-400 mt-1 max-w-[200px]">
+                Click "+ New REC Note" above to capture your first meeting!
+              </span>
+            </div>
+          ) : (
+            savedNotes
+              .filter((n) => !searchQuery || n.title.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((note) => (
+                <motion.div
+                  key={note.id}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => setSelectedNote(note)}
+                  className="p-4 rounded-2xl border border-slate-200/90 bg-white hover:border-purple-300 transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
+                >
+                  <h3 className="text-[14.5px] font-bold text-slate-900 leading-tight">
+                    {note.title}
+                  </h3>
+                  <div className="flex items-center justify-between mt-3 text-[12px] text-slate-400 font-medium">
+                    <span>{note.date}</span>
+                    {note.duration && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 font-semibold text-[10.5px]">
+                        {note.duration}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              ))
+          )}
         </div>
 
       </div>
