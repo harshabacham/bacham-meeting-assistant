@@ -409,6 +409,18 @@ export function createCaptureService(
       return;
     }
 
+    // Request final data from both recorders before stopping
+    if (videoRecorder && videoRecorder.state !== 'inactive') {
+      try {
+        videoRecorder.requestData();
+      } catch {}
+    }
+    if (transcriptRecorder && transcriptRecorder.state !== 'inactive') {
+      try {
+        transcriptRecorder.requestData();
+      } catch {}
+    }
+
     // Stop both recorders and wait for their onstop to fire
     await new Promise<void>((resolve) => {
       if (!videoRecorder || videoRecorder.state === 'inactive') { resolve(); return; }
@@ -418,18 +430,21 @@ export function createCaptureService(
 
     await new Promise<void>((resolve) => {
       if (!transcriptRecorder || transcriptRecorder.state === 'inactive') { resolve(); return; }
-      // Remove any pending restart handler from the interval
       transcriptRecorder.onstop = () => resolve();
       transcriptRecorder.stop();
     });
 
     if (videoRecorder && videoChunkBuffer.length > 0) {
-      const blob = new Blob(videoChunkBuffer, { type: videoRecorder.mimeType });
+      const blob = new Blob(videoChunkBuffer, { type: videoRecorder.mimeType || 'video/webm' });
       await uploadBlob(blob, 'video');
     }
     
     if (transcriptRecorder && transcriptChunkBuffer.length > 0) {
-      const blob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder.mimeType });
+      const blob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder.mimeType || 'audio/webm' });
+      await uploadBlob(blob, 'transcript');
+    } else if (videoChunkBuffer.length > 0) {
+      // The video WebM file contains the audio track — upload for Gemini transcription
+      const blob = new Blob(videoChunkBuffer, { type: videoRecorder?.mimeType || 'video/webm' });
       await uploadBlob(blob, 'transcript');
     }
 

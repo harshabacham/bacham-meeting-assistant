@@ -73,7 +73,11 @@ export default defineManifest({
     'sidePanel',
   ],
 
-  // We need host permissions for the content script to be automatically injected
-  // so the floating Bot UI is visible on meeting platforms.
-  host_permissions: ['*://*/*'],
+  host_permissions: [
+    '*://*/*',
+    'http://127.0.0.1/*',
+    'http://localhost/*',
+    'ws://127.0.0.1/*',
+    'ws://localhost/*',
+  ],
 });
