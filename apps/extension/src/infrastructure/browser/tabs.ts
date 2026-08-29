@@ -5,12 +5,22 @@
  */
 
 /**
- * Get the currently active tab in the focused window.
+ * Get the currently active tab in the focused or current window.
  * Returns null if no active tab can be found.
  */
 export async function getActiveTab(): Promise<chrome.tabs.Tab | null> {
-  const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  return tabs[0] ?? null;
+  try {
+    let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0]?.id) return tabs[0];
+
+    tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tabs[0]?.id) return tabs[0];
+
+    tabs = await chrome.tabs.query({ active: true });
+    return tabs[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

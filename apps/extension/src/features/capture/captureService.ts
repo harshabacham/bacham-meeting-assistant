@@ -150,34 +150,38 @@ export function createCaptureService(
     transcriptChunkBuffer = [];
 
     const isDesktop = (config.captureMode === 'screen' || config.captureMode === 'window' || config.captureMode === 'walkthrough');
-    const mediaSource = isDesktop ? 'desktop' : 'tab';
+    const primarySource = isDesktop ? 'desktop' : 'tab';
+    const fallbackSource = isDesktop ? 'tab' : 'desktop';
 
     let acquiredStream: MediaStream | null = null;
 
     if (streamId) {
-      try {
-        const constraints: MediaStreamConstraints = {
-          audio: config.audio
-            ? ({
-                mandatory: {
-                  chromeMediaSource: mediaSource,
-                  chromeMediaSourceId: streamId,
-                },
-              } as unknown as MediaTrackConstraints)
-            : false,
-          video: (config.video || config.screenshotIntervalMs || isDesktop)
-            ? ({
-                mandatory: {
-                  chromeMediaSource: mediaSource,
-                  chromeMediaSourceId: streamId,
-                },
-              } as unknown as MediaTrackConstraints)
-            : false,
-        };
-        acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
-        log.info(MODULE, 'Acquired stream via getUserMedia', { tracks: acquiredStream.getTracks().length });
-      } catch (err: any) {
-        log.warn(MODULE, 'getUserMedia with streamId failed, falling back to getDisplayMedia', { err: err.message });
+      for (const source of [primarySource, fallbackSource]) {
+        try {
+          const constraints: MediaStreamConstraints = {
+            audio: config.audio
+              ? ({
+                  mandatory: {
+                    chromeMediaSource: source,
+                    chromeMediaSourceId: streamId,
+                  },
+                } as unknown as MediaTrackConstraints)
+              : false,
+            video: (config.video || config.screenshotIntervalMs || isDesktop)
+              ? ({
+                  mandatory: {
+                    chromeMediaSource: source,
+                    chromeMediaSourceId: streamId,
+                  },
+                } as unknown as MediaTrackConstraints)
+              : false,
+          };
+          acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
+          log.info(MODULE, `Acquired stream via getUserMedia using source ${source}`, { tracks: acquiredStream.getTracks().length });
+          break;
+        } catch (err: any) {
+          log.warn(MODULE, `getUserMedia with source ${source} failed`, { err: err.message });
+        }
       }
     }
 

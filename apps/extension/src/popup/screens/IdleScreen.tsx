@@ -117,30 +117,57 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
   };
 
   const handleStartCapture = async () => {
-    // 1. Get the target tab
-    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    // 1. Get the target tab (try currentWindow, then lastFocusedWindow, then any active tab)
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) {
+      [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    }
+    if (!tab?.id) {
+      [tab] = await chrome.tabs.query({ active: true });
+    }
     if (!tab?.id) return;
 
     let streamId: string | undefined;
     let streamHasAudio = true;
+    let mode: 'tab' | 'screen' = 'tab';
 
-    streamId = await new Promise<string | undefined>((resolve) => {
-      chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (id) => {
-        if (chrome.runtime.lastError || !id) {
-          resolve(undefined);
-        } else {
-          resolve(id);
-        }
+    // Try tabCapture if not on restricted scheme
+    const isRestrictedUrl = tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://') || tab.url?.startsWith('about:');
+    if (!isRestrictedUrl) {
+      streamId = await new Promise<string | undefined>((resolve) => {
+        chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (id) => {
+          if (chrome.runtime.lastError || !id) {
+            resolve(undefined);
+          } else {
+            resolve(id);
+          }
+        });
       });
-    });
+    }
 
-    if (!streamId) return; // Canceled or failed
+    // Fallback to desktopCapture dialog if tabCapture failed or is restricted
+    if (!streamId) {
+      const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
+        chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], tab, (id, opts) => {
+          if (chrome.runtime.lastError || !id) {
+            resolve({});
+          } else {
+            resolve({ id, hasAudio: opts?.canRequestAudioTrack });
+          }
+        });
+      });
+      streamId = res.id;
+      streamHasAudio = res.hasAudio ?? true;
+      mode = 'screen';
+    }
+
+    if (!streamId) return; // User canceled
 
     const intent: StartSessionIntent = {
       captureAudio: true,
       captureVideo: isVideoMode,
       includeMicrophone: isMicEnabled,
-      captureMode: isVideoMode ? 'tab' : 'audio',
+      captureMode: isVideoMode ? mode : 'audio',
       streamId,
       streamHasAudio,
       ...(captureConfig.screenshotIntervalMs !== undefined && isVideoMode
@@ -148,7 +175,11 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
         : {}),
     };
 
-    await onStart(intent);
+    try {
+      await onStart(intent);
+    } catch (err) {
+      console.error('Failed to start capture:', err);
+    }
   };
 
   // Note Details View (Screenshot 2 style)
