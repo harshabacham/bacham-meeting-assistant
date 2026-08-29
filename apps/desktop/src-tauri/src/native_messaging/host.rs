@@ -228,6 +228,37 @@ impl NativeHost {
         }
 
 
+        if msg.r#type == MessageType::ChunkReady {
+            if let Some(session_id) = &msg.session_id {
+                if let Ok(payload) = serde_json::from_value::<ChunkReadyPayload>(msg.payload.clone()) {
+                    if let Ok(bytes) = STANDARD.decode(&payload.data_base64) {
+                        let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                        let _ = std::fs::create_dir_all(&temp_dir);
+                        
+                        let is_transcript = payload.is_transcript_chunk.unwrap_or(false);
+                        
+                        let log_path = temp_dir.parent().unwrap().join("debug.log");
+                        if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                            let _ = writeln!(log_file, "Received ChunkReady: is_transcript={}, bytes={}", is_transcript, bytes.len());
+                        }
+                        
+                        if is_transcript {
+                            let chunk_path = temp_dir.join(format!("{}_transcript.webm", session_id));
+                            if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&chunk_path) {
+                                let _ = file.write_all(&bytes);
+                            }
+                        } else {
+                            let file_path = temp_dir.join(format!("{}.webm", session_id));
+                            if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&file_path) {
+                                let _ = file.write_all(&bytes);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
         if msg.r#type == MessageType::SessionStop {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<SessionStopPayload>(msg.payload.clone()) {

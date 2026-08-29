@@ -1,10 +1,12 @@
-import type { CaptureConfig, CaptureState } from '@/shared/types';
+import type { CaptureConfig, CaptureState, ChunkReadyPayload, NativeMessage } from '@/shared/types';
+import { MessageType } from '@/shared/types';
 import type { Logger } from '@/infrastructure/logger/logger';
 import type { StorageService } from '@/infrastructure/storage/storageService';
 import {
   AUDIO_MIME_TYPE,
   VIDEO_MIME_TYPE,
 } from '@/shared/constants/capture';
+import { NATIVE_MESSAGING_PROTOCOL_VERSION } from '@/shared/constants/app';
 
 /**
  * Capture Service
@@ -45,6 +47,9 @@ export function createCaptureService(
   let transcriptRecorder: MediaRecorder | null = null;
   let currentSessionId: string | null = null;
   
+  let videoChunkIndex = 0;
+  let transcriptChunkIndex = 0;
+
   let videoChunkBuffer: Blob[] = [];
   let videoChunkBufferBytes = 0;
   
@@ -73,6 +78,54 @@ export function createCaptureService(
     return MediaRecorder.isTypeSupported(AUDIO_MIME_TYPE) ? AUDIO_MIME_TYPE : 'audio/webm';
   }
 
+  async function sendBlobInSlices(blob: Blob, isTranscript: boolean): Promise<void> {
+    if (blob.size === 0) return;
+    try {
+      const mimeType = blob.type || (isTranscript ? 'audio/webm' : 'video/webm');
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      const CHUNK_SIZE = 512000; // 500 KB
+
+      for (let offset = 0; offset < bytes.byteLength; offset += CHUNK_SIZE) {
+        const slice = bytes.slice(offset, offset + CHUNK_SIZE);
+        let binary = '';
+        for (let i = 0; i < slice.byteLength; i++) {
+          binary += String.fromCharCode(slice[i]);
+        }
+        const dataBase64 = btoa(binary);
+
+        const payload: ChunkReadyPayload = {
+          chunkIndex: isTranscript ? transcriptChunkIndex : videoChunkIndex,
+          mimeType,
+          dataBase64,
+          byteLength: slice.byteLength,
+          isTranscriptChunk: isTranscript,
+        };
+
+        const nativeMsg: NativeMessage<ChunkReadyPayload> = {
+          version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+          type: MessageType.CHUNK_READY,
+          payload,
+          timestamp: Date.now(),
+          ...(currentSessionId ? { sessionId: currentSessionId } : {}),
+        };
+
+        chrome.runtime.sendMessage({
+          type: MessageType.FORWARD_TO_NATIVE,
+          payload: nativeMsg,
+        }).catch(() => {});
+
+        if (isTranscript) {
+          transcriptChunkIndex++;
+        } else {
+          videoChunkIndex++;
+        }
+      }
+    } catch (err) {
+      log.warn(MODULE, 'Failed to send chunk slice over native messaging', { err });
+    }
+  }
+
   async function uploadBlob(blob: Blob, type: 'video' | 'transcript'): Promise<void> {
     if (blob.size === 0) return;
     try {
@@ -86,8 +139,7 @@ export function createCaptureService(
       }
       log.info(MODULE, `Successfully uploaded ${type} blob`);
     } catch (err: any) {
-      log.error(MODULE, `Failed to upload ${type} blob`, { err: err.message });
-      throw err;
+      log.warn(MODULE, `HTTP upload of ${type} blob skipped or failed (native streaming active)`, { err: err.message });
     }
   }
 
@@ -301,6 +353,7 @@ export function createCaptureService(
         videoChunkBuffer.push(event.data);
         videoChunkBufferBytes += event.data.size;
         updateState({ currentChunkBytes: videoChunkBufferBytes });
+        void sendBlobInSlices(event.data, false);
       };
       videoRecorder.onerror = (event) => log.error(MODULE, 'videoRecorder error', { error: event.error?.message });
       videoRecorder.start(1000); // Continuous recording with 1s timeslice
@@ -318,6 +371,7 @@ export function createCaptureService(
       transcriptRecorder.ondataavailable = (event) => {
         if (event.data.size !== 0) {
           transcriptChunkBuffer.push(event.data);
+          void sendBlobInSlices(event.data, true);
         }
       };
 
