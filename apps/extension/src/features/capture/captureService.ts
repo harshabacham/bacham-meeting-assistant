@@ -204,46 +204,56 @@ export function createCaptureService(
     let acquiredStream: MediaStream | null = null;
 
     if (streamId) {
-      // 1. Try desktop capture with audio + video
-      try {
-        const constraints: MediaStreamConstraints = {
-          audio: config.audio
-            ? ({
-                mandatory: {
-                  chromeMediaSource: 'desktop',
-                  chromeMediaSourceId: streamId,
-                },
-              } as unknown as MediaTrackConstraints)
-            : false,
-          video: {
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: streamId,
-            },
-          } as unknown as MediaTrackConstraints,
-        };
-        acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
-        log.info(MODULE, 'Acquired desktop stream with audio+video', { tracks: acquiredStream.getTracks().length });
-      } catch (err: any) {
-        log.warn(MODULE, 'getUserMedia with audio failed, retrying video-only', { err: err.message });
-      }
+      const sources = ['desktop', 'tab'];
 
-      // 2. If audio constraint failed, retry video-only with streamId
-      if (!acquiredStream) {
+      // 1. Try with audio + video for desktop and tab
+      for (const source of sources) {
+        if (acquiredStream) break;
         try {
           const constraints: MediaStreamConstraints = {
-            audio: false,
+            audio: config.audio
+              ? ({
+                  mandatory: {
+                    chromeMediaSource: source,
+                    chromeMediaSourceId: streamId,
+                  },
+                } as unknown as MediaTrackConstraints)
+              : false,
             video: {
               mandatory: {
-                chromeMediaSource: 'desktop',
+                chromeMediaSource: source,
                 chromeMediaSourceId: streamId,
               },
             } as unknown as MediaTrackConstraints,
           };
           acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
-          log.info(MODULE, 'Acquired video-only desktop stream', { tracks: acquiredStream.getTracks().length });
+          log.info(MODULE, `Acquired stream via getUserMedia (${source} with audio)`, { tracks: acquiredStream.getTracks().length });
+          break;
         } catch (err: any) {
-          log.error(MODULE, 'getUserMedia video-only failed', { err: err.message });
+          log.warn(MODULE, `getUserMedia (${source} with audio) failed: ${err?.name || ''} ${err?.message || String(err)}`);
+        }
+      }
+
+      // 2. If audio constraint failed, retry video-only
+      if (!acquiredStream) {
+        for (const source of sources) {
+          if (acquiredStream) break;
+          try {
+            const constraints: MediaStreamConstraints = {
+              audio: false,
+              video: {
+                mandatory: {
+                  chromeMediaSource: source,
+                  chromeMediaSourceId: streamId,
+                },
+              } as unknown as MediaTrackConstraints,
+            };
+            acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
+            log.info(MODULE, `Acquired video-only stream via getUserMedia (${source})`, { tracks: acquiredStream.getTracks().length });
+            break;
+          } catch (err: any) {
+            log.warn(MODULE, `getUserMedia (${source} video-only) failed: ${err?.name || ''} ${err?.message || String(err)}`);
+          }
         }
       }
     }

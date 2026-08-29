@@ -9,13 +9,13 @@ import type { SessionState } from '@/shared/types';
 
 /** All legal transitions as a map: from → Set of valid 'to' states. */
 const LEGAL_TRANSITIONS: Readonly<Record<SessionState, ReadonlySet<SessionState>>> = {
-  idle: new Set<SessionState>(['requesting-permission', 'connecting', 'error']),
-  'requesting-permission': new Set<SessionState>(['idle', 'connecting', 'error']),
-  connecting: new Set<SessionState>(['idle', 'recording', 'error']),
-  recording: new Set<SessionState>(['paused', 'stopping', 'error']),
-  paused: new Set<SessionState>(['recording', 'stopping', 'error']),
-  stopping: new Set<SessionState>(['idle', 'error']),
-  error: new Set<SessionState>(['idle']),
+  idle: new Set<SessionState>(['idle', 'requesting-permission', 'connecting', 'error']),
+  'requesting-permission': new Set<SessionState>(['idle', 'requesting-permission', 'connecting', 'error']),
+  connecting: new Set<SessionState>(['idle', 'connecting', 'recording', 'stopping', 'error']),
+  recording: new Set<SessionState>(['recording', 'paused', 'stopping', 'error', 'idle']),
+  paused: new Set<SessionState>(['paused', 'recording', 'stopping', 'error', 'idle']),
+  stopping: new Set<SessionState>(['stopping', 'idle', 'error']),
+  error: new Set<SessionState>(['error', 'idle', 'stopping']),
 };
 
 export interface TransitionResult {
@@ -32,13 +32,16 @@ export function validateTransition(
   from: SessionState,
   to: SessionState,
 ): TransitionResult {
+  if (from === to) {
+    return { valid: true };
+  }
   const allowed = LEGAL_TRANSITIONS[from];
-  if (allowed.has(to)) {
+  if (allowed && allowed.has(to)) {
     return { valid: true };
   }
   return {
     valid: false,
-    reason: `Illegal transition: ${from} → ${to}. Allowed from ${from}: [${[...allowed].join(', ')}]`,
+    reason: `Illegal transition: ${from} → ${to}. Allowed from ${from}: [${allowed ? [...allowed].join(', ') : ''}]`,
   };
 }
 
