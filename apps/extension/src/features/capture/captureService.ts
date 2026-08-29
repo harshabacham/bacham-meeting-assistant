@@ -205,14 +205,7 @@ export function createCaptureService(
 
     if (streamId) {
       const constraints: MediaStreamConstraints = {
-        audio: config.audio
-          ? ({
-              mandatory: {
-                chromeMediaSource: 'desktop',
-                chromeMediaSourceId: streamId,
-              },
-            } as unknown as MediaTrackConstraints)
-          : false,
+        audio: false,
         video: {
           mandatory: {
             chromeMediaSource: 'desktop',
@@ -223,7 +216,7 @@ export function createCaptureService(
 
       try {
         acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
-        log.info(MODULE, 'Acquired stream via getUserMedia', { tracks: acquiredStream.getTracks().length });
+        log.info(MODULE, 'Acquired video stream via getUserMedia', { tracks: acquiredStream.getTracks().length });
       } catch (err: any) {
         log.error(MODULE, `getUserMedia failed: ${err?.name || ''} ${err?.message || String(err)}`);
         throw new Error(`Capture error: ${err?.message || err?.name || 'Failed to acquire media stream'}`);
@@ -248,18 +241,6 @@ export function createCaptureService(
       };
     });
 
-    if (config.audio) {
-      try {
-        const audioEl = document.createElement('audio');
-        audioEl.autoplay = true;
-        audioEl.srcObject = mediaStream;
-        audioEl.id = 'bacham-playback-audio';
-        document.body.appendChild(audioEl);
-      } catch (err) {
-        log.warn(MODULE, 'Failed to route audio to HTMLAudioElement', { err });
-      }
-    }
-
     if (config.video || config.screenshotIntervalMs) {
       try {
         const videoEl = document.createElement('video');
@@ -279,43 +260,23 @@ export function createCaptureService(
 
     await storage.set({ activeStreamId: streamId });
 
-    // 1. Setup Audio (Tab Audio + Optional Microphone Mixing)
+    // 1. Setup Audio (Microphone / System Audio)
     let mixedAudioStream: MediaStream | null = null;
 
-    if (config.includeMicrophone) {
+    if (config.audio || config.includeMicrophone) {
       try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        log.info(MODULE, 'Microphone stream acquired for mixing');
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+        log.info(MODULE, 'Audio stream acquired successfully for recording and speech transcription');
+        mixedAudioStream = micStream;
       } catch (err: any) {
-        log.warn(MODULE, 'Microphone permission denied or unavailable, continuing with tab audio', { err });
+        log.warn(MODULE, 'Microphone audio permission denied or unavailable', { err });
       }
-    }
-
-    const tabAudioTracks = mediaStream.getAudioTracks();
-    const micAudioTracks = micStream ? micStream.getAudioTracks() : [];
-
-    if (tabAudioTracks.length > 0 && micAudioTracks.length > 0) {
-      try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        audioContext = new AudioCtx();
-        const destination = audioContext.createMediaStreamDestination();
-
-        const tabSource = audioContext.createMediaStreamSource(new MediaStream(tabAudioTracks));
-        tabSource.connect(destination);
-
-        const micSource = audioContext.createMediaStreamSource(new MediaStream(micAudioTracks));
-        micSource.connect(destination);
-
-        mixedAudioStream = destination.stream;
-        log.info(MODULE, 'Successfully mixed tab and microphone audio via AudioContext');
-      } catch (err: any) {
-        log.warn(MODULE, 'Failed to mix audio via AudioContext, falling back to tab audio', { err });
-        mixedAudioStream = new MediaStream(tabAudioTracks);
-      }
-    } else if (tabAudioTracks.length > 0) {
-      mixedAudioStream = new MediaStream(tabAudioTracks);
-    } else if (micAudioTracks.length > 0) {
-      mixedAudioStream = new MediaStream(micAudioTracks);
     }
 
     const mimeType = selectMimeType(config);
