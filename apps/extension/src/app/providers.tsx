@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 /** Available named screens in the popup. */
-export type ScreenName = 'idle' | 'recording' | 'paused' | 'error' | 'permission' | 'connecting' | 'settings' | 'notes' | 'history';
+export type ScreenName = 'idle' | 'recording' | 'paused' | 'error' | 'permission' | 'connecting' | 'settings' | 'notes' | 'history' | 'copilot';
 
 interface NavigationContextValue {
   readonly currentScreen: ScreenName;

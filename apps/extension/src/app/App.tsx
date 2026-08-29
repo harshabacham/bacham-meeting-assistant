@@ -12,6 +12,7 @@ import { ConnectingScreen } from '@/popup/screens/ConnectingScreen';
 import { SettingsScreen } from '@/popup/screens/SettingsScreen';
 import { NotesScreen } from '@/popup/screens/NotesScreen';
 import { HistoryScreen } from '@/popup/screens/HistoryScreen';
+import { CopilotScreen } from '@/popup/screens/CopilotScreen';
 import { SidebarLayout } from '@/popup/components/SidebarLayout';
 
 import { getExtensionVersion } from '@/infrastructure/browser/runtime';
@@ -64,7 +65,7 @@ function AppInner(): React.ReactElement {
     
     if (permissionStatus && !permissionStatus.allGranted) { navigate('permission'); return; }
     if (sessionState === 'idle' || sessionState === 'stopping') {
-      if (currentScreen !== 'settings' && currentScreen !== 'history' && currentScreen !== 'notes') {
+      if (currentScreen !== 'settings' && currentScreen !== 'history' && currentScreen !== 'notes' && currentScreen !== 'copilot') {
         navigate('idle');
       }
       optimisticStartRef.current = undefined;
@@ -155,6 +156,9 @@ function AppInner(): React.ReactElement {
 
       case 'history':
         return <HistoryScreen />;
+
+      case 'copilot':
+        return <CopilotScreen />;
 
       case 'idle':
       default:
