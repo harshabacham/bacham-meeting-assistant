@@ -1,25 +1,24 @@
 import React from 'react';
 import { BottomNavigation } from './BottomNavigation';
+import { useSession } from '@/shared/hooks/useSession';
 
 interface SidebarLayoutProps {
   children: React.ReactNode;
 }
 
 export function SidebarLayout({ children }: SidebarLayoutProps) {
+  const { sessionState } = useSession();
+  const isRecordingActive = sessionState === 'recording' || sessionState === 'paused';
+
   return (
-    <div className="flex flex-col h-screen w-full bg-[var(--bg)] text-[var(--text-primary)] font-sans overflow-hidden">
-      
+    <div className="flex flex-col h-screen w-full bg-white text-slate-900 font-sans overflow-hidden">
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg)] opacity-50 pointer-events-none" />
-        <div className="relative z-10 min-h-full flex flex-col">
-          {children}
-        </div>
+      <main className="flex-1 overflow-hidden relative flex flex-col">
+        {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNavigation />
+      {/* Bottom Navigation (Hidden during active recording like Sider.ai) */}
+      {!isRecordingActive && <BottomNavigation />}
     </div>
   );
 }
-

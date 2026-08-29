@@ -6,59 +6,52 @@
 
 @layer base {
   :root {
-    /* ── Sider.ai Neo-Glass Deep Dark Backgrounds ── */
-    --bg:            #090D16;
-    --bg-elevated:   #0F172A;
-    --surface:       rgba(30, 41, 59, 0.55);
-    --surface-hover: rgba(51, 65, 85, 0.65);
-    --surface-2:     rgba(30, 41, 59, 0.75);
-    --surface-3:     rgba(51, 65, 85, 0.85);
+    /* ── Sider.ai Clean White & Purple Palette ── */
+    --bg:            #FFFFFF;
+    --bg-elevated:   #F8FAFC;
+    --surface:       #F1F5F9;
+    --surface-hover: #E2E8F0;
+    --surface-2:     #FFFFFF;
+    --surface-3:     #F8FAFC;
 
-    /* ── High Contrast Typography ── */
-    --text-primary:   #F8FAFC;
-    --text-secondary: #94A3B8;
-    --text-muted:     #64748B;
-    --text-tertiary:  #475569;
+    /* ── Crisp Typography ── */
+    --text-primary:   #0F172A;
+    --text-secondary: #64748B;
+    --text-muted:     #94A3B8;
+    --text-tertiary:  #CBD5E1;
 
-    /* ── Vibrant Pop Gradient Accents ── */
-    --accent:         #6366F1;
-    --accent-hover:   #4F46E5;
-    --accent-dim:     rgba(99, 102, 241, 0.2);
+    /* ── Sider.ai Signature Violet/Purple ── */
+    --accent:         #7C3AED;
+    --accent-hover:   #6D28D9;
+    --accent-dim:     rgba(124, 58, 237, 0.12);
     --accent-text:    #FFFFFF;
-    --accent-glow:    0 0 20px rgba(99, 102, 241, 0.4);
+    --accent-glow:    0 4px 14px rgba(124, 58, 237, 0.35);
 
     /* ── Semantic Colors ── */
     --success:        #10B981;
-    --success-dim:    rgba(16, 185, 129, 0.2);
+    --success-dim:    rgba(16, 185, 129, 0.15);
     --destructive:    #EF4444;
-    --destructive-dim: rgba(239, 68, 68, 0.2);
+    --destructive-dim: rgba(239, 68, 68, 0.15);
     --warning:        #F59E0B;
-    --warning-dim:    rgba(245, 158, 11, 0.2);
     --recording:      #EF4444;
-    --recording-dim:  rgba(239, 68, 68, 0.25);
 
-    /* ── Frosted Glass Borders ── */
-    --border:         rgba(255, 255, 255, 0.12);
-    --border-strong:  rgba(255, 255, 255, 0.22);
-    --border-accent:  rgba(99, 102, 241, 0.5);
-    --separator:      rgba(255, 255, 255, 0.08);
+    /* ── Clean Light Borders ── */
+    --border:         #E2E8F0;
+    --border-strong:  #CBD5E1;
+    --border-accent:  #7C3AED;
+    --separator:      #F1F5F9;
 
     /* ── Rounded Playful Radii ── */
     --radius-xs: 6px;
     --radius-sm: 8px;
-    --radius:    12px;
-    --radius-lg: 16px;
-    --radius-xl: 22px;
+    --radius:    14px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
 
-    /* ── Deep Spatial Shadows ── */
-    --shadow-sm:  0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow:     0 8px 24px -4px rgba(0, 0, 0, 0.5);
-    --shadow-lg:  0 20px 40px -8px rgba(0, 0, 0, 0.7);
-
-    /* ── Neo-Glass Frosted Material ── */
-    --glass-bg:     rgba(15, 23, 42, 0.8);
-    --glass-border: rgba(255, 255, 255, 0.14);
-    --glass-blur:   blur(20px);
+    /* ── Soft Clean Shadows ── */
+    --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow:     0 4px 16px -2px rgba(0, 0, 0, 0.08);
+    --shadow-lg:  0 12px 32px -4px rgba(0, 0, 0, 0.12);
   }
 
   body {
@@ -79,30 +72,32 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.25);
 }
 
-/* Custom Switch Toggle */
+/* Custom Purple Switch Toggle */
 .toggle-switch {
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #E2E8F0;
+  border: 1px solid #CBD5E1;
   position: relative;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 2px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .toggle-switch[data-state="checked"] {
-  background: linear-gradient(135deg, #6366F1, #8B5CF6);
-  border-color: #818CF8;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+  background-color: #7C3AED;
+  border-color: #7C3AED;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.35);
 }
 
 .toggle-switch-thumb {
@@ -111,7 +106,7 @@
   height: 14px;
   border-radius: 50%;
   background-color: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateX(0);
 }

@@ -7,16 +7,16 @@ export function BottomNavigation() {
 
   const navItems = [
     {
+      id: 'capture',
+      screens: ['idle', 'recording', 'paused', 'permission', 'connecting', 'error'] as ScreenName[],
+      label: 'REC Note',
+      icon: Video,
+    },
+    {
       id: 'copilot',
       screens: ['copilot'] as ScreenName[],
       label: 'Copilot',
       icon: Sparkles,
-    },
-    {
-      id: 'capture',
-      screens: ['idle', 'recording', 'paused', 'permission', 'connecting', 'error'] as ScreenName[],
-      label: 'Capture',
-      icon: Video,
     },
     {
       id: 'notes',
@@ -39,21 +39,21 @@ export function BottomNavigation() {
   ];
 
   return (
-    <nav className="flex items-center justify-around bg-[var(--surface-2)]/90 border-t border-[var(--separator)] px-1 py-1.5 relative z-20 backdrop-blur-2xl shrink-0">
+    <nav className="flex items-center justify-around bg-white border-t border-slate-100 px-2 py-1.5 relative z-20 shrink-0 shadow-sm">
       {navItems.map((item) => {
         const isActive = item.screens.includes(currentScreen);
         return (
           <button
             key={item.id}
             onClick={() => navigate(item.screens[0])}
-            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 ${
+            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all duration-200 ${
               isActive
-                ? 'text-indigo-400 bg-indigo-500/15 shadow-sm scale-105'
-                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+                ? 'text-[#7C3AED] bg-[#F3E8FF] font-bold shadow-xs'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium'
             }`}
           >
             <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} className="mb-0.5" />
-            <span className="text-[9.5px] font-bold tracking-tight">{item.label}</span>
+            <span className="text-[10px] tracking-tight">{item.label}</span>
           </button>
         );
       })}

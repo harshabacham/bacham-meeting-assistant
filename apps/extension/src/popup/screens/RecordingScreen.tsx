@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Session } from '@/shared/types';
-import { Square, Pause, Wifi, WifiOff, Sparkles, Loader2, X, ChevronDown, MicOff, AlertCircle } from 'lucide-react';
-import { useConnection } from '@/shared/hooks/useConnection';
+import {
+  ArrowLeft,
+  Menu,
+  Camera,
+  Pause,
+  Play,
+  Square,
+  Sparkles,
+} from 'lucide-react';
 import { MessageType } from '@/shared/types';
-import logo from '@/assets/logo.png';
 
 interface RecordingScreenProps {
   readonly session: Session;
@@ -15,392 +22,260 @@ interface RecordingScreenProps {
 
 function formatTime(ms: number): string {
   const s = Math.floor(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
+  const m = Math.floor(s / 60);
   const sec = s % 60;
   const pad = (n: number) => String(n).padStart(2, '0');
-  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  return `${pad(m)}:${pad(sec)}`;
 }
 
-const bars = [0, 0.12, 0.24, 0.18, 0.06, 0.3, 0.12, 0.22, 0.08];
+interface SnapshotItem {
+  id: string;
+  url: string;
+  time: string;
+  title?: string;
+}
 
-type CatchUpState = 'idle' | 'loading' | 'done' | 'error';
-
-export function RecordingScreen({ session, onPause, onStop, isLoading, optimisticStart }: RecordingScreenProps): React.ReactElement {
-  const { connectionStatus } = useConnection();
-  const isConnected = connectionStatus === 'connected';
-
+export function RecordingScreen({
+  session,
+  onPause,
+  onStop,
+  isLoading,
+  optimisticStart,
+}: RecordingScreenProps): React.ReactElement {
   const startMs = optimisticStart ?? new Date(session.startedAt).getTime();
   const [elapsed, setElapsed] = useState(() => Math.max(0, Date.now() - startMs - session.pausedDurationMs));
-  const [catchUpState, setCatchUpState] = useState<CatchUpState>('idle');
-  const [catchUpSummary, setCatchUpSummary] = useState<string | null>(null);
-  const [catchUpError, setCatchUpError] = useState<string | null>(null);
-  const [showCatchUp, setShowCatchUp] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(session.state === 'paused');
 
-  // Listen for mute-state changes from the content script
-  useEffect(() => {
-    const listener = (msg: unknown) => {
-      if (
-        typeof msg === 'object' && msg !== null &&
-        (msg as Record<string, unknown>)['type'] === MessageType.MUTE_STATE_CHANGE
-      ) {
-        const payload = (msg as Record<string, unknown>)['payload'] as { muted: boolean };
-        setIsMuted(payload?.muted ?? false);
-      }
-    };
-    chrome.runtime.onMessage.addListener(listener);
-    return () => chrome.runtime.onMessage.removeListener(listener);
-  }, []);
+  // Editable Title & Live Note Content
+  const [title, setTitle] = useState(session.tabTitle || 'Meeting Note');
+  const [noteContent, setNoteContent] = useState('');
+  const [showToast, setShowToast] = useState<string | null>(null);
 
+  // Live Captured Snapshots
+  const [snapshots, setSnapshots] = useState<SnapshotItem[]>([
+    {
+      id: 's1',
+      url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format&fit=crop&q=60',
+      time: '00:18',
+    },
+    {
+      id: 's2',
+      url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=60',
+      time: '00:19',
+    },
+  ]);
+
+  // Elapsed timer tick
   useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsed(Math.max(0, Date.now() - startMs - session.pausedDurationMs));
-    }, 1000);
+    let interval: NodeJS.Timeout;
+    if (!isPaused) {
+      interval = setInterval(() => {
+        setElapsed(Math.max(0, Date.now() - startMs - session.pausedDurationMs));
+      }, 1000);
+    }
     return () => clearInterval(interval);
-  }, [startMs, session.pausedDurationMs]);
+  }, [startMs, session.pausedDurationMs, isPaused]);
 
-  const [note, setNote] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-
-  // Load saved note on mount
+  // Load saved note
   useEffect(() => {
     chrome.storage.local.get(`note_${session.id}`, (res) => {
       if (res[`note_${session.id}`]) {
-        setNote(res[`note_${session.id}`]);
+        setNoteContent(res[`note_${session.id}`]);
       }
     });
   }, [session.id]);
 
+  // Save note on edit
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    setNote(text);
-    setIsTyping(true);
-    
-    // Save locally
-    chrome.storage.local.set({ [`note_${session.id}`]: text });
-    
-    // Send to background to forward to desktop
+    const val = e.target.value;
+    setNoteContent(val);
+    chrome.storage.local.set({ [`note_${session.id}`]: val });
     chrome.runtime.sendMessage({
       type: MessageType.LIVE_NOTE,
-      payload: { text },
-      sessionId: session.id
+      payload: { text: val },
+      sessionId: session.id,
     }).catch(() => {});
   };
 
+  // Listen for live screenshot notifications
   useEffect(() => {
-    if (isTyping) {
-      const timeout = setTimeout(() => setIsTyping(false), 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [note, isTyping]);
-
-  const handleCatchUp = async () => {
-    setCatchUpState('loading');
-    setCatchUpSummary(null);
-    setCatchUpError(null);
-    setShowCatchUp(true);
-
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: MessageType.CATCHUP_REQUEST,
-      }) as { success: boolean; data?: { summary: string }; error?: string };
-
-      if (response.success && response.data?.summary) {
-        setCatchUpSummary(response.data.summary);
-        setCatchUpState('done');
-      } else {
-        setCatchUpError(response.error ?? 'Unknown error');
-        setCatchUpState('error');
+    const listener = (msg: any) => {
+      if (msg?.type === MessageType.METADATA_READY && msg?.payload?.imageBase64) {
+        setSnapshots((prev) => [
+          ...prev,
+          {
+            id: String(Date.now()),
+            url: msg.payload.imageBase64,
+            time: formatTime(elapsed),
+          },
+        ]);
+        triggerToast('📸 Screenshot captured!');
       }
-    } catch (e) {
-      setCatchUpError(String(e));
-      setCatchUpState('error');
-    }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
+  }, [elapsed]);
+
+  const triggerToast = (msg: string) => {
+    setShowToast(msg);
+    setTimeout(() => setShowToast(null), 2500);
   };
 
-  const closeCatchUp = () => {
-    setShowCatchUp(false);
-    setCatchUpState('idle');
-    setCatchUpSummary(null);
-    setCatchUpError(null);
+  const handleCaptureSnapshot = () => {
+    chrome.runtime.sendMessage({ type: MessageType.TRIGGER_SNAPSHOT });
+    triggerToast('📸 Capturing screenshot...');
+  };
+
+  const handleTogglePause = async () => {
+    if (isPaused) {
+      await chrome.runtime.sendMessage({ type: MessageType.RESUME_SESSION });
+      setIsPaused(false);
+    } else {
+      await onPause();
+      setIsPaused(true);
+    }
   };
 
   return (
-    <div className="flex flex-col bg-[var(--bg)] min-h-[480px]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[var(--separator)] bg-[var(--bg)]">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="BACHAM" className="w-7 h-7 rounded-md object-cover" />
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
-            <span className="w-2 h-2 rounded-full bg-[var(--recording)]" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--recording)]">
-              REC
+    <div className="flex flex-col h-full bg-white font-sans text-slate-900 select-none relative overflow-hidden">
+      {/* 1. Top Navigation Bar: ← Back & ☰ Menu with red dot */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+        <button
+          onClick={onStop}
+          title="Back to Notes"
+          className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-800 transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-[11px] font-extrabold text-rose-600 font-mono">
+              {formatTime(elapsed)}
             </span>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Connection pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[var(--surface)] border border-[var(--border)]">
-            {isConnected
-              ? <Wifi size={10} className="text-[var(--success)]" />
-              : <WifiOff size={10} className="text-[var(--text-muted)]" />
-            }
+
+          <div className="relative">
+            <button className="p-2 -mr-2 rounded-full hover:bg-slate-100 text-slate-800">
+              <Menu size={20} strokeWidth={2.5} />
+            </button>
+            <span className="absolute top-1.5 right-0 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
           </div>
-          {/* Mute indicator */}
-          {isMuted && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30">
-              <MicOff size={10} className="text-amber-400" />
-              <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400">Paused</span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-5 px-5 py-5">
-        {/* Timer */}
-        <div className="text-center flex flex-col items-center">
-          <div className="font-mono font-bold tabular-nums text-[var(--text-primary)]" style={{
-            fontSize: 52,
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-          }}>
-            {formatTime(elapsed)}
-          </div>
-          <div className="mt-2 text-[11px] font-bold text-[var(--text-secondary)] tracking-widest uppercase">
-            Session Time
-          </div>
-        </div>
+      {/* Main Note & Screenshot Body (Screenshot 2 layout) */}
+      <div className="flex-1 px-5 overflow-y-auto pb-28 space-y-4">
+        {/* Editable Title */}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Note Title..."
+          className="w-full text-[26px] font-extrabold text-slate-900 tracking-tight leading-tight outline-none border-none bg-transparent placeholder:text-slate-300"
+        />
 
-        {/* Waveform */}
-        <div className="flex items-center gap-1 h-8">
-          {bars.map((delay, i) => (
-            <div key={i} style={{
-              width: 4,
-              height: 28,
-              borderRadius: 99,
-              background: 'var(--recording)',
-              opacity: 0.6 + (i % 3) * 0.13,
-              animation: `waveform 0.9s ease-in-out infinite`,
-              animationDelay: `${delay}s`,
-            }} />
+        {/* Subtitle / Live Note Textarea */}
+        <textarea
+          value={noteContent}
+          onChange={handleNoteChange}
+          placeholder="Type notes or let AI automatically transcribe..."
+          rows={3}
+          className="w-full text-[14px] text-slate-600 font-medium leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-slate-300"
+        />
+
+        {/* Visual Media & Screenshot Deck (Screenshot 2 layout) */}
+        <div className="space-y-3 pt-2">
+          {snapshots.map((snap) => (
+            <motion.div
+              key={snap.id}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative rounded-2xl overflow-hidden bg-[#0f172a] border border-slate-200/80 shadow-md group"
+            >
+              <img
+                src={snap.url}
+                alt="Meeting Frame"
+                className="w-full h-48 object-cover"
+              />
+              <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#1e293b]/85 backdrop-blur-md text-white text-[11px] font-bold font-mono shadow-sm">
+                {snap.time}
+              </div>
+            </motion.div>
           ))}
         </div>
-
-        {/* Tab info */}
-        <div className="w-full p-4 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-          {session.courseLabel && (
-            <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--surface-3)] text-[var(--text-primary)] border border-[var(--border-strong)] mb-2">
-              {session.courseLabel}
-            </div>
-          )}
-          <p className="text-[13px] font-bold truncate text-[var(--text-primary)]" title={session.tabTitle}>
-            {session.tabTitle || "Recording Screen"}
-          </p>
-          <p className="text-[11px] mt-1 truncate text-[var(--text-secondary)]" title={session.tabUrl}>
-            {session.tabUrl || "Entire Desktop"}
-          </p>
-        </div>
-
-        {/* Screen capture warning */}
-        {(session.captureMode === 'screen' || session.captureMode === 'walkthrough') && (
-          <div className="w-full p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-2 text-amber-500">
-            <AlertCircle size={14} className="shrink-0 mt-0.5" />
-            <div className="text-[11px] font-medium leading-relaxed">
-              <strong>Screen capture active.</strong> All system audio (including other tabs, music, etc.) will be recorded. For clean meeting notes, use Tab Capture instead.
-            </div>
-          </div>
-        )}
-
-
-        {/* ⚡ Catch Me Up Button */}
-        <button
-          onClick={() => void handleCatchUp()}
-          disabled={catchUpState === 'loading'}
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            borderRadius: 12,
-            border: '1px solid rgba(139, 92, 246, 0.35)',
-            background: catchUpState === 'loading'
-              ? 'rgba(139, 92, 246, 0.08)'
-              : 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
-            color: '#a78bfa',
-            cursor: catchUpState === 'loading' ? 'default' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            fontSize: 13,
-            fontWeight: 700,
-            transition: 'all 0.2s ease',
-            backdropFilter: 'blur(8px)',
-          }}
-          onMouseOver={e => {
-            if (catchUpState !== 'loading') {
-              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(99, 102, 241, 0.25) 100%)';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139, 92, 246, 0.6)';
-            }
-          }}
-          onMouseOut={e => {
-            if (catchUpState !== 'loading') {
-              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(139, 92, 246, 0.35)';
-            }
-          }}
-        >
-          {catchUpState === 'loading' ? (
-            <>
-              <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-              Analyzing conversation...
-            </>
-          ) : (
-            <>
-              <Sparkles size={14} />
-              ⚡ Catch Me Up
-            </>
-          )}
-        </button>
-
-        {/* Notes Section */}
-        <div className="w-full mt-2 flex flex-col flex-1 relative min-h-[160px]">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Live Notes</span>
-            {note && (
-              <span className={`text-[10px] font-medium transition-opacity duration-300 ${isTyping ? 'text-[var(--text-muted)]' : 'text-[var(--success)]'}`}>
-                {isTyping ? 'Saving...' : 'Saved'}
-              </span>
-            )}
-          </div>
-          <textarea
-            value={note}
-            onChange={handleNoteChange}
-            placeholder="Type your meeting notes here... They will be saved to your lecture automatically."
-            className="flex-1 w-full p-3 text-[13px] rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus:border-[#8b5cf6] focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all resize-none text-[var(--text-primary)] placeholder-[var(--text-muted)]"
-            style={{ outline: 'none' }}
-          />
-        </div>
-
-        {/* Catch Me Up Result Card */}
-        {showCatchUp && catchUpState !== 'idle' && catchUpState !== 'loading' && (
-          <div style={{
-            width: '100%',
-            borderRadius: 12,
-            border: catchUpState === 'error'
-              ? '1px solid rgba(239, 68, 68, 0.3)'
-              : '1px solid rgba(139, 92, 246, 0.3)',
-            background: catchUpState === 'error'
-              ? 'rgba(239, 68, 68, 0.06)'
-              : 'rgba(139, 92, 246, 0.06)',
-            overflow: 'hidden',
-            animation: 'fadeSlideIn 0.3s ease',
-          }}>
-            {/* Card header */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '10px 14px',
-              borderBottom: '1px solid rgba(139, 92, 246, 0.15)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={12} style={{ color: '#a78bfa' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#a78bfa', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  Meeting Summary
-                </span>
-              </div>
-              <button
-                onClick={closeCatchUp}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2 }}
-              >
-                <X size={12} />
-              </button>
-            </div>
-
-            {/* Card body */}
-            <div style={{ padding: '12px 14px' }}>
-              {catchUpState === 'error' ? (
-                <p style={{ fontSize: 12, color: '#f87171', lineHeight: 1.6, margin: 0 }}>
-                  {catchUpError}
-                </p>
-              ) : (
-                <p style={{
-                  fontSize: 12,
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.7,
-                  margin: 0,
-                  whiteSpace: 'pre-wrap',
-                }}>
-                  {catchUpSummary}
-                </p>
-              )}
-            </div>
-
-            {/* Refresh button */}
-            {catchUpState === 'done' && (
-              <div style={{ padding: '0 14px 10px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => void handleCatchUp()}
-                  style={{
-                    background: 'rgba(139, 92, 246, 0.1)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    borderRadius: 8,
-                    color: '#a78bfa',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <ChevronDown size={10} />
-                  Update
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Controls */}
-      <div className="px-5 pb-5 pt-3 flex gap-3 bg-[var(--bg)] border-t border-[var(--separator)]">
-        <button
-          onClick={() => void onPause()}
-          disabled={isLoading}
-          className="flex-1 py-3.5 rounded-lg font-bold text-[13px] flex items-center justify-center gap-2 bg-[var(--surface)] border border-[var(--border-strong)] text-[var(--text-primary)] hover:border-[var(--text-tertiary)] transition-colors"
-        >
-          <Pause size={14} />
-          Pause
-        </button>
-        <button
-          onClick={() => void onStop()}
-          disabled={isLoading}
-          className="flex-1 py-3.5 rounded-lg font-bold text-[13px] flex items-center justify-center gap-2 bg-[var(--recording)] text-white hover:opacity-90 transition-opacity border border-transparent"
-        >
-          {isLoading ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <>
-              <Square size={14} fill="currentColor" />
-              Stop Recording
-            </>
-          )}
-        </button>
-      </div>
+      {/* Floating Toast Bubble */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[12px] font-bold px-4 py-2 rounded-full shadow-xl flex items-center gap-2 z-40"
+          >
+            <Sparkles size={13} className="text-purple-400" />
+            <span>{showToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <style>{`
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(-6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      {/* 4. Floating Bottom Control Dock (Exact Sider.ai Layout in Screenshot 2) */}
+      <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between z-30 pointer-events-none">
+        
+        {/* Left: [ 📷 Capture Screenshot ] Pill */}
+        <div className="flex flex-col items-center gap-1.5 pointer-events-auto">
+          <button
+            onClick={handleCaptureSnapshot}
+            className="w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 shadow-lg flex items-center justify-center text-slate-800 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="Capture Screenshot"
+          >
+            <Camera size={20} className="text-slate-700" />
+          </button>
+        </div>
+
+        {/* Right: [ ılı. (wave)  || (Pause)  ⏹ (Stop) ] Pill Dock */}
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-white border border-slate-200/90 shadow-xl pointer-events-auto">
+          {/* Animated Waveform */}
+          <div className="flex items-center gap-0.5 h-4 px-1">
+            {[0.1, 0.3, 0.15, 0.4, 0.2].map((d, i) => (
+              <span
+                key={i}
+                style={{
+                  width: '2.5px',
+                  height: isPaused ? '4px' : '14px',
+                  borderRadius: '2px',
+                  backgroundColor: isPaused ? '#cbd5e1' : '#7c3aed',
+                  animation: isPaused ? 'none' : 'pulse 0.8s infinite',
+                  animationDelay: `${d}s`,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Pause / Resume Button */}
+          <button
+            onClick={handleTogglePause}
+            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors"
+            title={isPaused ? 'Resume' : 'Pause'}
+          >
+            {isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
+          </button>
+
+          {/* Stop Button (Red Square) */}
+          <button
+            onClick={onStop}
+            disabled={isLoading}
+            className="p-1.5 rounded-full hover:bg-rose-50 text-rose-600 transition-colors"
+            title="Stop & Save"
+          >
+            <Square size={16} fill="currentColor" />
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 }
