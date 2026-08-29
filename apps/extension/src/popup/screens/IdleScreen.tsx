@@ -11,8 +11,7 @@ import {
   Mic,
   MicOff,
   ChevronDown,
-  Monitor,
-  Layers,
+  Video,
   Volume2,
   Sliders,
   X,
@@ -86,17 +85,10 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     });
   }, [fetchHistory]);
 
-  const currentMode = captureConfig.captureMode ?? (captureConfig.video ? 'screen' : 'audio');
-  const isVideoEnabled = captureConfig.video !== false;
+  const isVideoMode = captureConfig.video !== false && captureConfig.captureMode !== 'audio';
   const isMicEnabled = !!captureConfig.includeMicrophone;
 
-  const modeLabels: Record<string, { label: string; icon: typeof Monitor }> = {
-    screen: { label: 'Screen + Audio', icon: Monitor },
-    tab: { label: 'Tab + Audio', icon: Layers },
-    audio: { label: 'Audio Only', icon: Volume2 },
-  };
-
-  const handleSourceSelect = (mode: 'screen' | 'tab' | 'audio') => {
+  const handleSourceSelect = (mode: 'video' | 'audio') => {
     if (mode === 'audio') {
       void updateConfig({
         ...captureConfig,
@@ -107,7 +99,7 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     } else {
       void updateConfig({
         ...captureConfig,
-        captureMode: mode,
+        captureMode: 'tab',
         audio: true,
         video: true,
       });
@@ -117,10 +109,10 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
 
   const handleToggleVideo = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isVideoEnabled) {
+    if (isVideoMode) {
       void updateConfig({ ...captureConfig, video: false, captureMode: 'audio' });
     } else {
-      void updateConfig({ ...captureConfig, video: true, captureMode: 'screen' });
+      void updateConfig({ ...captureConfig, video: true, captureMode: 'tab' });
     }
   };
 
@@ -132,40 +124,26 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     let streamId: string | undefined;
     let streamHasAudio = true;
 
-    if (currentMode === 'screen') {
-      const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
-        chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab', 'audio'], tab, (id, opts) => {
-          if (chrome.runtime.lastError || !id) {
-            resolve({});
-          } else {
-            resolve({ id, hasAudio: opts?.canRequestAudioTrack });
-          }
-        });
+    streamId = await new Promise<string | undefined>((resolve) => {
+      chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (id) => {
+        if (chrome.runtime.lastError || !id) {
+          resolve(undefined);
+        } else {
+          resolve(id);
+        }
       });
-      streamId = res.id;
-      streamHasAudio = res.hasAudio ?? false;
-    } else {
-      streamId = await new Promise<string | undefined>((resolve) => {
-        chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (id) => {
-          if (chrome.runtime.lastError || !id) {
-            resolve(undefined);
-          } else {
-            resolve(id);
-          }
-        });
-      });
-    }
+    });
 
-    if (!streamId) return; // Canceled
+    if (!streamId) return; // Canceled or failed
 
     const intent: StartSessionIntent = {
       captureAudio: true,
-      captureVideo: isVideoEnabled,
+      captureVideo: isVideoMode,
       includeMicrophone: isMicEnabled,
-      captureMode: currentMode,
+      captureMode: isVideoMode ? 'tab' : 'audio',
       streamId,
       streamHasAudio,
-      ...(captureConfig.screenshotIntervalMs !== undefined && isVideoEnabled
+      ...(captureConfig.screenshotIntervalMs !== undefined && isVideoMode
         ? { screenshotIntervalMs: captureConfig.screenshotIntervalMs }
         : {}),
     };
@@ -246,7 +224,7 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
       {/* Main Content Area */}
       <div className="flex-1 px-5 space-y-4 overflow-y-auto pr-4">
         
-        {/* 2. Top Capture Config Bar (Exact Sider.ai Pill Layout) */}
+        {/* 2. Top Capture Config Bar (Two Options: Video + Audio & Audio Only) */}
         <div className="flex items-center gap-2 relative z-30">
           
           {/* Source Dropdown Button */}
@@ -256,8 +234,12 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
               className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-all text-slate-700 text-[13px] font-semibold shadow-xs"
             >
               <div className="flex items-center gap-2">
-                {React.createElement(modeLabels[currentMode]?.icon || Monitor, { size: 16, className: 'text-slate-600' })}
-                <span className="truncate">{modeLabels[currentMode]?.label || 'Screen + Audio'}</span>
+                {isVideoMode ? (
+                  <Video size={16} className="text-purple-600" />
+                ) : (
+                  <Volume2 size={16} className="text-slate-600" />
+                )}
+                <span className="truncate">{isVideoMode ? 'Video + Audio' : 'Audio Only'}</span>
                 <ChevronDown size={14} className="text-slate-400 shrink-0" />
               </div>
 
@@ -265,13 +247,13 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
               <div
                 onClick={handleToggleVideo}
                 className="toggle-switch shrink-0"
-                data-state={isVideoEnabled ? 'checked' : 'unchecked'}
+                data-state={isVideoMode ? 'checked' : 'unchecked'}
               >
                 <span className="toggle-switch-thumb" />
               </div>
             </button>
 
-            {/* Source Dropdown Menu */}
+            {/* Source Dropdown Menu (Only Video + Audio & Audio Only) */}
             <AnimatePresence>
               {sourceDropdownOpen && (
                 <motion.div
@@ -280,24 +262,25 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
                   exit={{ opacity: 0, y: 5 }}
                   className="absolute top-full left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-xl z-50 flex flex-col gap-1"
                 >
-                  {[
-                    { id: 'screen', label: 'Screen + Audio', icon: Monitor },
-                    { id: 'tab', label: 'Tab + Audio', icon: Layers },
-                    { id: 'audio', label: 'Audio Only', icon: Volume2 },
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => handleSourceSelect(opt.id as any)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-colors text-left ${
-                        currentMode === opt.id
-                          ? 'bg-purple-50 text-purple-700'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <opt.icon size={15} />
-                      <span>{opt.label}</span>
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => handleSourceSelect('video')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-colors text-left ${
+                      isVideoMode ? 'bg-purple-50 text-purple-700' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Video size={16} />
+                    <span>Video + Audio</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSourceSelect('audio')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-colors text-left ${
+                      !isVideoMode ? 'bg-purple-50 text-purple-700' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Volume2 size={16} />
+                    <span>Audio Only</span>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>

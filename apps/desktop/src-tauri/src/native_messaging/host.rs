@@ -271,6 +271,18 @@ impl NativeHost {
                         let _ = tokio::fs::create_dir_all(&videos_dir).await;
                         let perm_file_path = videos_dir.join(format!("{}.webm", session_id_clone));
                         
+                        // Wait up to 5s in case HTTP upload is writing to disk
+                        for _ in 0..50 {
+                            if video_temp_path.exists() {
+                                if let Ok(meta) = tokio::fs::metadata(&video_temp_path).await {
+                                    if meta.len() > 0 {
+                                        break;
+                                    }
+                                }
+                            }
+                            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                        }
+
                         if video_temp_path.exists() {
                             if let Ok(_) = tokio::fs::copy(&video_temp_path, &perm_file_path).await {
                                 let perm_path_str = perm_file_path.to_string_lossy().to_string();
