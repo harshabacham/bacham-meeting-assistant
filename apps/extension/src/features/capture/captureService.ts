@@ -204,27 +204,35 @@ export function createCaptureService(
     let acquiredStream: MediaStream | null = null;
 
     if (streamId) {
-      const constraints: MediaStreamConstraints = {
-        audio: false,
-        video: {
-          mandatory: {
-            chromeMediaSource: 'desktop',
-            chromeMediaSourceId: streamId,
-          },
-        } as unknown as MediaTrackConstraints,
-      };
-
       try {
+        const constraints: MediaStreamConstraints = {
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: streamId,
+            },
+          } as unknown as MediaTrackConstraints,
+        };
         acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
         log.info(MODULE, 'Acquired video stream via getUserMedia', { tracks: acquiredStream.getTracks().length });
       } catch (err: any) {
-        log.error(MODULE, `getUserMedia failed: ${err?.name || ''} ${err?.message || String(err)}`);
-        throw new Error(`Capture error: ${err?.message || err?.name || 'Failed to acquire media stream'}`);
+        log.warn(MODULE, `getUserMedia with streamId failed (${err?.name}: ${err?.message}), attempting getDisplayMedia fallback`);
       }
     }
 
     if (!acquiredStream) {
-      throw new Error('Failed to acquire media stream with the selected capture source.');
+      try {
+        log.info(MODULE, 'Attempting getDisplayMedia stream acquisition...');
+        acquiredStream = await navigator.mediaDevices.getDisplayMedia({
+          video: config.video || !!config.screenshotIntervalMs || true,
+          audio: config.audio,
+        });
+        log.info(MODULE, 'Acquired stream via getDisplayMedia', { tracks: acquiredStream.getTracks().length });
+      } catch (err: any) {
+        log.error(MODULE, 'Both getUserMedia and getDisplayMedia failed', { err: err?.message || String(err) });
+        throw new Error(`Capture error: ${err?.message || err?.name || 'Failed to acquire media stream'}`);
+      }
     }
 
     mediaStream = acquiredStream;
@@ -260,10 +268,10 @@ export function createCaptureService(
 
     await storage.set({ activeStreamId: streamId });
 
-    // 1. Setup Audio (Microphone / System Audio)
+    // 1. Setup Audio (Display Audio + Microphone Mixing via Web Audio API)
     let mixedAudioStream: MediaStream | null = null;
 
-    if (config.audio || config.includeMicrophone) {
+    if (config.includeMicrophone || config.audio) {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -272,11 +280,37 @@ export function createCaptureService(
             autoGainControl: true,
           },
         });
-        log.info(MODULE, 'Audio stream acquired successfully for recording and speech transcription');
-        mixedAudioStream = micStream;
+        log.info(MODULE, 'Microphone stream acquired for mixing');
       } catch (err: any) {
-        log.warn(MODULE, 'Microphone audio permission denied or unavailable', { err });
+        log.warn(MODULE, 'Microphone permission denied or unavailable, continuing with display audio', { err });
       }
+    }
+
+    const displayAudioTracks = mediaStream.getAudioTracks();
+    const micAudioTracks = micStream ? micStream.getAudioTracks() : [];
+
+    if (displayAudioTracks.length > 0 && micAudioTracks.length > 0) {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        audioContext = new AudioCtx();
+        const destination = audioContext.createMediaStreamDestination();
+
+        const displaySource = audioContext.createMediaStreamSource(new MediaStream(displayAudioTracks));
+        displaySource.connect(destination);
+
+        const micSource = audioContext.createMediaStreamSource(new MediaStream(micAudioTracks));
+        micSource.connect(destination);
+
+        mixedAudioStream = destination.stream;
+        log.info(MODULE, 'Successfully mixed display and microphone audio via AudioContext');
+      } catch (err: any) {
+        log.warn(MODULE, 'Failed to mix audio via AudioContext, falling back to display audio', { err });
+        mixedAudioStream = new MediaStream(displayAudioTracks);
+      }
+    } else if (displayAudioTracks.length > 0) {
+      mixedAudioStream = new MediaStream(displayAudioTracks);
+    } else if (micAudioTracks.length > 0) {
+      mixedAudioStream = new MediaStream(micAudioTracks);
     }
 
     const mimeType = selectMimeType(config);
