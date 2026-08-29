@@ -318,8 +318,8 @@ export function createMessageHandler(
 
       case MessageType.STOP_SESSION: {
         const { currentSession } = await storage.get(['currentSession']);
-        if (!currentSession) {
-          return { success: false, error: 'No active session' };
+        if (!currentSession || currentSession.state === 'idle' || currentSession.state === 'stopping') {
+          return { success: true };
         }
 
         await sessionService.transition(currentSession.id, 'stopping');

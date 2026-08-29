@@ -487,11 +487,13 @@ export function createCaptureService(
     }
 
     for (const track of mediaStream.getTracks()) {
+      track.onended = null;
       track.stop();
     }
     
     if (micStream) {
       for (const track of micStream.getTracks()) {
+        track.onended = null;
         track.stop();
       }
       micStream = null;
