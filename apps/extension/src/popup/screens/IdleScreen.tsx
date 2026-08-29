@@ -127,13 +127,13 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     }
     if (!tab?.id) return;
 
-    // Show Chrome's native source picker (Tabs, Windows, Entire Screen) for the extension
+    // Show Chrome's native source picker (Tabs, Windows, Entire Screen)
     const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
-      (chrome.desktopCapture.chooseDesktopMedia as any)(['tab', 'window', 'screen', 'audio'], (id: string, opts: any) => {
+      chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], tab, (id, opts) => {
         if (chrome.runtime.lastError || !id) {
           resolve({});
         } else {
-          resolve({ id, hasAudio: opts?.canRequestAudioTrack });
+          resolve({ id, hasAudio: opts?.canRequestAudioTrack === true });
         }
       });
     });
@@ -141,12 +141,12 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     if (!res.id) return; // User canceled
 
     const intent: StartSessionIntent = {
-      captureAudio: true,
+      captureAudio: res.hasAudio ?? false,
       captureVideo: isVideoMode,
       includeMicrophone: isMicEnabled,
       captureMode: isVideoMode ? 'screen' : 'audio',
       streamId: res.id,
-      streamHasAudio: res.hasAudio ?? true,
+      streamHasAudio: res.hasAudio ?? false,
       ...(captureConfig.screenshotIntervalMs !== undefined && isVideoMode
         ? { screenshotIntervalMs: captureConfig.screenshotIntervalMs }
         : {}),
