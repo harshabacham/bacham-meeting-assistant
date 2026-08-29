@@ -8,6 +8,7 @@ const GoogleCalendarPlugin: BachamPlugin = {
     name: 'Google Calendar',
     version: '1.0.0',
     description: 'Read events, detect meetings, and sync your schedule automatically.',
+    icon: 'Calendar',
     category: 'Calendar',
     permissions: ['Read Calendars', 'Read Events'],
     author: 'Bacham',

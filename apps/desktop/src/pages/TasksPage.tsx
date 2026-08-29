@@ -18,6 +18,7 @@ export interface GlobalActionItem {
   timestamp?: string;
   dueDate?: string;
   dueDateIso?: string;
+  context?: string;
   priority: 'urgent' | 'high' | 'medium' | 'low';
   category?: 'follow_up' | 'development' | 'documentation' | 'scheduling' | 'review' | 'general';
   status: 'todo' | 'done';
@@ -110,24 +111,32 @@ export const TasksPage: React.FC = () => {
     fetchTasks();
   }, []);
 
-  const saveCustomTasks = (updatedTasks: GlobalActionItem[]) => {
-    setTasks(updatedTasks);
-    localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedTasks));
-  };
-
   const toggleStatus = async (task: GlobalActionItem) => {
     const newStatus = task.status === 'todo' ? 'done' : 'todo';
-    const updated = tasks.map(t => t.id === task.id ? { ...t, status: newStatus as 'todo' | 'done' } : t);
-    saveCustomTasks(updated);
-
+    
     if (task.lectureId) {
       TauriClient.updateActionItemStatus(task.lectureId, task.task, newStatus).catch(console.error);
+    } else {
+      // It's a custom task stored in local storage
+      const localCustomRaw = localStorage.getItem('bacham_custom_global_tasks');
+      const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+      const updatedCustom = customTasks.map(t => t.id === task.id ? { ...t, status: newStatus as 'todo' | 'done' } : t);
+      localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustom));
     }
+
+    // Update local state for UI
+    const updated = tasks.map(t => t.id === task.id ? { ...t, status: newStatus as 'todo' | 'done' } : t);
+    setTasks(updated);
   };
 
   const handleDeleteTask = (taskId: string) => {
+    const localCustomRaw = localStorage.getItem('bacham_custom_global_tasks');
+    const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+    const updatedCustom = customTasks.filter(t => t.id !== taskId);
+    localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustom));
+
     const updated = tasks.filter(t => t.id !== taskId);
-    saveCustomTasks(updated);
+    setTasks(updated);
     showToast('Task removed', 'info');
   };
 
@@ -157,22 +166,28 @@ export const TasksPage: React.FC = () => {
   }, [tasks, filterTab]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && newTaskText.trim()) {
-      const newTask: GlobalActionItem = {
-        id: `task_custom_${Date.now()}`,
-        lectureTitle: 'Quick Task',
-        task: newTaskText.trim(),
-        owner: 'Me',
-        priority: 'medium',
-        category: 'general',
-        status: 'todo',
-        createdAt: Date.now(),
-      };
-      const updated = [newTask, ...tasks];
-      saveCustomTasks(updated);
-      setNewTaskText('');
-      showToast('Task added', 'success');
-    }
+    if (e.key !== 'Enter' || !newTaskText.trim()) return;
+    e.preventDefault();
+
+    const newTask: GlobalActionItem = {
+      id: `task_custom_${Date.now()}`,
+      task: newTaskText.trim(),
+      owner: 'Me',
+      priority: 'medium',
+      category: 'general',
+      status: 'todo',
+      createdAt: Date.now(),
+    };
+
+    const localCustomRaw = localStorage.getItem('bacham_custom_global_tasks');
+    const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
+    const updatedCustomTasks = [newTask, ...customTasks];
+    localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustomTasks));
+
+    setTasks(prev => [newTask, ...prev]);
+    setNewTaskText('');
+    setFilterTab('mine');
+    showToast('Task added to your list', 'success');
   };
 
   const sortedTasks = useMemo(() => {
@@ -397,10 +412,25 @@ const TaskRow = ({
           </div>
 
           <p 
-            className={`text-[13px] font-medium leading-snug truncate ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}
+            className={`text-[13px] font-medium leading-snug ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}
           >
             {task.task}
           </p>
+
+          {!isDone && (task.rawQuote || task.context) && (
+            <div className="mt-2 pl-2.5 border-l-2 border-[var(--border-accent)] flex flex-col gap-1">
+              {task.context && (
+                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                  {task.context}
+                </p>
+              )}
+              {task.rawQuote && (
+                <p className="text-[11px] italic text-[var(--text-muted)] leading-relaxed">
+                  "{task.rawQuote}"
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

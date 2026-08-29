@@ -46,7 +46,7 @@ export interface Session {
   /** User-supplied label (e.g. course name, lecture title). */
   courseLabel?: string;
   /** Mode used for this session's capture. */
-  captureMode?: 'tab' | 'screen' | 'walkthrough';
+  captureMode?: 'tab' | 'screen' | 'window' | 'walkthrough' | 'audio';
   /** Current state of this session. */
   state: SessionState;
   /** Accumulated paused duration in milliseconds. */
@@ -60,8 +60,23 @@ export interface Session {
  */
 export interface StartSessionIntent {
   courseLabel?: string;
-  captureAudio: boolean;
-  captureVideo: boolean;
-  screenshotIntervalMs?: number;
-  captureMode?: 'tab' | 'screen' | 'walkthrough';
+  readonly captureAudio: boolean;
+  readonly captureVideo: boolean;
+  readonly includeMicrophone?: boolean;
+  readonly captureMode?: 'tab' | 'screen' | 'window' | 'walkthrough' | 'audio';
+  readonly streamId?: string;
+  readonly streamHasAudio?: boolean;
+  readonly screenshotIntervalMs?: number;
+  readonly resolution?: 'auto' | '720p' | '1080p';
+}
+
+export interface LectureSummary {
+  id: string;
+  title: string;
+  created_at: string;
+  duration_ms: number;
+}
+
+export interface HistoryData {
+  lectures: LectureSummary[];
 }

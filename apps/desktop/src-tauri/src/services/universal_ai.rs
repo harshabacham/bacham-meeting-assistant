@@ -59,6 +59,7 @@ impl UniversalAiService {
             "bacham.openai" => vec!["openai_api_key", "openaiApiKey", "bacham.openai"],
             "bacham.anthropic" => vec!["anthropic_api_key", "anthropicApiKey", "bacham.anthropic"],
             "bacham.openrouter" => vec!["openrouter_api_key", "openrouterApiKey", "bacham.openrouter"],
+            "bacham.grok" => vec!["grok_api_key", "grokApiKey", "bacham.grok"],
             _ => vec![key_name],
         };
 
@@ -86,6 +87,7 @@ impl UniversalAiService {
             "bacham.ollama" => Self::call_ollama(prompt, system, pool).await,
             "bacham.lmstudio" => Self::call_lmstudio(prompt, system, pool).await,
             "bacham.openrouter" => Self::call_openrouter(prompt, system, pool).await,
+            "bacham.grok" => Self::call_grok(prompt, system, pool).await,
             _ =>
                 Self::call_gemini_with_model_rotation(prompt, system, pool).await,
 
@@ -99,6 +101,7 @@ impl UniversalAiService {
             "bacham.openrouter" => Self::call_openrouter_vision(prompt, system, image_parts, pool).await,
             "bacham.ollama" => Self::call_ollama_vision(prompt, system, image_parts, pool).await,
             "bacham.lmstudio" => Self::call_lmstudio(prompt, system, pool).await, // LM Studio fallback to text
+            "bacham.grok" => Self::call_grok_vision(prompt, system, image_parts, pool).await,
             _ =>
                 Self::call_gemini_multimodal_with_rotation(prompt, system, image_parts, pool).await,
 
@@ -125,7 +128,7 @@ impl UniversalAiService {
         }
 
         // Fallback chain - try providers that have keys configured
-        let all_providers = ["bacham.anthropic", "bacham.openai", "bacham.openrouter", "bacham.ollama", "bacham.gemini"];
+        let all_providers = ["bacham.anthropic", "bacham.openai", "bacham.grok", "bacham.openrouter", "bacham.ollama", "bacham.gemini"];
         for fb in all_providers.iter() {
             if *fb == preferred { continue; } // already tried
             if *fb != "bacham.ollama" {
@@ -171,7 +174,7 @@ impl UniversalAiService {
             }
         }
 
-        let all_providers = ["bacham.anthropic", "bacham.openai", "bacham.openrouter", "bacham.ollama", "bacham.gemini"];
+        let all_providers = ["bacham.anthropic", "bacham.openai", "bacham.grok", "bacham.openrouter", "bacham.ollama", "bacham.gemini"];
         for fb in all_providers.iter() {
             if *fb == preferred { continue; }
             if *fb != "bacham.ollama" {
@@ -325,6 +328,66 @@ impl UniversalAiService {
         Ok(text)
     }
 
+    async fn call_grok(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.grok", pool).await?;
+        let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
+        
+        let payload = serde_json::json!({
+            "model": "grok-beta",
+            "messages": [
+                { "role": "system", "content": system },
+                { "role": "user", "content": prompt }
+            ]
+        });
+
+        let res = client.post("https://api.x.ai/v1/chat/completions")
+            .bearer_auth(token)
+            .json(&payload)
+            .send().await.map_err(|e| AppError::Internal(e.to_string()))?;
+
+        if !res.status().is_success() {
+            return Err(AppError::Internal(format!("Grok API Error: {}", res.text().await.unwrap_or_default())));
+        }
+
+        let body: serde_json::Value = res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
+        let text = body["choices"][0]["message"]["content"].as_str().unwrap_or_default().to_string();
+        Ok(text)
+    }
+
+    async fn call_grok_vision(prompt: &str, system: &str, images: &[(String, String)], pool: &sqlx::SqlitePool) -> AppResult<String> {
+        let token = Self::get_provider_token("bacham.grok", pool).await?;
+        let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
+        
+        let mut content = vec![serde_json::json!({ "type": "text", "text": prompt })];
+        for (b64, mime) in images {
+            content.push(serde_json::json!({
+                "type": "image_url",
+                "image_url": { "url": format!("data:{};base64,{}", mime, b64) }
+            }));
+        }
+
+        let payload = serde_json::json!({
+            "model": "grok-vision-beta",
+            "messages": [
+                { "role": "system", "content": system },
+                { "role": "user", "content": content }
+            ]
+        });
+
+        let res = client.post("https://api.x.ai/v1/chat/completions")
+            .bearer_auth(token)
+            .json(&payload)
+            .send().await.map_err(|e| AppError::Internal(e.to_string()))?;
+
+        if !res.status().is_success() {
+            return Err(AppError::Internal(format!("Grok Vision Error: {}", res.text().await.unwrap_or_default())));
+        }
+
+        let body: serde_json::Value = res.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
+        let text = body["choices"][0]["message"]["content"].as_str().unwrap_or_default().to_string();
+        Ok(text)
+    }
+
     async fn call_anthropic(prompt: &str, system: &str, pool: &sqlx::SqlitePool) -> AppResult<String> {
         let token = Self::get_provider_token("bacham.anthropic", pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
@@ -394,15 +457,22 @@ impl UniversalAiService {
         let url = Self::get_provider_token("bacham.ollama", pool).await.unwrap_or_else(|_| "http://localhost:11434".to_string());
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
-        // Auto-detect available model
         let tags_url = format!("{}/api/tags", url.trim_end_matches('/'));
-        let mut model = "llama3.1".to_string();
-        if let Ok(res) = client.get(&tags_url).send().await {
-            if let Ok(body) = res.json::<serde_json::Value>().await {
-                if let Some(models) = body.get("models").and_then(|m| m.as_array()) {
-                    if !models.is_empty() {
-                        if let Some(name) = models[0].get("name").and_then(|n| n.as_str()) {
-                            model = name.to_string();
+        
+        let mut model = sqlx::query("SELECT default_model FROM ai_provider_configs WHERE provider = 'ollama'")
+            .fetch_optional(pool)
+            .await.ok().flatten().and_then(|r| sqlx::Row::try_get::<String, _>(&r, "default_model").ok())
+            .unwrap_or_default();
+
+        if model.is_empty() {
+            model = "llama3.1".to_string();
+            if let Ok(res) = client.get(&tags_url).send().await {
+                if let Ok(body) = res.json::<serde_json::Value>().await {
+                    if let Some(models) = body.get("models").and_then(|m| m.as_array()) {
+                        if !models.is_empty() {
+                            if let Some(name) = models[0].get("name").and_then(|n| n.as_str()) {
+                                model = name.to_string();
+                            }
                         }
                     }
                 }
@@ -434,23 +504,32 @@ impl UniversalAiService {
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap();
         
         let tags_url = format!("{}/api/tags", url.trim_end_matches('/'));
-        let mut model = "llava".to_string(); 
-        if let Ok(res) = client.get(&tags_url).send().await {
-            if let Ok(body) = res.json::<serde_json::Value>().await {
-                if let Some(models) = body.get("models").and_then(|m| m.as_array()) {
-                    let mut found_vision = false;
-                    for m in models {
-                        if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
-                            if name.contains("llava") || name.contains("vision") || name.contains("bakllava") {
-                                model = name.to_string();
-                                found_vision = true;
-                                break;
+        
+        // For vision, we might still want to respect default_model if the user picked a vision model explicitly.
+        let mut model = sqlx::query("SELECT default_model FROM ai_provider_configs WHERE provider = 'ollama'")
+            .fetch_optional(pool)
+            .await.ok().flatten().and_then(|r| sqlx::Row::try_get::<String, _>(&r, "default_model").ok())
+            .unwrap_or_default();
+
+        if model.is_empty() {
+            model = "llava".to_string(); 
+            if let Ok(res) = client.get(&tags_url).send().await {
+                if let Ok(body) = res.json::<serde_json::Value>().await {
+                    if let Some(models) = body.get("models").and_then(|m| m.as_array()) {
+                        let mut found_vision = false;
+                        for m in models {
+                            if let Some(name) = m.get("name").and_then(|n| n.as_str()) {
+                                if name.contains("llava") || name.contains("vision") || name.contains("bakllava") {
+                                    model = name.to_string();
+                                    found_vision = true;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    if !found_vision && !models.is_empty() {
-                        if let Some(name) = models[0].get("name").and_then(|n| n.as_str()) {
-                            model = name.to_string();
+                        if !found_vision && !models.is_empty() {
+                            if let Some(name) = models[0].get("name").and_then(|n| n.as_str()) {
+                                model = name.to_string();
+                            }
                         }
                     }
                 }

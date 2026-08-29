@@ -19,6 +19,23 @@ impl ExportService {
             }
         }
 
+        let summary = sqlx::query!("SELECT content FROM summaries WHERE lecture_id = ? ORDER BY generated_at DESC LIMIT 1", lecture_id)
+            .fetch_optional(pool).await.unwrap_or(None).map(|r| r.content);
+
+        let notes = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
+            .fetch_optional(pool).await.unwrap_or(None).map(|r| r.content);
+
+        let screenshot_rows = sqlx::query!("SELECT file_path, captured_at, is_key_frame FROM screenshots WHERE lecture_id = ? ORDER BY captured_at ASC", lecture_id)
+            .fetch_all(pool).await.unwrap_or_default();
+            
+        let screenshots: Vec<serde_json::Value> = screenshot_rows.into_iter().map(|r| {
+            let mut s = serde_json::Map::new();
+            s.insert("filePath".to_string(), serde_json::Value::String(r.file_path));
+            s.insert("capturedAt".to_string(), serde_json::Value::Number(serde_json::Number::from(r.captured_at)));
+            s.insert("isKeyFrame".to_string(), serde_json::Value::Bool(r.is_key_frame.unwrap_or(0) != 0));
+            serde_json::Value::Object(s)
+        }).collect();
+
         let payload = serde_json::json!({
             "id": row.id,
             "title": row.title,
@@ -28,6 +45,9 @@ impl ExportService {
             "createdAt": row.created_at,
             "transcript": transcript,
             "artifacts": artifacts_map,
+            "summary": summary,
+            "notes": notes,
+            "screenshots": screenshots,
         });
 
         if let Some(parent) = dest.parent() {
@@ -38,7 +58,7 @@ impl ExportService {
     }
 
     pub async fn export_markdown(pool: &SqlitePool, lecture_id: &str, dest: &PathBuf) -> AppResult<()> {
-        let md = Self::build_markdown(pool, lecture_id).await?;
+        let md = Self::build_markdown(pool, lecture_id, Some(dest)).await?;
         if let Some(parent) = dest.parent() {
             std::fs::create_dir_all(parent)?;
         }
@@ -47,7 +67,7 @@ impl ExportService {
     }
 
     pub async fn export_html(pool: &SqlitePool, lecture_id: &str, dest: &PathBuf) -> AppResult<()> {
-        let md = Self::build_markdown(pool, lecture_id).await?;
+        let md = Self::build_markdown(pool, lecture_id, Some(dest)).await?;
         let row = sqlx::query!("SELECT title FROM lectures WHERE id = ?", lecture_id)
             .fetch_one(pool).await?;
 
@@ -146,7 +166,7 @@ impl ExportService {
         Ok(())
     }
 
-    async fn build_markdown(pool: &SqlitePool, lecture_id: &str) -> AppResult<String> {
+    async fn build_markdown(pool: &SqlitePool, lecture_id: &str, dest: Option<&PathBuf>) -> AppResult<String> {
         let row = sqlx::query!("SELECT title, course, semester, teacher FROM lectures WHERE id = ?", lecture_id)
             .fetch_one(pool).await?;
 
@@ -160,7 +180,7 @@ impl ExportService {
         .unwrap_or(None)
         .map(|r| r.content);
 
-        let notes = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ?", lecture_id)
+        let notes = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
             .fetch_optional(pool).await.unwrap_or(None)
             .map(|r| r.content);
 
@@ -229,6 +249,41 @@ impl ExportService {
             md.push('\n');
         }
 
+        let screenshot_rows = sqlx::query!("SELECT file_path FROM screenshots WHERE lecture_id = ? ORDER BY captured_at ASC", lecture_id)
+            .fetch_all(pool).await.unwrap_or_default();
+
+        if !screenshot_rows.is_empty() {
+            md.push_str("## Visuals\n\n");
+            let mut assets_dir_created = false;
+            let mut assets_dir = PathBuf::new();
+
+            if let Some(d) = dest {
+                if let Some(parent) = d.parent() {
+                    assets_dir = parent.join("assets");
+                    if !assets_dir.exists() {
+                        let _ = std::fs::create_dir_all(&assets_dir);
+                    }
+                    assets_dir_created = true;
+                }
+            }
+
+            for row in screenshot_rows {
+                let src_path = PathBuf::from(&row.file_path);
+                if src_path.exists() {
+                    if let Some(file_name) = src_path.file_name() {
+                        if assets_dir_created {
+                            let dest_path = assets_dir.join(file_name);
+                            let _ = std::fs::copy(&src_path, &dest_path);
+                            md.push_str(&format!("![Screenshot](assets/{})\n\n", file_name.to_string_lossy()));
+                        } else {
+                            // Absolute path if no destination provided
+                            md.push_str(&format!("![Screenshot]({})\n\n", src_path.to_string_lossy().replace("\\", "/")));
+                        }
+                    }
+                }
+            }
+        }
+
         Ok(md)
     }
 
@@ -262,7 +317,7 @@ impl ExportService {
                 md.push_str("\n\n");
             }
 
-            let notes = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ?", lecture.id)
+            let notes = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture.id)
                 .fetch_optional(pool).await.unwrap_or(None).map(|r| r.content);
 
             if let Some(n) = notes {

@@ -19,8 +19,20 @@ export function LiveActionItems() {
     setIsScanning(true);
     try {
       const prompt = `Review the live meeting transcript and extract any NEW tasks, action items, or follow-ups. 
-      Return ONLY a raw JSON array of objects. Format: [{"task": "Do X", "owner": "John"}]. 
-      Do NOT wrap in markdown codeblocks. Do NOT include tasks you already extracted. If none, return [].`;
+      First, think step-by-step in the _reasoning field about what tasks were actually committed to.
+      Return ONLY a raw JSON array of objects. Do NOT wrap in markdown codeblocks. Do NOT include tasks you already extracted. If none, return [].
+      Schema:
+      [
+        {
+          "task": "A clear, concise description of the task",
+          "owner": "The person responsible (or 'Unassigned')",
+          "priority": "urgent|high|medium|low",
+          "category": "follow_up|development|documentation|scheduling|review|general",
+          "raw_quote": "The exact quote from the transcript",
+          "context": "Brief context on why this task is needed",
+          "due_date": "Natural language due date if mentioned, else null"
+        }
+      ]`;
       
       const res = await TauriClient.sendGlobalMemoryChat(prompt);
       

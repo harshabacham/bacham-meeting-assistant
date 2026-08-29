@@ -38,8 +38,24 @@ impl CoreEngineCoordinator {
         // Run Concept Extractor (depends on visual and audio/transcript)
         crate::ai::core_engine::concept_extractor::extract_concepts(lecture_id, pool).await?;
 
-        // Run Multi-tier Summary Generator
-        crate::ai::core_engine::summary_generator::generate_multi_level_summary(lecture_id, pool).await?;
+        // Run Multi-tier Summary Generator & Action Item Extractor in parallel
+        let summary_task = {
+            let pool = pool.clone();
+            let lid = lecture_id.to_string();
+            tokio::spawn(async move {
+                crate::ai::core_engine::summary_generator::generate_multi_level_summary(&lid, &pool).await
+            })
+        };
+
+        let action_item_task = {
+            let pool = pool.clone();
+            let lid = lecture_id.to_string();
+            tokio::spawn(async move {
+                crate::ai::core_engine::action_item_extractor::extract_action_items(&lid, &pool).await
+            })
+        };
+
+        let _ = tokio::try_join!(summary_task, action_item_task);
 
         Ok(())
     }

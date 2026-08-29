@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body, #root {
+  background-color: #0A0A0C !important;
+  color: #F8F9FA;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 /* ─── BACHAM V2 Premium Design Tokens ─────────────────────────────────────────────── */
 :root {
   /* Core palette - Lime Theme */
@@ -84,7 +93,7 @@
   --card:                var(--surface);
   --card-foreground:     var(--text-primary);
   --primary:             var(--accent);
-  --primary-foreground:  #FFF;
+  --primary-foreground:  var(--color-black);
   --muted:               var(--surface-raised);
   --muted-foreground:    var(--text-muted);
   --input:               var(--surface-raised);
@@ -216,11 +225,11 @@
     color: var(--accent);
   }
 
-  /* Custom scrollbar — uses CSS variables so it adapts to light/dark */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  /* Custom scrollbar — hidden for a cleaner UI while keeping scroll functionality */
+  ::-webkit-scrollbar { width: 0px; height: 0px; display: none; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+  ::-webkit-scrollbar-thumb { background: transparent; }
+  ::-webkit-scrollbar-thumb:hover { background: transparent; }
 
   /* Focus ring — globally consistent */
   :focus-visible {

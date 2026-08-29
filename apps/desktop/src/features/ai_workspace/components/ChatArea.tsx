@@ -119,7 +119,10 @@ export function ChatArea({ conversation, onReferenceClick }: ChatAreaProps) {
         setIsSending(true);
 
         try {
-            await TauriClient.sendMessage(conversation.id, msgToSend);
+            await Promise.race([
+                TauriClient.sendMessage(conversation.id, msgToSend),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('AI provider took too long to respond. Request timed out.')), 60000))
+            ]);
         } catch (e: any) {
             setIsSending(false);
             setHistory(prev => [

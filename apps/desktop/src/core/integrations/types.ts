@@ -4,6 +4,7 @@ export interface BachamPlugin {
     name: string;
     version: string;
     description: string;
+    icon?: string;
     category: 'Calendar' | 'Notes' | 'Storage' | 'Developer' | 'Communication' | 'Tasks' | 'AI Providers';
     permissions: string[];
     author: string;
@@ -15,6 +16,12 @@ export interface BachamPlugin {
   };
   auth?: {
     type: 'oauth2' | 'api_key' | 'none';
+    fields?: {
+      id: string;
+      label: string;
+      placeholder?: string;
+      type?: 'text' | 'password';
+    }[];
     authenticate?: (credentials?: any) => Promise<void>;
     disconnect?: () => Promise<void>;
     isConnected: () => Promise<boolean>;

@@ -1,25 +1,15 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import en from './locales/en.json';
-import es from './locales/es.json';
-import fr from './locales/fr.json';
-import ja from './locales/ja.json';
-import hi from './locales/hi.json';
-
-const resources = {
-  en: { translation: en },
-  es: { translation: es },
-  fr: { translation: fr },
-  ja: { translation: ja },
-  hi: { translation: hi },
-};
+import resourcesToBackend from 'i18next-resources-to-backend';
 
 i18n
+  .use(resourcesToBackend((language: string, namespace: string) => import(`./locales/${language}/${namespace}.json`)))
   .use(initReactI18next)
   .init({
-    resources,
     lng: 'en', // default language
     fallbackLng: 'en',
+    ns: ['common'],
+    defaultNS: 'common',
     interpolation: {
       escapeValue: false, // react already safes from xss
     },

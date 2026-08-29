@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Markdown as ReactMarkdown } from '@/components/ui/markdown';
-import { ChevronDown, ChevronRight, BookOpen, Code, Zap, FileText, CheckCircle, Clock, Info, BrainCircuit, Activity, Target, Briefcase, Sparkles, Loader2, Layers, Book } from 'lucide-react';
+import { ChevronDown, ChevronRight, BookOpen, Code, FileText, CheckCircle, Clock, Info, Target, Briefcase, Sparkles, Loader2, Layers, Zap } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 
@@ -203,15 +203,10 @@ const ActionItemCard = ({ item, context }: { item: any; context: string }) => {
 };
 
 export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
-  const [summaryTier, setSummaryTier] = useState<'quick' | 'standard' | 'deep' | 'textbook'>('standard');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     executive_summary: true,
-    chapter_breakdown: true,
-    formula_sheet: true,
-    problems_solved: true,
-    code_explained: true,
+    discussion_points: true,
     crm: true,
-    revision: true,
   });
 
   const toggleSection = (section: string) => {
@@ -253,12 +248,11 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
     isMeaningful(data.quick_summary) ||
     isMeaningful(data.quickSummary) ||
     isMeaningful(data.standard_summary) ||
-    isMeaningful(data.standardSummary) ||
-    isMeaningful(data.deep_notes) ||
-    isMeaningful(data.deepNotes) ||
-    isMeaningful(data.textbook_notes) ||
-    isMeaningful(data.textbookNotes)
+    isMeaningful(data.standardSummary)
   );
+
+  const discussionPoints = data.discussion_points || data.discussionPoints || [];
+  const hasDiscussion = discussionPoints.length > 0;
 
   // CRM & Action Items
   const rawBant = data.crm_metadata?.bant || data.crmMetadata?.bant;
@@ -280,98 +274,11 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
 
   const hasCrmSection = hasBant || actionItems.length > 0 || keyDecisions.length > 0;
 
-  // Study & Tech Items
-  const chapters = (data.chapter_breakdown || data.chapterBreakdown || []).filter((ch: any) => 
-    ch && (isMeaningful(ch.title) || isMeaningful(ch.summary))
-  );
-
-  const formulas = (data.formula_sheet || data.formulaSheet || []).filter((f: any) => 
-    f && isMeaningful(f.formula)
-  );
-
-  const problems = (data.problems_solved || data.problemsSolved || []).filter((p: any) => 
-    p && isMeaningful(p.question)
-  );
-
-  const codeList = (data.code_explained || data.codeExplained || []).filter((c: any) => 
-    c && (isMeaningful(c.logic) || isMeaningful(c.code_snippet) || isMeaningful(c.purpose))
-  );
-
-  const rawCheatSheet = data.cheat_sheet || data.cheatSheet;
-  const hasCheatSheet = isMeaningful(rawCheatSheet);
-
-  const visuals = (data.visual_explanations || data.visualExplanations || []).filter((v: any) => 
-    v && (isMeaningful(v.title) || isMeaningful(v.explanation))
-  );
-
-  const concepts = (data.concepts_and_definitions || data.conceptsAndDefinitions || []).filter((c: any) => 
-    c && isMeaningful(c.term) && isMeaningful(c.definition)
-  );
-
-  const examQuestions = (data.exam_questions || data.examQuestions || []).filter((q: any) => 
-    q && isMeaningful(q.question)
-  );
-  const interviewQuestions = (data.interview_questions || data.interviewQuestions || []).filter((q: any) => 
-    q && isMeaningful(q.question)
-  );
-  const hasPrepSection = examQuestions.length > 0 || interviewQuestions.length > 0;
-
   const rawTakeaways = data.key_takeaways || data.keyTakeaways || data.key_concepts || [];
   const takeaways = (Array.isArray(rawTakeaways) ? rawTakeaways : []).filter((t: any) => isMeaningful(t));
-  const revisionNotes = data.revision_notes || data.revisionNotes;
-  const hasRevisionSection = takeaways.length > 0 || isMeaningful(revisionNotes);
 
-  const getTierContent = (tier: 'quick' | 'standard' | 'deep' | 'textbook') => {
-    if (tier === 'quick') {
-      const q = data.quickSummary || data.quick_summary;
-      if (q && typeof q === 'string' && q.trim()) return q;
-      if (takeaways.length > 0) {
-        return `### ⚡ Quick Summary (Key Takeaways)\n\n${takeaways.map((t: string) => `- ${t}`).join('\n')}`;
-      }
-    }
-    if (tier === 'standard') {
-      const s = data.standardSummary || data.standard_summary || data.executive_summary || data.overview;
-      if (s) {
-        if (typeof s === 'string' && s.trim()) return s;
-        if (Array.isArray(s)) {
-          return s.map((sec: any) => `### ${sec.section_title || sec.title || 'Overview'}\n\n${sec.content || sec.summary || ''}`).join('\n\n');
-        }
-      }
-    }
-    if (tier === 'deep') {
-      const d = data.deepNotes || data.deep_notes || data.deepSummary || data.deep_summary;
-      if (d && typeof d === 'string' && d.trim()) return d;
-      if (hasCheatSheet || (data.revision_tips && data.revision_tips.length > 0)) {
-        let text = hasCheatSheet ? `### 🔍 Deep Insights & Cheat Sheet\n\n${rawCheatSheet}` : '';
-        if (data.revision_tips && Array.isArray(data.revision_tips) && data.revision_tips.length > 0) {
-          text += `\n\n### 💡 Key Context & Tips\n\n${data.revision_tips.map((t: string) => `- ${t}`).join('\n')}`;
-        }
-        return text;
-      }
-    }
-    if (tier === 'textbook') {
-      const tb = data.textbookNotes || data.textbook_notes || data.textbookSummary || data.textbook_summary;
-      if (tb && typeof tb === 'string' && tb.trim()) return tb;
-      
-      let fullTextbook = '';
-      if (data.objectives && Array.isArray(data.objectives) && data.objectives.length > 0) {
-        fullTextbook += `### 🎯 Learning Objectives\n\n${data.objectives.map((o: string) => `1. ${o}`).join('\n')}\n\n`;
-      }
-      if (chapters.length > 0) {
-        fullTextbook += `### 📖 Chapter Breakdown\n\n` + chapters.map((c: any) => `#### ${c.title || 'Chapter'}\n${c.summary || c.content || ''}`).join('\n\n') + '\n\n';
-      }
-      if (concepts.length > 0) {
-        fullTextbook += `### 🧠 Core Concepts & Definitions\n\n` + concepts.map((c: any) => `**${c.term}:** ${c.definition}\n\n*${c.explanation || ''}*`).join('\n\n') + '\n\n';
-      }
-      if (fullTextbook.trim()) return fullTextbook;
-    }
-
-    const fallback = data.overview || data.executive_summary || data.standard_summary || "Summary content is being generated...";
-    if (typeof fallback === 'string') return fallback;
-    if (Array.isArray(fallback)) {
-      return fallback.map((sec: any) => `### ${sec.section_title || sec.title || 'Section'}\n\n${sec.content || sec.summary || ''}`).join('\n\n');
-    }
-    return JSON.stringify(fallback, null, 2);
+  const getSummaryContent = () => {
+    return data.executive_summary || data.standard_summary || data.overview || "Summary content is being generated...";
   };
 
   return (
@@ -389,58 +296,52 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
         </div>
       )}
 
-      {/* Multi-Tier Summary Section */}
+      {/* Main Summary Section */}
       {hasSummary && (
         <section className="bg-background">
-          {renderSectionHeader('executive_summary', 'Multi-Tier Summary', <FileText size={16} />)}
+          {renderSectionHeader('executive_summary', 'Executive Summary', <FileText size={16} />)}
           {expandedSections['executive_summary'] && (
             <div className="mt-4 space-y-4">
-              {/* 4-Tier Interactive Mode Switcher */}
-              <div className="flex p-1 bg-surface-raised border border-border/50 rounded-xl overflow-hidden shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setSummaryTier('quick')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                    summaryTier === 'quick' ? 'bg-indigo-500/15 text-indigo-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
-                  }`}
-                >
-                  <Clock size={14} /> Quick (30s)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSummaryTier('standard')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                    summaryTier === 'standard' ? 'bg-blue-500/15 text-blue-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
-                  }`}
-                >
-                  <BookOpen size={14} /> Standard (5m)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSummaryTier('deep')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                    summaryTier === 'deep' ? 'bg-purple-500/15 text-purple-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
-                  }`}
-                >
-                  <Layers size={14} /> Deep Notes (15m)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSummaryTier('textbook')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                    summaryTier === 'textbook' ? 'bg-amber-500/15 text-amber-400 shadow-sm' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
-                  }`}
-                >
-                  <Book size={14} /> Textbook
-                </button>
-              </div>
-
-              {/* Tier Content Display */}
               <div className="bg-surface border border-border/50 rounded-xl p-6 shadow-sm">
                 <div className="prose prose-sm prose-invert max-w-none">
-                  <ReactMarkdown>{getTierContent(summaryTier)}</ReactMarkdown>
+                  <ReactMarkdown>{getSummaryContent()}</ReactMarkdown>
                 </div>
               </div>
+
+              {takeaways.length > 0 && (
+                <div className="bg-surface border border-border/50 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Key Takeaways</h3>
+                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                    {takeaways.map((t: string, i: number) => (
+                      <li key={i}>{t}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Discussion Points Section */}
+      {hasDiscussion && (
+        <section className="bg-background">
+          {renderSectionHeader('discussion_points', 'Discussion Points', <Layers size={16} />)}
+          {expandedSections['discussion_points'] && (
+            <div className="mt-4 grid grid-cols-1 gap-4">
+              {discussionPoints.map((dp: any, idx: number) => (
+                <div key={idx} className="bg-surface p-5 rounded-lg border border-border shadow-sm flex flex-col gap-2">
+                  <div className="flex justify-between items-start gap-4">
+                    <h3 className="text-sm font-semibold text-foreground">{dp.topic || "Discussion"}</h3>
+                    {dp.timestamp && (
+                      <span className="text-[11px] font-mono bg-surface-raised px-2 py-0.5 rounded text-muted-foreground border border-border whitespace-nowrap">
+                        {dp.timestamp}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{dp.details}</p>
+                </div>
+              ))}
             </div>
           )}
         </section>
@@ -526,246 +427,7 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
         </section>
       )}
 
-      {/* Chapters */}
-      {chapters.length > 0 && (
-        <section className="bg-background">
-          {renderSectionHeader('chapter_breakdown', 'Chapters', <Clock size={16} />)}
-          {expandedSections['chapter_breakdown'] && (
-            <div className="mt-4 flex flex-col gap-4 px-2 border-l border-border ml-2">
-              {chapters.map((ch: any, i: number) => (
-                <div key={i} className="relative pl-6">
-                  <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full bg-[color:var(--accent)]" />
-                  <div className="flex justify-between items-start gap-4">
-                    <h4 className="font-medium text-foreground m-0">{ch.title || 'Section'}</h4>
-                    {ch.timestamp_hint && (
-                      <span className="text-xs font-mono text-[color:var(--accent)]/80 bg-[color:var(--accent)]/10 px-2 py-0.5 rounded">{ch.timestamp_hint}</span>
-                    )}
-                  </div>
-                  {ch.summary && <p className="text-sm text-muted-foreground mt-1">{ch.summary}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
 
-      {/* Formulas */}
-      {formulas.length > 0 && (
-        <section className="bg-background">
-          {renderSectionHeader('formula_sheet', 'Formula Sheet', <Activity size={16} />)}
-          {expandedSections['formula_sheet'] && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-              {formulas.map((f: any, i: number) => (
-                <div key={i} className="bg-surface p-4 rounded-lg border border-border hover:border-[color:var(--accent)]/30 transition-colors">
-                  <div className="font-mono text-[color:var(--accent)] bg-surface-raised p-3 rounded text-center text-lg mb-3 overflow-x-auto">
-                    {f.formula}
-                  </div>
-                  {f.meaning && <h4 className="text-foreground font-medium mb-1">{f.meaning}</h4>}
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    {f.variables && <p><strong>Variables:</strong> {f.variables}</p>}
-                    {f.example && <p><strong>Example:</strong> {f.example}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Problems Solved */}
-      {problems.length > 0 && (
-        <section className="bg-background">
-          {renderSectionHeader('problems_solved', 'Problems Solved', <CheckCircle size={16} />)}
-          {expandedSections['problems_solved'] && (
-            <div className="mt-4 flex flex-col gap-4 px-2">
-              {problems.map((p: any, i: number) => (
-                <div key={i} className="bg-surface p-5 rounded-lg border border-border">
-                  <h4 className="text-foreground font-medium mb-3 pb-2 border-b border-border">Q: {p.question}</h4>
-                  {p.step_by_step && (
-                    <div className="text-sm text-muted-foreground whitespace-pre-wrap mb-4">
-                      <strong className="text-muted-foreground block mb-1">Step-by-step:</strong>
-                      {p.step_by_step}
-                    </div>
-                  )}
-                  {p.final_answer && (
-                    <div className="flex flex-wrap gap-4 mt-4 bg-surface-hover p-3 rounded text-sm">
-                      <div className="flex-1 min-w-[200px]">
-                        <strong className="text-[color:var(--accent)] block mb-1">Final Answer:</strong>
-                        <span className="text-foreground">{p.final_answer}</span>
-                      </div>
-                      {p.professors_explanation && (
-                        <div className="flex-1 min-w-[200px]">
-                          <strong className="text-muted-foreground block mb-1">Notes:</strong>
-                          <span>{p.professors_explanation}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Code Snippets */}
-      {codeList.length > 0 && (
-        <section className="bg-background">
-          {renderSectionHeader('code_explained', 'Code References', <Code size={16} />)}
-          {expandedSections['code_explained'] && (
-            <div className="mt-4 flex flex-col gap-4 px-2">
-              {codeList.map((c: any, i: number) => (
-                <div key={i} className="bg-surface overflow-hidden rounded-lg border border-border">
-                  <div className="bg-surface-raised px-4 py-2 flex justify-between items-center border-b border-border">
-                    <span className="text-sm font-medium text-foreground">{c.purpose || 'Snippet'}</span>
-                    {c.language && (
-                      <span className="text-xs text-[color:var(--accent)] bg-[color:var(--accent)]/10 px-2 py-1 rounded font-mono">
-                        {c.language}
-                      </span>
-                    )}
-                  </div>
-                  {c.logic && (
-                    <div className="p-4 bg-surface-hover overflow-x-auto">
-                      <pre className="text-sm text-foreground font-mono m-0 whitespace-pre-wrap">{c.logic}</pre>
-                    </div>
-                  )}
-                  <div className="p-4 text-sm text-muted-foreground grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {c.output && <div><strong className="text-muted-foreground">Output:</strong><br/>{c.output}</div>}
-                    {c.complexity && <div><strong className="text-muted-foreground">Complexity:</strong><br/>{c.complexity}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Cheat Sheet */}
-      {hasCheatSheet && (
-        <section className="bg-background">
-          {renderSectionHeader('cheat_sheet', 'Key Cheat Sheet', <Zap size={16} />)}
-          {expandedSections['cheat_sheet'] && (
-            <div className="mt-4 p-5 bg-surface/90 border border-[color:var(--accent)]/30 rounded-xl prose prose-sm prose-invert max-w-none">
-              <ReactMarkdown>{rawCheatSheet}</ReactMarkdown>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Visual Explanations */}
-      {visuals.length > 0 && (
-        <section className="bg-background">
-          {renderSectionHeader('visual_explanations', 'Visual & Diagram Breakdown', <Activity size={16} />)}
-          {expandedSections['visual_explanations'] && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-              {visuals.map((v: any, i: number) => (
-                <div key={i} className="bg-surface p-4 rounded-lg border border-border">
-                  {v.title && <h4 className="text-foreground font-medium mb-1">{v.title}</h4>}
-                  {v.explanation && <p className="text-sm text-muted-foreground mb-3">{v.explanation}</p>}
-                  {v.key_takeaway && (
-                    <div className="text-xs bg-[color:var(--accent)]/10 text-[color:var(--accent)] p-2 rounded">
-                      <strong>Takeaway:</strong> {v.key_takeaway}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Concepts & Definitions */}
-      {concepts.length > 0 && (
-        <section className="bg-background">
-          {renderSectionHeader('concepts_and_definitions', 'Concepts & Definitions', <BookOpen size={16} />)}
-          {expandedSections['concepts_and_definitions'] && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 px-2">
-              {concepts.map((c: any, i: number) => (
-                <div key={i} className="bg-surface p-4 rounded-lg border border-border">
-                  <h4 className="text-[color:var(--accent)] font-semibold mb-1">{c.term}</h4>
-                  <p className="text-sm text-foreground font-medium mb-2">{c.definition}</p>
-                  {c.explanation && <p className="text-xs text-muted-foreground">{c.explanation}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Interview & Exam Preparation */}
-      {hasPrepSection && (
-        <section className="bg-background">
-          {renderSectionHeader('exam_prep', 'Exam & Interview Prep', <CheckCircle size={16} />)}
-          {expandedSections['exam_prep'] && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
-              {examQuestions.length > 0 && (
-                <div className="bg-surface p-5 rounded-lg border border-border">
-                  <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
-                    <FileText size={16} className="text-primary" /> Exam Problems
-                  </h3>
-                  <div className="space-y-4">
-                    {examQuestions.map((q: any, i: number) => (
-                      <div key={i} className="border-b border-border/50 pb-3 last:border-0">
-                        <p className="text-sm font-medium text-foreground mb-1">Q: {q.question}</p>
-                        {q.solution && <p className="text-xs text-muted-foreground"><strong>Solution:</strong> {q.solution}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {interviewQuestions.length > 0 && (
-                <div className="bg-surface p-5 rounded-lg border border-border">
-                  <h3 className="text-foreground font-medium mb-3 flex items-center gap-2">
-                    <BrainCircuit size={16} className="text-purple-400" /> Technical Interview Questions
-                  </h3>
-                  <div className="space-y-4">
-                    {interviewQuestions.map((q: any, i: number) => (
-                      <div key={i} className="border-b border-border/50 pb-3 last:border-0">
-                        <p className="text-sm font-medium text-foreground mb-1">Q: {q.question}</p>
-                        {q.expected_answer && <p className="text-xs text-muted-foreground"><strong>Answer:</strong> {q.expected_answer}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Key Takeaways & Revision */}
-      {hasRevisionSection && (
-        <section className="bg-background">
-          {renderSectionHeader('revision', 'Revision & Takeaways', <BrainCircuit size={16} />)}
-          {expandedSections['revision'] && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
-              {takeaways.length > 0 && (
-                <div className="bg-surface p-5 rounded-lg border border-border">
-                  <h3 className="text-[color:var(--accent)] font-medium mb-3 flex items-center gap-2">
-                    <Zap size={16} /> Key Takeaways
-                  </h3>
-                  <ul className="space-y-2 text-sm text-foreground">
-                    {takeaways.map((kc: string, i: number) => (
-                      <li key={i} className="flex gap-2 items-start">
-                        <span className="text-[color:var(--accent)] mt-1">•</span>
-                        <span>{kc}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {revisionNotes && isMeaningful(revisionNotes) && (
-                <div className="bg-surface p-5 rounded-lg border border-border">
-                  <h3 className="text-foreground font-medium mb-3">Quick Revision</h3>
-                  <div className="prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown>{revisionNotes}</ReactMarkdown>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      )}
 
       {/* Raw Notes Fallback */}
       {data.detailed_notes && isMeaningful(data.detailed_notes) && (

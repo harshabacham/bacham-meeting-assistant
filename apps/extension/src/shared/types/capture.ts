@@ -3,13 +3,17 @@ export interface CaptureConfig {
   readonly audio: boolean;
   /** Whether to capture tab video. */
   readonly video: boolean;
+  /** Whether to include microphone audio in the recording. */
+  readonly includeMicrophone?: boolean;
   /**
    * Interval in milliseconds between automatic screenshots.
    * Minimum: 5000ms. Omit entirely to disable interval screenshots.
    */
   readonly screenshotIntervalMs?: number;
-  /** Whether to capture the current tab or the entire screen. Defaults to 'tab' if omitted. */
-  readonly captureMode?: 'tab' | 'screen' | 'walkthrough';
+  /** Recording resolution constraint */
+  readonly resolution?: 'auto' | '720p' | '1080p';
+  /** Whether to capture the current tab, window/screen, or audio only. Defaults to 'tab' if omitted. */
+  readonly captureMode?: 'tab' | 'screen' | 'window' | 'walkthrough' | 'audio';
 }
 
 /** Detected lecture platform for metadata enrichment. */

@@ -2,7 +2,7 @@
  * Barrel export for all shared types.
  * Import from '@/shared/types' throughout the codebase.
  */
-export type { Session, SessionState, StartSessionIntent } from './session';
+export type { Session, SessionState, StartSessionIntent, LectureSummary, HistoryData } from './session';
 export type { CaptureConfig, CaptureState, DetectedPlatform } from './capture';
 export type { PermissionName, PermissionGrantState, PermissionStatus } from './permissions';
 export type { StorageSchema } from './storage';
@@ -14,6 +14,7 @@ export type {
   ChunkReadyPayload,
   MetadataReadyPayload,
   LiveCaptionPayload,
+  LiveNotePayload,
   HeartbeatPayload,
   AckPayload,
   ErrorPayload,

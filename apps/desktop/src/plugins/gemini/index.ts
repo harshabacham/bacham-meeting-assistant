@@ -9,6 +9,7 @@ const GeminiPlugin: BachamPlugin = {
     name: 'Google Gemini',
     version: '1.0.0',
     description: 'Use Google Gemini models for generating meeting summaries and extracting intelligence.',
+    icon: 'Sparkles',
     category: 'AI Providers',
     permissions: ['AI Inference'],
     author: 'Bacham',
@@ -26,6 +27,12 @@ const GeminiPlugin: BachamPlugin = {
     type: 'api_key',
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
+      
+      // Basic validation just to ensure it's not purely whitespace
+      if (token.trim().length < 10) {
+        throw new Error('API token appears too short or invalid.');
+      }
+      
       await AuthManager.setToken(PLUGIN_ID, token);
     },
     disconnect: async () => {

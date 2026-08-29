@@ -20,8 +20,8 @@ export function ConnectingScreen(): React.ReactElement {
           <img src={logo} alt="" className="absolute inset-3 rounded object-cover" />
         </div>
         <div className="text-center">
-          <p className="text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>Connecting…</p>
-          <p className="text-[12px] mt-1" style={{ color: 'var(--text-muted)' }}>Reaching BACHAM Desktop App</p>
+          <p className="text-[14px] font-semibold" style={{ color: 'var(--text-primary)' }}>Waiting for selection…</p>
+          <p className="text-[12px] mt-1 px-4" style={{ color: 'var(--text-muted)' }}>Please select a tab or screen in the native browser pop-up to begin.</p>
         </div>
       </div>
     </div>

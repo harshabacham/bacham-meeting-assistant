@@ -7,14 +7,24 @@ interface AppState {
   nativeStatus: ConnectionStatus;
   isReady: boolean;
   
+  activeMeetingId: string | null;
+  isMeetingSidebarOpen: boolean;
+  
   initialize: () => Promise<void>;
   checkNativeStatus: () => Promise<void>;
+  setActiveMeetingId: (id: string | null) => void;
+  setMeetingSidebarOpen: (isOpen: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   dbHealth: null,
   nativeStatus: 'disconnected',
   isReady: false,
+  activeMeetingId: null,
+  isMeetingSidebarOpen: false,
+
+  setActiveMeetingId: (id) => set({ activeMeetingId: id }),
+  setMeetingSidebarOpen: (isOpen) => set({ isMeetingSidebarOpen: isOpen }),
 
   initialize: async () => {
     try {
@@ -23,9 +33,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       
       // Start polling native messaging status
       get().checkNativeStatus();
-      setInterval(() => {
-        get().checkNativeStatus();
-      }, 2000);
+      if (!(window as any).__nativeStatusInterval) {
+        (window as any).__nativeStatusInterval = setInterval(() => {
+          get().checkNativeStatus();
+        }, 2000);
+      }
       
     } catch (error) {
       console.error('Failed to initialize app', error);

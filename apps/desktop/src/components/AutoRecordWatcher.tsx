@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { listen, emit } from '@tauri-apps/api/event';
 import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -14,7 +14,7 @@ export function AutoRecordWatcher() {
 
     useEffect(() => {
         // 1. Extension Hook Listener
-        const unlistenPromise = listen('start_recording', async (_event: any) => {
+        const unlistenPromise = listen('start_recording', async () => {
             const autoStart = settings?.autoStartRecording ?? true;
             if (!autoStart) {
                 console.log("[AutoRecordWatcher] Extension trigger ignored (Auto-Start is disabled).");
@@ -26,7 +26,9 @@ export function AutoRecordWatcher() {
 
             showToast("Meeting detected! Auto-starting recording...", "success");
             try {
-                await TauriClient.startNativeRecording();
+                const { useAppStore } = await import('@/shared/stores/appStore');
+                emit('force_start_recording', { lectureId: useAppStore.getState().activeMeetingId || Math.random().toString(36).substr(2, 9) });
+
             } catch (e) {
                 console.error("Failed to start recording from extension hook", e);
                 isRecordingRef.current = false;

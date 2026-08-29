@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarIcon, Video, CheckCircle2, ChevronRight, Clock, AlertCircle, Settings } from 'lucide-react';
 import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { TauriClient } from '@/infrastructure/tauri-client';
-import { useNavigate } from 'react-router-dom';
 
 function parseEventTime(dateStr: string, timeStr?: string): Date {
     // If the date string has no timezone, appending T00:00:00 parses it in local time
@@ -26,7 +25,6 @@ function parseEventTime(dateStr: string, timeStr?: string): Date {
 
 export function UpcomingMeetingsWidget() {
     const { events, isConnected, connectGoogleCalendarOAuth, calendarEmail, syncNow, setSyncModalOpen } = useCalendarStore();
-    const navigate = useNavigate();
     const [now, setNow] = useState(new Date());
 
     useEffect(() => {
@@ -56,7 +54,6 @@ export function UpcomingMeetingsWidget() {
 
     const handleRecord = () => {
         TauriClient.startNativeRecording();
-        navigate('/live');
     };
 
     if (!isConnected) {

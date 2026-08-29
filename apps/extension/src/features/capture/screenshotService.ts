@@ -20,6 +20,8 @@ import { NATIVE_MESSAGING_PROTOCOL_VERSION } from '@/shared/constants/app';
 export interface ScreenshotService {
   /** Take a single screenshot of the recorded tab and send it to the Desktop App. */
   takeScreenshot(sessionId: string): Promise<void>;
+  /** Process a base64 screenshot directly. */
+  processScreenshot(sessionId: string, base64Data: string): Promise<void>;
 }
 
 /** Factory — all dependencies injected. */
@@ -83,5 +85,43 @@ export function createScreenshotService(
     }
   }
 
-  return { takeScreenshot };
+  async function processScreenshot(sessionId: string, base64Data: string): Promise<void> {
+    const session = await sessionService.loadSession();
+    if (!session || session.id !== sessionId) {
+      log.warn(MODULE, 'Active session not found or mismatched', { sessionId });
+      return;
+    }
+
+    try {
+      const metadata = await metadataService.extractTabMetadata(session.tabId);
+      if (!metadata) {
+        log.warn(MODULE, 'Failed to extract metadata for recorded tab', { tabId: session.tabId });
+        return;
+      }
+
+      const payload: MetadataReadyPayload = {
+        tabTitle: metadata.tabTitle,
+        tabUrl: metadata.tabUrl,
+        ...(session.courseLabel !== undefined ? { courseLabel: session.courseLabel } : {}),
+        detectedPlatform: metadata.detectedPlatform,
+        capturedAt: metadata.capturedAt,
+        imageBase64: base64Data,
+      };
+
+      const message: NativeMessage<MetadataReadyPayload> = {
+        version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+        type: MessageType.METADATA_READY,
+        payload,
+        timestamp: Date.now(),
+        sessionId,
+      };
+
+      messagingClient.send(message);
+      log.debug(MODULE, 'Screenshot sent via processScreenshot', { sessionId, tabTitle: metadata.tabTitle });
+    } catch (err: any) {
+      log.error(MODULE, 'Error processing screenshot', { error: err?.message });
+    }
+  }
+
+  return { takeScreenshot, processScreenshot };
 }

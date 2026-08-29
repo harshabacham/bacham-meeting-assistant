@@ -113,18 +113,14 @@ impl NativeHost {
                 let _ = main_window.show();
                 let _ = main_window.unminimize();
                 let _ = main_window.set_focus();
-            } else {
-                let _ = tauri::webview::WebviewWindowBuilder::new(
-                    app,
-                    "main",
-                    tauri::WebviewUrl::default()
-                )
-                .title("BACHAM")
-                .inner_size(1200.0, 800.0)
-                .decorations(false)
-                .transparent(true)
-                .visible(true)
-                .build();
+                
+                if let Some(payload) = msg.payload.as_object() {
+                    if let Some(route) = payload.get("route") {
+                        if let Some(route_str) = route.as_str() {
+                            let _ = main_window.emit("navigate_route", route_str);
+                        }
+                    }
+                }
             }
             if let Some(ref sender) = response_sender {
                 sender(NativeMessage {
@@ -135,6 +131,49 @@ impl NativeHost {
                     session_id: msg.session_id,
                 });
             }
+            return;
+        }
+
+        if msg.r#type == MessageType::GetHistory {
+            let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+            let log_path = temp_dir.parent().unwrap().join("debug.log");
+            if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                let _ = writeln!(log_file, "Received GET_HISTORY request from extension");
+            }
+            let pool = app.state::<crate::database::DbState>().pool.clone();
+            let response_sender = response_sender.clone();
+            tauri::async_runtime::spawn(async move {
+                match crate::services::lecture_service::LectureService::list_lectures(&pool).await {
+                    Ok(lectures) => {
+                        let mut history = vec![];
+                        for l in lectures.into_iter().take(10) {
+                            history.push(serde_json::json!({
+                                "id": l.id,
+                                "title": l.title,
+                                "created_at": l.created_at,
+                                "duration_ms": l.duration_ms
+                            }));
+                        }
+                        if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                            let _ = writeln!(log_file, "GET_HISTORY: found {} lectures, sending HISTORY_DATA", history.len());
+                        }
+                        if let Some(ref sender) = response_sender {
+                            sender(NativeMessage {
+                                version: "1.0".to_string(),
+                                r#type: MessageType::HistoryData,
+                                payload: serde_json::json!({ "lectures": history }),
+                                timestamp: chrono::Utc::now().timestamp_millis(),
+                                session_id: None,
+                            });
+                        }
+                    },
+                    Err(e) => {
+                        if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                            let _ = writeln!(log_file, "GET_HISTORY error: {:?}", e);
+                        }
+                    }
+                }
+            });
             return;
         }
 
@@ -161,24 +200,6 @@ impl NativeHost {
                     let app_clone = app.clone();
                     
                     tauri::async_runtime::spawn(async move {
-                        // Immediately wake and show the app so the user sees the transition
-                        if let Some(main_window) = app_clone.get_webview_window("main") {
-                            let _ = main_window.show();
-                            let _ = main_window.unminimize();
-                            let _ = main_window.set_focus();
-                        } else {
-                            let _ = tauri::webview::WebviewWindowBuilder::new(
-                                &app_clone,
-                                "main",
-                                tauri::WebviewUrl::default()
-                            )
-                            .title("BACHAM")
-                            .inner_size(1200.0, 800.0)
-                            .decorations(false)
-                            .transparent(true)
-                            .visible(true)
-                            .build();
-                        }
                         let _ = app_clone.emit("auto_wake_live", session_id_clone.clone());
 
                         let now = chrono::Utc::now().to_rfc3339();
@@ -206,76 +227,67 @@ impl NativeHost {
             return;
         }
 
-        if msg.r#type == MessageType::ChunkReady {
-            if let Some(session_id) = &msg.session_id {
-                if let Ok(payload) = serde_json::from_value::<ChunkReadyPayload>(msg.payload.clone()) {
-                    if let Ok(bytes) = STANDARD.decode(&payload.data_base64) {
-                        let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
-                        std::fs::create_dir_all(&temp_dir).unwrap_or_default();
-                        
-                        let is_transcript = payload.is_transcript_chunk.unwrap_or(false);
-                        
-                        let log_path = temp_dir.parent().unwrap().join("debug.log");
-                        if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
-                            let _ = writeln!(log_file, "Received ChunkReady: is_transcript={}, bytes={}", is_transcript, bytes.len());
-                        }
-                        
-                        if is_transcript {
-                            let chunk_path = temp_dir.join(format!("{}_transcript.webm", session_id));
-                            if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&chunk_path) {
-                                let _ = file.write_all(&bytes);
-                            }
-                        } else {
-                            let file_path = temp_dir.join(format!("{}.webm", session_id));
-                            if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(&file_path) {
-                                let _ = file.write_all(&bytes);
-                            }
-                        }
-                    }
-                } else {
-                    let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
-                    let log_path = temp_dir.parent().unwrap().join("debug.log");
-                    if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
-                        let _ = writeln!(log_file, "Failed to parse ChunkReadyPayload!");
-                    }
-                }
-            }
-            return;
-        }
-
-
 
         if msg.r#type == MessageType::SessionStop {
             if let Some(session_id) = &msg.session_id {
                 if let Ok(payload) = serde_json::from_value::<SessionStopPayload>(msg.payload.clone()) {
                     let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
-                    let file_path = temp_dir.join(format!("{}.webm", session_id));
                     
                     let pool = app.state::<crate::database::DbState>().pool.clone();
                     let session_id_clone = session_id.clone();
                     let app_clone = app.clone();
                     
                     tauri::async_runtime::spawn(async move {
+                        use tauri::Manager;
+                        if let Some(window) = app_clone.get_webview_window("main") {
+                            let _ = window.set_always_on_top(false);
+                            let _ = window.set_size(tauri::LogicalSize::new(1200.0, 800.0));
+                            let _ = window.center();
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                            let _ = window.emit("navigate_route", format!("/lectures/{}", session_id_clone));
+                        }
+                        
+                        if payload.duration_ms < 1000 {
+                            let log_path = temp_dir.parent().unwrap().join("debug.log");
+                            let mut log_file = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).unwrap();
+                            let _ = writeln!(log_file, "Ignoring session {} because duration is < 1s", session_id_clone);
+                            
+                            // Delete the empty lecture from the DB
+                            let _ = sqlx::query!("DELETE FROM lectures WHERE id = ?", session_id_clone).execute(&pool).await;
+                            let _ = app_clone.emit("refresh_lectures", ());
+                            return;
+                        }
+
                         let log_path = temp_dir.parent().unwrap().join("debug.log");
                         let mut log_file = std::fs::OpenOptions::new().create(true).append(true).open(&log_path).unwrap();
                         let _ = writeln!(log_file, "Starting AI Pipeline for session {}", session_id_clone);
 
-                        // 1. Immediately persist video so UI can play it right away
+                        let chunk_path = temp_dir.join(format!("{}_transcript.webm", session_id_clone));
+                        let video_temp_path = temp_dir.join(format!("{}.webm", session_id_clone));
+
                         let videos_dir = app_clone.path().document_dir().unwrap().join("BACHAM").join("Data").join("videos");
                         let _ = tokio::fs::create_dir_all(&videos_dir).await;
                         let perm_file_path = videos_dir.join(format!("{}.webm", session_id_clone));
                         
-                        if let Ok(_) = tokio::fs::copy(&file_path, &perm_file_path).await {
-                            let perm_path_str = perm_file_path.to_string_lossy().to_string();
-                            let _ = sqlx::query(
-                                "UPDATE lectures SET video_path = ? WHERE id = ?"
-                            )
-                            .bind(perm_path_str)
-                            .bind(&session_id_clone)
-                            .execute(&pool).await;
-                            
-                            // Cleanup temp file
-                            let _ = tokio::fs::remove_file(&file_path).await;
+                        if video_temp_path.exists() {
+                            if let Ok(_) = tokio::fs::copy(&video_temp_path, &perm_file_path).await {
+                                let perm_path_str = perm_file_path.to_string_lossy().to_string();
+                                let _ = sqlx::query(
+                                    "UPDATE lectures SET video_path = ? WHERE id = ?"
+                                )
+                                .bind(perm_path_str)
+                                .bind(&session_id_clone)
+                                .execute(&pool).await;
+                                
+                                let _ = tokio::fs::remove_file(&video_temp_path).await;
+                                let _ = writeln!(log_file, "Successfully saved video to {}", perm_file_path.display());
+                            } else {
+                                let _ = writeln!(log_file, "Failed to copy video to permanent directory");
+                            }
+                        } else {
+                            let _ = writeln!(log_file, "No video file found in temp for session {}", session_id_clone);
                         }
 
                         // Also update lecture duration
@@ -286,12 +298,6 @@ impl NativeHost {
                             duration, now_update, session_id_clone
                         ).execute(&pool).await;
 
-                        use tauri::Manager;
-                        if let Some(window) = app_clone.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
-                        }
 
                         let _ = app_clone.emit("refresh_lectures", ());
 
@@ -301,21 +307,16 @@ impl NativeHost {
                             "message": "Uploading video to AI..."
                         }));
 
-                        let chunk_path = temp_dir.join(format!("{}_transcript.webm", session_id_clone));
-                        let video_temp_path = temp_dir.join(format!("{}.webm", session_id_clone));
-                        
                         let target_audio = if chunk_path.exists() {
                             Some(chunk_path)
                         } else if perm_file_path.exists() {
                             Some(perm_file_path.clone())
-                        } else if video_temp_path.exists() {
-                            Some(video_temp_path)
                         } else {
                             None
                         };
 
                         let mut full_transcript = String::new();
-                        let pipeline_error = false;
+                        let mut pipeline_error = false;
 
                         if let Some(audio_file) = target_audio {
                             let _ = app_clone.emit("pipeline_progress", serde_json::json!({
@@ -356,12 +357,26 @@ impl NativeHost {
                                             let _ = app_clone.emit("refresh_lectures", ());
                                         }
                                         Err(e) => {
-                                            let _ = writeln!(log_file, "Transcription failed: {:?}", e);
+                                            let err_msg = format!("Transcription failed: {:?}", e);
+                                            let _ = writeln!(log_file, "{}", err_msg);
+                                            let _ = app_clone.emit("pipeline_progress", serde_json::json!({
+                                                "sessionId": session_id_clone,
+                                                "status": "error",
+                                                "error": err_msg
+                                            }));
+                                            pipeline_error = true;
                                         }
                                     }
                                 }
                                 Err(e) => {
-                                    let _ = writeln!(log_file, "Upload failed: {:?}", e);
+                                    let err_msg = format!("Upload failed: {:?}", e);
+                                    let _ = writeln!(log_file, "{}", err_msg);
+                                    let _ = app_clone.emit("pipeline_progress", serde_json::json!({
+                                        "sessionId": session_id_clone,
+                                        "status": "error",
+                                        "error": err_msg
+                                    }));
+                                    pipeline_error = true;
                                 }
                             }
                             let _ = tokio::fs::remove_file(&processing_path).await;
@@ -521,6 +536,33 @@ impl NativeHost {
             return;
         }
 
+        if msg.r#type == MessageType::LiveNote {
+            if let Some(session_id) = &msg.session_id {
+                if let Some(text) = msg.payload.get("text").and_then(|t| t.as_str()) {
+                    let pool = app.state::<crate::database::DbState>().pool.clone();
+                    let session_id_clone = session_id.clone();
+                    let text_clone = text.to_string();
+                    let app_clone = app.clone();
+                    
+                    tauri::async_runtime::spawn(async move {
+                        let existing = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ?", session_id_clone)
+                            .fetch_optional(&pool).await.unwrap_or(None);
+                            
+                        if let Some(row) = existing {
+                            let _ = sqlx::query!("UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", text_clone, row.id)
+                                .execute(&pool).await;
+                        } else {
+                            let id = uuid::Uuid::new_v4().to_string();
+                            let _ = sqlx::query!("INSERT INTO notes (id, lecture_id, content) VALUES (?, ?, ?)", id, session_id_clone, text_clone)
+                                .execute(&pool).await;
+                        }
+                        let _ = app_clone.emit("live_note", serde_json::json!({ "text": text_clone }));
+                    });
+                }
+            }
+            return;
+        }
+
         if msg.r#type == MessageType::DeleteLecture {
             if let Ok(payload) = serde_json::from_value::<DeleteLecturePayload>(msg.payload.clone()) {
                 let pool = app.state::<crate::database::DbState>().pool.clone();
@@ -553,16 +595,18 @@ impl NativeHost {
         }
 
         if msg.r#type == MessageType::LiveCaption {
-            if let Ok(payload) = serde_json::from_value::<crate::native_messaging::protocol::LiveCaptionPayload>(msg.payload.clone()) {
-                let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
-                let log_path = temp_dir.parent().unwrap().join("debug.log");
-                if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
-                    let _ = writeln!(log_file, "Received LiveCaption: {} (Platform: {})", payload.text, payload.platform);
-                }
+            let temp_dir = app.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+            let log_path = temp_dir.parent().unwrap().join("debug.log");
+            
+            match serde_json::from_value::<crate::native_messaging::protocol::LiveCaptionPayload>(msg.payload.clone()) {
+                Ok(payload) => {
+                    if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                        let _ = writeln!(log_file, "Received LiveCaption: {} (Platform: {})", payload.text, payload.platform);
+                    }
 
-                let app_clone = app.clone();
-                let session_id_opt = msg.session_id.clone();
-                let pool = app.state::<crate::database::DbState>().pool.clone();
+                    let app_clone = app.clone();
+                    let session_id_opt = msg.session_id.clone();
+                    let pool = app.state::<crate::database::DbState>().pool.clone();
 
                 tauri::async_runtime::spawn(async move {
                     let session_id_clone = match session_id_opt {
@@ -672,8 +716,15 @@ impl NativeHost {
                         }
                     });
                 }
-                return;
+                Err(e) => {
+                    if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                        let _ = writeln!(log_file, "Failed to parse LiveCaptionPayload: {:?}", e);
+                        let _ = writeln!(log_file, "Payload was: {:?}", msg.payload);
+                    }
+                }
             }
+            return;
+        }
 
         if msg.r#type == MessageType::ConfirmDecision {
             if let Some(session_id) = &msg.session_id {

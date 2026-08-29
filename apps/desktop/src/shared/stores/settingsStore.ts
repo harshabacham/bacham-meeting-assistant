@@ -16,6 +16,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     theme: 'system',
     accentColor: 'lime',
     language: 'en',
+    spokenLanguage: 'auto',
     storageRootPath: '',
     smartSearchEnabled: false,
     aiProvider: 'gemini',

@@ -68,6 +68,14 @@ const messageHandler = createMessageHandler(
 
 chrome.runtime.onInstalled.addListener((details) => {
   logger.info(MODULE, 'onInstalled', { reason: details.reason });
+  
+  // Enable opening the side panel when clicking the extension icon
+  if (chrome.sidePanel) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((err) => {
+      logger.error(MODULE, 'Failed to set side panel behavior', { err });
+    });
+  }
+  
   void lifecycleHandler.onInstalled(details);
 });
 

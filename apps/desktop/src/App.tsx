@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { ThemeProvider } from './shared/contexts/ThemeContext';
 import { ErrorBoundary } from './shared/contexts/ErrorBoundary';
@@ -24,8 +24,6 @@ const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
 const TermsPage = lazy(() => import("./pages/TermsPage").then(m => ({ default: m.TermsPage })));
 const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage").then(m => ({ default: m.KnowledgeBasePage })));
-
-const LiveWorkspacePage = lazy(() => import("./pages/LiveWorkspacePage").then(m => ({ default: m.LiveWorkspacePage })));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 
 const CopilotWindow = lazy(() => import("./pages/CopilotWindow").then(m => ({ default: m.CopilotWindow })));
@@ -55,6 +53,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+function TauriNavigationListener() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    let isMounted = true;
+    import('@tauri-apps/api/event').then(({ listen }) => {
+      if (!isMounted) return;
+      listen<string>('navigate_route', (event) => {
+        if (event.payload) {
+          navigate(event.payload);
+        }
+      });
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+  return null;
+}
+
 function App() {
   const initializeAuth = useAuthStore((state) => state.initialize);
   const language = useSettingsStore((state) => state.settings?.language);
@@ -77,6 +94,7 @@ function App() {
         <ToastProvider>
           <ConfirmProvider />
           <BrowserRouter>
+            <TauriNavigationListener />
             <AnimatePresence mode="wait">
               <Suspense fallback={<SplashScreen />}>
                 <Routes>
@@ -94,7 +112,6 @@ function App() {
                     <Route path="knowledge" element={<KnowledgeBasePage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="terms" element={<TermsPage />} />
-                    <Route path="live" element={<LiveWorkspacePage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Route>
                 </Routes>

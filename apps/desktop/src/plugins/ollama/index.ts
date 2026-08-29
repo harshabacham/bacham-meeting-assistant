@@ -1,5 +1,6 @@
 import { BachamPlugin } from '@/core/integrations/types';
 import { AuthManager } from '@/core/integrations/AuthManager';
+import { OllamaSettingsCard } from './OllamaSettingsCard';
 
 const PLUGIN_ID = 'bacham.ollama';
 
@@ -16,9 +17,12 @@ const OllamaPlugin: BachamPlugin = {
       url: 'https://ollama.com/',
       urlLabel: 'Download Ollama',
       steps: [
-        'Ensure Ollama is running on your machine.',
-        'Enter your Ollama URL (default: http://localhost:11434)',
-        'Click Save.'
+        'Download and install Ollama from ollama.com',
+        'Open your Terminal (Mac/Linux) or Command Prompt (Windows)',
+        'Type `ollama run llama3.1` (or another model) and press Enter to download it',
+        'Keep Ollama running in the background',
+        'Enter your local Ollama URL below (usually http://localhost:11434)',
+        'Click Connect, then click the Gear icon ⚙️ to select your downloaded model'
       ]
     }
   },
@@ -34,6 +38,9 @@ const OllamaPlugin: BachamPlugin = {
     isConnected: async () => {
       return await AuthManager.isAuthenticated(PLUGIN_ID);
     }
+  },
+  components: {
+    SettingsCard: OllamaSettingsCard
   }
 };
 

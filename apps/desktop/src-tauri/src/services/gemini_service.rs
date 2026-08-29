@@ -172,9 +172,9 @@ impl GeminiService {
         prompt: &str,
         system_instruction: &str,
         pool: &sqlx::SqlitePool,
-        _model: &str,
+        model: &str,
     ) -> AppResult<String> {
-        crate::services::universal_ai::UniversalAiService::generate_text(prompt, system_instruction, pool).await
+        Self::generate_text_with_model_direct(prompt, system_instruction, pool, model).await
     }
 
     pub async fn generate_text_with_model_direct(
@@ -203,6 +203,7 @@ impl GeminiService {
         let key = Self::get_api_key(pool).await?;
         let client = Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| Client::new());
         let url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", model, key);
+        eprintln!("[DEBUG] KEY PREFIX: {}", key.chars().take(7).collect::<String>());
         
         let payload = serde_json::json!({
             "systemInstruction": {
@@ -323,9 +324,9 @@ impl GeminiService {
         system_instruction: &str,
         image_parts: &[(String, String)],
         pool: &sqlx::SqlitePool,
-        _model: &str,
+        model: &str,
     ) -> AppResult<String> {
-        crate::services::universal_ai::UniversalAiService::generate_multimodal(prompt, system_instruction, image_parts, pool).await
+        Self::generate_multimodal_with_model_direct(prompt, system_instruction, image_parts, pool, model).await
     }
 
     pub async fn generate_multimodal_with_model_direct(

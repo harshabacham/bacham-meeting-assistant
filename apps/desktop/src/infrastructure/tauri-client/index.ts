@@ -242,6 +242,8 @@ export const TauriClient = {
     // Native Capture
     startNativeRecording: () => invoke<boolean>('start_native_recording'),
     stopNativeRecording: () => invoke<boolean>('stop_native_recording'),
+    saveVideoChunk: (input: { lectureId: string, chunkBase64: string }) => invoke<boolean>('save_video_chunk', { input }),
+    saveKeyframe: (input: { lectureId: string, timestampMs: number, imageBase64: string }) => invoke<string>('save_keyframe', { input }),
     
     // Integrations
     pushTaskToNotion: (input: { token: string, pageId: string, title: string, content: string }) => 
@@ -299,8 +301,9 @@ export const TauriClient = {
         invoke<void>('folder_export', { id, dest, options }),
     importFolder: (src: string) => invoke<void>('folder_import', { src }),
 
-    // ── Content ────────────────────────────────────────────────────────────
+    // ── Content ────────────────────────────────────────────────────────────────
     getTranscript: (lectureId: string) => invoke<string | null>('transcript_get', { lectureId }),
+    saveTranscriptChunk: (lectureId: string, text: string) => invoke<void>('transcript_append', { lectureId, text }),
     getNotes: (lectureId: string) => invoke<string | null>('notes_get', { lectureId }),
     updateNotes: (lectureId: string, content: string) => invoke<void>('notes_update', { lectureId, content }),
     getNoteVersions: (lectureId: string) => invoke<NoteVersion[]>('note_versions_list', { lectureId }),
@@ -409,8 +412,8 @@ export const TauriClient = {
         invoke<void>('export_lecture', { lectureId, format, dest }),
     exportFolderCramSheet: (folderId: string, dest: string) =>
         invoke<void>('export_folder_cram_sheet', { folderId, dest }),
-    generateMagicLinkHtml: (lectureId: string, dest: string) =>
-        invoke<void>('generate_magic_link_html', { lectureId, dest }),
+    generateMagicLinkHtml: (lectureId: string, dest?: string) =>
+        invoke<string>('generate_magic_link_html', { lectureId, dest }),
 
     // ── Collections ────────────────────────────────────────────────────────
     createCollection: (input: CreateCollectionInput) => invoke<Collection>('create_collection', { input }),
@@ -535,7 +538,7 @@ export const TauriClient = {
         });
     },
     onTranscriptUpdate: (callback: (data: { session_id?: string; lectureId?: string; text?: string; content?: string; timestamp: number; platform?: string }) => void) => {
-        return listen<any>('live_caption_received', (event) => {
+        return listen<any>('transcript_update', (event) => {
             callback(event.payload);
         });
     },
@@ -551,6 +554,7 @@ export const TauriClient = {
     analyzeInterviewLive: (input: { transcriptBuffer: string }) => invoke<{ questionDetected: boolean; suggestedAnswer?: string }>('analyze_interview_live', { input }),
     detectDecisionsLive: (input: { transcriptBuffer: string }) => invoke<{ decisionDetected: boolean; decisionText?: string }>('detect_decisions_live', { input }),
     confirmLiveDecision: (input: { lectureId: string; decisionText: string }) => invoke<boolean>('confirm_live_decision', { input }),
+    enhanceNotesLive: (input: { rawNotes: string; transcriptContext?: string }) => invoke<{ enhancedMarkdown: string }>('enhance_notes_live', { input }),
     syncMeetingToMarkdown: (lectureId: string) => invoke<boolean>('sync_meeting_to_markdown', { lectureId }),
     sendGlobalMemoryChat: (prompt: string, history?: any[]) => invoke<string>('send_global_memory_chat', { prompt, history }),
     saveLiveScratchpad: (lectureId: string, notes: string) => invoke<void>('save_live_scratchpad', { input: { lectureId, notes } }),

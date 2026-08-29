@@ -83,7 +83,7 @@ pub async fn generate_highlights_reel(
 #[tauri::command]
 pub async fn generate_magic_link_html(
     lecture_id: String,
-    dest: String,
+    dest: Option<String>,
     state: State<'_, DbState>,
 ) -> AppResult<String> {
     let pool = &state.pool;
@@ -187,11 +187,13 @@ pub async fn generate_magic_link_html(
         transcript_json = transcript
     );
 
-    let path = std::path::PathBuf::from(&dest);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    if let Some(dest_path) = dest {
+        let path = std::path::PathBuf::from(&dest_path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+        }
+        std::fs::write(&path, &html).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
     }
-    std::fs::write(&path, html).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
 
-    Ok(dest)
+    Ok(html)
 }

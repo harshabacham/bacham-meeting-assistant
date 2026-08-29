@@ -5,7 +5,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { TauriClient, Screenshot, TimelineEvent } from '@/infrastructure/tauri-client';
-import { Play, FileText, BrainCircuit, BookOpen, ArrowLeft, RefreshCw, Video, Loader2, Edit2, Share, Layers, CheckSquare, ExternalLink } from 'lucide-react';
+import { Play, FileText, BrainCircuit, BookOpen, ArrowLeft, RefreshCw, Video, Loader2, Edit2, Share, Layers, CheckSquare } from 'lucide-react';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
 import { useModeStore } from '@/shared/stores/modeStore';
 
@@ -17,6 +17,7 @@ import { FormulaSheetTab } from '@/components/workspace/tabs/FormulaSheetTab';
 import { CodeViewerTab } from '@/components/workspace/tabs/CodeViewerTab';
 import { DiagramsTab } from '@/components/workspace/tabs/DiagramsTab';
 import { NotesTab } from '@/components/workspace/tabs/NotesTab';
+import { SummaryTab } from '@/components/workspace/tabs/SummaryTab';
 import { BookmarksTab } from '@/components/workspace/tabs/BookmarksTab';
 import { VideoTab } from '@/components/workspace/tabs/VideoTab';
 import { AiChatTab } from '@/components/workspace/tabs/AiChatTab';
@@ -41,7 +42,13 @@ export function LectureViewerPage() {
   
   const storedLecture = lectures.find(l => l.id === id);
   const [localLecture, setLocalLecture] = useState<import('@/shared/types').Lecture | null>(storedLecture ?? null);
-  const lecture = storedLecture ?? localLecture;
+  const lecture = localLecture ?? storedLecture;
+
+  useEffect(() => {
+    if (storedLecture) {
+      setLocalLecture(storedLecture);
+    }
+  }, [storedLecture]);
   
   const [activeTab, setActiveTab] = useState<string>('notes');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -70,9 +77,7 @@ export function LectureViewerPage() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   
-  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
-  const [flashcardError, setFlashcardError] = useState<string | null>(null);
-  
+
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
@@ -332,23 +337,7 @@ export function LectureViewerPage() {
     }
   }, [activeTab, summary, isGeneratingSummary, transcript, screenshots.length, summaryError]);
 
-  // Flashcards generation
-  useEffect(() => {
-    if (appMode === 'student' && activeTab === 'flashcards' && !isGeneratingFlashcards && !flashcardError && transcript) {
-      TauriClient.listFlashcards(id!).then(cards => {
-        if (cards.length === 0) {
-          setIsGeneratingFlashcards(true);
-          setFlashcardError(null);
-          TauriClient.generateFlashcards(id!, transcript).then(() => {
-            setIsGeneratingFlashcards(false);
-          }).catch((e: any) => {
-            setFlashcardError(String(e));
-            setIsGeneratingFlashcards(false);
-          });
-        }
-      });
-    }
-  }, [appMode, activeTab, id, transcript, isGeneratingFlashcards, flashcardError]);
+
 
 
 
@@ -379,23 +368,6 @@ export function LectureViewerPage() {
     }
   };
 
-  const handleShare = async () => {
-    if (!lecture || !id) return;
-    try {
-      const { desktopDir, join } = await import('@tauri-apps/api/path');
-      const desktop = await desktopDir();
-      const safeTitle = lecture.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'meeting';
-      const desktopPath = await join(desktop, `magic_link_${safeTitle}.html`);
-      
-      await TauriClient.generateMagicLinkHtml(id, desktopPath);
-      
-      showToast(`Magic Link generated!\nSaved to Desktop: magic_link_${safeTitle}.html`, 'success');
-    } catch (e) {
-      console.error(e);
-      showToast('Failed to generate Magic Link. Check console for details.', 'error');
-    }
-  };
-
   const handleSendChat = async (persona?: string) => {
     if (!prompt.trim() || isSendingChat || !id) return;
     const currentPrompt = prompt;
@@ -406,7 +378,10 @@ export function LectureViewerPage() {
     setIsSendingChat(true);
     try {
       if (personaName && personaName !== 'general') {
-        const response = await TauriClient.chatTeachingMode(id, currentPrompt, personaName);
+        const response = await Promise.race([
+            TauriClient.chatTeachingMode(id, currentPrompt, personaName),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error('AI provider took too long to respond. Request timed out.')), 60000))
+        ]);
         setChatHistory(prev => [...prev, {
           role: 'model',
           content: response.answer,
@@ -416,9 +391,15 @@ export function LectureViewerPage() {
         }]);
         setIsSendingChat(false);
       } else if (activeConversationId) {
-        await TauriClient.sendMessage(activeConversationId, currentPrompt);
+        await Promise.race([
+            TauriClient.sendMessage(activeConversationId, currentPrompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('AI provider took too long to respond. Request timed out.')), 60000))
+        ]);
       } else {
-        const response = await TauriClient.chatTeachingMode(id, currentPrompt, 'general');
+        const response = await Promise.race([
+            TauriClient.chatTeachingMode(id, currentPrompt, 'general'),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error('AI provider took too long to respond. Request timed out.')), 60000))
+        ]);
         setChatHistory(prev => [...prev, {
           role: 'model',
           content: response.answer,
@@ -520,6 +501,7 @@ export function LectureViewerPage() {
         <div className="flex-1 flex justify-start min-w-0 overflow-x-auto no-scrollbar">
           {(() => {
             const toolbarItems: ToolbarItem[] = [
+              { id: 'summary', title: 'Summary', icon: BrainCircuit },
               { id: 'notes', title: 'Notes', icon: BookOpen },
               { id: 'transcript', title: 'Transcript', icon: FileText },
               ...(screenshots.length > 0 ? [{ id: 'screenshots', title: 'Visuals', icon: Video }] : []),
@@ -557,14 +539,10 @@ export function LectureViewerPage() {
             <RefreshCw size={14} className={isPollingData ? 'animate-spin' : ''} />
           </button>
           <div className="w-px h-4 bg-white/10 mx-1" />
-          
-          <button onClick={handleShare} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors" title="Share">
+          <button onClick={() => setIsExportOpen(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors font-medium text-xs border border-transparent hover:border-border/50" title="Share & Export">
              <Share size={14} />
+             <span>Share / Export</span>
           </button>
-          <button onClick={() => setIsExportOpen(true)} className="p-2 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-surface-hover transition-colors" title="Export">
-             <ExternalLink size={14} />
-          </button>
-          
           <div className="w-px h-4 bg-white/10 mx-1" />
           
           {/* Wingman Toggle */}
@@ -583,6 +561,24 @@ export function LectureViewerPage() {
           <div className="flex-1 h-full relative">
             <ProgressiveBlur position="top" height="24px" blurAmount="4px" />
              <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
+
+              {/* 0. Summary Tab */}
+              {visitedTabs.has('summary') && (
+                <motion.div 
+                  initial={false}
+                  animate={{ opacity: activeTab === 'summary' ? 1 : 0, y: activeTab === 'summary' ? 0 : 10, scale: activeTab === 'summary' ? 1 : 0.98 }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                  className={`absolute inset-0 overflow-hidden ${activeTab === 'summary' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
+                >
+                  <SummaryTab 
+                    summary={summary}
+                    summaryError={summaryError}
+                    isGeneratingSummary={isGeneratingSummary || artifactProgress['lecture_intelligence']?.status === 'generating'}
+                    onGenerateSummary={handleGenerateSummary}
+                    artifacts={artifacts}
+                  />
+                </motion.div>
+              )}
 
               {/* 1. Unified Notes & Intelligence Canvas (Default) */}
               {visitedTabs.has('notes') && (
@@ -781,10 +777,13 @@ export function LectureViewerPage() {
       <ExportPushDialog
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
+        lectureId={id!}
         lectureTitle={lecture.title || 'Untitled'}
         summary={summary}
         artifacts={artifacts}
+        transcript={transcript}
       />
     </div>
   );
 }
+// force hmr update

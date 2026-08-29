@@ -63,7 +63,7 @@ pub async fn sync_meeting_to_markdown_internal(
     }
 
     let mut notes = String::new();
-    let note_row = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ?", lecture_id)
+    let note_row = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
         .fetch_optional(pool).await?;
     if let Some(r) = note_row {
         notes = r.content;
@@ -115,6 +115,34 @@ pub async fn sync_meeting_to_markdown_internal(
         md.push_str("## Transcript\n\n");
         md.push_str(&combined_transcript);
         md.push_str("\n\n");
+    }
+
+    // Fetch and export screenshots
+    let mut screenshots_md = String::new();
+    let screenshot_rows = sqlx::query!("SELECT file_path FROM screenshots WHERE lecture_id = ? ORDER BY captured_at ASC", lecture_id)
+        .fetch_all(pool).await?;
+
+    if !screenshot_rows.is_empty() {
+        let assets_dir = export_dir.join("assets");
+        if !assets_dir.exists() {
+            let _ = fs::create_dir_all(&assets_dir);
+        }
+
+        for row in screenshot_rows {
+            let src_path = PathBuf::from(&row.file_path);
+            if src_path.exists() {
+                if let Some(file_name) = src_path.file_name() {
+                    let dest_path = assets_dir.join(file_name);
+                    let _ = fs::copy(&src_path, &dest_path);
+                    screenshots_md.push_str(&format!("![Screenshot](assets/{})\n\n", file_name.to_string_lossy()));
+                }
+            }
+        }
+    }
+
+    if !screenshots_md.is_empty() {
+        md.push_str("## Visuals\n\n");
+        md.push_str(&screenshots_md);
     }
 
     // 5. Write to File

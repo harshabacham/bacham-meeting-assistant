@@ -10,6 +10,9 @@ import { ErrorScreen } from '@/popup/screens/ErrorScreen';
 import { PermissionRequestScreen } from '@/popup/screens/PermissionRequestScreen';
 import { ConnectingScreen } from '@/popup/screens/ConnectingScreen';
 import { SettingsScreen } from '@/popup/screens/SettingsScreen';
+import { NotesScreen } from '@/popup/screens/NotesScreen';
+import { HistoryScreen } from '@/popup/screens/HistoryScreen';
+import { SidebarLayout } from '@/popup/components/SidebarLayout';
 
 import { getExtensionVersion } from '@/infrastructure/browser/runtime';
 
@@ -49,15 +52,25 @@ function AppInner(): React.ReactElement {
     if (sessionState === 'error' || error) { navigate('error'); return; }
     if (sessionState === 'requesting-permission') { navigate('permission'); return; }
     if (sessionState === 'connecting') { navigate('connecting'); return; }
-    if (sessionState === 'recording') { navigate('recording'); return; }
-    if (sessionState === 'paused') { navigate('paused'); return; }
+    
+    // If recording or paused, only force navigation if we are coming from a non-active screen
+    // This allows the user to browse Notes, History, or Settings while recording!
+    if (sessionState === 'recording' || sessionState === 'paused') {
+      if (['idle', 'connecting', 'permission', 'error'].includes(currentScreen)) {
+        navigate(sessionState);
+      }
+      return;
+    }
+    
     if (permissionStatus && !permissionStatus.allGranted) { navigate('permission'); return; }
     if (sessionState === 'idle' || sessionState === 'stopping') {
-      if (currentScreen !== 'settings') navigate('idle');
+      if (currentScreen !== 'settings' && currentScreen !== 'history' && currentScreen !== 'notes') {
+        navigate('idle');
+      }
       optimisticStartRef.current = undefined;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionState, isLoading, error, permissionStatus?.allGranted]);
+  }, [sessionState, isLoading, error, permissionStatus?.allGranted, currentScreen]);
 
   const handleStart = async (intent: Parameters<typeof start>[0]): Promise<void> => {
     // Record optimistic start time BEFORE awaiting background response
@@ -137,6 +150,12 @@ function AppInner(): React.ReactElement {
       case 'settings':
         return <SettingsScreen version={version} onBack={goBack} onOpenApp={openDesktopApp} />;
 
+      case 'notes':
+        return <NotesScreen />;
+
+      case 'history':
+        return <HistoryScreen />;
+
       case 'idle':
       default:
         return (
@@ -150,8 +169,10 @@ function AppInner(): React.ReactElement {
   };
 
   return (
-    <div className="relative overflow-hidden" style={{ width: 360, background: 'var(--bg)' }}>
-      {renderScreen()}
+    <div className="relative overflow-hidden shadow-2xl flex w-full h-full" style={{ width: '100vw', height: '100vh', background: 'var(--bg)' }}>
+      <SidebarLayout>
+        {renderScreen()}
+      </SidebarLayout>
     </div>
   );
 }

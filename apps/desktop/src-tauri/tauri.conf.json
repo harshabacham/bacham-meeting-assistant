@@ -21,8 +21,8 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": false,
-        "transparent": true,
-        "visible": true
+        "transparent": false,
+        "visible": false
       },
       {
         "title": "Ambient Co-Pilot",

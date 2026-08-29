@@ -26,6 +26,7 @@ pub mod undo;
 pub mod capture;
 pub mod integrations;
 pub mod interview_copilot;
+pub mod notes_assistant;
 pub mod markdown_export;
 pub mod decision_tracker;
 use serde::Serialize;

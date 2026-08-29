@@ -1,13 +1,10 @@
-import type { CaptureConfig, CaptureState, ChunkReadyPayload, NativeMessage } from '@/shared/types';
-import { MessageType } from '@/shared/types';
+import type { CaptureConfig, CaptureState } from '@/shared/types';
 import type { Logger } from '@/infrastructure/logger/logger';
 import type { StorageService } from '@/infrastructure/storage/storageService';
-import type { NativeMessagingClient } from '@/infrastructure/communication/nativeMessagingClient';
 import {
   AUDIO_MIME_TYPE,
   VIDEO_MIME_TYPE,
 } from '@/shared/constants/capture';
-import { NATIVE_MESSAGING_PROTOCOL_VERSION } from '@/shared/constants/app';
 
 /**
  * Capture Service
@@ -37,27 +34,21 @@ export interface CaptureService {
 /** Factory — all dependencies injected. */
 export function createCaptureService(
   storage: StorageService,
-  messagingClient: NativeMessagingClient,
   log: Logger,
 ): CaptureService {
   const MODULE = 'CaptureService';
 
   let mediaStream: MediaStream | null = null;
+  let micStream: MediaStream | null = null;
+  let audioContext: AudioContext | null = null;
   let videoRecorder: MediaRecorder | null = null;
   let transcriptRecorder: MediaRecorder | null = null;
   let currentSessionId: string | null = null;
-  
-  let videoChunkIndex = 0;
-  let transcriptChunkIndex = 0;
   
   let videoChunkBuffer: Blob[] = [];
   let videoChunkBufferBytes = 0;
   
   let transcriptChunkBuffer: Blob[] = [];
-
-  // Promise chains that guarantee serial ordering of chunk flushes
-  let videoFlushPromise = Promise.resolve();
-  let transcriptFlushPromise = Promise.resolve();
   
   const _state: CaptureState = {
     isCapturing: false,
@@ -82,70 +73,22 @@ export function createCaptureService(
     return MediaRecorder.isTypeSupported(AUDIO_MIME_TYPE) ? AUDIO_MIME_TYPE : 'audio/webm';
   }
 
-  async function sendBlobInSlices(blob: Blob, isTranscript: boolean, isFinal?: boolean): Promise<void> {
-    const mimeType = blob.type;
-    const arrayBuffer = await blob.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    const CHUNK_SIZE = 512000; // 500 KB limit to stay well under 1MB Native Messaging limit
-
-    for (let offset = 0; offset < bytes.byteLength; offset += CHUNK_SIZE) {
-      const slice = bytes.slice(offset, offset + CHUNK_SIZE);
-      let binary = '';
-      for (let i = 0; i < slice.byteLength; i++) {
-        binary += String.fromCharCode(slice[i]);
+  async function uploadBlob(blob: Blob, type: 'video' | 'transcript'): Promise<void> {
+    if (blob.size === 0) return;
+    try {
+      log.info(MODULE, `Uploading ${type} blob via HTTP...`, { size: blob.size, mimeType: blob.type });
+      const res = await fetch(`http://127.0.0.1:1422/upload?sessionId=${currentSessionId}&type=${type}`, {
+        method: 'POST',
+        body: blob,
+      });
+      if (!res.ok) {
+        throw new Error(`Upload failed with status: ${res.status}`);
       }
-      const dataBase64 = btoa(binary);
-
-      const payload: ChunkReadyPayload = {
-        chunkIndex: isTranscript ? transcriptChunkIndex : videoChunkIndex,
-        mimeType,
-        dataBase64,
-        byteLength: slice.byteLength,
-        isTranscriptChunk: isTranscript,
-      };
-
-      const message: NativeMessage<ChunkReadyPayload> = {
-        version: NATIVE_MESSAGING_PROTOCOL_VERSION,
-        type: MessageType.CHUNK_READY,
-        payload,
-        timestamp: Date.now(),
-        ...(currentSessionId !== null ? { sessionId: currentSessionId } : {}),
-      };
-
-      if (typeof (messagingClient as any).sendAsync === 'function') {
-        await (messagingClient as any).sendAsync(message);
-      } else {
-        messagingClient.send(message);
-      }
-
-      if (isTranscript) {
-        log.debug(MODULE, 'Transcript chunk slice sent', { chunkIndex: transcriptChunkIndex, byteLength: slice.byteLength });
-        transcriptChunkIndex++;
-      } else {
-        log.debug(MODULE, isFinal && offset + CHUNK_SIZE >= bytes.byteLength ? 'Final video chunk slice sent' : 'Video chunk slice sent', { chunkIndex: videoChunkIndex, byteLength: slice.byteLength });
-        videoChunkIndex++;
-      }
+      log.info(MODULE, `Successfully uploaded ${type} blob`);
+    } catch (err: any) {
+      log.error(MODULE, `Failed to upload ${type} blob`, { err: err.message });
+      throw err;
     }
-  }
-
-  async function flushVideoChunk(mimeType: string, isFinal: boolean): Promise<void> {
-    if (videoChunkBuffer.length === 0) return;
-
-    const blob = new Blob(videoChunkBuffer, { type: mimeType });
-    videoChunkBuffer = [];
-    videoChunkBufferBytes = 0;
-
-    await sendBlobInSlices(blob, false, isFinal);
-    updateState({ chunkCount: videoChunkIndex, currentChunkBytes: 0 });
-  }
-
-  async function flushTranscriptChunk(mimeType: string): Promise<void> {
-    if (transcriptChunkBuffer.length === 0) return;
-
-    const blob = new Blob(transcriptChunkBuffer, { type: mimeType });
-    transcriptChunkBuffer = [];
-
-    await sendBlobInSlices(blob, true);
   }
 
   async function takeScreenshot(): Promise<string | null> {
@@ -202,39 +145,58 @@ export function createCaptureService(
     }
 
     currentSessionId = sessionId;
-    videoChunkIndex = 0;
-    transcriptChunkIndex = 0;
     videoChunkBuffer = [];
     videoChunkBufferBytes = 0;
     transcriptChunkBuffer = [];
-    // Reset the flush promise chains
-    videoFlushPromise = Promise.resolve();
-    transcriptFlushPromise = Promise.resolve();
 
-    const mediaSource = config.captureMode === 'screen' ? 'desktop' : 'tab';
+    const isDesktop = (config.captureMode === 'screen' || config.captureMode === 'window' || config.captureMode === 'walkthrough');
+    const mediaSource = isDesktop ? 'desktop' : 'tab';
 
-    const constraints: MediaStreamConstraints = {
-      audio: config.audio
-        ? ({
-            mandatory: {
-              chromeMediaSource: mediaSource,
-              chromeMediaSourceId: streamId,
-            },
-          } as unknown as MediaTrackConstraints)
-        : false,
-      video: (config.video || config.screenshotIntervalMs)
-        ? ({
-            mandatory: {
-              chromeMediaSource: mediaSource,
-              chromeMediaSourceId: streamId,
-              minFrameRate: 30,
-              maxFrameRate: 60,
-            },
-          } as unknown as MediaTrackConstraints)
-        : false,
-    };
+    let acquiredStream: MediaStream | null = null;
 
-    mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    if (streamId) {
+      try {
+        const constraints: MediaStreamConstraints = {
+          audio: config.audio
+            ? ({
+                mandatory: {
+                  chromeMediaSource: mediaSource,
+                  chromeMediaSourceId: streamId,
+                },
+              } as unknown as MediaTrackConstraints)
+            : false,
+          video: (config.video || config.screenshotIntervalMs || isDesktop)
+            ? ({
+                mandatory: {
+                  chromeMediaSource: mediaSource,
+                  chromeMediaSourceId: streamId,
+                },
+              } as unknown as MediaTrackConstraints)
+            : false,
+        };
+        acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
+        log.info(MODULE, 'Acquired stream via getUserMedia', { tracks: acquiredStream.getTracks().length });
+      } catch (err: any) {
+        log.warn(MODULE, 'getUserMedia with streamId failed, falling back to getDisplayMedia', { err: err.message });
+      }
+    }
+
+    if (!acquiredStream) {
+      try {
+        log.info(MODULE, 'Attempting getDisplayMedia stream acquisition...');
+        acquiredStream = await navigator.mediaDevices.getDisplayMedia({
+          video: config.video || !!config.screenshotIntervalMs,
+          audio: config.audio,
+        });
+        log.info(MODULE, 'Acquired stream via getDisplayMedia', { tracks: acquiredStream.getTracks().length });
+      } catch (err: any) {
+        log.error(MODULE, 'Both getUserMedia and getDisplayMedia failed', { err: err.message, name: err.name });
+        throw new Error(`Capture failed: ${err.message || err.name || 'Unknown error'}`);
+      }
+    }
+
+    mediaStream = acquiredStream;
+    
     log.info(MODULE, 'MediaStream acquired', { tracks: mediaStream.getTracks().length });
 
     // Listen for unexpected stream termination (e.g. user clicks browser's native "Stop sharing")
@@ -278,36 +240,89 @@ export function createCaptureService(
 
     await storage.set({ activeStreamId: streamId });
 
+    // 1. Setup Audio (Tab Audio + Optional Microphone Mixing)
+    let mixedAudioStream: MediaStream | null = null;
+
+    if (config.includeMicrophone) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        log.info(MODULE, 'Microphone stream acquired for mixing');
+      } catch (err: any) {
+        log.warn(MODULE, 'Microphone permission denied or unavailable, continuing with tab audio', { err });
+      }
+    }
+
+    const tabAudioTracks = mediaStream.getAudioTracks();
+    const micAudioTracks = micStream ? micStream.getAudioTracks() : [];
+
+    if (tabAudioTracks.length > 0 && micAudioTracks.length > 0) {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        audioContext = new AudioCtx();
+        const destination = audioContext.createMediaStreamDestination();
+
+        const tabSource = audioContext.createMediaStreamSource(new MediaStream(tabAudioTracks));
+        tabSource.connect(destination);
+
+        const micSource = audioContext.createMediaStreamSource(new MediaStream(micAudioTracks));
+        micSource.connect(destination);
+
+        mixedAudioStream = destination.stream;
+        log.info(MODULE, 'Successfully mixed tab and microphone audio via AudioContext');
+      } catch (err: any) {
+        log.warn(MODULE, 'Failed to mix audio via AudioContext, falling back to tab audio', { err });
+        mixedAudioStream = new MediaStream(tabAudioTracks);
+      }
+    } else if (tabAudioTracks.length > 0) {
+      mixedAudioStream = new MediaStream(tabAudioTracks);
+    } else if (micAudioTracks.length > 0) {
+      mixedAudioStream = new MediaStream(micAudioTracks);
+    }
+
     const mimeType = selectMimeType(config);
     const bitsPerSecond = config.video ? 2_500_000 : 128_000;
 
-    // 1. Video Recorder (continuous, no restarts, 1s timeslice)
+    // 2. Video Recorder
     if (config.video) {
-      videoRecorder = new MediaRecorder(mediaStream, { mimeType, bitsPerSecond });
+      const recordingTracks: MediaStreamTrack[] = [...mediaStream.getVideoTracks()];
+      if (mixedAudioStream) {
+        recordingTracks.push(...mixedAudioStream.getAudioTracks());
+      }
+      const combinedStream = new MediaStream(recordingTracks);
+
+      videoRecorder = new MediaRecorder(combinedStream, { mimeType, bitsPerSecond });
       videoRecorder.ondataavailable = (event) => {
         if (event.data.size === 0) return;
         videoChunkBuffer.push(event.data);
         videoChunkBufferBytes += event.data.size;
         updateState({ currentChunkBytes: videoChunkBufferBytes });
-        // Chain each flush so chunks are always sent in order
-        videoFlushPromise = videoFlushPromise.then(() => flushVideoChunk(mimeType, false));
       };
       videoRecorder.onerror = (event) => log.error(MODULE, 'videoRecorder error', { error: event.error?.message });
-      videoRecorder.start(1000); // 1s timeslice keeps native message small
+      videoRecorder.start(); // Continuous recording
     }
 
-    // 2. Transcript Recorder (audio only, continuous)
-    if (config.audio) {
-      const audioStream = new MediaStream(mediaStream.getAudioTracks());
+    // 3. Transcript Recorder (audio only)
+    if (config.audio && mixedAudioStream && mixedAudioStream.getAudioTracks().length > 0) {
       const transcriptMimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
-      transcriptRecorder = new MediaRecorder(audioStream, { mimeType: transcriptMimeType, bitsPerSecond: 128_000 });
+      
+      transcriptRecorder = new MediaRecorder(mixedAudioStream, {
+        mimeType: transcriptMimeType,
+        bitsPerSecond: 128000,
+      });
+
       transcriptRecorder.ondataavailable = (event) => {
-        if (event.data.size === 0) return;
-        transcriptChunkBuffer.push(event.data);
-        transcriptFlushPromise = transcriptFlushPromise.then(() => flushTranscriptChunk(transcriptMimeType));
+        if (event.data.size !== 0) {
+          transcriptChunkBuffer.push(event.data);
+        }
       };
-      transcriptRecorder.onerror = (event) => log.error(MODULE, 'transcriptRecorder error', { error: event.error?.message });
-      transcriptRecorder.start(1000); // 1s timeslice keeps native message small
+
+      transcriptRecorder.onerror = (event: Event) => {
+        log.error(MODULE, 'transcriptRecorder error', { error: (event as any).error?.message });
+      };
+
+      transcriptRecorder.start(); // Continuous recording
+    } else if (config.audio) {
+      log.warn(MODULE, 'No audio tracks found for transcript recording.');
     }
 
     // 3. Live Speech Recognition (Microphone only)
@@ -404,21 +419,34 @@ export function createCaptureService(
       transcriptRecorder.stop();
     });
 
-    // NOW await all pending flush promise chains — this catches the final ondataavailable
-    // events that fired just before/during stop()
-    await videoFlushPromise;
-    await transcriptFlushPromise;
-
-    if (videoRecorder) {
-      await flushVideoChunk(videoRecorder.mimeType, true);
+    if (videoRecorder && videoChunkBuffer.length > 0) {
+      const blob = new Blob(videoChunkBuffer, { type: videoRecorder.mimeType });
+      await uploadBlob(blob, 'video');
     }
     
-    if (transcriptRecorder) {
-      await flushTranscriptChunk(transcriptRecorder.mimeType);
+    if (transcriptRecorder && transcriptChunkBuffer.length > 0) {
+      const blob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder.mimeType });
+      await uploadBlob(blob, 'transcript');
     }
 
     for (const track of mediaStream.getTracks()) {
       track.stop();
+    }
+    
+    if (micStream) {
+      for (const track of micStream.getTracks()) {
+        track.stop();
+      }
+      micStream = null;
+    }
+
+    if (audioContext && audioContext.state !== 'closed') {
+      try {
+        await audioContext.close();
+      } catch (err) {
+        log.warn(MODULE, 'Error closing AudioContext', { err });
+      }
+      audioContext = null;
     }
     
     // Stop Speech Recognition if active

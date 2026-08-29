@@ -1,5 +1,5 @@
 import { createCaptureService } from '../features/capture/captureService';
-import type { NativeMessage } from '../shared/types';
+
 
 // A mock storage service just for captureService since it only uses storage.set
 const mockStorage: any = {
@@ -16,26 +16,8 @@ const mockLogger: any = {
   error: (...args: any[]) => console.error(...args),
 };
 
-// A fake messaging client that forwards NativeMessages to the background script
-const backgroundForwarderClient: any = {
-  send: <T>(message: NativeMessage<T>) => {
-    // Wrap the NativeMessage in an InternalMessage
-    chrome.runtime.sendMessage({
-      type: 'FORWARD_TO_NATIVE',
-      payload: message,
-    }).catch(err => console.error('Failed to forward chunk to background:', err));
-  },
-  sendAsync: async <T>(message: NativeMessage<T>) => {
-    await chrome.runtime.sendMessage({
-      type: 'FORWARD_TO_NATIVE',
-      payload: message,
-    }).catch(err => console.error('Failed to forward chunk to background:', err));
-  },
-};
-
 const captureService = createCaptureService(
   mockStorage,
-  backgroundForwarderClient,
   mockLogger
 );
 
@@ -44,6 +26,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.target !== 'offscreen') return false;
 
   console.log('Offscreen received command:', message.type);
+
+  if (message.type === 'PING') {
+    sendResponse({ success: true });
+    return false;
+  }
 
   if (message.type === 'START_CAPTURE') {
     const { streamId, config, sessionId } = message.payload;

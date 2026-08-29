@@ -237,20 +237,108 @@ pub async fn start_native_recording(app: AppHandle, _output_path: Option<String>
 pub async fn stop_native_recording(app: AppHandle) -> AppResult<bool> {
     let state = app.state::<CaptureState>();
     
-    let mut loopback_guard = state.loopback_stream.lock().unwrap();
-    if let Some(stream) = loopback_guard.take() {
-        drop(stream);
-    }
+    let loopback = state.loopback_stream.lock().unwrap().take();
+    let mic = state.mic_stream.lock().unwrap().take();
+    let writer = state.writer_thread.lock().unwrap().take();
 
-    let mut mic_guard = state.mic_stream.lock().unwrap();
-    if let Some(stream) = mic_guard.take() {
-        drop(stream);
-    }
+    std::thread::spawn(move || {
+        drop(loopback);
+        drop(mic);
+        if let Some(handle) = writer {
+            let _ = handle.join();
+        }
+    });
 
-    let mut writer_guard = state.writer_thread.lock().unwrap();
-    if let Some(handle) = writer_guard.take() {
-        let _ = handle.join();
-    }
+    crate::ws_server::broadcast_to_extension("{\"type\":\"STOP_RECORDING\"}".to_string()).await;
 
     Ok(true)
 }
+
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use std::io::Write;
+use std::fs::OpenOptions;
+use crate::storage::initialize_layout;
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveChunkInput {
+    pub lecture_id: String,
+    pub chunk_base64: String,
+}
+
+#[tauri::command]
+pub async fn save_video_chunk(app: AppHandle, input: SaveChunkInput) -> AppResult<bool> {
+    let layout = initialize_layout(app.path().document_dir().unwrap().join("BACHAM"))?;
+    
+    // Create videos dir if it doesn't exist
+    let videos_dir = layout.data.join("videos");
+    std::fs::create_dir_all(&videos_dir).unwrap_or_default();
+    
+    let file_path = videos_dir.join(format!("{}.webm", input.lecture_id));
+    
+    // Remove data URI prefix if present (e.g., "data:video/webm;base64,")
+    let b64_data = if let Some(idx) = input.chunk_base64.find(',') {
+        &input.chunk_base64[idx + 1..]
+    } else {
+        &input.chunk_base64
+    };
+    
+    let bytes = STANDARD.decode(b64_data).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    
+    let mut file = OpenOptions::new().create(true).append(true).open(&file_path)
+        .map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+        
+    file.write_all(&bytes).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    
+    Ok(true)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveKeyframeInput {
+    pub lecture_id: String,
+    pub timestamp_ms: u64,
+    pub image_base64: String,
+}
+
+#[tauri::command]
+pub async fn save_keyframe(app: AppHandle, input: SaveKeyframeInput, state: tauri::State<'_, crate::database::DbState>) -> AppResult<String> {
+    let layout = initialize_layout(app.path().document_dir().unwrap().join("BACHAM"))?;
+    
+    let keyframes_dir = layout.data.join("keyframes");
+    std::fs::create_dir_all(&keyframes_dir).unwrap_or_default();
+    
+    let file_name = format!("{}_{}.jpg", input.lecture_id, input.timestamp_ms);
+    let file_path = keyframes_dir.join(&file_name);
+    
+    let b64_data = if let Some(idx) = input.image_base64.find(',') {
+        &input.image_base64[idx + 1..]
+    } else {
+        &input.image_base64
+    };
+    
+    let bytes = STANDARD.decode(b64_data).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    
+    std::fs::write(&file_path, bytes).map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    
+    // Convert absolute path to relative path for DB
+    let rel_path = format!("keyframes/{}", file_name);
+    let screenshot_id = uuid::Uuid::new_v4().to_string();
+    let timestamp = input.timestamp_ms as i64;
+    
+    sqlx::query!(
+        "INSERT INTO screenshots (id, lecture_id, file_path, captured_at, is_key_frame)
+         VALUES (?, ?, ?, ?, ?)",
+        screenshot_id,
+        input.lecture_id,
+        rel_path,
+        timestamp,
+        true
+    )
+    .execute(&state.pool)
+    .await?;
+    
+    // Return relative path or file name
+    Ok(rel_path)
+}
+

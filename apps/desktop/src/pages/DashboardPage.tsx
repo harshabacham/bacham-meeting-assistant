@@ -15,6 +15,7 @@ import { ComingUpCalendarWidget } from "@/components/dashboard/ComingUpCalendarW
 import { GlobalAskAI } from "@/components/dashboard/GlobalAskAI";
 import { useGlobalTasks } from "@/shared/hooks/useGlobalTasks";
 import { useTranslation } from "react-i18next";
+import { ErrorBoundary } from "@/shared/contexts/ErrorBoundary";
 
 /**
  * DESIGN NOTES — read before touching this file
@@ -69,7 +70,7 @@ function LectureCard({ lecture, onClick }: { lecture: Lecture; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className="group shrink-0 w-[188px] text-left rounded-xl p-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] relative"
+      className="group shrink-0 min-w-[160px] w-[188px] text-left rounded-xl p-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] relative"
       aria-label={`Open lecture: ${lecture.title || "Untitled lecture"}`}
     >
       {lecture.isFavorite && (
@@ -131,7 +132,7 @@ export function DashboardPage() {
     strongTopics: any[];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isStartingRecording, setIsStartingRecording] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -139,7 +140,10 @@ export function DashboardPage() {
       await Promise.all([
         fetchLectures(),
         fetchFolders(),
-        TauriClient.getDashboardSummary().then(setSummary).catch(console.error),
+        TauriClient.getDashboardSummary().then(setSummary).catch(err => {
+          console.error(err);
+          setSummaryError("Failed to load dashboard summary. Showing fallback content.");
+        }),
         TauriClient.getDueFlashcards().then(setDueCards).catch(console.error),
         TauriClient.getDailyLearningPlan().catch(console.error),
         TauriClient.getLearningAnalytics().then(setAnalytics).catch(console.error),
@@ -184,15 +188,6 @@ export function DashboardPage() {
 
   const firstName = user?.displayName?.split(" ")[0] || "there";
 
-  const handleStartRecording = async () => {
-    setIsStartingRecording(true);
-    try {
-      await TauriClient.startNativeRecording();
-      navigate("/live");
-    } finally {
-      setIsStartingRecording(false);
-    }
-  };
 
   const fadeUp = shouldReduceMotion
     ? {}
@@ -227,6 +222,12 @@ export function DashboardPage() {
         <div className="flex-1 flex flex-col gap-9 min-w-0">
           {/* ── Greeting ─────────────────────────────────────────────── */}
           <motion.div {...fadeUp} className="flex flex-col gap-2 pb-7 border-b border-[var(--border)]">
+            {summaryError && (
+              <div className="mb-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                {summaryError}
+              </div>
+            )}
             <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</Eyebrow>
             <h1 className="text-[27px] font-semibold text-[var(--text-primary)] tracking-tight leading-tight">
               {t('dashboard.title')}
@@ -235,10 +236,10 @@ export function DashboardPage() {
               {t('dashboard.subtitle')} - {getTimeOfDay()}, {firstName}.
             </p>
             <div className="flex items-center gap-5 mt-1 flex-wrap">
-              {!!summary?.totalLectures && <Stat value={summary.totalLectures} label={summary.totalLectures === 1 ? "lecture" : "lectures"} />}
-              {!!analytics?.currentStreakDays && <Stat value={`${analytics.currentStreakDays}d`} label="streak" />}
-              {!!analytics?.totalHoursStudied && <Stat value={`${analytics.totalHoursStudied}h`} label="studied" />}
-              {dueCards.length > 0 && <Stat value={dueCards.length} label={dueCards.length === 1 ? "card due" : "cards due"} />}
+              {!!summary?.totalLectures && <Stat value={summary.totalLectures} label={t('dashboard.stats.lectures', { count: summary.totalLectures })} />}
+              {!!analytics?.currentStreakDays && <Stat value={`${analytics.currentStreakDays}d`} label={t('dashboard.stats.streak')} />}
+              {!!analytics?.totalHoursStudied && <Stat value={`${analytics.totalHoursStudied}h`} label={t('dashboard.stats.studied')} />}
+              {dueCards.length > 0 && <Stat value={dueCards.length} label={t('dashboard.stats.cards_due', { count: dueCards.length })} />}
             </div>
           </motion.div>
 
@@ -257,41 +258,14 @@ export function DashboardPage() {
                 >
                   <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse shrink-0" aria-hidden="true" />
                   <span className="flex-1 text-left flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-[0.16em]">Recording in progress</span>
-                    <span className="text-[13px] text-[var(--text-primary)] font-medium">{recordingSession?.title || "Untitled"}</span>
+                    <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-[0.16em]">{t('dashboard.recording_in_progress', 'Recording in progress')}</span>
+                    <span className="text-[13px] text-[var(--text-primary)] font-medium">{recordingSession?.title || t('dashboard.untitled', 'Untitled')}</span>
                   </span>
                   <div className="w-4 h-4 text-[var(--accent)] transition-all shrink-0">
                     <ArrowIcon />
                   </div>
                 </motion.button>
-              ) : (
-                <motion.div
-                  key="idle"
-                  initial={shouldReduceMotion ? {} : { opacity: 0 }}
-                  animate={shouldReduceMotion ? {} : { opacity: 1 }}
-                  exit={shouldReduceMotion ? {} : { opacity: 0 }}
-                  className="flex items-center justify-between p-5 rounded-lg border border-[var(--border)] bg-[var(--surface)]"
-                >
-                  <div>
-                    <h2 className="text-[14px] font-medium text-[var(--text-primary)]">Desktop Capture</h2>
-                    <p className="text-[12px] text-[var(--text-muted)] mt-0.5">Record system audio and screen natively.</p>
-                  </div>
-                  <button
-                    onClick={handleStartRecording}
-                    disabled={isStartingRecording}
-                    className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-[12px] font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:opacity-50"
-                  >
-                    {isStartingRecording ? (
-                      "Starting..."
-                    ) : (
-                      <>
-                        <div className="w-1.5 h-1.5 rounded-full bg-white opacity-80" />
-                        Start Recording
-                      </>
-                    )}
-                  </button>
-                </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
           </motion.div>
 
@@ -300,7 +274,7 @@ export function DashboardPage() {
             
             {/* Continue Learning */}
             <motion.div {...fadeUp} className="flex flex-col gap-3">
-              <Eyebrow>Continue learning</Eyebrow>
+              <Eyebrow>{t('dashboard.continue_learning', 'Continue learning')}</Eyebrow>
               {continueLecture ? (
                 <button
                   onClick={() => navigate(`/lectures/${continueLecture.id}`)}
@@ -343,7 +317,7 @@ export function DashboardPage() {
 
             {/* Smart Revision */}
             <motion.div {...fadeUp} className="flex flex-col gap-3">
-              <Eyebrow>Today's focus</Eyebrow>
+              <Eyebrow>{t('dashboard.todays_focus', "Today's focus")}</Eyebrow>
               {dueCards.length > 0 ? (
                 <button
                   onClick={() => navigate("/lectures")}
@@ -377,19 +351,19 @@ export function DashboardPage() {
 
             {/* Action Items for YOU */}
             <motion.div {...fadeUp} className="flex flex-col gap-3">
-              <Eyebrow>Action items for you</Eyebrow>
-              <div className="flex-1 flex flex-col gap-2 p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm overflow-hidden min-h-[140px]">
+              <Eyebrow>{t('dashboard.action_items_for_you', 'Action items for you')}</Eyebrow>
+              <div className="flex-1 flex flex-col gap-2 p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm overflow-hidden h-full min-h-[160px]">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <CheckSquare size={14} className="text-[var(--accent)]" />
-                    <span className="text-[12px] font-semibold text-[var(--text-primary)] uppercase tracking-wider">Your Tasks</span>
+                    <span className="text-[12px] font-semibold text-[var(--text-primary)] uppercase tracking-wider">{t('dashboard.your_tasks', 'Your Tasks')}</span>
                   </div>
                   {myTasks.length > 0 && (
                     <button 
                       onClick={() => navigate('/tasks')}
                       className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     >
-                      View all
+                      {t('common.view_all', 'View all')}
                     </button>
                   )}
                 </div>
@@ -401,7 +375,7 @@ export function DashboardPage() {
                 ) : myTasks.length === 0 ? (
                   <div className="flex-1 flex flex-col justify-center items-center gap-2 mt-4 text-center">
                     <CheckSquare size={20} className="text-[var(--text-muted)] opacity-30" />
-                    <p className="text-[12px] text-[var(--text-muted)]">No action items assigned to you.</p>
+                    <p className="text-[12px] text-[var(--text-muted)]">{t('dashboard.no_tasks', 'No action items assigned to you.')}</p>
                   </div>
                 ) : (
                   myTasks.map(item => {
@@ -442,14 +416,16 @@ export function DashboardPage() {
 
           {/* ── Coming Up / Calendar ────────────────────────────────────── */}
           <motion.div {...fadeUp} className="mt-8 mb-6">
-            <ComingUpCalendarWidget />
+            <ErrorBoundary>
+              <ComingUpCalendarWidget />
+            </ErrorBoundary>
           </motion.div>
 
           {/* ── Recent Lectures ────────────────────────────────────────── */}
           {recentLectures.length > 0 && (
             <motion.div {...fadeUp} className="mt-4">
               <div className="flex items-center justify-between mb-4">
-                <Eyebrow>Recent Lectures</Eyebrow>
+                <Eyebrow>{t('dashboard.recent_lectures', 'Recent Lectures')}</Eyebrow>
                 <button
                   onClick={() => {
                     useLectureStore.getState().setSelectedFolderId(null);
@@ -474,7 +450,7 @@ export function DashboardPage() {
           {folders.length > 0 && (
             <motion.div {...fadeUp} className="mt-2">
               <div className="flex items-center justify-between mb-5">
-                <Eyebrow>Collections</Eyebrow>
+                <Eyebrow>{t('dashboard.collections', 'Collections')}</Eyebrow>
                 <button
                   onClick={() => navigate("/lectures")}
                   className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors focus-visible:outline-none"
@@ -482,7 +458,7 @@ export function DashboardPage() {
                   All <ChevronRight size={11} aria-hidden="true" />
                 </button>
               </div>
-              <div className="flex flex-wrap gap-8 items-start">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-6 items-start">
                 {folders.slice(0, 8).map((folder, index) => {
                   const defaultColors = ["#52A8FF", "#9C73F8", "#FF7E79", "#F5A623", "#52D189", "#F06292", "#26C6DA", "#AB47BC"];
                   const folderColor = folder.color || defaultColors[index % defaultColors.length];

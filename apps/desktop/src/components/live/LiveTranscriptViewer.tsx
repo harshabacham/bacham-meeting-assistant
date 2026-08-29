@@ -14,7 +14,11 @@ interface TimelineItem {
   speaker?: string;
 }
 
-export function LiveTranscriptViewer() {
+interface LiveTranscriptViewerProps {
+  onScreenshotClick?: (dataUrl: string) => void;
+}
+
+export function LiveTranscriptViewer({ onScreenshotClick }: LiveTranscriptViewerProps) {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [liveInterim, setLiveInterim] = useState('');
   const [query, setQuery] = useState('');
@@ -140,7 +144,11 @@ export function LiveTranscriptViewer() {
       case 'screenshot':
         return (
           <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="my-3">
-            <div className="rounded-2xl overflow-hidden border border-[var(--border)] shadow-md">
+            <div 
+              className="rounded-2xl overflow-hidden border border-[var(--border)] shadow-md cursor-pointer hover:ring-2 hover:ring-[var(--accent)] transition-all"
+              onClick={() => onScreenshotClick && onScreenshotClick(item.content)}
+              title="Click to insert into notes"
+            >
               <img src={item.content} alt="Meeting Screenshot" className="w-full h-auto object-cover max-h-52" />
             </div>
           </motion.div>

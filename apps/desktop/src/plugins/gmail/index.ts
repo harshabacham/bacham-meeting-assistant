@@ -9,6 +9,7 @@ const GmailPlugin: BachamPlugin = {
     name: 'Gmail',
     version: '1.0.0',
     description: 'Email meeting summaries and action items automatically to participants.',
+    icon: 'Mail',
     category: 'Communication',
     permissions: ['Send Email'],
     author: 'Bacham',

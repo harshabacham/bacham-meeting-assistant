@@ -9,6 +9,7 @@ const OpenAIPlugin: BachamPlugin = {
     name: 'OpenAI',
     version: '1.0.0',
     description: 'Use OpenAI models (GPT-4o, GPT-3.5) for generating meeting summaries.',
+    icon: 'Bot',
     category: 'AI Providers',
     permissions: ['AI Inference'],
     author: 'Bacham',
@@ -26,6 +27,18 @@ const OpenAIPlugin: BachamPlugin = {
     type: 'api_key',
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
+      
+      // Validate the token by hitting the models endpoint
+      const res = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error('Invalid OpenAI API Key');
+      }
+      
       await AuthManager.setToken(PLUGIN_ID, token);
     },
     disconnect: async () => {

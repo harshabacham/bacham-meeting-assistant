@@ -60,6 +60,41 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
     return () => clearInterval(interval);
   }, [startMs, session.pausedDurationMs]);
 
+  const [note, setNote] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Load saved note on mount
+  useEffect(() => {
+    chrome.storage.local.get(`note_${session.id}`, (res) => {
+      if (res[`note_${session.id}`]) {
+        setNote(res[`note_${session.id}`]);
+      }
+    });
+  }, [session.id]);
+
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setNote(text);
+    setIsTyping(true);
+    
+    // Save locally
+    chrome.storage.local.set({ [`note_${session.id}`]: text });
+    
+    // Send to background to forward to desktop
+    chrome.runtime.sendMessage({
+      type: MessageType.LIVE_NOTE,
+      payload: { text },
+      sessionId: session.id
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (isTyping) {
+      const timeout = setTimeout(() => setIsTyping(false), 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [note, isTyping]);
+
   const handleCatchUp = async () => {
     setCatchUpState('loading');
     setCatchUpSummary(null);
@@ -227,6 +262,25 @@ export function RecordingScreen({ session, onPause, onStop, isLoading, optimisti
             </>
           )}
         </button>
+
+        {/* Notes Section */}
+        <div className="w-full mt-2 flex flex-col flex-1 relative min-h-[160px]">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Live Notes</span>
+            {note && (
+              <span className={`text-[10px] font-medium transition-opacity duration-300 ${isTyping ? 'text-[var(--text-muted)]' : 'text-[var(--success)]'}`}>
+                {isTyping ? 'Saving...' : 'Saved'}
+              </span>
+            )}
+          </div>
+          <textarea
+            value={note}
+            onChange={handleNoteChange}
+            placeholder="Type your meeting notes here... They will be saved to your lecture automatically."
+            className="flex-1 w-full p-3 text-[13px] rounded-xl bg-[var(--surface-2)] border border-[var(--border)] focus:border-[#8b5cf6] focus:ring-1 focus:ring-[#8b5cf6]/30 transition-all resize-none text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+            style={{ outline: 'none' }}
+          />
+        </div>
 
         {/* Catch Me Up Result Card */}
         {showCatchUp && catchUpState !== 'idle' && catchUpState !== 'loading' && (

@@ -1,3 +1,5 @@
+pub trait GoogleAuthExt { fn apply_google_auth(self, key: &str) -> Self; }
+impl GoogleAuthExt for reqwest::RequestBuilder { fn apply_google_auth(self, key: &str) -> Self { if key.starts_with("ya29.") || key.starts_with("Bearer ") { let token = key.trim_start_matches("Bearer ").trim(); self.header("Authorization", format!("Bearer {}", token)) } else { self.header("x-goog-api-key", key) } } }
 use tauri::{State, AppHandle, Manager};
 use serde::{Deserialize, Serialize};
 use crate::error::AppResult;
@@ -220,7 +222,7 @@ pub async fn folder_chat_send(app: AppHandle, input: FolderChatInput) -> AppResu
     // Make the Gemini request
     let key = GeminiService::get_api_key(&pool).await?;
     let client = reqwest::Client::new();
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}", key);
+    let url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent".to_string();
     
     let mut contents = Vec::new();
     for msg in &input.history {
@@ -240,7 +242,7 @@ pub async fn folder_chat_send(app: AppHandle, input: FolderChatInput) -> AppResu
         "contents": contents
     });
 
-    let res = client.post(&url).json(&payload).send().await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
+    let res = client.post(&url).apply_google_auth(&key).json(&payload).send().await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
     
     let body: serde_json::Value = res.json().await.map_err(|e| crate::error::AppError::Internal(e.to_string()))?;
     let text = body.get("candidates")
@@ -451,7 +453,7 @@ pub async fn generate_highlight_reel(
                 
                 let key = GeminiService::get_api_key(&state.pool).await?;
                 let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
-                let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}", key);
+                let url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent".to_string();
                 
                 let payload = serde_json::json!({
                     "systemInstruction": { "parts": [{ "text": system }] },
@@ -464,7 +466,7 @@ pub async fn generate_highlight_reel(
                     "generationConfig": { "responseMimeType": "application/json" }
                 });
 
-                if let Ok(res) = client.post(&url).json(&payload).send().await {
+                if let Ok(res) = client.post(&url).apply_google_auth(&key).json(&payload).send().await {
                     if res.status().is_success() {
                         if let Ok(body) = res.json::<serde_json::Value>().await {
                             if let Some(text) = body.get("candidates").and_then(|c| c.get(0)).and_then(|c| c.get("content")).and_then(|c| c.get("parts")).and_then(|p| p.get(0)).and_then(|p| p.get("text")).and_then(|t| t.as_str()) {
@@ -1131,6 +1133,7 @@ pub struct GlobalActionItem {
     pub task: String,
     pub owner: String,
     pub raw_quote: Option<String>,
+    pub context: Option<String>,
     pub timestamp: Option<String>,
     pub due_date: Option<String>,
     pub due_date_iso: Option<String>,
@@ -1166,6 +1169,7 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                             task: text.to_string(),
                             owner: "Me".to_string(),
                             raw_quote: None,
+                            context: None,
                             timestamp: None,
                             due_date: None,
                             due_date_iso: None,
@@ -1177,6 +1181,7 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                         let task = obj.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
                         let owner = obj.get("owner").and_then(|v| v.as_str()).unwrap_or("Me").to_string();
                         let raw_quote = obj.get("raw_quote").or_else(|| obj.get("rawQuote")).and_then(|v| v.as_str()).map(String::from);
+                        let context = obj.get("context").and_then(|v| v.as_str()).map(String::from);
                         let timestamp = obj.get("timestamp").or_else(|| obj.get("timestamp_str")).and_then(|v| v.as_str()).map(String::from);
                         let due_date = obj.get("due_date").or_else(|| obj.get("dueDate")).and_then(|v| v.as_str()).map(String::from);
                         let due_date_iso = obj.get("due_date_iso").or_else(|| obj.get("dueDateIso")).and_then(|v| v.as_str()).map(String::from);
@@ -1193,6 +1198,7 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                                 task,
                                 owner,
                                 raw_quote,
+                                context,
                                 timestamp,
                                 due_date,
                                 due_date_iso,
@@ -1212,6 +1218,7 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                         let task = item.get("task").and_then(|v| v.as_str()).unwrap_or("").to_string();
                         let owner = item.get("owner").and_then(|v| v.as_str()).unwrap_or("Me").to_string();
                         let raw_quote = item.get("raw_quote").or_else(|| item.get("rawQuote")).and_then(|v| v.as_str()).map(String::from);
+                        let context = item.get("context").and_then(|v| v.as_str()).map(String::from);
                         let timestamp = item.get("timestamp").or_else(|| item.get("timestamp_str")).and_then(|v| v.as_str()).map(String::from);
                         let due_date = item.get("due_date").or_else(|| item.get("dueDate")).and_then(|v| v.as_str()).map(String::from);
                         let due_date_iso = item.get("due_date_iso").or_else(|| item.get("dueDateIso")).and_then(|v| v.as_str()).map(String::from);
@@ -1233,6 +1240,7 @@ pub async fn get_all_action_items(app: AppHandle) -> AppResult<Vec<GlobalActionI
                                 task,
                                 owner,
                                 raw_quote,
+                                context,
                                 timestamp,
                                 due_date,
                                 due_date_iso,
@@ -1505,3 +1513,4 @@ pub struct TranscribeAudioChunkInput {
 pub async fn transcribe_live_audio_chunk(app: AppHandle, input: TranscribeAudioChunkInput) -> AppResult<serde_json::Value> {
     GeminiService::transcribe_audio_chunk(&input.audio_base64, &input.mime_type, input.language_hint, &app).await
 }
+

@@ -1,0 +1,53 @@
+{
+  "app_layout": {
+    "home_btn": "Home",
+    "search": "Search"
+  },
+  "common": {
+    "search_languages": "Search languages...",
+    "starting": "Starting...",
+    "stop": "Stop",
+    "view_all": "View all"
+  },
+  "dashboard": {
+    "action_items_for_you": "Action items for you",
+    "collections": "Collections",
+    "continue_learning": "Continue learning",
+    "desktop_capture": "Desktop Capture",
+    "desktop_capture_desc": "Record system audio and screen natively.",
+    "no_tasks": "No action items assigned to you.",
+    "recent_lectures": "Recent Lectures",
+    "recording_in_progress": "Recording in progress",
+    "start_recording": "Start Recording",
+    "stats": {
+      "cards_due_one": "",
+      "cards_due_other": "",
+      "lectures_one": "",
+      "lectures_other": "",
+      "streak": "",
+      "studied": ""
+    },
+    "subtitle": "आपका विज़ुअल मीटिंग कोपायलट",
+    "title": "बचम में आपका स्वागत है",
+    "todays_focus": "Today's focus",
+    "untitled": "Untitled",
+    "your_tasks": "Your Tasks"
+  },
+  "live": {
+    "ai_copilot": "AI Copilot",
+    "interview_mode": "Interview Mode",
+    "listening_to_interviewer": "Listening to interviewer...",
+    "meeting_active": "Meeting Active",
+    "suggested_answer": "Suggested Answer",
+    "system_voice_active_desc": "System & Speaker Voice Active (Zoom/Meet)",
+    "system_voice_add": "+ System Voice",
+    "system_voice_add_desc": "Click to Capture System/Speaker Audio",
+    "system_voice_on": "System Voice: ON",
+    "waiting_for_interviewer": "Waiting for the interviewer to ask a question..."
+  },
+  "settings": {
+    "global_localization": "Global Localization",
+    "my_profile": "My Profile",
+    "profile_desc": "Manage your account and personal details."
+  }
+}

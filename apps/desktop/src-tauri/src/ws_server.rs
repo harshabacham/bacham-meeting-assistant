@@ -88,8 +88,7 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
         clients.push(tx.clone());
     }
 
-    // Spawn a task to handle outbound messages
-    tokio::spawn(async move {
+    let write_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
             if write.send(tokio_tungstenite::tungstenite::Message::Text(msg.into())).await.is_err() {
                 break;
@@ -100,6 +99,13 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
     while let Some(msg) = read.next().await {
         match msg {
             Ok(tokio_tungstenite::tungstenite::Message::Text(text)) => {
+                use tauri::Manager;
+                let temp_dir = state.app_handle.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                let log_path = temp_dir.parent().unwrap().join("debug.log");
+                if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                    let _ = std::io::Write::write_all(&mut log_file, format!("WS RECEIVED RAW: {}\n", &text[0..std::cmp::min(200, text.len())]).as_bytes());
+                }
+                
                 // 1. First try parsing as full NativeMessage protocol (SESSION_START, CHUNK_READY, SESSION_STOP, HEARTBEAT, etc.)
                 if let Ok(native_msg) = serde_json::from_str::<crate::native_messaging::protocol::NativeMessage<serde_json::Value>>(&text) {
                     let tx_clone = tx.clone();
@@ -125,13 +131,27 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
                             let _ = state.app_handle.emit("live_chunk_received", &payload);
                         }
                     }
+                } else {
+                    let sample = if text.len() > 500 { &text[..500] } else { &text };
+                    eprintln!("WS unrecognized message: {}", sample);
+                    let temp_dir = state.app_handle.path().document_dir().unwrap().join("BACHAM").join("Data").join("temp");
+                    let log_path = temp_dir.parent().unwrap().join("debug.log");
+                    if let Ok(mut log_file) = std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                        let _ = std::io::Write::write_all(&mut log_file, format!("WS unrecognized message: {}\n", sample).as_bytes());
+                    }
                 }
             }
             Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
                 println!("Extension WebSocket closed");
                 break;
             }
+            Err(e) => {
+                eprintln!("WebSocket error: {}", e);
+                break;
+            }
             _ => {}
         }
     }
+    
+    write_task.abort();
 }

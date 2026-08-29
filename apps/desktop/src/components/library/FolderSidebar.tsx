@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useCollectionStore } from '@/shared/stores/collectionStore';
-import { Folder as FolderIcon, ChevronRight, Plus, MoreVertical, Trash2, Edit2, LayoutList, Archive, Settings, Lock, Upload, Hash, BrainCircuit, Sparkles, FolderPlus, FileText } from 'lucide-react';
+import { Folder as FolderIcon, ChevronRight, MoreVertical, Trash2, Edit2, Settings, Lock, Hash, BrainCircuit, Sparkles, FolderPlus, FileText } from 'lucide-react';
 import { cn, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components';
 import { useToast } from '@/components/ui/ToastProvider';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -16,64 +16,7 @@ interface FolderSidebarProps {
     onSelectFolder?: (id: string) => void;
 }
 
-function SystemViewDropZone({
-    isActive, onClick, icon: Icon, label, onDropLectures
-}: {
-    view: 'all' | 'trash' | 'archive', isActive: boolean, onClick: () => void, icon: any, label: string, onDropLectures?: (ids: string[]) => void
-}) {
-    const [isDragOver, setIsDragOver] = useState(false);
-    
-    return (
-        <button 
-            onClick={onClick}
-            onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            }}
-            onDragOver={(e) => {
-                const types = Array.from(e.dataTransfer.types || []).map(t => t.toLowerCase());
-                if (types.includes('application/x-lecture-ids') || types.includes('text/plain')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.dataTransfer.dropEffect = 'move';
-                    if (!isDragOver) setIsDragOver(true);
-                }
-            }}
-            onDragLeave={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsDragOver(false);
-            }}
-            onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsDragOver(false);
-                let draggedLectureIds = e.dataTransfer.getData('application/x-lecture-ids');
-                if (!draggedLectureIds) {
-                    const textPlain = e.dataTransfer.getData('text/plain');
-                    if (textPlain && textPlain.startsWith('lectures:')) {
-                        draggedLectureIds = textPlain.substring('lectures:'.length);
-                    }
-                }
-                if (draggedLectureIds && onDropLectures) {
-                    try {
-                        const ids = JSON.parse(draggedLectureIds) as string[];
-                        onDropLectures(ids);
-                    } catch (err) {}
-                }
-            }}
-            className={cn(
-                "w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 border", 
-                isActive ? "bg-accent/10 text-accent font-medium border-transparent" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground border-transparent",
-                isDragOver && "border-primary bg-primary/10 text-primary scale-[1.02] shadow-sm"
-            )}
-        >
-            <Icon size={16} /> {label}
-        </button>
-    );
-}
-
-export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onSelectFolder }: FolderSidebarProps) {
+export function FolderSidebar({ selectedFolderId, onSelectFolder }: FolderSidebarProps) {
     const { showToast } = useToast();
     const { folderTree, fetchFolders, createFolder } = useFolderStore();
     const { fetchCollections } = useCollectionStore();
@@ -108,60 +51,9 @@ export function FolderSidebar({ systemView, setSystemView, selectedFolderId, onS
 
 
     return (
-        <div className="w-[240px] bg-surface border-r border-border/50 flex flex-col h-full shrink-0">
-            <div className="p-3 space-y-1 border-b border-border/50">
-                <SystemViewDropZone
-                    view="all"
-                    isActive={systemView === 'all'}
-                    onClick={() => setSystemView('all')}
-                    icon={LayoutList}
-                    label="All Lectures"
-                    onDropLectures={async (ids) => {
-                        await useLectureStore.getState().moveLectures(ids, null);
-                    }}
-                />
-                <SystemViewDropZone
-                    view="archive"
-                    isActive={systemView === 'archive'}
-                    onClick={() => setSystemView('archive')}
-                    icon={Archive}
-                    label="Archive"
-                    onDropLectures={async (ids) => {
-                        await useLectureStore.getState().setArchived(ids, true);
-                    }}
-                />
-            </div>
-            
-            <div className="px-4 py-4 border-b border-border/50 flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">Folders</span>
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={async () => {
-                            const src = await (window as any).__TAURI__.dialog.open({
-                                filters: [{ name: 'BACHAM Bundle', extensions: ['bacham'] }]
-                            });
-                            if (src && !Array.isArray(src)) {
-                                try {
-                                    await useFolderStore.getState().importFolder(src);
-                                } catch (err: any) {
-                                    showToast(`Import error: ${err.message}`, 'error');
-                                }
-                            }
-                        }}
-                        className="p-1 hover:bg-surface-hover rounded text-muted-foreground hover:text-foreground transition-colors"
-                        title="Import Folder"
-                    >
-                        <Upload size={16} />
-                    </button>
-                    <button
-                        onClick={() => setIsCreating(true)}
-                        className="p-1 hover:bg-surface-hover rounded text-muted-foreground hover:text-foreground transition-colors"
-                        title="New Folder"
-                    >
-                        <Plus size={16} />
-                    </button>
-                </div>
-            </div>
+        <div className="w-full flex flex-col shrink-0">
+
+
             
             <div 
                 className="flex-1 overflow-y-auto py-2 px-2 space-y-1"

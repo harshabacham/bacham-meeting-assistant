@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { BachamPlugin } from '@/core/integrations/types';
-import { Loader2, CheckCircle2, XCircle, Settings2, PlugZap, Link, Unlink, ExternalLink } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Settings2, PlugZap, Link as LinkIcon, Unlink, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 interface IntegrationCardProps {
   plugin: BachamPlugin;
@@ -12,7 +14,10 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSetupOpen, setIsSetupOpen] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  
+  const Icon = (LucideIcons as any)[plugin.manifest.icon || 'PlugZap'] || PlugZap;
 
   useEffect(() => {
     if (plugin.auth?.isConnected) {
@@ -31,13 +36,15 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
   const executeConnection = async (credentials?: any) => {
     if (!plugin.auth?.authenticate) return;
     setIsAuthenticating(true);
+    setAuthError(null);
     try {
       await plugin.auth.authenticate(credentials);
       setIsConnected(true);
       setIsSetupOpen(false);
-      setApiKey('');
-    } catch (e) {
+      setFormValues({});
+    } catch (e: any) {
       console.error(e);
+      setAuthError(e.message || 'Authentication failed');
     } finally {
       setIsAuthenticating(false);
     }
@@ -63,9 +70,8 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
       <div className="relative z-10 flex flex-col h-full">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          {/* A dummy icon placeholder, in a real system we might expose icon from manifest */}
           <div className="w-8 h-8 rounded-lg bg-background border border-border/50 flex items-center justify-center shrink-0">
-            <PlugZap size={14} className="text-muted-foreground" />
+            <Icon size={14} className="text-muted-foreground" />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">{plugin.manifest.name}</h3>
@@ -96,13 +102,20 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
       {isSetupOpen && !isConnected && (
         <div className="mt-2 pt-3 border-t border-border/30 space-y-4">
           
+          {authError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              <p className="text-xs text-red-500 font-medium leading-tight">{authError}</p>
+            </div>
+          )}
+          
           {plugin.manifest.setupGuide && (
             <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-primary">Setup Guide</span>
                 {plugin.manifest.setupGuide.url && (
                   <button 
-                    onClick={() => window.open(plugin.manifest.setupGuide!.url, '_blank')}
+                    onClick={() => openUrl(plugin.manifest.setupGuide!.url as string)}
                     className="text-[10px] bg-primary text-primary-foreground px-2 py-1 rounded hover:bg-primary/90 flex items-center gap-1 shadow-sm transition-colors">
                     {plugin.manifest.setupGuide.urlLabel || 'Get Token'} <ExternalLink size={10} />
                   </button>
@@ -116,17 +129,35 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
             </div>
           )}
 
-          <div>
-            <label className="text-[11px] font-medium text-foreground">API Token Required</label>
-            <p className="text-[10px] text-muted-foreground mb-2">Paste your secure integration token below.</p>
-            <input 
-              type="password"
-              placeholder="Paste your token here..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full bg-background/60 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
-            />
-          </div>
+          {plugin.auth?.fields ? (
+            <div className="space-y-3">
+              {plugin.auth.fields.map(field => (
+                <div key={field.id}>
+                  <label className="text-[11px] font-medium text-foreground">{field.label}</label>
+                  <input 
+                    type={field.type || 'text'}
+                    placeholder={field.placeholder || ''}
+                    value={formValues[field.id] || ''}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    className="w-full mt-1 bg-background/60 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div>
+              <label className="text-[11px] font-medium text-foreground">API Token Required</label>
+              <p className="text-[10px] text-muted-foreground mb-2">Paste your secure integration token below.</p>
+              <input 
+                type="password"
+                placeholder="Paste your token here..."
+                value={formValues.apiKey || ''}
+                onChange={(e) => setFormValues({ apiKey: e.target.value })}
+                className="w-full bg-background/60 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors"
+              />
+            </div>
+          )}
+          
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsSetupOpen(false)}
@@ -134,10 +165,10 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
               Cancel
             </button>
             <button 
-              onClick={() => executeConnection(apiKey)}
-              disabled={!apiKey || isAuthenticating}
+              onClick={() => executeConnection(plugin.auth?.fields ? formValues : formValues.apiKey)}
+              disabled={Object.keys(formValues).length === 0 || isAuthenticating}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
-              {isAuthenticating ? <Loader2 size={12} className="animate-spin" /> : 'Save Token'}
+              {isAuthenticating ? <Loader2 size={12} className="animate-spin" /> : 'Save Setup'}
             </button>
           </div>
         </div>
@@ -151,7 +182,7 @@ export function IntegrationCard({ plugin }: IntegrationCardProps) {
               onClick={handleConnectClick}
               disabled={isAuthenticating}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
-              {isAuthenticating ? <Loader2 size={12} className="animate-spin" /> : <Link size={12} />} 
+              {isAuthenticating ? <Loader2 size={12} className="animate-spin" /> : <LinkIcon size={12} />} 
               {isAuthenticating ? 'Connecting...' : 'Connect'}
             </button>
           )}

@@ -1,3 +1,5 @@
+pub trait GoogleAuthExt { fn apply_google_auth(self, key: &str) -> Self; }
+impl GoogleAuthExt for reqwest::RequestBuilder { fn apply_google_auth(self, key: &str) -> Self { if key.starts_with("ya29.") || key.starts_with("Bearer ") { let token = key.trim_start_matches("Bearer ").trim(); self.header("Authorization", format!("Bearer {}", token)) } else { self.header("x-goog-api-key", key) } } }
 use async_trait::async_trait;
 use tauri::{AppHandle, Manager, Emitter};
 use crate::error::{AppError, AppResult};
@@ -32,7 +34,7 @@ impl ProviderEngine {
         match provider_name.as_str() {
             "gemini" | "bacham.gemini" => Ok(Box::new(GeminiProvider)),
             "ollama" | "bacham.ollama" => Ok(Box::new(OllamaProvider { name: provider_name })),
-            "openai" | "bacham.openai" | "openrouter" | "bacham.openrouter" | "lmstudio" | "bacham.lmstudio" | "anthropic" | "bacham.anthropic" => Ok(Box::new(OpenAiCompatibleProvider { name: provider_name })),
+            "openai" | "bacham.openai" | "openrouter" | "bacham.openrouter" | "lmstudio" | "bacham.lmstudio" | "anthropic" | "bacham.anthropic" | "grok" | "bacham.grok" => Ok(Box::new(OpenAiCompatibleProvider { name: provider_name })),
             _ => Ok(Box::new(OpenAiCompatibleProvider { name: provider_name })), // Fallback to OpenAI compatible for all other plugins
         }
     }
@@ -46,7 +48,7 @@ impl AiProvider for GeminiProvider {
         let pool = &app.state::<crate::database::DbState>().pool;
         let key = ProviderService::get_api_key(pool, "gemini").await?;
         let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(300)).build().unwrap_or_else(|_| reqwest::Client::new());
-        let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={}", key);
+        let url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse".to_string();
         
         let mut contents = Vec::new();
         for msg in &request.history {
@@ -76,6 +78,7 @@ impl AiProvider for GeminiProvider {
         let mut retries = 0;
         let res = loop {
             let res = client.post(&url)
+                .apply_google_auth(&key)
                 .json(&payload)
                 .send()
                 .await
@@ -94,8 +97,8 @@ impl AiProvider for GeminiProvider {
                 // DYNAMIC FALLBACK
                 if status.as_u16() == 404 && body.contains("is not found") {
                     eprintln!("Attempting dynamic fallback to find available models for streaming...");
-                    let list_url = format!("https://generativelanguage.googleapis.com/v1beta/models?key={}", key);
-                    if let Ok(list_res) = client.get(&list_url).send().await {
+                    let list_url = "https://generativelanguage.googleapis.com/v1beta/models".to_string();
+                    if let Ok(list_res) = client.get(&list_url).apply_google_auth(&key).send().await {
                         if let Ok(list_body) = list_res.json::<serde_json::Value>().await {
                             if let Some(models) = list_body.get("models").and_then(|m| m.as_array()) {
                                 let mut found_model = None;
@@ -112,8 +115,8 @@ impl AiProvider for GeminiProvider {
                                 
                                 if let Some(new_model) = found_model {
                                     eprintln!("Found supported model: {}, retrying stream...", new_model);
-                                    let new_url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse&key={}", new_model, key);
-                                    if let Ok(retry_res) = client.post(&new_url).json(&payload).send().await {
+                                    let new_url = format!("https://generativelanguage.googleapis.com/v1beta/models/{}:streamGenerateContent?alt=sse", new_model);
+                                    if let Ok(retry_res) = client.post(&new_url).apply_google_auth(&key).json(&payload).send().await {
                                         if retry_res.status().is_success() {
                                             break retry_res;
                                         }
@@ -355,6 +358,7 @@ impl AiProvider for OpenAiCompatibleProvider {
             "openai" => ("https://api.openai.com/v1/chat/completions".to_string(), "gpt-4o"),
             "openrouter" => ("https://openrouter.ai/api/v1/chat/completions".to_string(), "anthropic/claude-3-haiku"),
             "lmstudio" => ("http://localhost:1234/v1/chat/completions".to_string(), "local-model"),
+            "grok" => ("https://api.x.ai/v1/chat/completions".to_string(), "grok-beta"),
             _ => ("https://api.openai.com/v1/chat/completions".to_string(), "gpt-4o"),
         };
 
@@ -468,3 +472,4 @@ impl AiProvider for OpenAiCompatibleProvider {
         }
     }
 }
+

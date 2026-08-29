@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  BookOpen, Save, Clock, Sparkles, Loader2, Copy, Check,
+  BookOpen, Save, Clock, Copy, Check,
   FileText, Mic, Activity, ChevronDown,
-  Layout, AlignLeft, Bot, LayoutTemplate, BrainCircuit
+  LayoutTemplate
 } from 'lucide-react';
 import { TauriClient } from '@/infrastructure/tauri-client';
-import { LectureIntelligenceView } from '@/components/study/LectureIntelligenceView';
-import { Button } from '@/components/ui/button';
 
 // ────────────────────────────────────────────────────────────
 //  Templates
@@ -113,10 +111,7 @@ export function NotesTab({
   templateType = 'general',
   transcript: propTranscript,
   isAudioSilent,
-  artifacts = {},
-  summary,
   summaryError,
-  isGeneratingSummary = false,
   onGenerateSummary,
 }: NotesTabProps) {
   const storageKey = `user_notes_draft_${lectureId}`;
@@ -133,7 +128,6 @@ export function NotesTab({
 
   // UI state
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [view, setView] = useState<'split' | 'draft' | 'ai'>('split');
   const [copiedDraft, setCopiedDraft] = useState(false);
 
   // Live transcript rolling buffer (from real-time captions)
@@ -219,21 +213,11 @@ export function NotesTab({
     setTimeout(() => setCopiedDraft(false), 2000);
   };
 
-  // Check if AI Intelligence data exists
-  const aiIntelligenceData = artifacts['lecture_intelligence'] || (() => {
-    if (!summary) return null;
-    try {
-      return JSON.parse(summary);
-    } catch {
-      return { executive_summary: summary };
-    }
-  })();
-
   return (
     <div className="flex flex-col h-full gap-0 bg-background overflow-hidden">
 
       {/* ── Granola Top Toolbar Bar ──────────────────────────── */}
-      <div className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border/40 bg-surface/30 shrink-0 flex-wrap gap-y-2">
+      <div className="flex items-center justify-between gap-3 px-6 py-3 shrink-0 flex-wrap gap-y-2">
         {/* Left: Section Indicator & Live Sync Status */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
@@ -273,50 +257,6 @@ export function NotesTab({
             <Clock size={11} className="text-muted-foreground" />
             <span className="hidden sm:inline">Timestamp</span>
           </button>
-
-          {/* View Mode Toggle: Split | My Notes | AI Notes */}
-          <div className="flex items-center bg-surface border border-border/50 rounded-lg p-0.5 gap-0.5">
-            {([
-              { id: 'split', icon: Layout, label: 'Split' },
-              { id: 'draft', icon: AlignLeft, label: 'My Notes' },
-              { id: 'ai',    icon: Bot,      label: 'AI Notes' },
-            ] as const).map(({ id, icon: Icon, label }) => (
-              <button
-                key={id}
-                onClick={() => setView(id)}
-                title={label}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                  view === id
-                    ? 'bg-primary/15 text-primary border border-primary/20'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon size={11} />
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Generate / Regenerate AI Summary Button */}
-          {onGenerateSummary && (
-            <Button
-              onClick={onGenerateSummary}
-              disabled={isGeneratingSummary}
-              className="flex items-center gap-1.5 text-[11px] px-3.5 py-1.5 h-auto rounded-lg font-semibold transition-all bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20 disabled:opacity-50"
-            >
-              {isGeneratingSummary ? (
-                <>
-                  <Loader2 size={12} className="animate-spin mr-1" />
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <Sparkles size={12} className="mr-1" />
-                  {aiIntelligenceData ? 'Regenerate Notes' : 'Generate Notes'}
-                </>
-              )}
-            </Button>
-          )}
         </div>
       </div>
 
@@ -335,85 +275,43 @@ export function NotesTab({
       {/* ── Main Notes Canvas ─────────────────────────────────── */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
 
-        {/* Left Pane: User Shorthand Notes */}
-        {(view === 'draft' || view === 'split') && (
-          <div className={`flex flex-col min-h-0 min-w-0 ${view === 'split' ? 'w-1/2 border-r border-border/40' : 'w-full'}`}>
-            {/* Shorthand Header */}
-            <div className="flex items-center justify-between px-6 pt-3 pb-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <FileText size={12} className="text-muted-foreground" />
-                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Your Notes</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] text-muted-foreground/50 tabular-nums">{draft.length} characters</span>
-                <button
-                  onClick={copyDraftContent}
-                  title="Copy your notes"
-                  className="p-1 rounded hover:bg-surface text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {copiedDraft ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                </button>
-              </div>
+        {/* User Shorthand Notes */}
+        <div className="flex flex-col min-h-0 min-w-0 w-full max-w-5xl mx-auto">
+          {/* Shorthand Header */}
+          <div className="flex items-center justify-between px-6 pt-3 pb-2 shrink-0">
+            <div className="flex items-center gap-2">
+              <FileText size={12} className="text-muted-foreground" />
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Your Notes</span>
             </div>
-
-            {/* Shorthand Textarea */}
-            <div className="flex-1 mx-6 mb-6 relative rounded-2xl border border-border/40 bg-surface/20 hover:border-border/70 focus-within:border-primary/40 transition-colors overflow-hidden group">
-              <textarea
-                ref={textareaRef}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder={JOT_PLACEHOLDER}
-                className="w-full h-full bg-transparent px-5 py-5 text-sm text-foreground resize-none focus:outline-none placeholder:text-muted-foreground/30 leading-relaxed font-sans"
-                style={{ minHeight: 0 }}
-              />
-              {captionCount > 0 && (
-                <div className="absolute bottom-3 right-3 flex items-center gap-1.5 text-[10px] text-emerald-400/80 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2.5 py-1">
-                  <Mic size={9} className="animate-pulse" /> Live Captions Connected
-                </div>
-              )}
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted-foreground/50 tabular-nums">{draft.length} characters</span>
+              <button
+                onClick={copyDraftContent}
+                title="Copy your notes"
+                className="p-1 rounded hover:bg-surface text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {copiedDraft ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
             </div>
           </div>
-        )}
 
-        {/* Right Pane: AI Structured Intelligence */}
-        {(view === 'ai' || view === 'split') && (
-          <div className={`flex flex-col min-h-0 min-w-0 overflow-y-auto ${view === 'split' ? 'w-1/2' : 'w-full'}`}>
-            <div className="p-6">
-              {aiIntelligenceData ? (
-                <LectureIntelligenceView data={aiIntelligenceData} />
-              ) : isGeneratingSummary ? (
-                <div className="flex flex-col items-center justify-center py-24 space-y-4 text-center">
-                  <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-                    <BrainCircuit className="h-8 w-8 text-primary animate-spin" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="text-base font-semibold text-foreground">Synthesizing Notes &amp; Intelligence</h4>
-                    <p className="text-xs text-muted-foreground max-w-sm">
-                      Analyzing audio transcript, visual keyframes, and shorthand notes…
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center border border-dashed border-border/60 rounded-2xl p-8 bg-surface/10">
-                  <div className="h-14 w-14 bg-primary/10 rounded-2xl flex items-center justify-center">
-                    <Sparkles className="h-7 w-7 text-primary" />
-                  </div>
-                  <div className="space-y-1 max-w-md">
-                    <h4 className="text-sm font-semibold text-foreground">AI Intelligence Not Yet Generated</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Click below to generate grounded meeting notes, chapter breakdowns, decisions, and action items using the multimodal AI engine.
-                    </p>
-                  </div>
-                  {onGenerateSummary && (
-                    <Button onClick={onGenerateSummary} className="rounded-xl bg-primary text-primary-foreground font-semibold text-xs px-5 py-2 h-auto shadow-sm">
-                      <Sparkles size={13} className="mr-1.5" /> Generate Meeting Intelligence
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
+          {/* Shorthand Textarea */}
+          <div className="flex-1 mx-6 mb-6 relative rounded-2xl border border-border/40 bg-surface/20 hover:border-border/70 focus-within:border-primary/40 transition-colors overflow-hidden group">
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={JOT_PLACEHOLDER}
+              className="w-full h-full bg-transparent px-5 py-5 text-sm text-foreground resize-none focus:outline-none placeholder:text-muted-foreground/30 leading-relaxed font-sans"
+              style={{ minHeight: 0 }}
+            />
+            {captionCount > 0 && (
+              <div className="absolute bottom-3 right-3 flex items-center gap-1.5 text-[10px] text-emerald-400/80 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2.5 py-1">
+                <Mic size={9} className="animate-pulse" /> Live Captions Connected
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
       </div>
     </div>

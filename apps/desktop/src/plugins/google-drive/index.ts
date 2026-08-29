@@ -9,6 +9,7 @@ const GoogleDrivePlugin: BachamPlugin = {
     name: 'Google Drive',
     version: '1.0.0',
     description: 'Import PDFs/Docs and export meeting transcripts directly to a Google Drive folder.',
+    icon: 'HardDrive',
     category: 'Storage',
     permissions: ['Read Files', 'Write Files'],
     author: 'Bacham',

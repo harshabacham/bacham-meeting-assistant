@@ -18,6 +18,8 @@ export enum MessageType {
   LIVE_CAPTION = 'LIVE_CAPTION',
   /** Heartbeat to keep the native messaging port alive. Payload: HeartbeatPayload. */
   HEARTBEAT = 'HEARTBEAT',
+  /** Live note from the user. Payload: LiveNotePayload. */
+  LIVE_NOTE = 'LIVE_NOTE',
 
   // --- Native Messaging (Desktop → Extension) ---
   /** Acknowledgement from the Desktop App. Payload: AckPayload. */
@@ -36,6 +38,8 @@ export enum MessageType {
   GET_STATE = 'GET_STATE',
   /** Background pushes full state to popup. Payload: BackgroundState. */
   STATE_UPDATE = 'STATE_UPDATE',
+  /** Pre-warm the offscreen document. Payload: none. */
+  PRE_WARM_OFFSCREEN = 'PRE_WARM_OFFSCREEN',
   /** Popup sends start-session intent. Payload: StartSessionIntent. */
   START_SESSION = 'START_SESSION',
   /** Popup sends pause-session intent. Payload: none. */
@@ -74,6 +78,9 @@ export enum MessageType {
   RETRY_CONNECTION = 'RETRY_CONNECTION',
   /** Internal: content script confirms a decision. */
   DECISION_CONFIRMED = 'DECISION_CONFIRMED',
+  PREWARM_OFFSCREEN = 'PREWARM_OFFSCREEN',
+  GET_HISTORY = 'GET_HISTORY',
+  HISTORY_DATA = 'HISTORY_DATA',
 }
 
 // ---------------------------------------------------------------------------
@@ -115,7 +122,6 @@ export interface SessionStartPayload {
 export interface SessionStopPayload {
   readonly endedAt: string;
   readonly durationMs: number;
-  readonly chunkCount: number;
 }
 
 /** Payload for CHUNK_READY. */
@@ -158,6 +164,11 @@ export interface LiveCaptionPayload {
   readonly speakerName?: string;
   readonly timestamp: number;
   readonly platform: string;
+}
+
+/** Payload for LIVE_NOTE. */
+export interface LiveNotePayload {
+  readonly text: string;
 }
 
 /** Payload for HEARTBEAT. */

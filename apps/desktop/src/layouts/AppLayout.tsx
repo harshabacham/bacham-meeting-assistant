@@ -8,7 +8,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, CheckSquare, Sparkles, Plus
+    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, CheckSquare, Sparkles, Plus, PlugZap
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
@@ -45,8 +45,9 @@ const PRO_NAV_ITEMS = [
 const SETTINGS_NAV_ITEMS = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'ai', label: 'AI & Intelligence', icon: BrainCircuit },
     { id: 'pets', label: 'Pets', icon: Sparkles },
-    { id: 'integrations', label: 'Integrations', icon: BrainCircuit },
+    { id: 'integrations', label: 'Integrations', icon: PlugZap },
     { id: 'storage', label: 'Storage', icon: Database },
 ];
 
@@ -89,41 +90,21 @@ export function AppLayout() {
         };
     }, [navigate]);
 
-    // Auto-navigate to live workspace ONLY if currently on root dashboard '/'
+    // Auto-navigate to live workspace removed to prevent interrupting the user
     useEffect(() => {
-        let isNavigating = false;
-        
         const unlistenCaption = listen('live_caption_received', () => {
-            if (sessionStorage.getItem('ignore_live_nav') === 'true') return;
-            if (!isNavigating && location.pathname === '/') {
-                isNavigating = true;
-                navigate('/live');
-                setTimeout(() => { isNavigating = false; }, 2000); // debounce
-            }
+            // No-op
         });
 
         const unlistenAutoWake = listen('auto_wake_live', async () => {
-            sessionStorage.removeItem('ignore_live_nav'); // clear ignore state
-            if (!isNavigating && location.pathname !== '/live') {
-                isNavigating = true;
-                navigate('/live');
-                setTimeout(() => { isNavigating = false; }, 2000);
-            }
-            try {
-                // Tauri v2 Window API to wake up
-                const { getCurrentWindow } = await import('@tauri-apps/api/window');
-                const win = getCurrentWindow();
-                await win.unminimize();
-                await win.show();
-                await win.setFocus();
-            } catch (_) {}
+            // No-op
         });
 
         return () => {
             unlistenCaption.then(f => f());
             unlistenAutoWake.then(f => f());
         };
-    }, [location.pathname, navigate]);
+    }, []);
 
     useEffect(() => {
         initialize();
@@ -139,7 +120,7 @@ export function AppLayout() {
             unlistenPromise.then(unlisten => unlisten());
             window.removeEventListener('focus', handleFocus);
         };
-    }, [fetchLectures]);
+    }, [fetchLectures, navigate]);
 
     const isActive = (path: string) => {
         if (path === '/') return location.pathname === '/';
@@ -428,17 +409,6 @@ export function AppLayout() {
                             ) : (
                                 <>
                                     <div className="flex items-center gap-1.5 w-full">
-                                        <button 
-                                            onClick={async () => {
-                                                sessionStorage.removeItem('ignore_live_nav');
-                                                await TauriClient.startNativeRecording();
-                                                navigate('/live');
-                                            }}
-                                            className="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-1 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors duration-200 outline-none group text-[10px] font-bold tracking-wide border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
-                                        >
-                                            <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                                            <span className="truncate">Record</span>
-                                        </button>
                                         {/* Mode Switcher */}
                                         {!isSettingsRoute && (
                                             <button

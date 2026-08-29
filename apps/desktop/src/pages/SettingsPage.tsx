@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/shared/hooks/useSettings';
 import { useToast } from '@/components/ui/ToastProvider';
 
@@ -29,7 +30,7 @@ const formatBytes = (bytes: number) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-type TabType = 'profile' | 'general' | 'pets' | 'integrations' | 'storage';
+type TabType = 'profile' | 'general' | 'ai' | 'pets' | 'integrations' | 'storage';
 
 export function SettingsPage() {
     const { settings, isLoading, updateSettings, setApiKey: _setApiKey, fetchSettings } = useSettings();
@@ -39,6 +40,7 @@ export function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { showToast } = useToast();
     const { selectedPetId, setSelectedPetId, petSize, setPetSize, isTuckedAway, toggleTuckedAway } = usePetStore();
+    const { t } = useTranslation();
 
 
     
@@ -138,8 +140,8 @@ export function SettingsPage() {
                             {activeTab === 'profile' && (
                                 <div className="space-y-8">
                                     <div>
-                                        <h2 className="text-2xl font-bold tracking-tight text-foreground">My Profile</h2>
-                                        <p className="text-muted-foreground mt-1 text-sm">Manage your account and personal details.</p>
+                                        <h2 className="text-2xl font-bold tracking-tight text-foreground">{t('settings.my_profile', 'My Profile')}</h2>
+                                        <p className="text-muted-foreground mt-1 text-sm">{t('settings.profile_desc', 'Manage your account and personal details.')}</p>
                                     </div>
                                     
                                     <div className="bg-surface border border-border rounded-3xl p-8 shadow-sm shadow-black/5 backdrop-blur-xl">
@@ -191,7 +193,7 @@ export function SettingsPage() {
                                     </div>
                             )}
 
-                            {activeTab === 'general' && (
+                            {activeTab === 'ai' && (
                                 <div className="space-y-8">
                                     <div>
                                         <h2 className="text-2xl font-bold tracking-tight text-foreground">AI & Intelligence</h2>
@@ -236,6 +238,18 @@ export function SettingsPage() {
                                                 </select>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'general' && (
+                                <div className="space-y-8">
+                                    <div>
+                                        <h2 className="text-2xl font-bold tracking-tight text-foreground">General Settings</h2>
+                                        <p className="text-muted-foreground mt-1 text-sm">Configure basic application behavior.</p>
+                                    </div>
+
+                                    <div className="grid gap-6">
 
                                         {/* Auto-Start Recording */}
                                         <div className="bg-surface border border-border rounded-3xl p-8 shadow-sm shadow-black/5 backdrop-blur-xl">
@@ -273,13 +287,13 @@ export function SettingsPage() {
                                                 <div className="p-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl border border-indigo-500/20 shadow-sm">
                                                     <Sparkles className="w-5 h-5" />
                                                 </div>
-                                                <h3 className="text-lg font-bold text-foreground">Global Localization</h3>
+                                                <h3 className="text-lg font-bold text-foreground">{t('settings.global_localization', 'Global Localization')}</h3>
                                             </div>
                                             
                                             <div className="flex items-start justify-between">
                                                 <div className="pr-8">
                                                     <label className="text-sm font-semibold text-foreground block mb-1">
-                                                        Primary Language
+                                                        App Interface Language
                                                     </label>
                                                     <p className="text-sm text-muted-foreground leading-relaxed">
                                                         Select your preferred language. The app UI and all AI-generated summaries, action items, and live copilot responses will be generated in this language.
@@ -288,13 +302,44 @@ export function SettingsPage() {
                                                 <select
                                                     value={settings.language}
                                                     onChange={(e) => updateSettings({ language: e.target.value })}
-                                                    className="bg-surface border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                    className="bg-surface border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[150px]"
                                                 >
                                                     <option value="en">English</option>
                                                     <option value="es">Español</option>
                                                     <option value="fr">Français</option>
                                                     <option value="ja">日本語</option>
                                                     <option value="hi">हिन्दी</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="flex items-start justify-between mt-8 pt-8 border-t border-border/50">
+                                                <div className="pr-8">
+                                                    <label className="text-sm font-semibold text-foreground block mb-1">
+                                                        Default Spoken Language
+                                                    </label>
+                                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                                        Select the language being spoken during your meetings. Setting this accurately dramatically improves transcription and AI intelligence.
+                                                    </p>
+                                                </div>
+                                                <select
+                                                    value={settings.spokenLanguage || 'auto'}
+                                                    onChange={(e) => updateSettings({ spokenLanguage: e.target.value })}
+                                                    className="bg-surface border border-border rounded-xl px-4 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[150px]"
+                                                >
+                                                    <option value="auto">Auto-Detect</option>
+                                                    <option value="en-US">English (US)</option>
+                                                    <option value="en-GB">English (UK)</option>
+                                                    <option value="es">Spanish</option>
+                                                    <option value="fr">French</option>
+                                                    <option value="de">German</option>
+                                                    <option value="it">Italian</option>
+                                                    <option value="pt">Portuguese</option>
+                                                    <option value="nl">Dutch</option>
+                                                    <option value="ja">Japanese</option>
+                                                    <option value="zh">Mandarin Chinese</option>
+                                                    <option value="ru">Russian</option>
+                                                    <option value="hi">Hindi</option>
+                                                    <option value="ko">Korean</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -850,7 +895,7 @@ export function SettingsPage() {
                                                         </div>
                                                         <button 
                                                             onClick={() => handleDeleteVideo(lecture.id)}
-                                                            className="p-2.5 rounded-xl bg-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground hover:shadow-sm hover:shadow-destructive/20 transition-all duration-300 flex-shrink-0 active:scale-95"
+                                                            className="p-2.5 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground hover:shadow-sm hover:shadow-destructive/20 transition-all duration-300 flex-shrink-0 active:scale-95"
                                                             title="Delete Video Asset"
                                                         >
                                                             <Trash2 className="w-4 h-4" />

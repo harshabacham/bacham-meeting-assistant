@@ -10,6 +10,7 @@ pub mod services;
 pub mod ai;
 pub mod models;
 pub mod ws_server;
+pub mod upload_server;
 pub mod integrations;
 
 use tauri::Manager;
@@ -17,8 +18,10 @@ use tauri::Manager;
 pub fn run() {
     let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
 
-    let mut builder = tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+    let mut builder = tauri::Builder::default();
+
+    if !is_native_messaging {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(main_window) = app.get_webview_window("main") {
                 let _ = main_window.show();
                 let _ = main_window.unminimize();
@@ -37,8 +40,12 @@ pub fn run() {
                 .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .build();
             }
-        }))
+        }));
+    }
+
+    builder = builder
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init());
 
@@ -46,7 +53,7 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
     }
 
-    builder.setup(move |app| {
+    let builder = builder.setup(move |app| {
             let handle = app.handle().clone();
             
             // Resolve DB Path
@@ -73,7 +80,7 @@ pub fn run() {
                 .inner_size(1200.0, 800.0)
                 .decorations(false)
                 .transparent(true)
-                .visible(true)
+                .visible(false)
                 .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .on_new_window(move |_url, _features| {
                     tauri::webview::NewWindowResponse::Allow
@@ -109,6 +116,7 @@ pub fn run() {
                 tauri::async_runtime::spawn(async move {
                     crate::ai::queue_worker::QueueWorker::spawn(handle_clone.clone(), pool.clone());
                     crate::services::search_indexer::SearchIndexer::run_backfill_background(pool.clone());
+                    crate::upload_server::start_upload_server(handle_clone.clone()).await;
                     crate::ws_server::start_ws_server(handle_clone).await;
                 });
             }
@@ -180,6 +188,7 @@ pub fn run() {
             commands::folder_transfer::folder_import,
             // Content
             commands::content::transcript_get,
+            commands::content::transcript_append,
             commands::content::notes_get,
             commands::content::notes_update,
             commands::content::note_versions_list,
@@ -245,10 +254,13 @@ pub fn run() {
             commands::interview_copilot::analyze_interview_live,
             commands::decision_tracker::detect_decisions_live,
             commands::decision_tracker::confirm_live_decision,
+            commands::notes_assistant::enhance_notes_live,
             commands::markdown_export::sync_meeting_to_markdown,
             // Capture
             commands::capture::start_native_recording,
             commands::capture::stop_native_recording,
+            commands::capture::save_video_chunk,
+            commands::capture::save_keyframe,
             // Integrations
             commands::integrations::push_task_to_notion,
             commands::integrations::execute_integration,
@@ -359,7 +371,17 @@ pub fn run() {
             commands::productivity::predict_exam_questions,
             commands::productivity::match_assignment_helper,
             commands::productivity::generate_one_page_cheat_sheet,
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        ]);
+        
+        let app = builder.build(tauri::generate_context!())
+            .expect("error while building tauri application");
+            
+        app.run(|_app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                // Prevent the app from exiting when all windows are closed
+                // (e.g. when the user hides the Copilot sidebar).
+                // The native messaging host and background tasks will keep running.
+                api.prevent_exit();
+            }
+        });
 }

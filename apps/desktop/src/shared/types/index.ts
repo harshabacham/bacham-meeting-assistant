@@ -2,6 +2,7 @@ export interface Settings {
   theme: string;
   accentColor: string;
   language: string;
+  spokenLanguage: string;
   storageRootPath: string;
   geminiApiKeySet: boolean;
   smartSearchEnabled?: boolean;
@@ -19,6 +20,7 @@ export interface UpdateSettingsInput {
   theme?: string;
   accentColor?: string;
   language?: string;
+  spokenLanguage?: string;
   smartSearchEnabled?: boolean;
   aiProvider?: string;
   aiMaxRetries?: number;
@@ -34,6 +36,7 @@ export interface AppSettings {
     theme: string;
     accentColor: string;
     language: string;
+    spokenLanguage: string;
     storageRootPath: string;
     geminiApiKeySet: boolean;
     smartSearchEnabled?: boolean;
@@ -208,6 +211,7 @@ export interface UpdateLectureInput {
     semester?: string;
     teacher?: string;
     colorLabel?: string;
+    videoPath?: string;
 }
 
 export interface StorageLayout {

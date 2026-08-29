@@ -10,6 +10,7 @@ const SlackPlugin: BachamPlugin = {
     name: 'Slack',
     version: '1.0.0',
     description: 'Push meeting summaries and key decisions directly to your team\'s Slack channels.',
+    icon: 'Hash',
     category: 'Communication',
     permissions: ['Send Messages', 'Read Channels'],
     author: 'Bacham',
@@ -25,7 +26,11 @@ const SlackPlugin: BachamPlugin = {
   },
   auth: {
     type: 'api_key',
-    authenticate: async (token?: string) => {
+    fields: [
+      { id: 'webhookUrl', label: 'Webhook URL', placeholder: 'https://hooks.slack.com/services/...', type: 'password' }
+    ],
+    authenticate: async (credentials?: any) => {
+      const token = credentials?.webhookUrl;
       if (!token) throw new Error('Webhook URL is required');
       await AuthManager.setToken(PLUGIN_ID, token.trim());
     },

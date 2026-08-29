@@ -32,7 +32,6 @@ export default defineManifest({
   },
 
   action: {
-    default_popup: 'src/popup/index.html',
     default_icon: {
       16: 'icons/icon-16.png',
       32: 'icons/icon-32.png',
@@ -40,6 +39,10 @@ export default defineManifest({
       128: 'icons/icon-128.png',
     },
     default_title: 'BACHAM — Lecture Capture',
+  },
+
+  side_panel: {
+    default_path: 'src/popup/index.html',
   },
 
   background: {
@@ -53,19 +56,21 @@ export default defineManifest({
       // The content script only reads document.title, window.location, and
       // detects known lecture platforms (Zoom/Meet/YouTube) — never page content.
       matches: ['*://*/*'],
-      js: ['src/content/index.ts'],
+      js: ['src/content/index.tsx'],
       run_at: 'document_end',
     },
   ],
 
   permissions: [
     'storage',
+    'desktopCapture',
     'tabCapture',
     'activeTab',
     'tabs',
     'alarms',
     'nativeMessaging',
     'offscreen',
+    'sidePanel',
   ],
 
   // We need host permissions for the content script to be automatically injected

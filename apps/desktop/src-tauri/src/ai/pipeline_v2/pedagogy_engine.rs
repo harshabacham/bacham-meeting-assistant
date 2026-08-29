@@ -6,36 +6,10 @@ use super::knowledge_extraction::{ExtractedKnowledgePipeline, ExtractedNode};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TextbookSummary {
-    #[serde(default)]
-    pub overview: String,
-    #[serde(default, alias = "quickSummary")]
-    pub quick_summary: Option<String>,
-    #[serde(default, alias = "standardSummary")]
-    pub standard_summary: Option<String>,
-    #[serde(default, alias = "deepNotes")]
-    pub deep_notes: Option<String>,
-    #[serde(default, alias = "textbookNotes")]
-    pub textbook_notes: Option<String>,
-    #[serde(default)]
-    pub objectives: Vec<String>,
-    #[serde(default, alias = "chapterBreakdown", alias = "chapters")]
-    pub chapter_breakdown: Vec<serde_json::Value>,
-    #[serde(default, alias = "conceptsAndDefinitions", alias = "concepts")]
-    pub concepts_and_definitions: Vec<serde_json::Value>,
-    #[serde(default, alias = "formulaSheet", alias = "formulas")]
-    pub formula_sheet: Vec<serde_json::Value>,
-    #[serde(default, alias = "codeExplained", alias = "code")]
-    pub code_explained: Vec<serde_json::Value>,
-    #[serde(default, alias = "visualExplanations", alias = "visuals")]
-    pub visual_explanations: Vec<serde_json::Value>,
-    #[serde(default, alias = "cheatSheet")]
-    pub cheat_sheet: String,
-    #[serde(default, alias = "revisionTips")]
-    pub revision_tips: Vec<String>,
-    #[serde(default, alias = "interviewQuestions")]
-    pub interview_questions: Vec<serde_json::Value>,
-    #[serde(default, alias = "examQuestions")]
-    pub exam_questions: Vec<serde_json::Value>,
+    #[serde(default, alias = "executiveSummary")]
+    pub executive_summary: String,
+    #[serde(default, alias = "discussionPoints")]
+    pub discussion_points: Vec<serde_json::Value>,
     #[serde(default, alias = "keyTakeaways")]
     pub key_takeaways: Vec<String>,
     #[serde(default, alias = "crmMetadata", alias = "crm_metadata")]
@@ -82,14 +56,14 @@ impl PedagogyEngine {
         image_parts: &[(String, String)],
         pool: &SqlitePool,
     ) -> AppResult<TextbookSummary> {
-        let system_instruction = r#"You are the Pedagogical & Meeting Intelligence Engine of the BACHAM AI Assistant.
-Your objective is to generate comprehensive, publication-quality notes and multi-tier summaries deeply grounded in the actual transcript dialogue, slides, OCR text, and visual images.
+        let system_instruction = r#"You are the Professional Meeting Intelligence Engine of the BACHAM AI Assistant.
+Your objective is to generate a comprehensive, highly actionable summary deeply grounded in the actual transcript dialogue, slides, OCR text, and visual images.
 
 ANTI-HALLUCINATION & STRICT GROUNDING RULES:
 1. Ground every claim directly in the provided transcript and visual keyframe evidence. Do NOT invent facts or discussions that did not take place.
 2. Embed exact timestamps [MM:SS] referencing the transcript for key discussion points, decisions, and slide changes (e.g. `- [04:12] The team agreed on...`).
 3. If visual slides/diagrams are present, cite them with `[Slide @ MM:SS]` and describe their content with clarity and precision.
-4. ONLY populate sections if actual relevant content was discussed in the recording. If no mathematical formulas were discussed, return `formula_sheet: []`. If no programming code was shown, return `code_explained: []`. If no action items or sales criteria were assigned, return `crm_metadata: { action_items: [], key_decisions: [], bant: null }`.
+4. ONLY populate sections if actual relevant content was discussed in the recording. If no action items or sales criteria were assigned, return `crm_metadata: { action_items: [], key_decisions: [], bant: null }`.
 5. NEVER output placeholder text like "Not identified", "None", or "N/A". If an item does not exist, leave it as an empty array `[]` or null.
 6. ACTION ITEM EXTRACTION RULES:
    - Extract only explicit commitments, assignments, and follow-up deliverables (e.g., 'I will send...', 'Please review...', 'Let's schedule...').
@@ -107,34 +81,9 @@ ANTI-HALLUCINATION & STRICT GROUNDING RULES:
 
 Return ONLY valid JSON matching this schema:
 {
-  "quick_summary": "Crisp 30-second markdown summary with punchy bulleted key takeaways, core decisions, and main outcomes with [MM:SS] timestamps.",
-  "standard_summary": "Balanced 5-minute markdown summary covering executive overview, core discussion topics, definitions, outcomes, and next steps.",
-  "deep_notes": "In-depth 15-minute markdown notes covering detailed technical nuances, debates, context, visual slide explanations [Slide @ MM:SS], and edge cases.",
-  "textbook_notes": "Comprehensive, highly detailed publication-ready textbook chapter or exhaustive meeting minutes with Introduction, deep derivations, real-world examples, and FAQs.",
-  "overview": "Comprehensive high-level summary of the entire session",
-  "objectives": ["Learning objective 1", "Learning objective 2"],
-  "chapter_breakdown": [
-    { "title": "Chapter title", "summary": "Detailed chapter breakdown with key timestamps [MM:SS]" }
-  ],
-  "concepts_and_definitions": [
-    { "term": "Concept or Term", "definition": "Formal definition", "explanation": "Detailed explanation with real-world analogy" }
-  ],
-  "formula_sheet": [
-    { "formula": "LaTeX formula string", "meaning": "Meaning", "variables": "Variables breakdown", "derivation": "Derivation steps", "exam_tip": "Common exam trap" }
-  ],
-  "code_explained": [
-    { "language": "Python/C++/Java/Rust/TS", "purpose": "Algorithm purpose", "logic": "Step-by-step logic", "code_snippet": "Clean code", "complexity": "Big-O time & space" }
-  ],
-  "visual_explanations": [
-    { "title": "Diagram/Graph/Visual Title", "explanation": "Deep explanation of visual component", "key_takeaway": "Key takeaway" }
-  ],
-  "cheat_sheet": "Concise Markdown cheat sheet summarizing key concepts for rapid review",
-  "revision_tips": ["Revision tip 1", "Revision tip 2"],
-  "interview_questions": [
-    { "question": "Technical interview question", "expected_answer": "Model answer", "difficulty": "medium" }
-  ],
-  "exam_questions": [
-    { "question": "University exam problem", "solution": "Step-by-step solution", "difficulty": "hard" }
+  "executive_summary": "A detailed, overarching markdown summary of the entire meeting, capturing the core context, purpose, and final outcomes. Use markdown formatting to make it readable.",
+  "discussion_points": [
+    { "topic": "string (Topic name)", "details": "string (Detailed breakdown of what was discussed, with [MM:SS] timestamps)", "timestamp": "[MM:SS]" }
   ],
   "key_takeaways": ["Takeaway 1", "Takeaway 2"],
   "crm_metadata": { 
@@ -413,31 +362,11 @@ Rules:
             None
         };
 
-        let quick_summary = extract_str("quick_summary", "quickSummary");
-        let standard_summary = extract_str("standard_summary", "standardSummary");
-        let deep_notes = extract_str("deep_notes", "deepNotes");
-        let textbook_notes = extract_str("textbook_notes", "textbookNotes");
-        let overview = extract_str("overview", "overview").unwrap_or_else(|| {
-            standard_summary.clone().unwrap_or_else(|| "Session summary generated.".to_string())
-        });
-        let cheat_sheet = extract_str("cheat_sheet", "cheatSheet").unwrap_or_default();
+        let executive_summary = extract_str("executive_summary", "executiveSummary").unwrap_or_else(|| "Session summary generated.".to_string());
 
         TextbookSummary {
-            overview,
-            quick_summary,
-            standard_summary,
-            deep_notes,
-            textbook_notes,
-            objectives: vec![],
-            chapter_breakdown: vec![],
-            concepts_and_definitions: vec![],
-            formula_sheet: vec![],
-            code_explained: vec![],
-            visual_explanations: vec![],
-            cheat_sheet,
-            revision_tips: vec![],
-            interview_questions: vec![],
-            exam_questions: vec![],
+            executive_summary,
+            discussion_points: vec![],
             key_takeaways: vec![],
             crm_metadata: None,
         }
@@ -471,72 +400,76 @@ mod tests {
             "interview_questions": [],
             "exam_questions": [],
             "key_takeaways": ["API refactoring on track"],
+            "executive_summary": "In this daily standup, the team reviewed the API refactoring progress.",
+            "discussion_points": [
+                { "topic": "API Review", "details": "Walkthrough of backend changes [00:10]", "timestamp": "[00:10]" }
+            ],
+            "key_takeaways": ["Review API progress", "Plan release"],
             "crm_metadata": {
                 "action_items": [
-                    { "task": "Review PR 102", "owner": "Alex", "priority": "high", "due_date": "2026-08-18" }
+                    {
+                        "task": "Review API changes",
+                        "owner": "Harsha",
+                        "raw_quote": "I will review it",
+                        "timestamp": "[00:15]",
+                        "due_date": null,
+                        "due_date_iso": null,
+                        "priority": "high",
+                        "category": "review",
+                        "status": "todo"
+                    }
                 ],
-                "key_decisions": ["Merge to main tomorrow"],
-                "bant": null
+                "key_decisions": ["Approved API v2 [00:20]"],
+                "bant": { "budget": null, "authority": null, "need": null, "timeline": null }
             }
         }"###;
 
         let parsed: Result<TextbookSummary, _> = serde_json::from_str(json_data);
         assert!(parsed.is_ok(), "Failed to deserialize snake_case TextbookSummary: {:?}", parsed.err());
         let summary = parsed.unwrap();
-        assert_eq!(summary.overview, "Daily team check-in and progress review.");
-        assert_eq!(summary.quick_summary.unwrap(), "- [00:05] Standup started\n- [00:15] Completed API refactoring");
-        assert_eq!(summary.chapter_breakdown.len(), 1);
-        assert_eq!(summary.key_takeaways.len(), 1);
+
+        assert_eq!(summary.executive_summary, "In this daily standup, the team reviewed the API refactoring progress.");
+        assert_eq!(summary.discussion_points.len(), 1);
+        assert_eq!(summary.key_takeaways.len(), 2);
+        assert!(summary.crm_metadata.is_some());
+        
+        let crm = summary.crm_metadata.unwrap();
+        let action_items = crm.get("action_items").unwrap().as_array().unwrap();
+        assert_eq!(action_items.len(), 1);
     }
 
     #[test]
     fn test_textbook_summary_camel_case_deserialization() {
         let json_data = r###"{
-            "quickSummary": "Quick summary",
-            "standardSummary": "Standard summary",
-            "deepNotes": "Deep notes",
-            "textbookNotes": "Textbook notes",
-            "overview": "Overview text",
-            "objectives": ["Objective 1"],
-            "chapterBreakdown": [{ "title": "Chapter 1" }],
-            "conceptsAndDefinitions": [{ "term": "Term 1", "definition": "Def 1" }],
-            "formulaSheet": [{ "formula": "E=mc^2" }],
-            "codeExplained": [{ "language": "Rust", "purpose": "Speed" }],
-            "visualExplanations": [{ "title": "Architecture" }],
-            "cheatSheet": "Cheat notes",
-            "revisionTips": ["Tip 1"],
-            "interviewQuestions": [{ "question": "What is ownership?" }],
-            "examQuestions": [{ "question": "Explain borrow checker." }],
-            "keyTakeaways": ["Rust is memory-safe"],
-            "crmMetadata": {
-                "actionItems": [],
-                "keyDecisions": []
-            }
+            "executiveSummary": "CamelCase test",
+            "discussionPoints": [
+                { "topic": "API", "details": "Review", "timestamp": "00:10" }
+            ],
+            "keyTakeaways": ["API done"]
         }"###;
 
         let parsed: Result<TextbookSummary, _> = serde_json::from_str(json_data);
         assert!(parsed.is_ok(), "Failed to deserialize camelCase TextbookSummary: {:?}", parsed.err());
         let summary = parsed.unwrap();
-        assert_eq!(summary.quick_summary.unwrap(), "Quick summary");
-        assert_eq!(summary.formula_sheet.len(), 1);
-        assert_eq!(summary.code_explained.len(), 1);
+
+        assert_eq!(summary.executive_summary, "CamelCase test");
+        assert_eq!(summary.discussion_points.len(), 1);
     }
 
     #[test]
     fn test_textbook_summary_audio_only_minimal_fields() {
         let json_data = r###"{
-            "overview": "Blind audio discussion on product roadmap.",
-            "quick_summary": "- [01:20] Pricing discussion",
-            "standard_summary": "Discussed roadmap and tier adjustments."
+            "executive_summary": "Just a casual chat",
+            "discussion_points": [],
+            "key_takeaways": ["It was short"]
         }"###;
 
         let parsed: Result<TextbookSummary, _> = serde_json::from_str(json_data);
         assert!(parsed.is_ok(), "Failed to deserialize minimal audio-only TextbookSummary: {:?}", parsed.err());
         let summary = parsed.unwrap();
-        assert_eq!(summary.overview, "Blind audio discussion on product roadmap.");
-        assert!(summary.formula_sheet.is_empty());
-        assert!(summary.code_explained.is_empty());
-        assert!(summary.visual_explanations.is_empty());
+
+        assert_eq!(summary.executive_summary, "Just a casual chat");
+        assert!(summary.crm_metadata.is_none());
     }
 
     #[test]

@@ -209,7 +209,29 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ artifacts, lectureId }) 
   const { showToast } = useToast();
   
   const crmMetadata = artifacts['lecture_intelligence']?.crm_metadata;
-  const actionItems = crmMetadata?.action_items || [];
+  const aiActionItems = crmMetadata?.action_items || [];
+  
+  const liveActionItems = Array.isArray(artifacts['action_items']) 
+    ? artifacts['action_items']
+        .map((item: any) => {
+          if (typeof item === 'string' && item.startsWith('[Key Decision]')) {
+            return {
+              task: item.replace('[Key Decision]', '').trim(),
+              owner: 'Me',
+              priority: 'high',
+              category: 'general',
+              status: 'todo',
+              isLive: true
+            };
+          } else if (typeof item === 'object' && item.task) {
+            return item;
+          }
+          return null;
+        })
+        .filter(Boolean)
+    : [];
+
+  const actionItems = [...liveActionItems, ...aiActionItems];
   const keyDecisions = crmMetadata?.key_decisions || [];
 
   const handleCopyAll = (format: 'markdown' | 'slack') => {
@@ -232,7 +254,7 @@ export const ActionsTab: React.FC<ActionsTabProps> = ({ artifacts, lectureId }) 
     showToast(`Copied ${actionItems.length} action items to clipboard!`, 'success');
   };
 
-  if (!crmMetadata || (actionItems.length === 0 && keyDecisions.length === 0)) {
+  if (actionItems.length === 0 && keyDecisions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
         <div className="h-16 w-16 bg-[var(--surface-raised)] rounded-2xl flex items-center justify-center mb-4 border border-[var(--border)] shadow-xs">

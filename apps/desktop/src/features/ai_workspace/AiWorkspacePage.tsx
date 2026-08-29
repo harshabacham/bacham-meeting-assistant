@@ -651,7 +651,10 @@ function ChatPane({ conversation, onReferenceClick, initialPrompt, onPromptHandl
         if (typeof overridePrompt !== 'string') setPrompt('');
         setIsSending(true);
         try {
-            await TauriClient.sendMessage(conversation.id, msgToSend);
+            await Promise.race([
+                TauriClient.sendMessage(conversation.id, msgToSend),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('AI provider took too long to respond. Request timed out.')), 60000))
+            ]);
         } catch (e: any) {
             setIsSending(false);
             setHistory(prev => [...prev, { role: 'model', content: `⚠️ Error: ${e?.message || String(e)}` }]);

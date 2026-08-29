@@ -50,6 +50,7 @@ pub struct UpdateLectureInput {
     pub is_archived: Option<bool>,
     pub description: Option<String>,
     pub workspace_type: Option<String>,
+    pub video_path: Option<String>,
 }
 
 pub struct LectureService;
@@ -227,6 +228,10 @@ impl LectureService {
             query_builder.push(", workspace_type = ");
             query_builder.push_bind(workspace_type);
         }
+        if let Some(video_path) = input.video_path {
+            query_builder.push(", video_path = ");
+            query_builder.push_bind(video_path);
+        }
         
         query_builder.push(" WHERE id = ");
         query_builder.push_bind(input.id);
@@ -321,7 +326,7 @@ impl LectureService {
         }
 
         // Copy notes
-        let note = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ?", id)
+        let note = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", id)
             .fetch_optional(pool).await?;
         if let Some(n) = note {
             let nid = Uuid::new_v4().to_string();

@@ -113,6 +113,21 @@ export function createMessageHandler(
         return { success: true };
       }
 
+      case MessageType.PRE_WARM_OFFSCREEN: {
+        try {
+          await chrome.offscreen.createDocument({
+            url: 'src/offscreen/offscreen.html',
+            reasons: [chrome.offscreen.Reason.USER_MEDIA, chrome.offscreen.Reason.DISPLAY_MEDIA],
+            justification: 'Recording lecture audio and video',
+          });
+        } catch (err: any) {
+          if (!err.message?.includes('Only a single offscreen document may be created')) {
+            log.error(MODULE, 'Failed to pre-warm offscreen document', { err });
+          }
+        }
+        return { success: true };
+      }
+
       case MessageType.START_SESSION: {
         const intent = message.payload as StartSessionIntent;
 
@@ -129,38 +144,59 @@ export function createMessageHandler(
         // Connect to native host first
         messagingClient.connect();
 
-        // Get stream ID immediately to preserve user gesture
-        const streamId = await new Promise<string | undefined>((resolve, reject) => {
-          if (intent.captureMode === 'screen' || intent.captureMode === 'walkthrough') {
-            chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab', 'audio'], tab, (id) => {
-              if (chrome.runtime.lastError || !id) {
-                log.error(MODULE, 'desktopCapture.chooseDesktopMedia failed', {
-                  error: chrome.runtime.lastError?.message,
+        // Get stream ID: use the stream ID from the popup if provided, or acquire it
+        const captureResult = intent.streamId
+          ? { streamId: intent.streamId, hasAudio: intent.streamHasAudio ?? true }
+          : await new Promise<{streamId?: string, hasAudio?: boolean}>((resolve) => {
+              if (intent.captureMode === 'screen' || intent.captureMode === 'window' || intent.captureMode === 'walkthrough') {
+                chrome.desktopCapture.chooseDesktopMedia(['screen', 'window', 'tab', 'audio'], tab, (id, options) => {
+                  if (chrome.runtime.lastError || !id) {
+                    log.error(MODULE, 'desktopCapture.chooseDesktopMedia failed', {
+                      error: chrome.runtime.lastError?.message,
+                    });
+                    resolve({});
+                    return;
+                  }
+                  resolve({ streamId: id, hasAudio: options?.canRequestAudioTrack });
                 });
-                reject(chrome.runtime.lastError || new Error('No stream ID obtained'));
-                return;
+              } else {
+                // Default to tab capture (seamless, no picker dialog)
+                chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id! }, (id) => {
+                  if (chrome.runtime.lastError || !id) {
+                    log.error(MODULE, 'tabCapture.getMediaStreamId failed', {
+                      error: chrome.runtime.lastError?.message,
+                    });
+                    resolve({});
+                    return;
+                  }
+                  // tabCapture always includes audio if the tab is playing audio
+                  resolve({ streamId: id, hasAudio: true });
+                });
               }
-              resolve(id);
             });
-          } else {
-            chrome.tabCapture.getMediaStreamId(
-              { targetTabId: tab.id! },
-              (id) => {
-                if (chrome.runtime.lastError || !id) {
-                  log.error(MODULE, 'tabCapture.getMediaStreamId failed', {
-                    error: chrome.runtime.lastError?.message,
-                  });
-                  reject(chrome.runtime.lastError || new Error('No stream ID obtained'));
-                  return;
-                }
-                resolve(id);
-              }
-            );
-          }
-        }).catch(() => undefined);
 
-        if (!streamId) {
+        if (!captureResult.streamId) {
           return { success: false, error: 'Failed to obtain tab stream ID' };
+        }
+
+        // Fallback: Ensure offscreen document exists before sending message.
+        try {
+          await chrome.offscreen.createDocument({
+            url: 'src/offscreen/offscreen.html',
+            reasons: [chrome.offscreen.Reason.USER_MEDIA, chrome.offscreen.Reason.DISPLAY_MEDIA],
+            justification: 'Recording lecture audio and video',
+          });
+        } catch (err: any) {
+          if (!err.message?.includes('Only a single offscreen document may be created')) {
+            log.error(MODULE, 'Failed to create offscreen document', { err });
+          }
+        }
+
+        if (intent.captureAudio && !captureResult.hasAudio && !intent.captureVideo) {
+          return { 
+            success: false, 
+            error: 'You selected "Only Audio", but did not share system audio. Please check the "Share audio" box when selecting a screen.' 
+          };
         }
 
         const session = await sessionService.createSession(
@@ -172,8 +208,10 @@ export function createMessageHandler(
 
         // Persist capture config
         const captureConfig: CaptureConfig = {
-          audio: intent.captureAudio,
+          audio: intent.captureAudio && (captureResult.hasAudio ?? false),
           video: intent.captureVideo,
+          captureMode: intent.captureMode ?? 'tab',
+          ...(intent.includeMicrophone !== undefined ? { includeMicrophone: intent.includeMicrophone } : {}),
           ...(intent.screenshotIntervalMs !== undefined
             ? { screenshotIntervalMs: intent.screenshotIntervalMs }
             : {}),
@@ -223,33 +261,20 @@ export function createMessageHandler(
 
         const updatedSession = await sessionService.transition(session.id, 'recording');
 
-        // Create offscreen document and start capture
-        try {
-          await chrome.offscreen.createDocument({
-            url: 'src/offscreen/offscreen.html',
-            reasons: [chrome.offscreen.Reason.USER_MEDIA],
-            justification: 'Recording lecture audio and playing it back to prevent muting',
-          });
-        } catch (err: any) {
-          if (!err.message?.includes('Only a single offscreen document may be created')) {
-            log.error(MODULE, 'Failed to create offscreen document', { err });
-          }
-        }
-
-        // Wait for offscreen doc to load with retry loop
+        // Immediately send START_CAPTURE with no initial delay to prevent streamId expiration
         let captureStarted = false;
         for (let attempt = 0; attempt < 5; attempt++) {
-          await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 800 : 500));
           try {
             await chrome.runtime.sendMessage({
               target: 'offscreen',
               type: 'START_CAPTURE',
-              payload: { streamId, config: captureConfig, sessionId: session.id }
+              payload: { streamId: captureResult.streamId, config: captureConfig, sessionId: session.id }
             });
             captureStarted = true;
             break;
           } catch (err: any) {
             log.warn(MODULE, `START_CAPTURE attempt ${attempt + 1} failed — retrying`, { err: err?.message });
+            await new Promise(resolve => setTimeout(resolve, 50)); // Very fast retry
           }
         }
         if (!captureStarted) {
@@ -301,7 +326,10 @@ export function createMessageHandler(
 
         // Stop capture in offscreen doc
         await chrome.runtime.sendMessage({ target: 'offscreen', type: 'STOP_CAPTURE' })
-          .catch(err => log.warn(MODULE, 'Failed to stop offscreen capture', { err }));
+          .catch(err => {
+            log.warn(MODULE, 'Failed to stop offscreen capture', { err });
+            return null;
+          });
           
         await chrome.offscreen.closeDocument()
           .catch(err => log.warn(MODULE, 'Failed to close offscreen doc', { err }));
@@ -316,7 +344,6 @@ export function createMessageHandler(
         const stopPayload: SessionStopPayload = {
           endedAt,
           durationMs,
-          chunkCount: 0, // Chunk count is tracked in popup context... wait, now it's in offscreen, but we don't strictly need accurate chunk count here right now.
         };
 
         const stopMsg: NativeMessage<SessionStopPayload> = {

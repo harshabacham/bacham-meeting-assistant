@@ -43,8 +43,25 @@ pub async fn transcript_get(lecture_id: String, state: State<'_, DbState>) -> Ap
 }
 
 #[tauri::command]
+pub async fn transcript_append(lecture_id: String, text: String, state: State<'_, DbState>) -> AppResult<()> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let _ = sqlx::query!(
+        "INSERT INTO lectures (id, title, duration_ms, source, created_at, updated_at) VALUES (?, 'Desktop Recording', 0, 'desktop', ?, ?)
+         ON CONFLICT(id) DO NOTHING",
+        lecture_id, now, now
+    ).execute(&state.pool).await;
+
+    let transcript_id = uuid::Uuid::new_v4().to_string();
+    sqlx::query!(
+        "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'desktop_capture')",
+        transcript_id, lecture_id, text
+    ).execute(&state.pool).await?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn notes_get(lecture_id: String, state: State<'_, DbState>) -> AppResult<Option<String>> {
-    let row = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ?", lecture_id)
+    let row = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
         .fetch_optional(&state.pool).await?;
     Ok(row.map(|r| r.content))
 }
@@ -52,14 +69,36 @@ pub async fn notes_get(lecture_id: String, state: State<'_, DbState>) -> AppResu
 /// Update notes and snapshot a version (debounce is handled on the frontend).
 #[tauri::command]
 pub async fn notes_update(lecture_id: String, content: String, state: State<'_, DbState>) -> AppResult<()> {
-    let id = Uuid::new_v4().to_string();
-    sqlx::query!(
-        "INSERT OR REPLACE INTO notes (id, lecture_id, content) VALUES (?, ?, ?)",
-        id, lecture_id, content
-    ).execute(&state.pool).await?;
+    let now_str = chrono::Utc::now().to_rfc3339();
+    let _ = sqlx::query!(
+        "INSERT INTO lectures (id, title, duration_ms, source, created_at, updated_at) VALUES (?, 'Desktop Recording', 0, 'desktop', ?, ?)
+         ON CONFLICT(id) DO NOTHING",
+        lecture_id, now_str, now_str
+    ).execute(&state.pool).await;
+
+    // Check if a note already exists for this lecture
+    let existing_note = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
+        .fetch_optional(&state.pool).await?;
+
+    let _note_id = if let Some(row) = existing_note {
+        // Update existing note
+        sqlx::query!(
+            "UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            content, row.id
+        ).execute(&state.pool).await?;
+        row.id
+    } else {
+        // Insert new note
+        let id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            "INSERT INTO notes (id, lecture_id, content) VALUES (?, ?, ?)",
+            id, lecture_id, content
+        ).execute(&state.pool).await?;
+        Some(id)
+    };
 
     // Snapshot the version
-    let note_id = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ?", lecture_id)
+    let note_id = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
         .fetch_optional(&state.pool).await?
         .map(|r| r.id);
 
@@ -78,7 +117,7 @@ pub async fn notes_update(lecture_id: String, content: String, state: State<'_, 
 /// List note version history for a lecture.
 #[tauri::command]
 pub async fn note_versions_list(lecture_id: String, state: State<'_, DbState>) -> AppResult<Vec<NoteVersion>> {
-    let note_row = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ?", lecture_id)
+    let note_row = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
         .fetch_optional(&state.pool).await?;
 
     let Some(note) = note_row else { return Ok(vec![]); };

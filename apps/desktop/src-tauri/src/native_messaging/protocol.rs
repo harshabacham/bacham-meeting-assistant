@@ -15,8 +15,11 @@ pub enum MessageType {
     RenameLecture,
     TriggerSnapshot,
     LiveCaption,
+    LiveNote,
     ConfirmDecision,
     OpenApp,
+    GetHistory,
+    HistoryData,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -47,6 +50,7 @@ pub struct SessionStartPayload {
     pub capture_audio: bool,
     pub capture_video: bool,
     pub screenshot_interval_ms: Option<u32>,
+    pub resolution: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,7 +58,6 @@ pub struct SessionStartPayload {
 pub struct SessionStopPayload {
     pub ended_at: String,
     pub duration_ms: u32,
-    pub chunk_count: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

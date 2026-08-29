@@ -23,6 +23,7 @@ export interface UseSessionReturn {
   readonly stop: () => Promise<void>;
   readonly discard: () => Promise<void>;
   readonly clearError: () => void;
+  readonly fetchHistory: () => Promise<import('@/shared/types/session').HistoryData | null>;
 }
 
 export function useSession(): UseSessionReturn {
@@ -123,7 +124,16 @@ export function useSession(): UseSessionReturn {
     setError(null);
   }, []);
 
-  return { session, sessionState, isLoading, error, start, pause, resume, stop, discard, clearError };
+  const fetchHistory = useCallback(async (): Promise<import('@/shared/types/session').HistoryData | null> => {
+    try {
+      const res = await sendToBackground<undefined, import('@/shared/types/session').HistoryData>({ type: MessageType.GET_HISTORY });
+      return res.success && res.data ? res.data : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  return { session, sessionState, isLoading, error, start, pause, resume, stop, discard, clearError, fetchHistory };
 }
 
 

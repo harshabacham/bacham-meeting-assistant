@@ -1,3 +1,5 @@
+pub trait GoogleAuthExt { fn apply_google_auth(self, key: &str) -> Self; }
+impl GoogleAuthExt for reqwest::RequestBuilder { fn apply_google_auth(self, key: &str) -> Self { if key.starts_with("ya29.") || key.starts_with("Bearer ") { let token = key.trim_start_matches("Bearer ").trim(); self.header("Authorization", format!("Bearer {}", token)) } else { self.header("x-goog-api-key", key) } } }
 use crate::error::{AppError, AppResult};
 use fastembed::{TextEmbedding, InitOptions, EmbeddingModel};
 use std::sync::Arc;
@@ -48,10 +50,7 @@ impl EmbeddingService {
             
             // Generate embeddings via Gemini API
             let client = reqwest::Client::new();
-            let url = format!(
-                "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={}",
-                api_key
-            );
+            let url = "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent".to_string();
             
             let payload = json!({
                 "model": "models/text-embedding-004",
@@ -63,6 +62,7 @@ impl EmbeddingService {
             });
             
             let res = client.post(&url)
+                .apply_google_auth(api_key)
                 .json(&payload)
                 .send()
                 .await
@@ -82,3 +82,4 @@ impl EmbeddingService {
         }
     }
 }
+

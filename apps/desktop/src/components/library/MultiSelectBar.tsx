@@ -11,6 +11,7 @@ interface MultiSelectBarProps {
     onMoveToFolder?: (e: React.MouseEvent) => void;
     onClear: () => void;
     mode?: 'library' | 'trash';
+    confirmHardDelete?: boolean;
 }
 
 export function MultiSelectBar({
@@ -24,6 +25,7 @@ export function MultiSelectBar({
     onMoveToFolder,
     onClear,
     mode = 'library',
+    confirmHardDelete = false,
 }: MultiSelectBarProps) {
     if (selectedCount === 0) return null;
 
@@ -68,7 +70,7 @@ export function MultiSelectBar({
                         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,77,77,0.1)')}
                     >
                         <Trash2 size={14} />
-                        Delete permanently
+                        {confirmHardDelete ? '⚠ Click again to confirm' : 'Delete permanently'}
                     </button>
                 </>
             ) : (

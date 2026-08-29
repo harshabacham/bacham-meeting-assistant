@@ -8,6 +8,9 @@ function Root() {
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Pre-warm the offscreen document immediately when popup opens
+    chrome.runtime.sendMessage({ type: 'PRE_WARM_OFFSCREEN' }).catch(() => {});
+
     chrome.storage.local.get(['v2_onboarded'], (result) => {
       setOnboarded(!!result.v2_onboarded);
     });
