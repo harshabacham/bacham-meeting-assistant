@@ -127,49 +127,26 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
     }
     if (!tab?.id) return;
 
-    let streamId: string | undefined;
-    let streamHasAudio = true;
-    let mode: 'tab' | 'screen' = 'tab';
-
-    // Try tabCapture if not on restricted scheme
-    const isRestrictedUrl = tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://') || tab.url?.startsWith('about:');
-    if (!isRestrictedUrl) {
-      streamId = await new Promise<string | undefined>((resolve) => {
-        chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id }, (id) => {
-          if (chrome.runtime.lastError || !id) {
-            resolve(undefined);
-          } else {
-            resolve(id);
-          }
-        });
+    // Show Chrome's native source picker (Tabs, Windows, Entire Screen)
+    const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
+      chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], tab, (id, opts) => {
+        if (chrome.runtime.lastError || !id) {
+          resolve({});
+        } else {
+          resolve({ id, hasAudio: opts?.canRequestAudioTrack });
+        }
       });
-    }
+    });
 
-    // Fallback to desktopCapture dialog if tabCapture failed or is restricted
-    if (!streamId) {
-      const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
-        chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], tab, (id, opts) => {
-          if (chrome.runtime.lastError || !id) {
-            resolve({});
-          } else {
-            resolve({ id, hasAudio: opts?.canRequestAudioTrack });
-          }
-        });
-      });
-      streamId = res.id;
-      streamHasAudio = res.hasAudio ?? true;
-      mode = 'screen';
-    }
-
-    if (!streamId) return; // User canceled
+    if (!res.id) return; // User canceled
 
     const intent: StartSessionIntent = {
       captureAudio: true,
       captureVideo: isVideoMode,
       includeMicrophone: isMicEnabled,
-      captureMode: isVideoMode ? mode : 'audio',
-      streamId,
-      streamHasAudio,
+      captureMode: isVideoMode ? 'screen' : 'audio',
+      streamId: res.id,
+      streamHasAudio: res.hasAudio ?? true,
       ...(captureConfig.screenshotIntervalMs !== undefined && isVideoMode
         ? { screenshotIntervalMs: captureConfig.screenshotIntervalMs }
         : {}),

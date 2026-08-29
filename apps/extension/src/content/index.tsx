@@ -17,6 +17,21 @@
 import { MessageType } from '@/shared/types';
 import type { InternalMessage, InternalResponse } from '@/shared/types';
 
+function isContextValid(): boolean {
+  try {
+    return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
+  } catch {
+    return false;
+  }
+}
+
+function safeSendMessage(message: unknown): void {
+  if (!isContextValid()) return;
+  try {
+    chrome.runtime.sendMessage(message).catch(() => {});
+  } catch {}
+}
+
 /** Detectable lecture platform based on hostname only. */
 function detectPlatform(): string {
   const host = window.location.hostname;
@@ -44,29 +59,32 @@ function getMetadata(): ContentMetadata {
 }
 
 // Listen for metadata requests from the background script
-chrome.runtime.onMessage.addListener(
-  (
-    rawMessage: unknown,
-    _sender: chrome.runtime.MessageSender,
-    sendResponse: (response: InternalResponse<ContentMetadata>) => void,
-  ): boolean => {
-    if (
-      typeof rawMessage !== 'object' ||
-      rawMessage === null ||
-      !('type' in rawMessage)
-    ) {
+if (isContextValid()) {
+  chrome.runtime.onMessage.addListener(
+    (
+      rawMessage: unknown,
+      _sender: chrome.runtime.MessageSender,
+      sendResponse: (response: InternalResponse<ContentMetadata>) => void,
+    ): boolean => {
+      if (!isContextValid()) return false;
+      if (
+        typeof rawMessage !== 'object' ||
+        rawMessage === null ||
+        !('type' in rawMessage)
+      ) {
+        return false;
+      }
+
+      const message = rawMessage as InternalMessage;
+
+      if (message.type === MessageType.METADATA_READY) {
+        sendResponse({ success: true, data: getMetadata() });
+        return true;
+      }
       return false;
-    }
-
-    const message = rawMessage as InternalMessage;
-
-    if (message.type === MessageType.METADATA_READY) {
-      sendResponse({ success: true, data: getMetadata() });
-      return true;
-    }
-    return false;
-  },
-);
+    },
+  );
+}
 
 // --- Feature 1: Context-Aware Visual Capture (Auto-Slide Detection) ---
 let lastSlideChangeTimestamp = 0;
@@ -75,6 +93,10 @@ function initializeSlideObserver() {
   const platform = detectPlatform();
   
   const observer = new MutationObserver((mutations) => {
+    if (!isContextValid()) {
+      observer.disconnect();
+      return;
+    }
     const now = Date.now();
     // Debounce slide change detection (at most once every 5 seconds)
     if (now - lastSlideChangeTimestamp < 5000) return;
@@ -93,13 +115,13 @@ function initializeSlideObserver() {
 
     if (significantChange) {
       lastSlideChangeTimestamp = now;
-      chrome.runtime.sendMessage({
+      safeSendMessage({
         type: MessageType.TRIGGER_SNAPSHOT,
         payload: {
           reason: 'slide_change',
           platform,
         },
-      }).catch(() => {});
+      });
     }
   });
 
@@ -151,20 +173,21 @@ function initializeMuteObserver() {
     return null;
   }
 
-  function checkMuteState() {
+  const intervalId = setInterval(() => {
+    if (!isContextValid()) {
+      clearInterval(intervalId);
+      return;
+    }
     const muted = getMuteState();
     if (muted === null) return;
     if (muted !== lastMuted) {
       lastMuted = muted;
-      chrome.runtime.sendMessage({
+      safeSendMessage({
         type: MessageType.MUTE_STATE_CHANGE,
         payload: { muted, platform },
-      }).catch(() => {});
+      });
     }
-  }
-
-  // Poll every 2 seconds
-  setInterval(checkMuteState, 2000);
+  }, 2000);
 }
 
 // --- Feature 2: Live Captions Observer ---
@@ -175,6 +198,10 @@ function initializeCaptionObserver() {
   let lastCaptionText = '';
 
   const observer = new MutationObserver((mutations) => {
+    if (!isContextValid()) {
+      observer.disconnect();
+      return;
+    }
     for (const mutation of mutations) {
       if (mutation.type === 'childList') {
         mutation.addedNodes.forEach((node) => {
@@ -201,7 +228,7 @@ function initializeCaptionObserver() {
 
               lastCaptionText = textContent;
               
-              chrome.runtime.sendMessage({
+              safeSendMessage({
                 type: MessageType.LIVE_CAPTION,
                 payload: {
                   text: textContent,
@@ -209,7 +236,7 @@ function initializeCaptionObserver() {
                   timestamp: Date.now(),
                   platform,
                 },
-              }).catch(() => {});
+              });
             }
           }
         });
@@ -223,7 +250,7 @@ function initializeCaptionObserver() {
   });
 }
 
-// Initialize observers (No injected floating UI into webpage DOM)
+// Initialize observers
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   initializeSlideObserver();
   initializeCaptionObserver();
