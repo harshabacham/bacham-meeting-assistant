@@ -118,36 +118,16 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
   };
 
   const handleStartCapture = async () => {
-    // 1. Get the target tab (try currentWindow, then lastFocusedWindow, then any active tab)
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) {
-      [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    }
-    if (!tab?.id) {
-      [tab] = await chrome.tabs.query({ active: true });
-    }
-    if (!tab?.id) return;
-
-    // Show Chrome's native source picker (Tabs, Windows, Entire Screen)
-    const res = await new Promise<{ id?: string; hasAudio?: boolean }>((resolve) => {
-      chrome.desktopCapture.chooseDesktopMedia(['tab', 'window', 'screen', 'audio'], tab, (id, opts) => {
-        if (chrome.runtime.lastError || !id) {
-          resolve({});
-        } else {
-          resolve({ id, hasAudio: opts?.canRequestAudioTrack === true });
-        }
-      });
-    });
-
-    if (!res.id) return; // User canceled
-
+    // Bypass chrome.desktopCapture.chooseDesktopMedia to avoid the double popup.
+    // By passing an empty streamId, the offscreen document will fallback to getDisplayMedia
+    // which triggers its own native screen sharing popup.
     const intent: StartSessionIntent = {
-      captureAudio: res.hasAudio ?? false,
+      captureAudio: captureConfig.audio ?? true,
       captureVideo: isVideoMode,
       includeMicrophone: isMicEnabled,
       captureMode: isVideoMode ? 'screen' : 'audio',
-      streamId: res.id,
-      streamHasAudio: res.hasAudio ?? false,
+      streamId: '',
+      streamHasAudio: captureConfig.audio ?? true,
       ...(captureConfig.screenshotIntervalMs !== undefined && isVideoMode
         ? { screenshotIntervalMs: captureConfig.screenshotIntervalMs }
         : {}),
