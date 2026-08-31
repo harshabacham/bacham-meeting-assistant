@@ -144,40 +144,13 @@ export function createMessageHandler(
         // Connect to native host first
         messagingClient.connect();
 
-        // Get stream ID: use the stream ID from the popup if provided, or acquire it
-        const captureResult = intent.streamId
-          ? { streamId: intent.streamId, hasAudio: intent.streamHasAudio ?? true }
-          : await new Promise<{streamId?: string, hasAudio?: boolean}>((resolve) => {
-              if (intent.captureMode === 'screen' || intent.captureMode === 'window' || intent.captureMode === 'walkthrough') {
-                (chrome.desktopCapture.chooseDesktopMedia as any)(['screen', 'window', 'tab', 'audio'], (id: string, options: any) => {
-                  if (chrome.runtime.lastError || !id) {
-                    log.error(MODULE, 'desktopCapture.chooseDesktopMedia failed', {
-                      error: chrome.runtime.lastError?.message,
-                    });
-                    resolve({});
-                    return;
-                  }
-                  resolve({ streamId: id, hasAudio: options?.canRequestAudioTrack });
-                });
-              } else {
-                // Default to tab capture (seamless, no picker dialog)
-                chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id! }, (id) => {
-                  if (chrome.runtime.lastError || !id) {
-                    log.error(MODULE, 'tabCapture.getMediaStreamId failed', {
-                      error: chrome.runtime.lastError?.message,
-                    });
-                    resolve({});
-                    return;
-                  }
-                  // tabCapture always includes audio if the tab is playing audio
-                  resolve({ streamId: id, hasAudio: true });
-                });
-              }
-            });
-
-        if (!captureResult.streamId) {
-          return { success: false, error: 'Failed to obtain tab stream ID' };
-        }
+        // Get stream ID: use the stream ID from the popup if provided.
+        // If empty, the offscreen document will use getDisplayMedia as a fallback,
+        // which triggers its own native screen sharing popup.
+        const captureResult = { 
+          streamId: intent.streamId || '', 
+          hasAudio: intent.streamHasAudio ?? true 
+        };
 
         // Fallback: Ensure offscreen document exists before sending message.
         try {
