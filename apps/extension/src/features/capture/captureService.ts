@@ -205,14 +205,22 @@ export function createCaptureService(
 
     if (streamId) {
       try {
-        const constraints: MediaStreamConstraints = {
-          audio: false,
-          video: {
+        const isTabCapture = !config.captureMode || config.captureMode === 'tab' || config.captureMode === 'audio';
+        const mediaSource = isTabCapture ? 'tab' : 'desktop';
+
+        const constraints: any = {
+          audio: config.audio ? {
             mandatory: {
-              chromeMediaSource: 'desktop',
+              chromeMediaSource: mediaSource,
+              chromeMediaSourceId: streamId,
+            }
+          } : false,
+          video: (config.video || !!config.screenshotIntervalMs) ? {
+            mandatory: {
+              chromeMediaSource: mediaSource,
               chromeMediaSourceId: streamId,
             },
-          } as unknown as MediaTrackConstraints,
+          } : false,
         };
         acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
         log.info(MODULE, 'Acquired video stream via getUserMedia', { tracks: acquiredStream.getTracks().length });
