@@ -18,6 +18,7 @@ interface RecordingScreenProps {
   readonly onStop: () => Promise<void>;
   readonly isLoading: boolean;
   readonly optimisticStart?: number | undefined;
+  readonly onBack?: () => void;
 }
 
 function formatTime(ms: number): string {
@@ -40,6 +41,7 @@ export function RecordingScreen({
   onStop,
   isLoading,
   optimisticStart,
+  onBack,
 }: RecordingScreenProps): React.ReactElement {
   const startMs = optimisticStart ?? new Date(session.startedAt).getTime();
   const [elapsed, setElapsed] = useState(() => Math.max(0, Date.now() - startMs - session.pausedDurationMs));
@@ -179,7 +181,7 @@ export function RecordingScreen({
       {/* 1. Top Navigation Bar: ← Back & ☰ Menu with red dot */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0 border-b border-slate-100/80">
         <button
-          onClick={handleStopAndSave}
+          onClick={onBack ? onBack : handleStopAndSave}
           title="Back to Notes"
           className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-800 transition-colors cursor-pointer"
         >

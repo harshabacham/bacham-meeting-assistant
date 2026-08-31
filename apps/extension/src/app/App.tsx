@@ -57,8 +57,8 @@ function AppInner(): React.ReactElement {
     // If recording or paused, only force navigation if we are coming from a non-active screen
     // This allows the user to browse Notes, History, or Settings while recording!
     if (sessionState === 'recording' || sessionState === 'paused') {
-      if (['idle', 'connecting', 'permission', 'error'].includes(currentScreen)) {
-        navigate(sessionState);
+      if (['connecting', 'permission', 'error'].includes(currentScreen)) {
+        navigate(sessionState === 'paused' ? 'paused' : 'recording');
       }
       return;
     }
@@ -124,6 +124,7 @@ function AppInner(): React.ReactElement {
             onStop={stop}
             isLoading={isLoading}
             optimisticStart={optimisticStartRef.current}
+            onBack={() => navigate('idle')}
           />
         );
 
@@ -167,6 +168,7 @@ function AppInner(): React.ReactElement {
             onStart={handleStart}
             isLoading={isLoading}
             onOpenApp={openDesktopApp}
+            onReturnToRecording={() => navigate(sessionState === 'paused' ? 'paused' : 'recording')}
           />
         );
     }

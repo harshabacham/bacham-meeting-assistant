@@ -23,6 +23,7 @@ interface IdleScreenProps {
   readonly onStart: (intent: StartSessionIntent) => Promise<void>;
   readonly isLoading: boolean;
   readonly onOpenApp?: () => void;
+  readonly onReturnToRecording?: () => void;
 }
 
 interface SavedNoteItem {
@@ -35,9 +36,9 @@ interface SavedNoteItem {
   snapshots?: Array<{ url: string; time: string }>;
 }
 
-export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.ReactElement {
+export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScreenProps): React.ReactElement {
   const { captureConfig, updateConfig } = useCapture();
-  const { fetchHistory } = useSession();
+  const { fetchHistory, sessionState } = useSession();
 
   // Dropdown states
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
@@ -322,22 +323,34 @@ export function IdleScreen({ onStart, isLoading }: IdleScreenProps): React.React
         </div>
 
         {/* 3. Primary Action Button (+ New REC Note) */}
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleStartCapture}
-          disabled={isLoading}
-          className="w-full py-3.5 px-6 rounded-2xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-md shadow-purple-500/25 transition-all cursor-pointer"
-        >
-          {isLoading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <>
-              <Plus size={18} strokeWidth={2.5} />
-              <span>New REC Note</span>
-            </>
-          )}
-        </motion.button>
+        {sessionState === 'recording' || sessionState === 'paused' ? (
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onReturnToRecording && onReturnToRecording()}
+            className="w-full py-3.5 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 transition-all cursor-pointer"
+          >
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span>Return to Active Recording</span>
+          </motion.button>
+        ) : (
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleStartCapture}
+            disabled={isLoading}
+            className="w-full py-3.5 px-6 rounded-2xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-md shadow-purple-500/25 transition-all cursor-pointer"
+          >
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Plus size={18} strokeWidth={2.5} />
+                <span>New REC Note</span>
+              </>
+            )}
+          </motion.button>
+        )}
 
         {/* Divider */}
         <div className="border-t border-slate-100 my-2" />
