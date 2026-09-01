@@ -15,7 +15,7 @@ import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { 
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
-    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2
+    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, List
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
@@ -23,6 +23,109 @@ import { TauriClient } from '@/infrastructure/tauri-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { convertFileSrc } from '@tauri-apps/api/core';
+
+const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) => {
+    try {
+        const data = JSON.parse(summaryString);
+        if (data && (data.executive_summary || data.discussion_points || data.key_takeaways)) {
+            return (
+                <div className="space-y-6">
+                    {data.executive_summary && (
+                        <div>
+                            <h3 className="text-[15px] font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                                <Sparkles size={16} className="text-[var(--accent)]" />
+                                Executive Summary
+                            </h3>
+                            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                                {data.executive_summary}
+                            </p>
+                        </div>
+                    )}
+                    {data.key_takeaways && data.key_takeaways.length > 0 && (
+                        <div className="pt-2 border-t border-[var(--border)]">
+                            <h3 className="text-[15px] font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                                <CheckSquare size={16} className="text-green-500" />
+                                Key Takeaways
+                            </h3>
+                            <ul className="space-y-2">
+                                {data.key_takeaways.map((takeaway: string, idx: number) => (
+                                    <li key={idx} className="flex items-start gap-2.5 text-sm text-[var(--text-secondary)]">
+                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />
+                                        <span className="leading-relaxed">{takeaway}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {data.discussion_points && data.discussion_points.length > 0 && (
+                        <div className="pt-2 border-t border-[var(--border)]">
+                            <h3 className="text-[15px] font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                                <List size={16} className="text-blue-500" />
+                                Discussion Points
+                            </h3>
+                            <div className="space-y-4">
+                                {data.discussion_points.map((point: any, idx: number) => (
+                                    <div key={idx} className="bg-black/5 dark:bg-white/5 rounded-lg p-3">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <span className="font-semibold text-sm text-[var(--text-primary)]">{point.topic}</span>
+                                            <span className="text-xs font-medium text-[var(--text-muted)] bg-[var(--surface)] px-1.5 py-0.5 rounded border border-[var(--border)]">
+                                                {point.timestamp}
+                                            </span>
+                                        </div>
+                                        <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+                                            {point.details}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {data.crm_metadata && (data.crm_metadata.action_items?.length > 0 || data.crm_metadata.key_decisions?.length > 0) && (
+                        <div className="pt-2 border-t border-[var(--border)] grid grid-cols-2 gap-4">
+                            {data.crm_metadata.action_items?.length > 0 && (
+                                <div>
+                                    <h4 className="text-[13px] font-semibold text-[var(--text-primary)] mb-2">Action Items</h4>
+                                    <ul className="space-y-1.5">
+                                        {data.crm_metadata.action_items.map((item: string, idx: number) => (
+                                            <li key={idx} className="flex items-start gap-2 text-[13px] text-[var(--text-secondary)]">
+                                                <div className="mt-1.5 w-1 h-1 rounded-full bg-red-500 shrink-0" />
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {data.crm_metadata.key_decisions?.length > 0 && (
+                                <div>
+                                    <h4 className="text-[13px] font-semibold text-[var(--text-primary)] mb-2">Key Decisions</h4>
+                                    <ul className="space-y-1.5">
+                                        {data.crm_metadata.key_decisions.map((item: string, idx: number) => (
+                                            <li key={idx} className="flex items-start gap-2 text-[13px] text-[var(--text-secondary)]">
+                                                <div className="mt-1.5 w-1 h-1 rounded-full bg-orange-500 shrink-0" />
+                                                <span>{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+    } catch (e) {
+        // Not a JSON string, fallback to markdown
+    }
+    
+    // Fallback to markdown
+    return (
+        <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:text-[var(--text-primary)] prose-headings:font-semibold prose-strong:text-[var(--text-primary)] prose-strong:font-bold prose-a:text-[var(--accent)] prose-p:my-2 prose-ul:my-2 prose-li:my-0.5">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {summaryString}
+            </ReactMarkdown>
+        </div>
+    );
+};
 
 const NOTE_RECIPES: AiRecipe[] = [
     {
@@ -581,11 +684,7 @@ Return only the polished transcript text:`;
                         {aiSummary ? (
                             <div className="text-sm text-[var(--text-primary)] leading-relaxed font-sans max-w-none">
                                 <div className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                                    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:text-[var(--text-primary)] prose-headings:font-semibold prose-strong:text-[var(--text-primary)] prose-strong:font-bold prose-a:text-[var(--accent)] prose-p:my-2 prose-ul:my-2 prose-li:my-0.5">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                            {aiSummary}
-                                        </ReactMarkdown>
-                                    </div>
+                                    <StructuredSummaryViewer summaryString={aiSummary} />
                                 </div>
                             </div>
                         ) : (
