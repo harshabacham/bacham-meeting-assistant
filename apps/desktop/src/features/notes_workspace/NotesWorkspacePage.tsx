@@ -103,6 +103,7 @@ export function NotesWorkspacePage() {
                     folderId: lec.folderId || null,
                     isMeeting: true,
                     meetingDurationMs: lec.durationMs,
+                    transcript: lec.transcript || undefined,
                 };
             });
 

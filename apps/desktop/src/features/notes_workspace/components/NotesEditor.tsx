@@ -91,7 +91,28 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         const storedSummary = note.summary || localStorage.getItem(`summary_${note.id}`) || '';
         setRawTranscript(storedTranscript);
         setAiSummary(storedSummary);
-    }, [note.id, note.transcript, note.summary]);
+
+        // If it's a meeting and we don't have the data locally, fetch it from backend
+        if (note.isMeeting) {
+            if (!storedTranscript) {
+                TauriClient.getTranscript(note.id).then(t => {
+                    if (t) {
+                        setRawTranscript(t);
+                        onUpdate({ transcript: t });
+                    }
+                }).catch(console.error);
+            }
+            if (!storedSummary) {
+                TauriClient.getSummary(note.id).then(s => {
+                    if (s) {
+                        setAiSummary(s);
+                        onUpdate({ summary: s });
+                    }
+                }).catch(console.error);
+            }
+        }
+    }, [note.id, note.isMeeting, note.transcript, note.summary]);
+
 
     const editor = useEditor({
         extensions: [
