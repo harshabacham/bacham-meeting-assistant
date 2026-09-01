@@ -23,6 +23,7 @@ import { TauriClient } from '@/infrastructure/tauri-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 
 const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) => {
     try {
@@ -123,6 +124,46 @@ const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) =
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {summaryString}
             </ReactMarkdown>
+        </div>
+    );
+};
+
+const EditorLayout = ({ note, renderEditorViews }: { note: Note, renderEditorViews: React.ReactNode }) => {
+    if (note.isMeeting && note.videoPath) {
+        return (
+            <div className="flex-1 overflow-hidden">
+                <PanelGroup orientation="horizontal" className="h-full w-full">
+                    <Panel defaultSize={45} minSize={25} className="flex flex-col border-r border-[var(--border)] bg-black/5 dark:bg-white/5">
+                        <div className="flex-1 p-4 md:p-6 flex items-center justify-center h-full">
+                            <video 
+                                src={convertFileSrc(note.videoPath)} 
+                                controls 
+                                className="w-full max-h-full aspect-video object-contain rounded-xl shadow-lg bg-black"
+                                controlsList="nodownload"
+                            />
+                        </div>
+                    </Panel>
+                    <PanelResizeHandle className="w-1.5 bg-[var(--border)] hover:bg-[var(--accent)] active:bg-[var(--accent)] transition-colors cursor-col-resize z-10" />
+                    <Panel defaultSize={55} minSize={30} className="flex flex-col h-full relative bg-[var(--bg)]">
+                        {renderEditorViews}
+                    </Panel>
+                </PanelGroup>
+            </div>
+        );
+    }
+    return (
+        <div className="flex flex-col flex-1 relative bg-[var(--bg)] overflow-hidden">
+            {note.isMeeting && !note.videoPath && (
+                <div className="max-w-3xl mx-auto w-full px-8 pt-4 pb-0 shrink-0">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl text-xs">
+                        <div className="flex items-center gap-2 text-primary font-medium">
+                            <Sparkles size={14} className="text-primary shrink-0" />
+                            <span>Connected Meeting Recording {note.meetingDurationMs ? `• ${Math.round(note.meetingDurationMs / 60000)} min` : ''}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {renderEditorViews}
         </div>
     );
 };
@@ -596,32 +637,9 @@ Return only the polished transcript text:`;
                 </div>
             </div>
 
-            {/* Connected Meeting Session Banner & Video Player */}
-            {note.isMeeting && note.videoPath && (
-                <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
-                    <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-[var(--border)] shadow-sm">
-                        <video 
-                            src={convertFileSrc(note.videoPath)} 
-                            controls 
-                            className="w-full aspect-video object-contain bg-black"
-                            controlsList="nodownload"
-                        />
-                    </div>
-                </div>
-            )}
-
-            {note.isMeeting && !note.videoPath && (
-                <div className="max-w-3xl mx-auto w-full px-8 pt-4 pb-0">
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl text-xs">
-                        <div className="flex items-center gap-2 text-primary font-medium">
-                            <Sparkles size={14} className="text-primary shrink-0" />
-                            <span>Connected Meeting Recording {note.meetingDurationMs ? `• ${Math.round(note.meetingDurationMs / 60000)} min` : ''}</span>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════════════════════════ */}
+            <EditorLayout note={note} renderEditorViews={
+                <>
+                    {/* ════════════════════════════════════════════════════════════════════════════ */}
             {/* VIEW 1: ✨ SUMMARY MODE CANVAS                                              */}
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {viewMode === 'summary' && (
@@ -1036,6 +1054,9 @@ Return only the polished transcript text:`;
             )}
 
             {/* Granola Live Transcript Floating Panel */}
+                </>
+            } />
+
             <LiveTranscriptPanel 
                 isOpen={isTranscriptOpen}
                 onClose={() => setIsTranscriptOpen(false)}
