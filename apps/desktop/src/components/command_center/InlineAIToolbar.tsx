@@ -9,8 +9,15 @@ export function InlineAIToolbar() {
 
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
-      // Don't trigger inside inputs or textareas or if target is toolbar
       const target = e.target as HTMLElement;
+      
+      // Only trigger if inside an ai-selectable area
+      if (!target.closest('.ai-selectable')) {
+        setInlineSelection(null);
+        return;
+      }
+      
+      // Don't trigger inside inputs, textareas, or if target is toolbar itself
       if (target.closest('input, textarea, [contenteditable="true"], .inline-ai-toolbar')) {
         return;
       }

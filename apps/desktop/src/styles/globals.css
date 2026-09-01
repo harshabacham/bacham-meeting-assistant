@@ -13,6 +13,29 @@ html, body, #root {
   padding: 0;
 }
 
+.ProseMirror {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ProseMirror-focused {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ProseMirror-selectednode {
+  outline: none !important;
+}
+
+.bacham-editor-content pre,
+.bacham-editor-content code,
+.bacham-editor-content blockquote {
+  border: none !important;
+  outline: none !important;
+}
+
 /* ─── BACHAM V2 Premium Design Tokens ─────────────────────────────────────────────── */
 :root {
   /* Core palette - Lime Theme */

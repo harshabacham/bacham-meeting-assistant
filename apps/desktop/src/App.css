@@ -21,6 +21,22 @@
   -webkit-text-size-adjust: 100%;
 }
 
+.ProseMirror {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ProseMirror-focused {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ProseMirror-selectednode {
+  outline: none !important;
+}
+
 .container {
   margin: 0;
   padding-top: 10vh;

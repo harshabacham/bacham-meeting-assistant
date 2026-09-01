@@ -245,7 +245,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         },
         editorProps: {
             attributes: {
-                class: 'bacham-editor-content outline-none min-h-[400px] text-[14.5px] leading-relaxed text-[var(--text-primary)]',
+                class: 'bacham-editor-content outline-none border-none focus:outline-none focus:border-none focus:ring-0 min-h-[400px] text-[14.5px] leading-relaxed text-[var(--text-primary)]',
                 spellcheck: 'true',
             },
         },
@@ -624,7 +624,7 @@ Return only the polished transcript text:`;
             {/* VIEW 1: ✨ SUMMARY MODE CANVAS                                              */}
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {viewMode === 'summary' && (
-                <div className="flex-1 overflow-y-auto scroll-smooth">
+                <div className="flex-1 overflow-y-auto scroll-smooth ai-selectable">
                     <div className="max-w-3xl mx-auto px-8 py-8 pb-48 flex flex-col gap-6">
                         {/* Summary Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
@@ -866,8 +866,8 @@ Return only the polished transcript text:`;
                         )}
 
                         {/* TipTap Rich Text Area */}
-                        <div className="prose prose-neutral dark:prose-invert max-w-none">
-                            <EditorContent editor={editor} />
+                        <div className="prose prose-neutral dark:prose-invert max-w-none border-none outline-none focus:ring-0">
+                            <EditorContent editor={editor} className="border-none outline-none" />
                         </div>
                     </div>
                 </div>
@@ -877,7 +877,7 @@ Return only the polished transcript text:`;
             {/* VIEW 3: 🎙️ TRANSCRIPT CANVAS                                                */}
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {viewMode === 'transcript' && (
-                <div className="flex-1 overflow-y-auto scroll-smooth">
+                <div className="flex-1 overflow-y-auto scroll-smooth ai-selectable">
                     <div className={cn(
                         "mx-auto px-8 py-8 pb-48 flex flex-col gap-6",
                         note.isMeeting && note.videoPath ? "max-w-6xl" : "max-w-3xl"
