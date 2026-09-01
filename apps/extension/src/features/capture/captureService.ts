@@ -397,13 +397,21 @@ export function createCaptureService(
           };
 
           recognition.onerror = (event: any) => {
-            log.warn(MODULE, 'SpeechRecognition error', { error: event.error });
+            const permanentErrors = ['not-allowed', 'audio-capture', 'service-not-allowed'];
+            if (permanentErrors.includes(event.error)) {
+              // Permanent error — stop trying, don't restart
+              log.warn(MODULE, `SpeechRecognition permanently failed (${event.error}) — microphone likely not available in offscreen context`);
+              (window as any).__bacham_speech_stopped = true;
+            } else {
+              // Transient error (no-speech, network) — allow onend to restart
+              log.warn(MODULE, 'SpeechRecognition transient error', { error: event.error });
+            }
           };
           
           recognition.onend = () => {
-             // Restart if we are still capturing and it ended unexpectedly
+             // Restart if we are still capturing and it ended unexpectedly (not permanently stopped)
              if (_state.isCapturing && !(window as any).__bacham_speech_stopped) {
-                 recognition.start();
+                 try { recognition.start(); } catch { /* ignore if already started */ }
              }
           };
 

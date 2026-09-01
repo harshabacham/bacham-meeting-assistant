@@ -154,7 +154,9 @@ export function RecordingScreen({
   };
 
   const handleStopAndSave = async () => {
-    // Save note & snapshots to local history
+    // Save note to local history.
+    // IMPORTANT: Do NOT save snapshot base64 images — they can be multiple MB each
+    // and will exceed chrome.storage.local's 10MB quota. Only save metadata.
     const noteEntry = {
       id: session.id,
       title: title.trim() || 'Meeting Note',
@@ -163,14 +165,15 @@ export function RecordingScreen({
       timestamp: Date.now(),
       duration: formatTime(elapsed),
       notes: noteContent,
-      snapshots: snapshots,
+      // Strip base64 image data — only keep the captured time label to avoid quota errors
+      snapshotCount: snapshots.length,
     };
 
     chrome.storage.local.get(['bacham_saved_notes'], (res) => {
       const existing = res.bacham_saved_notes || [];
       chrome.storage.local.set({
         bacham_saved_notes: [noteEntry, ...existing.filter((n: any) => n.id !== session.id)],
-      });
+      }).catch((err: any) => console.warn('[BACHAM] Failed to save note to storage:', err));
     });
 
     await onStop();
