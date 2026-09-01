@@ -484,8 +484,8 @@ Return only the polished transcript text:`;
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
             {/* ── Top Navigation Bar (Matches Dashboard Header Bar Aesthetic) ────── */}
-            <div data-tauri-drag-region="false" className="h-14 shrink-0 flex items-center justify-between pl-16 pr-28 sticky top-0 bg-[var(--bg)] z-[100] border-b border-[var(--border)] pointer-events-auto select-none">
-                <div data-tauri-drag-region="false" className="flex items-center gap-2">
+            <div data-tauri-drag-region="false" className="w-full h-14 shrink-0 flex items-center justify-between px-2 sticky top-0 bg-[var(--bg)] z-[100] border-b border-[var(--border)] pointer-events-auto select-none">
+                <div data-tauri-drag-region="false" className="flex-1 flex items-center justify-start gap-2 pl-12">
                     <button
                         data-tauri-drag-region="false"
                         type="button"
@@ -502,7 +502,7 @@ Return only the polished transcript text:`;
                 </div>
 
                 {/* ── 3-WAY TOP MODE SWITCHER: Summary | Notes | Transcript ──────────────── */}
-                <div data-tauri-drag-region="false" className="flex items-center p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
+                <div data-tauri-drag-region="false" className="flex-none flex items-center p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
                     {/* 1. Summary Button */}
                     <button
                         data-tauri-drag-region="false"
@@ -555,7 +555,7 @@ Return only the polished transcript text:`;
                 </div>
 
                 {/* Right Action Controls */}
-                <div data-tauri-drag-region="false" className="flex items-center gap-2 pointer-events-auto">
+                <div data-tauri-drag-region="false" className="flex-1 flex items-center justify-end gap-2 pr-20">
                     {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
                         data-tauri-drag-region="false"
