@@ -16,6 +16,7 @@ pub enum MessageType {
     TriggerSnapshot,
     LiveCaption,
     LiveNote,
+    AppendLiveNote,
     ConfirmDecision,
     OpenApp,
     GetHistory,

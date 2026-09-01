@@ -23,6 +23,7 @@ import { TauriClient } from '@/infrastructure/tauri-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) => {
     try {
@@ -282,6 +283,28 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         const handleMouseUp = () => setTimeout(updateSelection, 10);
         document.addEventListener('mouseup', handleMouseUp);
         return () => document.removeEventListener('mouseup', handleMouseUp);
+    }, [editor]);
+
+    // Listen for live notes from the extension
+    useEffect(() => {
+        if (!editor) return;
+        const unlistenPromise = listen<{ text: string }>('live_note', (event) => {
+            if (event.payload?.text) {
+                editor.commands.focus('end');
+                editor.commands.insertContent(`
+                    <ul data-type="taskList">
+                        <li data-type="taskItem" data-checked="false">
+                            <label><input type="checkbox"><span></span></label>
+                            <div><p>${event.payload.text}</p></div>
+                        </li>
+                    </ul>
+                `);
+            }
+        });
+
+        return () => {
+            unlistenPromise.then(unlisten => unlisten());
+        };
     }, [editor]);
 
     // Close popups on click outside

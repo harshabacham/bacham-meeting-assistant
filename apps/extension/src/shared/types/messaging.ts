@@ -20,6 +20,8 @@ export enum MessageType {
   HEARTBEAT = 'HEARTBEAT',
   /** Live note from the user. Payload: LiveNotePayload. */
   LIVE_NOTE = 'LIVE_NOTE',
+  /** Append a live note item from the sidebar. Payload: LiveNotePayload. */
+  APPEND_LIVE_NOTE = 'APPEND_LIVE_NOTE',
 
   // --- Native Messaging (Desktop → Extension) ---
   /** Acknowledgement from the Desktop App. Payload: AckPayload. */

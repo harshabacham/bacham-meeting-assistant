@@ -55,6 +55,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
   const [mascotMood, setMascotMood] = useState<MascotMood>('happy');
 
   // Session & Recording State
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -115,6 +116,9 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
       chrome.runtime.sendMessage({ type: MessageType.GET_STATE }, (res) => {
         if (res?.success && res.data) {
           const state = res.data.sessionState;
+          if (res.data.session?.id) {
+            setSessionId(res.data.session.id);
+          }
           setIsRecording(state === 'recording' || state === 'paused');
           setIsPaused(state === 'paused');
           if (state === 'recording') setMascotMood('recording');
@@ -232,16 +236,26 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
 
   const addActionItem = () => {
     if (!newActionText.trim()) return;
+    const newNoteText = newActionText.trim();
     setActions((prev) => [
       ...prev,
       {
         id: String(Date.now()),
-        text: newActionText.trim(),
+        text: newNoteText,
         completed: false,
         tag: newActionTag,
         timestamp: Date.now(),
       },
     ]);
+    
+    if (sessionId) {
+      chrome.runtime.sendMessage({
+        type: 'APPEND_LIVE_NOTE',
+        payload: { text: `[${newActionTag.toUpperCase()}] ${newNoteText}` },
+        sessionId,
+      }).catch(() => {});
+    }
+
     setNewActionText('');
     setMascotMood('success');
     setTimeout(() => setMascotMood(isRecording ? 'recording' : 'happy'), 1500);

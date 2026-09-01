@@ -579,6 +579,15 @@ impl NativeHost {
             return;
         }
 
+        if msg.r#type == MessageType::AppendLiveNote {
+            if let Some(text) = msg.payload.get("text").and_then(|t| t.as_str()) {
+                let app_clone = app.clone();
+                let text_clone = text.to_string();
+                let _ = app_clone.emit("live_note", serde_json::json!({ "text": text_clone }));
+            }
+            return;
+        }
+
         if msg.r#type == MessageType::LiveNote {
             if let Some(session_id) = &msg.session_id {
                 if let Some(text) = msg.payload.get("text").and_then(|t| t.as_str()) {
