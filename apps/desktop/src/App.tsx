@@ -13,7 +13,7 @@ import { ConfirmProvider } from './components/ui/ConfirmProvider';
 // Lazy loaded routes (Tier 1 Startup Optimization)
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
 const LibraryPage = lazy(() => import("./pages/LibraryPage").then(m => ({ default: m.LibraryPage })));
-const LectureViewerPage = lazy(() => import("./pages/LectureViewerPage").then(m => ({ default: m.LectureViewerPage })));
+const MeetingNoteViewPage = lazy(() => import("./pages/MeetingNoteViewPage").then(m => ({ default: m.MeetingNoteViewPage })));
 const SettingsPage = lazy(() => import("./pages/SettingsPage").then(m => ({ default: m.SettingsPage })));
 
 const TrashPage = lazy(() => import("./pages/TrashPage").then(m => ({ default: m.TrashPage })));
@@ -104,7 +104,7 @@ function App() {
                   <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                     <Route index element={<DashboardPage />} />
                     <Route path="lectures" element={<LibraryPage />} />
-                    <Route path="lectures/:id" element={<LectureViewerPage />} />
+                    <Route path="lectures/:id" element={<MeetingNoteViewPage />} />
                     <Route path="ai" element={<AiWorkspacePage />} />
                     <Route path="notes" element={<NotesWorkspacePage />} />
                     <Route path="tasks" element={<TasksPage />} />
