@@ -24,11 +24,13 @@ export interface Note {
 }
 
 export function NotesWorkspacePage() {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const eventTitle = searchParams.get('eventTitle');
     const eventTime = searchParams.get('eventTime');
     const eventDate = searchParams.get('eventDate');
     const eventFolderId = searchParams.get('folderId');
+    const queryNoteId = searchParams.get('noteId');
+
 
     const [notes, setNotes] = useState<Note[]>([]);
     const [folders, setFolders] = useState<any[]>([]);
@@ -112,6 +114,15 @@ export function NotesWorkspacePage() {
     useEffect(() => {
         refreshWorkspaceData();
     }, [refreshWorkspaceData]);
+
+    useEffect(() => {
+        if (queryNoteId && notes.length > 0 && activeNoteId !== queryNoteId) {
+            const noteExists = notes.some(n => n.id === queryNoteId);
+            if (noteExists) {
+                setActiveNoteId(queryNoteId);
+            }
+        }
+    }, [queryNoteId, notes, activeNoteId]);
 
     // Open or create calendar event note if query params are present
     const createdEventRef = useRef<string | null>(null);
@@ -258,6 +269,7 @@ export function NotesWorkspacePage() {
                         folderName={activeNoteFolderName}
                         onBack={() => {
                             setActiveNoteId(null);
+                            setSearchParams(new URLSearchParams());
                             refreshWorkspaceData();
                         }}
                         onUpdate={(patch) => handleUpdateNote(activeNote.id, patch)}
