@@ -855,7 +855,10 @@ Return only the polished transcript text:`;
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {viewMode === 'transcript' && (
                 <div className="flex-1 overflow-y-auto scroll-smooth">
-                    <div className="max-w-3xl mx-auto px-8 py-8 pb-48 flex flex-col gap-6">
+                    <div className={cn(
+                        "mx-auto px-8 py-8 pb-48 flex flex-col gap-6",
+                        note.isMeeting && note.videoPath ? "max-w-6xl" : "max-w-3xl"
+                    )}>
                         {/* Transcript Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
                             <div>
@@ -917,89 +920,171 @@ Return only the polished transcript text:`;
                             ) : null}
                         </div>
 
-                        {/* Video Player */}
-                        {note.isMeeting && note.videoPath && (
-                            <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-[var(--border)] shadow-sm">
-                                <video 
-                                    src={convertFileSrc(note.videoPath)} 
-                                    controls 
-                                    className="w-full aspect-video object-contain bg-black"
-                                    controlsList="nodownload"
-                                />
-                            </div>
-                        )}
-
-                        {/* Search Bar if transcript exists */}
-                        {rawTranscript ? (
-                            <div className="relative">
-                                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                                <input
-                                    type="text"
-                                    value={transcriptSearch}
-                                    onChange={e => setTranscriptSearch(e.target.value)}
-                                    placeholder="Search in transcript..."
-                                    className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] shadow-xs"
-                                />
-                                {transcriptSearch && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setTranscriptSearch('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-                                    >
-                                        Clear
-                                    </button>
-                                )}
-                            </div>
-                        ) : null}
-
-                        {/* Transcript Body */}
-                        {rawTranscript ? (
-                            <div className="space-y-3">
-                                {filteredTranscriptLines.length > 0 ? (
-                                    filteredTranscriptLines.map((line, idx) => (
-                                        <div 
-                                            key={idx} 
-                                            className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
-                                        >
-                                            <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
-                                                <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                                                    <span>Speaker {Math.floor(idx / 3) + 1}</span>
-                                                </div>
-                                                <span className="tabular-nums">{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
-                                            </div>
-                                            <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans">
-                                                {line}
-                                            </p>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 text-xs text-[var(--text-muted)]">
-                                        No transcript lines matching "{transcriptSearch}".
+                        {note.isMeeting && note.videoPath ? (
+                            <div className="flex flex-col lg:flex-row gap-8 items-start">
+                                {/* Left Column: Sticky Video */}
+                                <div className="w-full lg:w-1/2 lg:sticky lg:top-0">
+                                    <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-[var(--border)] shadow-sm">
+                                        <video 
+                                            src={convertFileSrc(note.videoPath)} 
+                                            controls 
+                                            className="w-full aspect-video object-contain bg-black"
+                                            controlsList="nodownload"
+                                        />
                                     </div>
-                                )}
+                                </div>
+
+                                {/* Right Column: Transcript */}
+                                <div className="w-full lg:w-1/2 flex flex-col gap-4">
+                                    {/* Search Bar if transcript exists */}
+                                    {rawTranscript ? (
+                                        <div className="relative">
+                                            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                            <input
+                                                type="text"
+                                                value={transcriptSearch}
+                                                onChange={e => setTranscriptSearch(e.target.value)}
+                                                placeholder="Search in transcript..."
+                                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] shadow-xs"
+                                            />
+                                            {transcriptSearch && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTranscriptSearch('')}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : null}
+
+                                    {/* Transcript Body */}
+                                    {rawTranscript ? (
+                                        <div className="space-y-3">
+                                            {filteredTranscriptLines.length > 0 ? (
+                                                filteredTranscriptLines.map((line, idx) => (
+                                                    <div 
+                                                        key={idx} 
+                                                        className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
+                                                    >
+                                                        <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
+                                                            <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                                                                <span>Speaker {Math.floor(idx / 3) + 1}</span>
+                                                            </div>
+                                                            <span className="tabular-nums">{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
+                                                        </div>
+                                                        <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans">
+                                                            {line}
+                                                        </p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-12 text-xs text-[var(--text-muted)]">
+                                                    No transcript lines matching "{transcriptSearch}".
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        /* Empty State for Transcript Mode */
+                                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
+                                            <div className="p-3.5 rounded-xl bg-[var(--accent-dim)] text-[var(--accent)] mb-3 shadow-xs">
+                                                <Mic size={24} />
+                                            </div>
+                                            <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">
+                                                No transcript recorded yet
+                                            </h3>
+                                            <p className="text-xs text-[var(--text-muted)] max-w-sm mb-5 leading-relaxed">
+                                                Start recording during your meeting or lecture. Real-time transcription will automatically save here alongside your notes.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsTranscriptOpen(true)}
+                                                className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
+                                            >
+                                                <Mic size={13} />
+                                                <span>Start Recording</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : (
-                            /* Empty State for Transcript Mode */
-                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
-                                <div className="p-3.5 rounded-xl bg-[var(--accent-dim)] text-[var(--accent)] mb-3 shadow-xs">
-                                    <Mic size={24} />
-                                </div>
-                                <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">
-                                    No transcript recorded yet
-                                </h3>
-                                <p className="text-xs text-[var(--text-muted)] max-w-sm mb-5 leading-relaxed">
-                                    Start recording during your meeting or lecture. Real-time transcription will automatically save here alongside your notes.
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsTranscriptOpen(true)}
-                                    className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
-                                >
-                                    <Mic size={13} />
-                                    <span>Start Live Recording</span>
-                                </button>
-                            </div>
+                            <>
+                                {/* Search Bar if transcript exists */}
+                                {rawTranscript ? (
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                        <input
+                                            type="text"
+                                            value={transcriptSearch}
+                                            onChange={e => setTranscriptSearch(e.target.value)}
+                                            placeholder="Search in transcript..."
+                                            className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] shadow-xs"
+                                        />
+                                        {transcriptSearch && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setTranscriptSearch('')}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : null}
+
+                                {/* Transcript Body */}
+                                {rawTranscript ? (
+                                    <div className="space-y-3">
+                                        {filteredTranscriptLines.length > 0 ? (
+                                            filteredTranscriptLines.map((line, idx) => (
+                                                <div 
+                                                    key={idx} 
+                                                    className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
+                                                >
+                                                    <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
+                                                        <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                                                            <span>Speaker {Math.floor(idx / 3) + 1}</span>
+                                                        </div>
+                                                        <span className="tabular-nums">{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
+                                                    </div>
+                                                    <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans">
+                                                        {line}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-center py-12 text-xs text-[var(--text-muted)]">
+                                                No transcript lines matching "{transcriptSearch}".
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    /* Empty State for Transcript Mode */
+                                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
+                                        <div className="p-3.5 rounded-xl bg-[var(--accent-dim)] text-[var(--accent)] mb-3 shadow-xs">
+                                            <Mic size={24} />
+                                        </div>
+                                        <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-1">
+                                            No transcript recorded yet
+                                        </h3>
+                                        <p className="text-xs text-[var(--text-muted)] max-w-sm mb-5 leading-relaxed">
+                                            Start recording during your meeting or lecture. Real-time transcription will automatically save here alongside your notes.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsTranscriptOpen(true)}
+                                            className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <Mic size={13} />
+                                            <span>Start Recording</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
