@@ -88,7 +88,9 @@ export function createWebSocketClient(log: Logger): NativeMessagingClient {
     };
 
     ws.onerror = (e) => {
-      log.error(MODULE, 'WebSocket Error', { e });
+      // ERR_CONNECTION_REFUSED is expected when the desktop app isn't running.
+      // Log as warn (not error) to avoid console noise during normal offline operation.
+      log.warn(MODULE, 'WebSocket connection failed — desktop app may not be running', { e });
     };
   }
 
@@ -106,7 +108,11 @@ export function createWebSocketClient(log: Logger): NativeMessagingClient {
 
   function scheduleReconnect(): void {
     if (reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
-      log.error(MODULE, 'Max reconnect attempts reached. Giving up.');
+      // Instead of giving up permanently, reset and enter slow retry mode (every 60s).
+      // This ensures the extension reconnects automatically when the desktop app starts.
+      log.warn(MODULE, 'Max fast-reconnect attempts reached — entering slow retry mode (60s interval)');
+      reconnectAttempts = 0;
+      reconnectTimeoutId = setTimeout(doConnect, 60_000);
       return;
     }
     
