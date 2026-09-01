@@ -15,11 +15,14 @@ import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { 
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
-    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, ExternalLink
+    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
 import { TauriClient } from '@/infrastructure/tauri-client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 const NOTE_RECIPES: AiRecipe[] = [
     {
@@ -490,22 +493,27 @@ Return only the polished transcript text:`;
                 </div>
             </div>
 
-            {/* Connected Meeting Session Banner */}
-            {note.isMeeting && (
+            {/* Connected Meeting Session Banner & Video Player */}
+            {note.isMeeting && note.videoPath && (
+                <div className="max-w-3xl mx-auto w-full px-8 pt-6 pb-2">
+                    <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-[var(--border)] shadow-sm">
+                        <video 
+                            src={convertFileSrc(note.videoPath)} 
+                            controls 
+                            className="w-full aspect-video object-contain bg-black"
+                            controlsList="nodownload"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {note.isMeeting && !note.videoPath && (
                 <div className="max-w-3xl mx-auto w-full px-8 pt-4 pb-0">
                     <div className="flex items-center justify-between px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl text-xs">
                         <div className="flex items-center gap-2 text-primary font-medium">
                             <Sparkles size={14} className="text-primary shrink-0" />
                             <span>Connected Meeting Recording {note.meetingDurationMs ? `• ${Math.round(note.meetingDurationMs / 60000)} min` : ''}</span>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => navigate(`/lecture/${note.id}`)}
-                            className="flex items-center gap-1.5 font-bold text-primary hover:underline hover:opacity-90 transition-opacity cursor-pointer"
-                        >
-                            <span>Open Full Meeting Workspace</span>
-                            <ExternalLink size={12} />
-                        </button>
                     </div>
                 </div>
             )}
@@ -571,18 +579,14 @@ Return only the polished transcript text:`;
 
                         {/* Summary Content Card */}
                         {aiSummary ? (
-                            <div className="text-sm text-[var(--text-primary)] leading-relaxed font-sans prose prose-neutral dark:prose-invert max-w-none">
-                                <div 
-                                    className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-4"
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: aiSummary
-                                            .replace(/^## (.*$)/gim, '<h3 class="text-[15px] font-semibold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">$1</h3>')
-                                            .replace(/^### (.*$)/gim, '<h4 class="text-[13.5px] font-medium text-[var(--text-primary)] mt-3 mb-1">$1</h4>')
-                                            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-[var(--text-primary)]">$1</strong>')
-                                            .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc text-xs text-[var(--text-secondary)]">$1</li>')
-                                            .replace(/\n/g, '<br/>')
-                                    }} 
-                                />
+                            <div className="text-sm text-[var(--text-primary)] leading-relaxed font-sans max-w-none">
+                                <div className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                                    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:text-[var(--text-primary)] prose-headings:font-semibold prose-strong:text-[var(--text-primary)] prose-strong:font-bold prose-a:text-[var(--accent)] prose-p:my-2 prose-ul:my-2 prose-li:my-0.5">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {aiSummary}
+                                        </ReactMarkdown>
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             /* Empty Summary State (Dashboard Empty Style) */

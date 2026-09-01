@@ -21,6 +21,7 @@ export interface Note {
     eventDate?: string;
     isMeeting?: boolean;
     meetingDurationMs?: number;
+    videoPath?: string;
 }
 
 export function NotesWorkspacePage() {
@@ -104,6 +105,7 @@ export function NotesWorkspacePage() {
                     isMeeting: true,
                     meetingDurationMs: lec.durationMs,
                     transcript: lec.transcript || undefined,
+                    videoPath: lec.videoPath || undefined,
                 };
             });
 
