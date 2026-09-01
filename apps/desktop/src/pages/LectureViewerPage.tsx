@@ -5,19 +5,19 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { TauriClient, Screenshot, TimelineEvent } from '@/infrastructure/tauri-client';
-import { Play, FileText, BrainCircuit, BookOpen, ArrowLeft, RefreshCw, Video, Loader2, Edit2, Share, Layers, CheckSquare } from 'lucide-react';
+import { Play, BrainCircuit, BookOpen, ArrowLeft, RefreshCw, Video, Loader2, Edit2, Share, Layers, CheckSquare } from 'lucide-react';
 import { useLectureSyncStore } from '@/shared/stores/lectureSyncStore';
 import { useModeStore } from '@/shared/stores/modeStore';
 
 import { Toolbar, ToolbarItem } from '@/components/kokonutui/toolbar';
 import { ProgressiveBlur } from '@/components/ui/skiper-ui/skiper41';
-import { TranscriptTab } from '@/components/workspace/tabs/TranscriptTab';
 import { ScreenshotsTab } from '@/components/workspace/tabs/ScreenshotsTab';
 import { FormulaSheetTab } from '@/components/workspace/tabs/FormulaSheetTab';
 import { CodeViewerTab } from '@/components/workspace/tabs/CodeViewerTab';
 import { DiagramsTab } from '@/components/workspace/tabs/DiagramsTab';
 import { NotesTab } from '@/components/workspace/tabs/NotesTab';
-import { SummaryTab } from '@/components/workspace/tabs/SummaryTab';
+import { SummaryTranscriptTab } from '@/components/workspace/tabs/SummaryTranscriptTab';
+
 import { BookmarksTab } from '@/components/workspace/tabs/BookmarksTab';
 import { VideoTab } from '@/components/workspace/tabs/VideoTab';
 import { AiChatTab } from '@/components/workspace/tabs/AiChatTab';
@@ -50,7 +50,8 @@ export function LectureViewerPage() {
     }
   }, [storedLecture]);
   
-  const [activeTab, setActiveTab] = useState<string>('notes');
+  const [activeTab, setActiveTab] = useState<string>('summary');
+
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const { showToast } = useToast();
@@ -501,9 +502,8 @@ export function LectureViewerPage() {
         <div className="flex-1 flex justify-start min-w-0 overflow-x-auto no-scrollbar">
           {(() => {
             const toolbarItems: ToolbarItem[] = [
-              { id: 'summary', title: 'Summary', icon: BrainCircuit },
+              { id: 'summary', title: 'Summary & Transcript', icon: BrainCircuit },
               { id: 'notes', title: 'Notes', icon: BookOpen },
-              { id: 'transcript', title: 'Transcript', icon: FileText },
               ...(screenshots.length > 0 ? [{ id: 'screenshots', title: 'Visuals', icon: Video }] : []),
               ...(videoSrc ? [{ id: 'video', title: 'Video', icon: Play }] : []),
               ...(appMode === 'student' ? [
@@ -511,6 +511,7 @@ export function LectureViewerPage() {
                   { id: 'quiz', title: 'Quiz', icon: CheckSquare },
               ] : []),
             ] as ToolbarItem[];
+
 
             return (
               <Toolbar 
@@ -562,7 +563,7 @@ export function LectureViewerPage() {
             <ProgressiveBlur position="top" height="24px" blurAmount="4px" />
              <ProgressiveBlur position="bottom" height="24px" blurAmount="4px" />
 
-              {/* 0. Summary Tab */}
+              {/* 0. Combined Summary + Transcript Tab */}
               {visitedTabs.has('summary') && (
                 <motion.div 
                   initial={false}
@@ -570,17 +571,30 @@ export function LectureViewerPage() {
                   transition={{ duration: 0.3, ease: 'easeOut' }}
                   className={`absolute inset-0 overflow-hidden ${activeTab === 'summary' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
                 >
-                  <SummaryTab 
+                  <SummaryTranscriptTab
                     summary={summary}
                     summaryError={summaryError}
                     isGeneratingSummary={isGeneratingSummary || artifactProgress['lecture_intelligence']?.status === 'generating'}
                     onGenerateSummary={handleGenerateSummary}
                     artifacts={artifacts}
+                    lectureId={lecture.id}
+                    transcriptBlocks={transcriptBlocks}
+                    isPipelineError={isPipelineError}
+                    isPipelineRunning={isPipelineRunning}
+                    pipelineStatusMessage={pipelineStatus?.message}
+                    transcriptVirtualizer={transcriptVirtualizer}
+                    onRefresh={() => {}}
+                    scrollRef={transcriptScrollRef}
+                    screenshots={screenshots}
+                    onJumpToTime={jumpToTime}
+                    durationMs={lecture.durationMs}
+                    videoPath={lecture.videoPath}
+                    onDeleteVideo={handleDeleteVideo}
                   />
                 </motion.div>
               )}
 
-              {/* 1. Unified Notes & Intelligence Canvas (Default) */}
+              {/* 1. Notes Tab */}
               {visitedTabs.has('notes') && (
                 <motion.div 
                   initial={false}
@@ -600,32 +614,6 @@ export function LectureViewerPage() {
                     isGeneratingSummary={isGeneratingSummary || artifactProgress['lecture_intelligence']?.status === 'generating'}
                     onGenerateSummary={handleGenerateSummary}
                     hasVisuals={screenshots.length > 0}
-                  />
-                </motion.div>
-              )}
-
-              {/* 2. Transcript Tab */}
-              {visitedTabs.has('transcript') && (
-                <motion.div 
-                  initial={false}
-                  animate={{ opacity: activeTab === 'transcript' ? 1 : 0, y: activeTab === 'transcript' ? 0 : 10, scale: activeTab === 'transcript' ? 1 : 0.98 }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className={`absolute inset-0 overflow-y-auto px-4 sm:px-8 py-6 ${activeTab === 'transcript' ? 'pointer-events-auto z-10' : 'pointer-events-none z-0'}`}
-                >
-                  <TranscriptTab 
-                    lectureId={lecture.id}
-                    transcriptBlocks={transcriptBlocks}
-                    isPipelineError={isPipelineError}
-                    isPipelineRunning={isPipelineRunning}
-                    pipelineStatusMessage={pipelineStatus?.message}
-                    transcriptVirtualizer={transcriptVirtualizer}
-                    onRefresh={() => {}}
-                    scrollRef={transcriptScrollRef}
-                    screenshots={screenshots}
-                    onJumpToTime={jumpToTime}
-                    durationMs={lecture.durationMs}
-                    videoPath={lecture.videoPath}
-                    onDeleteVideo={handleDeleteVideo}
                   />
                 </motion.div>
               )}
