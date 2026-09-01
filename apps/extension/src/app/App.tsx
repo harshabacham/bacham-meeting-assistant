@@ -11,7 +11,7 @@ import { PermissionRequestScreen } from '@/popup/screens/PermissionRequestScreen
 import { ConnectingScreen } from '@/popup/screens/ConnectingScreen';
 import { SettingsScreen } from '@/popup/screens/SettingsScreen';
 import { NotesScreen } from '@/popup/screens/NotesScreen';
-import { HistoryScreen } from '@/popup/screens/HistoryScreen';
+
 import { CopilotScreen } from '@/popup/screens/CopilotScreen';
 import { SidebarLayout } from '@/popup/components/SidebarLayout';
 
@@ -65,7 +65,7 @@ function AppInner(): React.ReactElement {
     
     if (permissionStatus && !permissionStatus.allGranted) { navigate('permission'); return; }
     if (sessionState === 'idle' || sessionState === 'stopping') {
-      if (currentScreen !== 'settings' && currentScreen !== 'history' && currentScreen !== 'notes' && currentScreen !== 'copilot') {
+      if (currentScreen !== 'settings' && currentScreen !== 'notes' && currentScreen !== 'copilot') {
         navigate('idle');
       }
       optimisticStartRef.current = undefined;
@@ -156,7 +156,8 @@ function AppInner(): React.ReactElement {
         return <NotesScreen />;
 
       case 'history':
-        return <HistoryScreen />;
+        // History is now embedded inside NotesScreen as a tab
+        return <NotesScreen />;
 
       case 'copilot':
         return <CopilotScreen />;
