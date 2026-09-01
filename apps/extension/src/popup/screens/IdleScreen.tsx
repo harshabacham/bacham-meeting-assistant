@@ -15,9 +15,14 @@ import {
   Volume2,
   Sliders,
   X,
-  Clock,
   ArrowLeft,
+  Pencil,
+  FileText,
+  Sparkles,
+  Calendar,
 } from 'lucide-react';
+
+
 
 interface IdleScreenProps {
   readonly onStart: (intent: StartSessionIntent) => Promise<void>;
@@ -33,8 +38,10 @@ interface SavedNoteItem {
   timestamp: number;
   duration?: string;
   notes?: string;
+  snapshotCount?: number;
   snapshots?: Array<{ url: string; time: string }>;
 }
+
 
 export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScreenProps): React.ReactElement {
   const { captureConfig, updateConfig } = useCapture();
@@ -140,52 +147,191 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
     }
   };
 
-  // Note Details View (Screenshot 2 style)
+  // Note Detail View — matches reference image (dark, tabbed, AI summary)
   if (selectedNote) {
+    const tabs = ['Edit', 'Summary', 'Transcript'];
+    const [activeDetailTab, setActiveDetailTab] = React.useState('Summary');
+    const [askQuery, setAskQuery] = React.useState('');
+    const [isPlaying, setIsPlaying] = React.useState(false);
+
     return (
-      <div className="flex flex-col h-full bg-white font-sans text-slate-900 p-5 overflow-y-auto animate-fade-in">
-        <div className="flex items-center justify-between mb-5">
-          <button
-            onClick={() => setSelectedNote(null)}
-            className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-700 transition-colors"
-          >
-            <ArrowLeft size={20} />
+      <div className="flex flex-col h-full bg-[#1a1a1a] font-sans text-white animate-fade-in overflow-hidden">
+        {/* Top icon bar — three-dot / share / copy */}
+        <div className="flex justify-end px-4 pt-4 pb-2 gap-3 shrink-0">
+          <button onClick={() => setSelectedNote(null)} className="p-1.5 rounded-full hover:bg-white/10 text-white/50 transition-colors">
+            <ArrowLeft size={18} />
           </button>
-          <div className="relative">
-            <button className="p-2 rounded-full hover:bg-slate-100 text-slate-700">
-              <Menu size={20} />
-            </button>
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
-          </div>
+          <span className="flex-1" />
+          <button className="p-1.5 rounded-full hover:bg-white/10 text-white/50 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+          <button className="p-1.5 rounded-full hover:bg-white/10 text-white/50 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </button>
+          <button className="p-1.5 rounded-full hover:bg-white/10 text-white/50 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </button>
         </div>
 
-        <h1 className="text-[26px] font-extrabold text-slate-900 tracking-tight leading-tight mb-2">
-          {selectedNote.title}
-        </h1>
+        {/* Title */}
+        <div className="px-5 pb-3 shrink-0">
+          <h1 className="text-[22px] font-bold text-white leading-tight tracking-tight">
+            {selectedNote.title}
+          </h1>
+        </div>
 
-        <p className="text-[14px] text-slate-600 font-medium leading-relaxed mb-5">
-          {selectedNote.notes || 'No live notes recorded for this session.'}
-        </p>
-
-        {selectedNote.snapshots && selectedNote.snapshots.length > 0 && (
-          <div className="space-y-3 mb-6">
-            {selectedNote.snapshots.map((snap, idx) => (
-              <div key={idx} className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-sm">
-                <img src={snap.url} alt="Meeting Keyframe" className="w-full h-44 object-cover" />
-                <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-bold font-mono">
-                  {snap.time}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-[12px] text-slate-400 font-medium">
-          <span className="flex items-center gap-1.5">
-            <Clock size={13} />
-            <span>{selectedNote.date}</span>
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 px-4 pb-3 border-b border-white/8 shrink-0 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveDetailTab(tab)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all ${
+                activeDetailTab === tab
+                  ? 'bg-white/12 text-white border border-white/15'
+                  : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              {tab === 'Edit' && <Pencil size={11} />}
+              {tab === 'Summary' && <FileText size={11} />}
+              {tab}
+            </button>
+          ))}
+          <span className="flex-1" />
+          <span className="flex items-center gap-1 text-[11px] text-white/30 font-medium px-2 shrink-0">
+            <Calendar size={11} />
+            {selectedNote.date}
           </span>
-          {selectedNote.duration && <span>Duration: {selectedNote.duration}</span>}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {activeDetailTab === 'Summary' && (
+            <div className="space-y-5">
+              {/* Executive Summary */}
+              <div>
+                <h2 className="text-[15px] font-bold text-white mb-2">Executive Summary</h2>
+                <ul className="space-y-2">
+                  {selectedNote.notes ? (
+                    selectedNote.notes.split('\n').filter(Boolean).map((line, i) => (
+                      <li key={i} className="flex gap-2.5 text-[13px] text-white/65 leading-relaxed">
+                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                        <span>{line}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      <li className="flex gap-2.5 text-[13px] text-white/65 leading-relaxed">
+                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                        <span>No live notes were recorded during this session.</span>
+                      </li>
+                      <li className="flex gap-2.5 text-[13px] text-white/65 leading-relaxed">
+                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                        <span>Open the BACHAM desktop app for the full AI-generated summary and transcript.</span>
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+              {/* Session Details */}
+              <div>
+                <h2 className="text-[15px] font-bold text-white mb-2">Session Details</h2>
+                <ul className="space-y-2">
+                  <li className="flex gap-2.5 text-[13px] text-white/65 leading-relaxed">
+                    <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                    <span>Recorded on {selectedNote.date}{selectedNote.duration ? ` · Duration: ${selectedNote.duration}` : ''}.</span>
+                  </li>
+                  {selectedNote.snapshotCount != null && selectedNote.snapshotCount > 0 && (
+                    <li className="flex gap-2.5 text-[13px] text-white/65 leading-relaxed">
+                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                      <span>{selectedNote.snapshotCount} screenshot{selectedNote.snapshotCount !== 1 ? 's' : ''} were captured during this session.</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              {/* General Observations */}
+              <div>
+                <h2 className="text-[15px] font-bold text-white mb-2">General Observations</h2>
+                <ul className="space-y-2">
+                  <li className="flex gap-2.5 text-[13px] text-white/65 leading-relaxed">
+                    <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                    <span>Full AI meeting summary, action items, and transcript are available in the desktop companion app.</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Open in App CTA */}
+              <button
+                onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' })}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white text-[13px] font-bold transition-all active:scale-98 shadow-lg shadow-violet-500/20 mt-2"
+              >
+                <Sparkles size={14} />
+                Open Full Summary in App
+              </button>
+            </div>
+          )}
+
+          {activeDetailTab === 'Edit' && (
+            <div>
+              <p className="text-[13px] text-white/40 mb-3">Notes captured during session:</p>
+              <p className="text-[13px] text-white/65 leading-relaxed whitespace-pre-wrap">
+                {selectedNote.notes || 'No notes were typed during this recording.'}
+              </p>
+            </div>
+          )}
+
+          {activeDetailTab === 'Transcript' && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+                <Mic size={20} className="text-white/30" />
+              </div>
+              <p className="text-[13px] font-bold text-white/50 mb-1">Transcript in Desktop App</p>
+              <p className="text-[11px] text-white/25 max-w-[200px]">
+                Open the BACHAM desktop app to view the full meeting transcript and AI analysis.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom bar — "Ask Littlebird" style */}
+        <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#1a1a1a]">
+          {/* Waveform / Play */}
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="flex items-center gap-1.5 shrink-0"
+          >
+            <div className="flex items-end gap-px h-4">
+              {[2, 4, 3, 5, 2].map((h, i) => (
+                <span
+                  key={i}
+                  style={{ height: `${h * 2}px` }}
+                  className={`w-0.5 rounded-full transition-all ${isPlaying ? 'bg-violet-400 animate-pulse' : 'bg-white/25'}`}
+                />
+              ))}
+            </div>
+          </button>
+
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 text-[12px] font-semibold text-white/70 transition-all shrink-0"
+          >
+            {isPlaying ? (
+              <><span className="w-2 h-2 flex gap-0.5"><span className="w-0.5 h-2 bg-white/70 rounded" /><span className="w-0.5 h-2 bg-white/70 rounded" /></span> Pause</>
+            ) : (
+              <><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="0,0 10,5 0,10" /></svg> Resume</>
+            )}
+          </button>
+
+          <input
+            value={askQuery}
+            onChange={(e) => setAskQuery(e.target.value)}
+            placeholder="Ask about this meeting..."
+            className="flex-1 bg-transparent text-[12.5px] text-white/50 placeholder:text-white/22 outline-none min-w-0"
+          />
+
+          <Mic size={15} className="text-white/30 hover:text-white/60 cursor-pointer transition-colors shrink-0" />
         </div>
       </div>
     );
