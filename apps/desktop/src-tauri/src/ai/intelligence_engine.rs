@@ -209,9 +209,10 @@ impl IntelligenceEngine {
                  Return as JSON: {\"root\": {\"label\": string, \"children\": [{\"label\": string, \"children\": [...]}]}}"
             ),
             "action_items" => (
-                "You are an expert at identifying follow-up actions from lectures.",
-                "Extract any action items, to-dos, assignments, or next steps mentioned in this lecture. \
-                 Return as JSON: {\"items\": [{\"action\": string, \"priority\": \"high|medium|low\"}]}"
+                "You are an expert at identifying follow-up actions from meetings and lectures.",
+                "Extract any action items, to-dos, assignments, or next steps mentioned. \
+                 Perform step-by-step reasoning in a 'reasoning' field to resolve pronouns and deduce implied deadlines. \
+                 Return as JSON: {\"items\": [{\"action\": string, \"owner\": string, \"deadline\": string, \"priority\": \"high|medium|low\", \"reasoning\": string}]}"
             ),
             "homework" => (
                 "You are an expert at identifying homework and assignments from lectures.",

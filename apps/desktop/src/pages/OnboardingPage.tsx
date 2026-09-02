@@ -35,7 +35,22 @@ export const OnboardingPage = () => {
   };
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-zinc-950 text-zinc-50 overflow-hidden">
+    <div className="relative flex h-screen w-full items-center justify-center bg-zinc-950 text-zinc-50 overflow-hidden">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover opacity-60"
+      >
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
+      </video>
+
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-transparent" />
+      
       <div className="absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-[120px]"></div>
       
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center text-center p-8">

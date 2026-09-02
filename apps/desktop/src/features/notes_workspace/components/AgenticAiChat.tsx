@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
     Sparkles, X, Minimize2, Maximize2, Plus, 
     Copy, Check, RefreshCw, ArrowUp, FileText, CheckSquare, 
-    Target, Mail, Bot, CornerDownLeft
+    Target, Mail, Bot, Square, Play, Pause, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/components';
@@ -22,7 +22,12 @@ interface AgenticAiChatProps {
     recipes: AiRecipe[];
     position?: 'fixed' | 'absolute' | 'relative';
     className?: string;
+    isRecordingOpen?: boolean;
+    isRecording?: boolean;
+    onToggleRecording?: () => void;
+    onStopRecording?: () => void;
     onInsertToEditor?: (content: string) => void;
+    placeholder?: string;
 }
 
 const DEFAULT_GRANOLA_CHIPS = [
@@ -37,7 +42,13 @@ export function AgenticAiChat({
     contextText: _contextText, 
     recipes: customRecipes, 
     className,
-    onInsertToEditor 
+    position,
+    isRecordingOpen,
+    isRecording,
+    onToggleRecording,
+    onStopRecording,
+    onInsertToEditor,
+    placeholder
 }: AgenticAiChatProps) {
     const [expanded, setExpanded] = useState(false);
     const [fullscreen, setFullscreen] = useState(false);
@@ -246,14 +257,14 @@ export function AgenticAiChat({
                             </div>
 
                             {/* Main Input Field */}
-                            <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] focus-within:border-[var(--accent)] rounded-xl pl-3.5 pr-1.5 py-1 transition-all shadow-inner">
+                            <form onSubmit={handleSubmit} className="flex items-center gap-2 bg-[var(--bg)] border border-[var(--border)] focus-within:border-[var(--text-primary)] rounded-xl pl-3.5 pr-1.5 py-1 transition-all shadow-inner">
                                 <input
                                     ref={inputRef}
                                     type="text"
                                     value={inputText}
                                     onChange={e => setInputText(e.target.value)}
-                                    placeholder="Ask AI anything about this note..."
-                                    className="flex-1 bg-transparent border-none outline-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium py-1.5"
+                                    placeholder={placeholder || "Ask AI anything about this note..."}
+                                    className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium py-1.5"
                                 />
                                 <button 
                                     type="submit" 
@@ -269,61 +280,98 @@ export function AgenticAiChat({
             </AnimatePresence>
 
             {/* ═══════════════════════════════════════════════════════════════════════ */}
-            {/* 2. GRANOLA MINIMALIST BOTTOM FLOATING PILL (UNEXPANDED)                 */}
+            {/* 2. PREMIUM DARK AI CHAT DOCK (UNEXPANDED)                               */}
             {/* ═══════════════════════════════════════════════════════════════════════ */}
             {!expanded && (
-                <div className={cn("fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-xl px-4 pointer-events-auto", className)}>
+                <div className={cn(
+                    position === 'relative' 
+                        ? "w-full max-w-2xl mx-auto px-4 pointer-events-auto mt-6" 
+                        : `absolute bottom-10 left-1/2 -translate-x-1/2 z-40 w-full max-w-2xl px-4 pointer-events-auto`,
+                    className
+                )}>
                     <motion.div 
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        whileHover={{ y: -1 }}
-                        className="w-full bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--border)] rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1.5 flex items-center gap-2 transition-all"
+                        className="w-full flex flex-col items-center justify-center gap-3"
                     >
-                        {/* Left Sparkle Icon */}
-                        <div className="pl-3 text-[var(--accent)] flex items-center shrink-0">
-                            <Sparkles size={14} />
-                        </div>
-
-                        {/* Interactive Input */}
-                        <form onSubmit={handleSubmit} className="flex-1 flex items-center min-w-0">
-                            <input
-                                type="text"
-                                value={inputText}
-                                onChange={e => setInputText(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && inputText.trim()) {
-                                        handleSubmit(e);
-                                    }
-                                }}
-                                placeholder="Ask AI or summarize notes..."
-                                className="w-full bg-transparent border-none outline-none text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium truncate py-1.5 pr-2"
-                            />
-                        </form>
-
-                        {/* Quick Action Chips on Right */}
-                        <div className="flex items-center gap-1 shrink-0 pr-1">
-                            {inputText.trim() ? (
+                        {/* Recording Controls (Visible when active) */}
+                        {isRecordingOpen && (
+                            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-1.5 flex items-center gap-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+                                <div className="flex items-center justify-center w-10 h-8 gap-0.5 px-2">
+                                    {isRecording ? (
+                                        <>
+                                            <span className="w-[3px] h-3 bg-red-500 rounded-full animate-[pulse_1s_ease-in-out_infinite]" />
+                                            <span className="w-[3px] h-4 bg-red-500 rounded-full animate-[pulse_1.2s_ease-in-out_infinite_100ms]" />
+                                            <span className="w-[3px] h-3 bg-red-500 rounded-full animate-[pulse_0.9s_ease-in-out_infinite_200ms]" />
+                                        </>
+                                    ) : (
+                                        <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full" />
+                                    )}
+                                </div>
+                                
                                 <button
                                     type="button"
-                                    onClick={() => handleAskAi()}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                                    onClick={onToggleRecording}
+                                    className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-[var(--surface-hover)] hover:bg-[var(--surface-raised)] text-[var(--text-primary)] text-[14px] font-medium transition-colors cursor-pointer"
                                 >
-                                    <span>Ask</span>
-                                    <CornerDownLeft size={11} />
+                                    {isRecording ? (
+                                        <>
+                                            <Pause fill="currentColor" size={13} className="text-[var(--text-muted)]" />
+                                            <span>Pause</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Play fill="currentColor" size={13} className="text-[var(--accent)]" />
+                                            <span>Resume</span>
+                                        </>
+                                    )}
                                 </button>
-                            ) : (
-                                activeRecipes.slice(0, 2).map((item) => (
+
+                                {isRecording && (
                                     <button
                                         type="button"
-                                        key={item.label}
-                                        onClick={() => handleAskAi(item.prompt)}
-                                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[var(--surface-hover)] hover:bg-[var(--surface-raised)] border border-[var(--border)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer shadow-2xs"
+                                        onClick={onStopRecording}
+                                        className="flex items-center gap-2 px-4 py-1.5 rounded-xl hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-red-500 text-[14px] font-medium transition-colors cursor-pointer"
                                     >
-                                        <item.icon size={11} className="text-[var(--accent)]" />
-                                        <span>{item.label}</span>
+                                        <Square fill="currentColor" size={12} />
+                                        <span>Stop</span>
                                     </button>
-                                ))
-                            )}
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* Ask AI Input Field - Theme Adapting Pill */}
+                        <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-[24px] p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)] transition-all hover:border-[var(--border-accent)] focus-within:border-[var(--text-muted)] focus-within:bg-[var(--bg)] group backdrop-blur-xl">
+                            <form onSubmit={handleSubmit} className="flex flex-1 items-center">
+                                <div className="pl-4 text-[var(--text-muted)] shrink-0">
+                                    <Sparkles size={16} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={inputText}
+                                    onChange={e => setInputText(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && inputText.trim()) {
+                                            handleSubmit(e);
+                                        }
+                                    }}
+                                    placeholder={placeholder || "Ask AI about this meeting..."}
+                                    className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none text-[15px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-normal px-3 py-2.5"
+                                />
+                                <div className="pr-1 flex items-center shrink-0">
+                                    <button 
+                                        type={inputText.trim() ? "submit" : "button"}
+                                        className={cn(
+                                            "w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer",
+                                            inputText.trim() 
+                                                ? "bg-[var(--accent)] text-white hover:scale-105 shadow-[0_0_15px_rgba(var(--accent-rgb),0.4)]" 
+                                                : "bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
+                                        )}
+                                    >
+                                        {inputText.trim() ? <ArrowUp size={16} strokeWidth={2.5} /> : <Send size={15} />}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </motion.div>
                 </div>

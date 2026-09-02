@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useCollectionStore } from '@/shared/stores/collectionStore';
@@ -14,29 +14,47 @@ interface FolderSidebarProps {
     setSystemView: (view: 'all' | 'trash' | 'archive') => void;
     selectedFolderId?: string | null;
     onSelectFolder?: (id: string) => void;
+    isCreating?: boolean;
+    onCreatingChange?: (creating: boolean) => void;
 }
 
-export function FolderSidebar({ selectedFolderId, onSelectFolder }: FolderSidebarProps) {
+export function FolderSidebar({ selectedFolderId, onSelectFolder, isCreating: isCreatingProp, onCreatingChange }: FolderSidebarProps) {
     const { showToast } = useToast();
     const { folderTree, fetchFolders, createFolder } = useFolderStore();
     const { fetchCollections } = useCollectionStore();
-    const [isCreating, setIsCreating] = useState(false);
+    const [isCreatingLocal, setIsCreatingLocal] = useState(false);
     const [newName, setNewName] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+    const isCancelledRef = useRef(false);
+
+    // Support both controlled (via props) and uncontrolled (local state) creation modes
+    const isCreating = isCreatingProp ?? isCreatingLocal;
+    const setIsCreating = (val: boolean) => {
+        setIsCreatingLocal(val);
+        onCreatingChange?.(val);
+    };
 
     useEffect(() => {
         fetchFolders();
         fetchCollections();
     }, [fetchFolders, fetchCollections]);
 
+    // Focus input when creation mode is activated
     useEffect(() => {
-        const handleCreate = () => setIsCreating(true);
-        window.addEventListener('trigger-create-folder', handleCreate);
-        return () => window.removeEventListener('trigger-create-folder', handleCreate);
-    }, []);
+        if (isCreating) {
+            isCancelledRef.current = false;
+            setTimeout(() => inputRef.current?.focus(), 30);
+        }
+    }, [isCreating]);
 
     const handleCreateRoot = async () => {
+        if (isCancelledRef.current) {
+            isCancelledRef.current = false;
+            return;
+        }
         if (!newName.trim()) {
             setIsCreating(false);
+            setNewName('');
             return;
         }
         try {
@@ -45,6 +63,12 @@ export function FolderSidebar({ selectedFolderId, onSelectFolder }: FolderSideba
             showToast(`Create folder error: ${err.message || err}`, 'error');
             console.error(err);
         }
+        setNewName('');
+        setIsCreating(false);
+    };
+
+    const handleCancelCreate = () => {
+        isCancelledRef.current = true;
         setNewName('');
         setIsCreating(false);
     };
@@ -112,12 +136,15 @@ export function FolderSidebar({ selectedFolderId, onSelectFolder }: FolderSideba
                 {isCreating && (
                     <div className="px-2 py-1">
                         <input 
-                            autoFocus
+                            ref={inputRef}
                             value={newName}
                             onChange={e => setNewName(e.target.value)}
                             onBlur={handleCreateRoot}
-                            onKeyDown={e => e.key === 'Enter' && handleCreateRoot()}
-                            className="input-field text-sm w-full py-1 px-2 h-7"
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') { e.preventDefault(); handleCreateRoot(); }
+                                if (e.key === 'Escape') { e.preventDefault(); handleCancelCreate(); }
+                            }}
+                            className="w-full h-8 px-2.5 mt-1 text-xs rounded-md bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-accent)] focus:bg-[var(--surface-raised)] transition-all"
                             placeholder="Folder name..."
                         />
                     </div>
@@ -413,7 +440,7 @@ function FolderNode({
                                         setNewSubfolderName('');
                                     }
                                 }}
-                                className="bg-[var(--bg)] border border-[var(--border-accent)] px-1.5 py-0.5 rounded text-xs w-full outline-none text-[var(--text-primary)]"
+                                className="w-full h-8 px-2.5 mt-1 text-xs rounded-md bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-accent)] focus:bg-[var(--surface-raised)] transition-all"
                                 placeholder="Subfolder name..."
                             />
                         </div>

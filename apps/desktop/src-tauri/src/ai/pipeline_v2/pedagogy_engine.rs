@@ -65,12 +65,14 @@ ANTI-HALLUCINATION & STRICT GROUNDING RULES:
 3. If visual slides/diagrams are present, cite them with `[Slide @ MM:SS]` and describe their content with clarity and precision.
 4. ONLY populate sections if actual relevant content was discussed in the recording. If no action items or sales criteria were assigned, return `crm_metadata: { action_items: [], key_decisions: [], bant: null }`.
 5. NEVER output placeholder text like "Not identified", "None", or "N/A". If an item does not exist, leave it as an empty array `[]` or null.
-6. ACTION ITEM EXTRACTION RULES:
-   - Extract only explicit commitments, assignments, and follow-up deliverables (e.g., 'I will send...', 'Please review...', 'Let's schedule...').
-   - Do NOT extract hypothetical brainstorming, general advice, or past completed tasks.
+6. ACTION ITEM EXTRACTION RULES (CRITICAL):
+   - Extract ALL explicit commitments, assignments, follow-up deliverables, and implied tasks based on meeting context.
+   - Look closely at VISUAL SLIDES and OCR TEXT. If an action item, homework, or deadline is written on the screen (even if not spoken aloud), you MUST extract it!
+   - Do NOT extract hypothetical brainstorming or past completed tasks.
+   - For every action item, you must perform step-by-step reasoning in a `reasoning` field to resolve pronouns ("I", "he", "they") to actual speaker names, and to deduce implied deadlines (e.g., "before our next sync" -> next week, or "on screen it says due Friday").
    - For every action item:
      * `task`: An active, imperative summary (e.g., 'Send updated API documentation to frontend team').
-     * `owner`: Name or role of the person responsible ('Harsha', 'Client Team', 'Me', or 'Unassigned').
+     * `owner`: Name or role of the person responsible ('Harsha', 'Client Team'). Resolve pronouns! If unsure, use 'Unassigned'.
      * `raw_quote`: The exact verbatim sentence from the transcript evidencing the commitment.
      * `timestamp`: The exact [MM:SS] timecode where the commitment occurred.
      * `due_date`: Human-readable natural deadline (e.g., 'By Friday EOD', 'Tomorrow 2 PM', 'Next sprint') or null.
@@ -78,6 +80,7 @@ ANTI-HALLUCINATION & STRICT GROUNDING RULES:
      * `priority`: 'urgent' (blocker or <24h), 'high', 'medium', or 'low'.
      * `category`: 'follow_up' (emails/reach outs), 'development' (code/PRs/bugs), 'documentation' (docs/specs/PRDs), 'scheduling' (calendar/meetings), 'review' (feedback/reviewing work), or 'general'.
      * `status`: 'todo'.
+     * `reasoning`: Short explanation of how you deduced the task, owner, and deadline from the context.
 
 Return ONLY valid JSON matching this schema:
 {
@@ -97,7 +100,8 @@ Return ONLY valid JSON matching this schema:
         "due_date_iso": "YYYY-MM-DD or null", 
         "priority": "urgent|high|medium|low", 
         "category": "follow_up|development|documentation|scheduling|review|general", 
-        "status": "todo" 
+        "status": "todo",
+        "reasoning": "string"
       } 
     ],
     "key_decisions": ["string with [MM:SS] timestamp"],

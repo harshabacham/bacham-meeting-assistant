@@ -121,11 +121,11 @@ export default function ProfileDropdown({
     },
     {
       label: "Trash",
-      href: "/lectures?view=trash",
+      href: "/notes",
       icon: <Trash2 className="h-4 w-4" />,
       onClick: () => {
-        setSelectedFolderId(null);
-        setSystemView('trash');
+        setSelectedFolderId('system:trash');
+        setSystemView('all');
       },
       danger: true,
     },

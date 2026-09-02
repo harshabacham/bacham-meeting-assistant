@@ -8,9 +8,9 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, BookOpen, Bookmark, Clock, Archive, ChevronDown, ChevronRight, CheckSquare, Sparkles, Plus, PlugZap
+    Library, BrainCircuit, Edit3, Bookmark, Archive, Trash2, ChevronDown, CheckSquare, Sparkles, Plus, PlugZap
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { cn, CommandPalette } from '@/components';
 import { FolderSidebar } from '@/components/library/FolderSidebar';
@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useSearchStore } from '@/features/search/searchStore';
 import { InlineAIToolbar } from '@/components/command_center/InlineAIToolbar';
+import { useFolderStore } from '@/shared/stores/folderStore';
 
 import { GlobalQuickLookModal } from '@/components/command_center/GlobalQuickLookModal';
 import { GoogleCalendarSyncModal } from '@/components/dashboard/GoogleCalendarSyncModal';
@@ -28,7 +29,6 @@ import { AutoRecordWatcher } from '@/components/AutoRecordWatcher';
 const STUDENT_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/lectures', label: 'Library', icon: Library },
-    { path: '/knowledge', label: 'Knowledge Base', icon: BrainCircuit },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
 ];
@@ -36,7 +36,6 @@ const STUDENT_NAV_ITEMS = [
 const PRO_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/lectures', label: 'Meetings', icon: Library },
-    { path: '/knowledge', label: 'Knowledge Base', icon: BrainCircuit },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Action Items', icon: CheckSquare },
 ];
@@ -64,8 +63,12 @@ export function AppLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 900);
     const isSettingsRoute = location.pathname.startsWith('/settings');
     const [isFoldersOpen, setIsFoldersOpen] = useState(true);
+    const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+    const [newFolderName, setNewFolderName] = useState('');
+    const newFolderInputRef = useRef<HTMLInputElement>(null);
+    const { createFolder } = useFolderStore();
     const activeSettingsTab = searchParams.get('tab') || 'profile';
-    const { appMode, setAppMode } = useModeStore();
+    const { appMode } = useModeStore();
     
     const MAIN_NAV_ITEMS = appMode === 'student' ? STUDENT_NAV_ITEMS : PRO_NAV_ITEMS;
 
@@ -173,220 +176,190 @@ export function AppLayout() {
                         animate={{ width: 200, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 350, damping: 38, mass: 0.8 }}
-                        className="bg-surface shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full shadow-[2px_0_8px_rgba(0,0,0,0.05)]"
+                        className="bg-surface shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full"
                     >
-                        {/* Absolutely positioned Sidebar Toggle to perfectly align horizontally with h-12 Window Controls */}
-                        <div className="absolute top-0 right-0 h-12 w-16 flex items-center justify-end pr-4 z-50">
+                        {/* Sidebar close button aligned with window controls */}
+                        <div className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-50">
                             <button 
                                 onClick={() => setIsSidebarOpen(false)}
-                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-border/50"
+                                className="p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors"
                                 title="Close Sidebar"
                             >
-                                <Sidebar size={14} strokeWidth={2.5} />
+                                <Sidebar size={13} strokeWidth={2} />
                             </button>
                         </div>
 
-                        {/* Content Area (Contextual) */}
-                        <div className="flex-1 overflow-y-auto flex flex-col relative px-3 pt-14 pb-4 scrollbar-hide">
-                            
-                            {/* Top Action Button */}
-                            <div className="mb-4 flex items-center px-1">
-                                {isSettingsRoute && (
-                                    <button 
-                                        onClick={() => navigate('/')}
-                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold text-foreground transition-colors bg-surface shadow-sm border border-border"
-                                    >
-                                        <ChevronLeft size={12} /> Home
-                                    </button>
-                                )}
-                            </div>
-
+                        <div className="flex-1 overflow-y-auto flex flex-col px-2 pt-12 pb-2 scrollbar-hide gap-0.5">
                             <AnimatePresence mode="wait">
                                 {isSettingsRoute ? (
                                     <motion.div 
                                         key="settings-nav"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="flex-1 flex flex-col space-y-6"
+                                        className="flex-1 flex flex-col gap-1"
                                     >
-                                        {/* Centered Profile Header */}
-                                        <div className="flex flex-col items-center text-center mt-0 mb-0">
-                                            <div className="w-14 h-14 rounded-full overflow-hidden mb-3 border border-border shadow-sm">
+                                        <button 
+                                            onClick={() => navigate('/')}
+                                            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11.5px] font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors mb-2"
+                                        >
+                                            <ChevronLeft size={13} /> Back
+                                        </button>
+
+                                        <div className="flex flex-col items-center text-center pb-3">
+                                            <div className="w-10 h-10 rounded-full overflow-hidden mb-2 border border-border">
                                                 <UserAvatar photoURL={user?.photoURL} email={user?.email} className="w-full h-full" />
                                             </div>
-                                            <h2 className="text-sm font-semibold text-foreground mb-0.5">
-                                                {user?.displayName || 'User'}
-                                            </h2>
-                                            <p className="text-[11px] text-muted-foreground font-medium">
-                                                {user?.email}
-                                            </p>
+                                            <p className="text-[12px] font-semibold text-foreground truncate w-full">{user?.displayName || 'User'}</p>
+                                            <p className="text-[10px] text-muted-foreground truncate w-full">{user?.email}</p>
                                         </div>
                                         
-                                        <nav className="space-y-0.5 w-full">
+                                        <nav className="space-y-0.5 flex-1">
                                             {SETTINGS_NAV_ITEMS.map((item) => (
-                                                <motion.button
+                                                <button
                                                     key={item.id}
-                                                    whileHover={{ scale: 1.02, x: 2 }}
-                                                    whileTap={{ scale: 0.98 }}
                                                     onClick={() => setSearchParams({ tab: item.id })}
                                                     className={cn(
-                                                        "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors duration-200 outline-none group text-[12px] font-medium",
+                                                        "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-[11.5px] font-medium",
                                                         activeSettingsTab === item.id 
                                                             ? "bg-primary/10 text-primary" 
                                                             : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
                                                     )}
                                                 >
-                                                    <item.icon size={14} strokeWidth={2.5} className={activeSettingsTab === item.id ? "text-primary" : "text-muted-foreground"} />
+                                                    <item.icon size={13} strokeWidth={2} />
                                                     {item.label}
-                                                </motion.button>
+                                                </button>
                                             ))}
                                         </nav>
+
+                                        <button 
+                                            onClick={handleSignOut}
+                                            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium text-destructive hover:bg-destructive/10 transition-colors mt-2"
+                                        >
+                                            <LogOut size={13} strokeWidth={2} />
+                                            Sign out
+                                        </button>
                                     </motion.div>
                                 ) : (
                                     <motion.div 
                                         key="main-nav"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                         transition={{ duration: 0.15 }}
-                                        className="flex-1 flex flex-col space-y-4"
+                                        className="flex-1 flex flex-col"
                                     >
-                                        {/* Search Bar */}
+                                        {/* Search */}
                                         <button 
-                                            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg border border-border/50 bg-background/40 hover:bg-[var(--overlay-hover)] hover:border-border transition-all duration-150 group cursor-text focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                            className="w-full flex items-center justify-between px-2.5 py-1.5 mb-2 rounded-lg text-[11.5px] text-muted-foreground hover:bg-surface-hover hover:text-foreground transition-colors"
                                             onClick={() => openSearch()}
                                         >
                                             <div className="flex items-center gap-2">
-                                                <Search size={12} className="text-muted-foreground/70" />
-                                                <span className="text-[11px] text-muted-foreground/70">Search</span>
+                                                <Search size={12} />
+                                                <span>Search</span>
                                             </div>
-                                            <kbd className="text-[9px] font-mono text-muted-foreground/50 bg-muted/50 px-1 py-0.5 rounded border border-border/50">⌘K</kbd>
+                                            <kbd className="text-[9px] font-mono opacity-40 bg-muted/50 px-1 py-0.5 rounded border border-border/50">⌘K</kbd>
                                         </button>
 
+                                        {/* Primary nav */}
                                         <nav className="space-y-0.5">
                                             {MAIN_NAV_ITEMS.map(item => (
-                                                <motion.div key={item.path} whileHover={{ scale: 1.02, x: 2 }} whileTap={{ scale: 0.98 }}>
                                                 <Link 
-                                                    to={item.path} 
-                                                    className="block outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
-                                                    onClick={() => {
-                                                        if (item.path === '/lectures') {
-                                                            setSystemView('all');
-                                                            setSelectedFolderId(null);
-                                                        }
-                                                    }}
+                                                    key={item.path}
+                                                    to={item.path}
+                                                    className="block rounded-lg outline-none"
+                                                    onClick={() => { if (item.path === '/lectures') { setSystemView('all'); setSelectedFolderId(null); } }}
                                                 >
-                                                    <div 
-                                                        className={cn(
-                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-all duration-150',
-                                                            isActive(item.path)
-                                                                ? 'bg-primary/10 text-primary'
-                                                                : 'text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground'
-                                                        )}
-                                                    >
-                                                        {isActive(item.path) && (
-                                                            <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
-                                                        )}
-                                                        <item.icon size={13} strokeWidth={2} className={cn(
-                                                            'transition-colors duration-150',
-                                                            isActive(item.path) ? 'text-primary' : 'text-muted-foreground'
-                                                        )} />
+                                                    <div className={cn(
+                                                        'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors',
+                                                        isActive(item.path) ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                                                    )}>
+                                                        {isActive(item.path) && <span className="absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-primary" />}
+                                                        <item.icon size={13} strokeWidth={2} />
                                                         <span>{item.label}</span>
                                                     </div>
                                                 </Link>
-                                                </motion.div>
                                             ))}
                                         </nav>
-                                        
-                                        <div className="h-px bg-white/5 mx-2 my-1" />
 
-                                        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/40 px-3 mb-1 mt-2 select-none">
-                                            {appMode === 'student' ? 'Library' : 'Meetings'}
-                                        </p>
+                                        <div className="h-px bg-border/40 mx-1 my-3" />
 
+                                        {/* Secondary nav */}
                                         <nav className="space-y-0.5">
                                             {[
-                                                { id: 'subjects', label: 'Subjects', icon: BookOpen },
                                                 { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
-                                                { id: 'recent', label: 'Recent', icon: Clock },
                                                 { id: 'archive', label: 'Archive', icon: Archive },
-                                            ].map(item => (
-                                                <Link key={item.id} to={`/lectures?view=${item.id}`} className="block outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring">
-                                                    <div 
-                                                        className={cn(
-                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-all duration-150',
-                                                            location.pathname === '/lectures' && searchParams.get('view') === item.id
-                                                                ? 'bg-primary/10 text-primary'
-                                                                : 'text-muted-foreground hover:bg-[var(--overlay-hover)] hover:text-foreground'
-                                                        )}
-                                                        onClick={() => {
-                                                            setSelectedFolderId(null);
-                                                            if (item.id === 'trash') setSystemView('trash');
-                                                            else if (item.id === 'archive') setSystemView('archive');
-                                                            else setSystemView('all');
-                                                        }}
-                                                    >
-                                                        {(location.pathname === '/lectures' && searchParams.get('view') === item.id) && (
-                                                            <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />
-                                                        )}
-                                                        <item.icon size={13} strokeWidth={2} className={cn(
-                                                            'transition-colors duration-150',
-                                                            (location.pathname === '/lectures' && searchParams.get('view') === item.id) ? 'text-primary' : 'text-muted-foreground'
-                                                        )} />
-                                                        <span>{item.label}</span>
-                                                    </div>
-                                                </Link>
-                                            ))}
+                                            ].map(item => {
+                                                const active = location.pathname === '/lectures' && searchParams.get('view') === item.id;
+                                                return (
+                                                    <Link key={item.id} to={`/lectures?view=${item.id}`} className="block rounded-lg outline-none">
+                                                        <div className={cn(
+                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors',
+                                                            active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                                                        )} onClick={() => { setSelectedFolderId(null); if (item.id === 'archive') setSystemView('archive'); else setSystemView('all'); }}>
+                                                            {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-primary" />}
+                                                            <item.icon size={13} strokeWidth={2} />
+                                                            <span>{item.label}</span>
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
                                         </nav>
 
+                                        <div className="h-px bg-border/40 mx-1 my-3" />
 
-
-                                        <div className="flex-1 mt-4">
-                                            <div className="w-full px-2.5 mb-1 flex items-center justify-between group">
-                                                <button 
-                                                    onClick={() => setIsFoldersOpen(!isFoldersOpen)}
-                                                    className="flex flex-1 items-center gap-1.5 text-left hover:text-foreground transition-colors outline-none"
+                                        {/* Folders section */}
+                                        <div className="flex-1 flex flex-col min-h-0">
+                                            <div className="flex items-center justify-between px-2.5 mb-1.5">
+                                                <button
+                                                    onClick={() => setIsFoldersOpen(v => !v)}
+                                                    className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 hover:text-muted-foreground transition-colors"
                                                 >
-                                                    {isFoldersOpen ? (
-                                                        <ChevronDown size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                                                    ) : (
-                                                        <ChevronRight size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
-                                                    )}
-                                                    <span className="text-[11px] font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wider">Folders</span>
+                                                    <ChevronDown size={11} className={cn("transition-transform duration-200", !isFoldersOpen && "-rotate-90")} />
+                                                    Folders
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (!isFoldersOpen) setIsFoldersOpen(true);
-                                                        setTimeout(() => window.dispatchEvent(new CustomEvent('trigger-create-folder')), 50);
+                                                        setIsFoldersOpen(true);
+                                                        setIsCreatingFolder(true);
+                                                        setNewFolderName('');
+                                                        setTimeout(() => newFolderInputRef.current?.focus(), 50);
                                                     }}
-                                                    className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground outline-none"
+                                                    className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors"
                                                     title="New Folder"
                                                 >
-                                                    <Plus size={14} />
+                                                    <Plus size={12} />
                                                 </button>
                                             </div>
-                                            
-                                            {/* We embed FolderSidebar but override styling heavily */}
+
                                             {isFoldersOpen && (
-                                                <div className="custom-folder-tree animate-in fade-in slide-in-from-top-1 duration-200">
-                                                    <FolderSidebar 
-                                                        systemView={systemView} 
-                                                        setSystemView={(view) => {
-                                                            setSystemView(view);
-                                                            setSelectedFolderId(null);
-                                                            navigate('/lectures');
-                                                        }}
+                                                <div className="flex-1 overflow-y-auto scrollbar-hide -mx-1">
+                                                    {isCreatingFolder && (
+                                                        <div className="px-2 pb-1">
+                                                            <input
+                                                                ref={newFolderInputRef}
+                                                                value={newFolderName}
+                                                                onChange={e => setNewFolderName(e.target.value)}
+                                                                onBlur={async () => {
+                                                                    if (newFolderName.trim()) {
+                                                                        try { await createFolder(newFolderName.trim()); }
+                                                                        catch(err: any) { console.error('Create folder failed', err); }
+                                                                    }
+                                                                    setIsCreatingFolder(false);
+                                                                    setNewFolderName('');
+                                                                }}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); }
+                                                                    if (e.key === 'Escape') { e.preventDefault(); setIsCreatingFolder(false); setNewFolderName(''); }
+                                                                }}
+                                                                className="w-full h-8 px-2.5 mt-1 text-xs rounded-md bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--border-accent)] focus:bg-[var(--surface-raised)] transition-all"
+                                                                placeholder="Folder name…"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <FolderSidebar
+                                                        systemView={systemView}
+                                                        setSystemView={(view) => { setSystemView(view); setSelectedFolderId(null); navigate('/notes'); }}
                                                         selectedFolderId={selectedFolderId}
-                                                        onSelectFolder={(id) => {
-                                                            setSystemView('all');
-                                                            setSelectedFolderId(id);
-                                                            if (!location.pathname.startsWith('/notes')) {
-                                                                navigate('/lectures');
-                                                            }
-                                                        }}
+                                                        onSelectFolder={(id) => { setSystemView('all'); setSelectedFolderId(id); navigate('/notes'); }}
                                                     />
                                                 </div>
                                             )}
@@ -396,35 +369,12 @@ export function AppLayout() {
                             </AnimatePresence>
                         </div>
 
-                        {/* Footer Section */}
-                        <div className="px-3 pb-4 pt-2 mt-auto shrink-0 flex flex-col gap-1.5">
-                            {isSettingsRoute ? (
-                                <button 
-                                    onClick={handleSignOut}
-                                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors text-destructive hover:bg-destructive/10 outline-none"
-                                >
-                                    <LogOut size={14} strokeWidth={2.5} />
-                                    <span>Sign out</span>
-                                </button>
-                            ) : (
-                                <>
-                                    <div className="flex items-center gap-1.5 w-full">
-                                        {/* Mode Switcher */}
-                                        {!isSettingsRoute && (
-                                            <button
-                                                onClick={() => setAppMode(appMode === 'student' ? 'professional' : 'student')}
-                                                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-1 py-1.5 rounded-lg text-[10px] font-semibold text-foreground transition-all bg-background/50 hover:bg-surface-hover shadow-sm border border-border uppercase tracking-wider"
-                                            >
-                                                <span className="truncate">{appMode === 'student' ? '🎓 Student' : '💼 Pro'}</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Profile Summary block */}
-                                    <ProfileDropdown className="w-full mt-2" />
-                                </>
-                            )}
-                        </div>
+                        {/* Footer — profile */}
+                        {!isSettingsRoute && (
+                            <div className="px-2 pb-3 pt-2 shrink-0 border-t border-border/40">
+                                <ProfileDropdown className="w-full" />
+                            </div>
+                        )}
                     </motion.aside>
                 )}
             </AnimatePresence>

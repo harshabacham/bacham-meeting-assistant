@@ -97,19 +97,51 @@ export const LoginPage = () => {
 
   if (showProfileSetup) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background text-foreground selection:bg-primary/20 p-4">
-        <ProfileSetup 
-          onComplete={handleProfileComplete} 
-          defaultUsername={user?.displayName || email.split('@')[0] || ''} 
-          className="bg-surface/40 border-border backdrop-blur-xl text-foreground" 
-        />
+      <div className="relative flex h-screen w-full items-center justify-center bg-background text-foreground selection:bg-primary/20 p-4 overflow-hidden">
+        {/* Background Video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-60"
+        >
+          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
+        </video>
+
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+        
+        <div className="relative z-10 w-full max-w-md">
+          <ProfileSetup 
+            onComplete={handleProfileComplete} 
+            defaultUsername={user?.displayName || email.split('@')[0] || ''} 
+            className="bg-surface/40 border-border backdrop-blur-xl text-foreground" 
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-background text-foreground selection:bg-primary/20">
-      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-surface/30 p-8 backdrop-blur-xl shadow-2xl">
+    <div className="relative flex h-screen w-full items-center justify-center bg-background text-foreground selection:bg-primary/20 overflow-hidden">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover opacity-60"
+      >
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
+      </video>
+
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-border bg-surface/30 p-8 backdrop-blur-xl shadow-2xl">
         <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-primary/10 blur-[100px]"></div>
         <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-primary/5 blur-[100px]"></div>
         

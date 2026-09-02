@@ -19,7 +19,7 @@ import type { NativeMessagingClient } from '@/infrastructure/communication/nativ
 import type { Logger } from '@/infrastructure/logger/logger';
 import * as browserTabs from '@/infrastructure/browser/tabs';
 import * as browserAction from '@/infrastructure/browser/action';
-import { NATIVE_MESSAGING_PROTOCOL_VERSION, SCREENSHOT_ALARM_NAME } from '@/shared/constants/app';
+import { NATIVE_MESSAGING_PROTOCOL_VERSION } from '@/shared/constants/app';
 
 
 /**
@@ -48,6 +48,25 @@ export function createMessageHandler(
   log: Logger,
 ): MessageHandler {
   const MODULE = 'MessageHandler';
+
+  let screenshotIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  function clearScreenshotInterval() {
+    if (screenshotIntervalId !== null) {
+      clearInterval(screenshotIntervalId);
+      screenshotIntervalId = null;
+    }
+  }
+
+  function startScreenshotInterval(intervalMs: number, sessionId: string) {
+    clearScreenshotInterval();
+    screenshotIntervalId = setInterval(() => {
+      storage.get(['currentSession']).then(({ currentSession }) => {
+        if (!currentSession || currentSession.state !== 'recording') return;
+        void screenshotService.takeScreenshot(sessionId);
+      }).catch(err => log.error(MODULE, 'Error in screenshot interval', { err }));
+    }, intervalMs);
+  }
 
   /** Build the full BackgroundState snapshot for the popup. */
   async function buildState(): Promise<BackgroundState> {
@@ -220,11 +239,9 @@ export function createMessageHandler(
           log.warn(MODULE, 'Failed to send OPEN_SIDEBAR to content script', { error: e });
         });
 
-        // Set up screenshot interval alarm if configured
+        // Set up screenshot interval if configured (using setInterval for precise sub-minute capture)
         if (intent.screenshotIntervalMs) {
-          await chrome.alarms.create(SCREENSHOT_ALARM_NAME, {
-            periodInMinutes: intent.screenshotIntervalMs / 60_000,
-          });
+          startScreenshotInterval(intent.screenshotIntervalMs, session.id);
         }
 
         // Update badge
@@ -307,8 +324,8 @@ export function createMessageHandler(
         await chrome.offscreen.closeDocument()
           .catch(err => log.warn(MODULE, 'Failed to close offscreen doc', { err }));
 
-        // Clear screenshot alarm
-        await chrome.alarms.clear(SCREENSHOT_ALARM_NAME);
+        // Clear screenshot interval
+        clearScreenshotInterval();
 
         const endedAt = new Date().toISOString();
         const durationMs = Date.now() - new Date(currentSession.startedAt).getTime()
@@ -343,7 +360,7 @@ export function createMessageHandler(
           .catch(err => log.warn(MODULE, 'Failed to close offscreen doc', { err }));
 
         await sessionService.discardSession();
-        await chrome.alarms.clear(SCREENSHOT_ALARM_NAME);
+        clearScreenshotInterval();
         await browserAction.setBadgeText('');
         await browserAction.setIcon('idle');
         return { success: true };

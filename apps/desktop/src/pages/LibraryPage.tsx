@@ -89,11 +89,6 @@ export function LibraryPage() {
             
             // View filters
             if (currentView === 'bookmarks' && !l.isFavorite) return false;
-            if (currentView === 'recent') {
-                const oneWeekAgo = new Date();
-                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                if (new Date(l.createdAt) < oneWeekAgo) return false;
-            }
 
             if (!query) return true;
             const q = query.toLowerCase();
@@ -107,8 +102,7 @@ export function LibraryPage() {
             return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
         });
 
-    const isSubjectView = currentView === 'subjects';
-    const groups = (groupByCourse || isSubjectView) 
+    const groups = groupByCourse
         ? filtered.reduce((acc, l) => {
             const course = l.course || l.subject || 'Uncategorized';
             const existing = acc.find(g => g.label === course);
@@ -119,7 +113,7 @@ export function LibraryPage() {
         : [{ label: '', items: filtered }];
 
     // Sort groups alphabetically
-    if (groupByCourse || isSubjectView) {
+    if (groupByCourse) {
         groups.sort((a, b) => {
             if (a.label === 'Uncategorized') return 1;
             if (b.label === 'Uncategorized') return -1;
@@ -383,16 +377,12 @@ export function LibraryPage() {
                                 <h3 className="font-bold text-foreground text-base tracking-tight mb-2">
                                     {query ? 'No results found' : 
                                      ['pinned', 'collections'].includes(currentView || '') ? 'Coming Soon' : 
-                                     currentView === 'subjects' ? 'No subjects found' :
-                                     currentView === 'bookmarks' ? 'No bookmarks yet' :
-                                     currentView === 'recent' ? 'No recent lectures' : 'No lectures yet'}
+                                     currentView === 'bookmarks' ? 'No bookmarks yet' : 'No lectures yet'}
                                 </h3>
                                 <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px] mx-auto">
                                     {query ? `No lectures match "${query}"` : 
                                      ['pinned', 'collections'].includes(currentView || '') ? `The ${currentView} feature is scheduled for Phase 2.` : 
-                                     currentView === 'subjects' ? 'Lectures will be automatically grouped by their subjects' :
-                                     currentView === 'bookmarks' ? 'Star a lecture to see it here' :
-                                     currentView === 'recent' ? 'Lectures recorded in the last 7 days will appear here' : 'Start recording from the Chrome extension'}
+                                     currentView === 'bookmarks' ? 'Star a lecture to see it here' : 'Start recording from the Chrome extension'}
                                 </p>
                             </div>
                         </motion.div>
@@ -400,7 +390,7 @@ export function LibraryPage() {
                 ) : (
                     groups.map(group => (
                         <div key={group.label || 'all'} className="mb-8">
-                            {(groupByCourse || currentView === 'subjects') && group.label && (
+                            {groupByCourse && group.label && (
                                 <div className="flex items-center gap-2 mb-4">
                                     <Tag size={12} className="text-primary" />
                                     <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

@@ -48,11 +48,12 @@ interface LiveTranscriptPanelProps {
     onClose: () => void;
     onProcess: (transcript: string) => void;
     onInsertQuote?: (quote: string) => void;
+    isStreaming: boolean;
+    onStreamingChange: (isStreaming: boolean) => void;
 }
 
-export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscriptPanelProps) {
+export function LiveTranscriptPanel({ isOpen, isStreaming, onStreamingChange, onClose, onProcess }: LiveTranscriptPanelProps) {
     const [fullText, setFullText] = useState<string>('');
-    const [isStreaming, setIsStreaming] = useState(true);
     const [isMinimized, setIsMinimized] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState('auto');
     const [recordingTime, setRecordingTime] = useState(0);
@@ -469,7 +470,7 @@ export function LiveTranscriptPanel({ isOpen, onClose, onProcess }: LiveTranscri
                             <div className="flex items-center gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setIsStreaming(p => !p)}
+                                    onClick={() => onStreamingChange(!isStreaming)}
                                     className={cn(
                                         "text-xs font-semibold px-3 py-1.5 rounded-full transition-all cursor-pointer",
                                         isStreaming

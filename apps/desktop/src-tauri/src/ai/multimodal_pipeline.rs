@@ -387,7 +387,7 @@ Return ONLY valid JSON.
   "problems_solved": null, // OPTIONAL: Only include array of {question, step_by_step, final_answer} if explicit problems are solved. Otherwise null.
   "code_explained": null, // OPTIONAL: Only include array of {language, purpose, logic, output} if programming code is present. Otherwise null.
   "key_concepts": ["string"],
-  "crm_metadata": null // OPTIONAL: Only include { bant: {}, action_items: [], key_decisions: [] } if this is a business meeting or sales call. Otherwise null.
+  "crm_metadata": null // OPTIONAL: Only include { bant: {}, action_items: [{task, owner, due_date, status, reasoning}], key_decisions: [] } if action items are discussed OR written on slides/screens. Always extract visually written deadlines into action_items even if not spoken aloud. Otherwise null.
 }
 
 CRITICAL: Do NOT invent formulas, code, or problems if the transcript is a song, casual conversation, or lacks that context. Just return null for those fields.

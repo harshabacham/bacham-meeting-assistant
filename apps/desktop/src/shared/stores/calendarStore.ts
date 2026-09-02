@@ -50,7 +50,8 @@ interface CalendarState {
   disconnectCalendar: () => Promise<void>;
   syncNow: () => Promise<void>;
   addEvent: (event: Omit<CalendarEvent, 'id'>) => Promise<void>;
-  deleteEvent: (id: string) => void;
+  editEvent: (eventId: string, eventData: Partial<CalendarEvent>) => Promise<void>;
+  deleteEvent: (id: string) => Promise<void>;
   toggleEventCompleted: (id: string) => void;
   toggleAutoSync: () => void;
   cancelDeviceFlow: () => void;
@@ -137,11 +138,11 @@ export const useCalendarStore = create<CalendarState>()(
             throw new Error("Missing VITE_GOOGLE_CLIENT_ID in environment variables.");
           }
 
-          // 1. Request Device Code
+          // 1. Request Device Code (Upgraded Scope)
           const codeResponse = await fetch('https://oauth2.googleapis.com/device/code', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `client_id=${clientId}&scope=https://www.googleapis.com/auth/calendar.readonly%20https://www.googleapis.com/auth/userinfo.email`
+            body: `client_id=${clientId}&scope=https://www.googleapis.com/auth/calendar.events%20https://www.googleapis.com/auth/userinfo.email`
           });
           
           if (!codeResponse.ok) {
@@ -292,43 +293,141 @@ export const useCalendarStore = create<CalendarState>()(
           ...eventData,
           id: `evt_${Date.now()}`,
         };
-        set((state) => ({
-          events: [newEvent, ...state.events],
-        }));
+        const { accessToken } = get();
+        if (!accessToken) {
+            console.error("Cannot add event without OAuth access token.");
+            return;
+        }
 
-        if (isConnected && accessToken) {
-          try {
+        try {
+            // Helper to parse the local 'dateStr' and 'startTime'/'endTime' into ISO dates for Google
+            const createIsoDate = (dateStr: string, timeStr?: string) => {
+                const date = new Date(dateStr);
+                if (timeStr) {
+                    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    if (match) {
+                        let hours = parseInt(match[1]);
+                        const mins = parseInt(match[2]);
+                        const ampm = match[3].toUpperCase();
+                        if (ampm === 'PM' && hours < 12) hours += 12;
+                        if (ampm === 'AM' && hours === 12) hours = 0;
+                        date.setHours(hours, mins, 0, 0);
+                    }
+                }
+                return date.toISOString();
+            };
+
+            const startDateTime = createIsoDate(eventData.dateStr, eventData.startTime);
+            const endDateTime = eventData.endTime 
+                ? createIsoDate(eventData.dateStr, eventData.endTime) 
+                : new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString(); // Default 1 hr
+
             const payload = {
-              summary: eventData.title,
-              description: "Added via Ambient Co-Pilot",
-              start: { date: eventData.dateStr },
-              end: { date: eventData.dateStr }
+                summary: eventData.title,
+                description: eventData.description || "",
+                start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+                end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
             };
 
             const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(payload)
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                console.error("Failed to push event to Google Calendar", await response.text());
+                return;
+            }
+            
+            // Re-sync calendar to get the new event ID
+            await get().syncNow();
+        } catch (e) {
+            console.error("Error pushing event to calendar:", e);
+        }
+      },
+
+      editEvent: async (eventId, eventData) => {
+        const { accessToken, events } = get();
+        if (!accessToken) return;
+
+        try {
+            // Keep existing payload base
+            const existingEvent = events.find(e => e.id === eventId);
+            if (!existingEvent) return;
+
+            const createIsoDate = (dateStr: string, timeStr?: string) => {
+                const date = new Date(dateStr);
+                if (timeStr) {
+                    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    if (match) {
+                        let hours = parseInt(match[1]);
+                        const mins = parseInt(match[2]);
+                        const ampm = match[3].toUpperCase();
+                        if (ampm === 'PM' && hours < 12) hours += 12;
+                        if (ampm === 'AM' && hours === 12) hours = 0;
+                        date.setHours(hours, mins, 0, 0);
+                    }
+                }
+                return date.toISOString();
+            };
+
+            const targetDateStr = eventData.dateStr || existingEvent.dateStr;
+            const targetStartTime = eventData.startTime || existingEvent.startTime;
+            const targetEndTime = eventData.endTime || existingEvent.endTime;
+
+            const startDateTime = createIsoDate(targetDateStr, targetStartTime);
+            const endDateTime = targetEndTime 
+                ? createIsoDate(targetDateStr, targetEndTime) 
+                : new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString();
+
+            const payload = {
+                summary: eventData.title || existingEvent.title,
+                description: eventData.description !== undefined ? eventData.description : existingEvent.description,
+                start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+                end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+            };
+
+            const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
                 await get().syncNow();
             } else {
-                console.error("Failed to push event to Google Calendar", await response.text());
+                console.error("Failed to edit event", await response.text());
             }
-          } catch(e) {
-            console.error("Error pushing event to calendar:", e);
-          }
+        } catch (e) {
+            console.error("Error editing event:", e);
         }
       },
 
-      deleteEvent: (id) => {
-        set((state) => ({
-          events: state.events.filter((e) => e.id !== id),
-        }));
+      deleteEvent: async (id: string) => {
+        const { accessToken } = get();
+        if (!accessToken) return;
+
+        try {
+            const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+
+            if (response.ok || response.status === 204) {
+                set(state => ({ events: state.events.filter(e => e.id !== id) }));
+            } else {
+                console.error("Failed to delete event", await response.text());
+            }
+        } catch (e) {
+            console.error("Error deleting event:", e);
+        }
       },
 
       toggleEventCompleted: (id) => {

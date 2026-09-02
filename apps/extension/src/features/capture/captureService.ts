@@ -208,6 +208,19 @@ export function createCaptureService(
         const isTabCapture = !config.captureMode || config.captureMode === 'tab' || config.captureMode === 'audio';
         const mediaSource = isTabCapture ? 'tab' : 'desktop';
 
+        const videoConstraints: any = {
+          chromeMediaSource: mediaSource,
+          chromeMediaSourceId: streamId,
+        };
+
+        if (config.resolution === '1080p') {
+          videoConstraints.maxWidth = 1920;
+          videoConstraints.maxHeight = 1080;
+        } else if (config.resolution === '720p') {
+          videoConstraints.maxWidth = 1280;
+          videoConstraints.maxHeight = 720;
+        }
+
         const constraints: any = {
           audio: config.audio ? {
             mandatory: {
@@ -216,10 +229,7 @@ export function createCaptureService(
             }
           } : false,
           video: (config.video || !!config.screenshotIntervalMs) ? {
-            mandatory: {
-              chromeMediaSource: mediaSource,
-              chromeMediaSourceId: streamId,
-            },
+            mandatory: videoConstraints,
           } : false,
         };
         acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -232,8 +242,15 @@ export function createCaptureService(
     if (!acquiredStream) {
       try {
         log.info(MODULE, 'Attempting getDisplayMedia stream acquisition...');
+        let videoFallbackConstraints: any = true;
+        if (config.resolution === '1080p') {
+          videoFallbackConstraints = { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 } };
+        } else if (config.resolution === '720p') {
+          videoFallbackConstraints = { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 } };
+        }
+
         acquiredStream = await navigator.mediaDevices.getDisplayMedia({
-          video: config.video || !!config.screenshotIntervalMs || true,
+          video: (config.video || !!config.screenshotIntervalMs) ? videoFallbackConstraints : false,
           audio: config.audio,
         });
         log.info(MODULE, 'Acquired stream via getDisplayMedia', { tracks: acquiredStream.getTracks().length });

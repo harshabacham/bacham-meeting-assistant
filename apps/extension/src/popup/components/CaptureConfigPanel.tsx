@@ -143,6 +143,30 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
         <ToggleIndicator active={config.video} />
       </label>
 
+      {/* Resolution Selector (Only if video is enabled) */}
+      {config.video && (
+        <div className="flex items-center gap-3 px-2.5 py-2 bg-surface-1 rounded border border-border-subtle">
+          <label htmlFor="resolution-select" className="text-xs text-text-tertiary whitespace-nowrap">
+            Resolution
+          </label>
+          <select
+            id="resolution-select"
+            value={config.resolution ?? 'auto'}
+            onChange={(e) => onChange({ ...config, resolution: e.target.value as any })}
+            disabled={disabled}
+            className={[
+              'flex-1 px-2 py-1 text-xs bg-surface-2 border border-border-default rounded',
+              'text-text-primary focus:outline-none focus:border-accent-purple',
+              'transition-colors duration-fast',
+            ].join(' ')}
+          >
+            <option value="auto">Auto (Default)</option>
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+          </select>
+        </div>
+      )}
+
       {/* Screenshots toggle */}
       <label
         className={[

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { 
   CheckSquare, Plus, Trash2, Calendar, Copy, Check, 
-  Mail, Code2, FileText, Target, CheckCircle2, Circle, ShieldAlert
+  Mail, Code2, FileText, Target, CheckCircle2, Circle, ShieldAlert, Edit3, Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useCalendarStore } from '@/shared/stores/calendarStore';
+import { EventModal } from '@/components/calendar/EventModal';
 
 export interface GlobalActionItem {
   id: string;
@@ -40,6 +42,10 @@ export const TasksPage: React.FC = () => {
   const [filterTab, setFilterTab] = useState<'all' | 'mine' | 'follow_up' | 'development' | 'done'>('all');
   const [newTaskText, setNewTaskText] = useState('');
   const [copiedAll, setCopiedAll] = useState(false);
+
+  const { events: calEvents, deleteEvent } = useCalendarStore();
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<any>(null);
 
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -194,13 +200,17 @@ export const TasksPage: React.FC = () => {
     return [...filteredTasks].sort((a, b) => b.createdAt - a.createdAt);
   }, [filteredTasks]);
 
+  const sortedCalEvents = useMemo(() => {
+    return [...calEvents].sort((a, b) => new Date(a.dateStr).getTime() - new Date(b.dateStr).getTime());
+  }, [calEvents]);
+
   const pendingCount = tasks.filter(t => t.status === 'todo').length;
   const doneCount = tasks.filter(t => t.status === 'done').length;
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden font-sans">
       {/* Sleek Header */}
-      <div className="flex-none max-w-4xl mx-auto w-full px-8 pt-14 pb-4">
+      <div className="flex-none max-w-6xl mx-auto w-full px-8 pt-14 pb-4">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-2.5">
@@ -305,45 +315,113 @@ export const TasksPage: React.FC = () => {
       </div>
 
       {/* Content List */}
-      <div className="flex-1 overflow-y-auto px-8 pb-24 max-w-4xl mx-auto w-full">
-        {loading && tasks.length === 0 ? (
-          <div className="h-64 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-[var(--border)] border-t-[var(--accent)]"></div>
+      <div className="flex-1 overflow-y-auto px-8 pb-24 max-w-6xl mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+          {/* Action Items (Left, 2 cols) */}
+          <div className="lg:col-span-2 flex flex-col gap-2">
+            {loading && tasks.length === 0 ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-[var(--border)] border-t-[var(--accent)]"></div>
+              </div>
+            ) : sortedTasks.length === 0 ? (
+              <div className="h-64 flex flex-col items-center justify-center text-center opacity-60">
+                <CheckSquare size={28} className="text-[var(--text-muted)] mb-3" />
+                <h3 className="font-medium text-[var(--text-primary)] text-sm mb-1">
+                  {filterTab === 'done' ? 'No completed tasks' : 'All caught up!'}
+                </h3>
+                <p className="text-[var(--text-muted)] text-xs">
+                  {filterTab === 'done' ? 'Completed items will appear here.' : 'No pending action items in this view.'}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 pt-2">
+                <AnimatePresence>
+                  {sortedTasks.map((task) => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <TaskRow 
+                        task={task} 
+                        onToggle={() => toggleStatus(task)} 
+                        onDelete={() => handleDeleteTask(task.id)}
+                        onClick={() => task.lectureId && navigate(task.lectureId.startsWith('note_') ? '/notes' : `/lectures/${task.lectureId}`)} 
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
-        ) : sortedTasks.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-center opacity-60">
-            <CheckSquare size={28} className="text-[var(--text-muted)] mb-3" />
-            <h3 className="font-medium text-[var(--text-primary)] text-sm mb-1">
-              {filterTab === 'done' ? 'No completed tasks' : 'All caught up!'}
-            </h3>
-            <p className="text-[var(--text-muted)] text-xs">
-              {filterTab === 'done' ? 'Completed items will appear here.' : 'No pending action items in this view.'}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 pt-2">
-            <AnimatePresence>
-              {sortedTasks.map((task) => (
-                <motion.div
-                  key={task.id}
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                  transition={{ duration: 0.18 }}
+
+          {/* Calendar Events (Right, 1 col) */}
+          <div className="flex flex-col gap-4">
+             <div className="flex items-center justify-between mb-2 pb-2 border-b border-[var(--border)]">
+                <h2 className="text-[13px] font-bold tracking-wide uppercase text-[var(--text-secondary)] flex items-center gap-1.5">
+                  <Calendar size={14} className="text-blue-500" />
+                  Calendar Events
+                </h2>
+                <button
+                  onClick={() => { setEventToEdit(null); setIsEventModalOpen(true); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)] hover:opacity-90 text-[var(--bg)] text-xs font-bold transition-opacity"
                 >
-                  <TaskRow 
-                    task={task} 
-                    onToggle={() => toggleStatus(task)} 
-                    onDelete={() => handleDeleteTask(task.id)}
-                    onClick={() => task.lectureId && navigate(task.lectureId.startsWith('note_') ? '/notes' : `/lectures/${task.lectureId}`)} 
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  <Plus size={12} /> Add Event
+                </button>
+             </div>
+             
+             {sortedCalEvents.length === 0 ? (
+                <div className="p-6 rounded-2xl border border-[var(--border)] border-dashed flex flex-col items-center justify-center text-center opacity-60 bg-[var(--surface)]/30">
+                   <Calendar size={24} className="mb-2 text-[var(--text-muted)]" />
+                   <p className="text-xs font-medium">No upcoming events</p>
+                </div>
+             ) : (
+                <div className="flex flex-col gap-2">
+                   {sortedCalEvents.map(evt => (
+                      <div key={evt.id} className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-accent)] transition-colors group">
+                         <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-semibold text-[13px] leading-tight text-[var(--text-primary)] pr-4">{evt.title}</h3>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button onClick={() => { setEventToEdit(evt); setIsEventModalOpen(true); }} className="p-1.5 rounded bg-[var(--surface-raised)] hover:text-[var(--accent)] text-[var(--text-muted)] border border-[var(--border)]">
+                                  <Edit3 size={11} />
+                               </button>
+                               <button onClick={() => deleteEvent(evt.id)} className="p-1.5 rounded bg-[var(--surface-raised)] hover:text-red-500 text-[var(--text-muted)] border border-[var(--border)]">
+                                  <Trash2 size={11} />
+                               </button>
+                            </div>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-secondary)] mt-3">
+                            <span className="font-medium bg-blue-500/10 text-blue-500 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
+                              {evt.dateStr}
+                            </span>
+                            {evt.startTime && (
+                              <span className="flex items-center gap-1">
+                                <Clock size={10} />
+                                {evt.startTime} {evt.endTime ? `- ${evt.endTime}` : ''}
+                              </span>
+                            )}
+                         </div>
+                         {evt.description && (
+                           <p className="text-[11px] text-[var(--text-muted)] mt-2 line-clamp-2 italic border-l-2 border-[var(--border)] pl-2">
+                             {evt.description}
+                           </p>
+                         )}
+                      </div>
+                   ))}
+                </div>
+             )}
           </div>
-        )}
+        </div>
       </div>
+      
+      <EventModal 
+        isOpen={isEventModalOpen} 
+        onClose={() => setIsEventModalOpen(false)} 
+        eventToEdit={eventToEdit} 
+      />
     </div>
   );
 };

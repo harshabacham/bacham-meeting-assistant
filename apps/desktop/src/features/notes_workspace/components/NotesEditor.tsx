@@ -177,6 +177,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const [tagInput, setTagInput] = useState('');
     const [folderMenuOpen, setFolderMenuOpen] = useState(false);
     const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+    const [isStreaming, setIsStreaming] = useState(true);
     const [copied, setCopied] = useState(false);
     const [dateMenuOpen, setDateMenuOpen] = useState(false);
     const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
@@ -1114,11 +1115,14 @@ Return only the polished transcript text:`;
             )}
 
             {/* AI Assistant Chat Dock */}
-            {!isTranscriptOpen && (
-                <AgenticAiChat 
-                    contextName={note.title || 'Untitled Note'} 
-                    contextText={note.content.replace(/<[^>]+>/g, ' ')}
-                    recipes={NOTE_RECIPES}
+            <AgenticAiChat 
+                contextName={note.title || 'Untitled Note'} 
+                contextText={note.content.replace(/<[^>]+>/g, ' ')}
+                isRecordingOpen={isTranscriptOpen}
+                isRecording={isStreaming}
+                onToggleRecording={() => setIsStreaming(!isStreaming)}
+                onStopRecording={() => setIsTranscriptOpen(false)}
+                recipes={NOTE_RECIPES}
                     onInsertToEditor={(content) => {
                         if (editor) {
                             editor.commands.insertContent(`
@@ -1129,11 +1133,12 @@ Return only the polished transcript text:`;
                         }
                     }}
                 />
-            )}
 
             {/* Granola Live Transcript Floating Panel */}
             <LiveTranscriptPanel 
                 isOpen={isTranscriptOpen}
+                isStreaming={isStreaming}
+                onStreamingChange={setIsStreaming}
                 onClose={() => setIsTranscriptOpen(false)}
                 onProcess={handleProcessTranscript}
                 onInsertQuote={(quoteText) => {

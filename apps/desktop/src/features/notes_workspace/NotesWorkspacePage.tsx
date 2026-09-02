@@ -257,6 +257,56 @@ export function NotesWorkspacePage() {
         }
     }, [activeFolderId]);
 
+    const handleDeleteNote = useCallback((id: string) => {
+        handleUpdateNote(id, { tags: [...(notes.find(n => n.id === id)?.tags || []), 'system:trash'] });
+        if (activeNoteId === id) setActiveNoteId(null);
+    }, [activeNoteId, notes, handleUpdateNote]);
+
+    const handleHardDeleteNote = useCallback(async (id: string) => {
+        try {
+            await TauriClient.deleteWorkspaceNote(id);
+            setNotes(prev => prev.filter(n => n.id !== id));
+            if (activeNoteId === id) setActiveNoteId(null);
+        } catch (e) {
+            console.error('Failed to hard delete note', e);
+        }
+    }, [activeNoteId]);
+
+    const handleRestoreNote = useCallback((id: string) => {
+        const note = notes.find(n => n.id === id);
+        if (note) {
+            handleUpdateNote(id, { tags: note.tags.filter(t => t !== 'system:trash') });
+        }
+    }, [notes, handleUpdateNote]);
+
+    const handleDeleteLecture = useCallback(async (id: string) => {
+        try {
+            await TauriClient.deleteLectures([id]);
+            // Refresh workspace data to hide deleted lecture from dashboard if it was there
+            refreshWorkspaceData();
+        } catch (e) {
+            console.error('Failed to trash lecture', e);
+        }
+    }, [refreshWorkspaceData]);
+
+    const handleRestoreLecture = useCallback(async (id: string) => {
+        try {
+            await TauriClient.restoreLectures([id]);
+            refreshWorkspaceData();
+        } catch (e) {
+            console.error('Failed to restore lecture', e);
+        }
+    }, [refreshWorkspaceData]);
+
+    const handleHardDeleteLecture = useCallback(async (id: string) => {
+        try {
+            await TauriClient.hardDeleteLectures([id]);
+            refreshWorkspaceData();
+        } catch (e) {
+            console.error('Failed to hard delete lecture', e);
+        }
+    }, [refreshWorkspaceData]);
+
     const activeNoteFolderName = activeNote?.folderId 
         ? folders.find(f => f.id === activeNote.folderId)?.name || 'Folder'
         : (activeFolder?.name || 'All Notes');
@@ -286,6 +336,13 @@ export function NotesWorkspacePage() {
                         lectures={displayLectures}
                         onCreateNote={handleCreateNote}
                         onSelectNote={setActiveNoteId}
+                        onUpdateNote={handleUpdateNote}
+                        onDeleteNote={handleDeleteNote}
+                        onHardDeleteNote={handleHardDeleteNote}
+                        onRestoreNote={handleRestoreNote}
+                        onDeleteLecture={handleDeleteLecture}
+                        onRestoreLecture={handleRestoreLecture}
+                        onHardDeleteLecture={handleHardDeleteLecture}
                     />
                 )}
             </div>

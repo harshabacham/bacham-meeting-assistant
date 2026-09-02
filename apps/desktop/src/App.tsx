@@ -22,7 +22,6 @@ const TasksPage = lazy(() => import("./pages/TasksPage").then(m => ({ default: m
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
 const TermsPage = lazy(() => import("./pages/TermsPage").then(m => ({ default: m.TermsPage })));
-const KnowledgeBasePage = lazy(() => import("./pages/KnowledgeBasePage").then(m => ({ default: m.KnowledgeBasePage })));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 
 const CopilotWindow = lazy(() => import("./pages/CopilotWindow").then(m => ({ default: m.CopilotWindow })));
@@ -116,7 +115,6 @@ function App() {
                     <Route path="notes" element={<NotesWorkspacePage />} />
                     <Route path="tasks" element={<TasksPage />} />
                     <Route path="trash" element={<TrashPage />} />
-                    <Route path="knowledge" element={<KnowledgeBasePage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="terms" element={<TermsPage />} />
                     <Route path="*" element={<NotFoundPage />} />
