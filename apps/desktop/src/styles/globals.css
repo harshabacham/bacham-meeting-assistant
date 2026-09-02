@@ -125,23 +125,23 @@ html, body, #root {
 }
 
 .light {
-  /* High-end "Clean. Modern. Premium." Light Mode */
-  --bg:              #F7F7F2;
-  --surface:         #FCFCF9;
-  --surface-raised:  #F2F2ED;
-  --surface-hover:   rgba(0, 0, 0, 0.04);
+  /* Warm Earthy Premium Light Mode */
+  --bg:              #FBFBF8;
+  --surface:         #FFFFFF;
+  --surface-raised:  #F3F3EB;
+  --surface-hover:   #EAEADF;
 
-  --text-primary:    #09090b;
-  --text-secondary:  #3f3f46;
-  --text-muted:      #71717a;
+  --text-primary:    #22231E;
+  --text-secondary:  #4A4C40;
+  --text-muted:      #797C6A;
 
-  --accent:          #09090b;
-  --accent-hover:    #27272a;
-  --accent-dim:      rgba(9, 9, 11, 0.06);
-  --accent-glow:     rgba(9, 9, 11, 0.1);
+  --accent:          #1A1B16;
+  --accent-hover:    #303328;
+  --accent-dim:      rgba(26, 27, 22, 0.06);
+  --accent-glow:     rgba(26, 27, 22, 0.1);
   
-  --border:          #E3E3DD;
-  --border-accent:   rgba(9, 9, 11, 0.15);
+  --border:          #E3E3D8;
+  --border-accent:   rgba(26, 27, 22, 0.15);
 
   /* Semantic Status Colors */
   --destructive:     #EF4444; 
