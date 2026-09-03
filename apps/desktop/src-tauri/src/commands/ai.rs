@@ -1343,6 +1343,58 @@ Otherwise, respond with helpful markdown text as normal."#;
 }
 
 #[tauri::command]
+pub async fn generate_multimodal_summary(
+    lecture_id: String,
+    prompt: String,
+    system_instruction: String,
+    app: AppHandle
+) -> AppResult<String> {
+    let pool = app.state::<DbState>().pool.clone();
+    
+    // 1. Fetch transcript and keyframes
+    let ctx = crate::ai::context_builder::ContextBuilder::build(&pool, &lecture_id, true).await?;
+    
+    let mut enriched_prompt = String::new();
+    let mut image_parts = Vec::new();
+
+    if !ctx.transcript_segments.is_empty() {
+        for segment in &ctx.transcript_segments {
+            enriched_prompt.push_str(&segment.content);
+            enriched_prompt.push_str("\n\n");
+        }
+    } else {
+        enriched_prompt.push_str("No transcript available.\n\n");
+    }
+
+    if !ctx.key_frames.is_empty() {
+        enriched_prompt.push_str("\n\n--- SLIDE TEXT (OCR) ---\n");
+        for (i, frame) in ctx.key_frames.iter().enumerate() {
+            if let Some(ocr) = &frame.ocr_text {
+                if !ocr.trim().is_empty() {
+                    enriched_prompt.push_str(&format!("Slide {}:\n{}\n\n", i + 1, ocr));
+                }
+            }
+            if let Some(b64) = &frame.image_base64 {
+                image_parts.push((b64.clone(), "image/png".to_string()));
+            }
+        }
+    }
+
+    // Prepend the user's base prompt and transcript text
+    let final_prompt = format!("{}\n\nMeeting Content:\n{}", prompt, enriched_prompt);
+
+    // Call Multimodal AI
+    let answer = crate::services::universal_ai::UniversalAiService::generate_multimodal(
+        &final_prompt,
+        &system_instruction,
+        &image_parts,
+        &pool
+    ).await?;
+
+    Ok(answer)
+}
+
+#[tauri::command]
 pub async fn global_ask_ai(query: String, app: AppHandle) -> AppResult<String> {
     let pool = app.state::<DbState>().pool.clone();
     let rows = sqlx::query!(

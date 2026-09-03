@@ -557,6 +557,7 @@ export const TauriClient = {
     enhanceNotesLive: (input: { rawNotes: string; transcriptContext?: string }) => invoke<{ enhancedMarkdown: string }>('enhance_notes_live', { input }),
     syncMeetingToMarkdown: (lectureId: string) => invoke<boolean>('sync_meeting_to_markdown', { lectureId }),
     sendGlobalMemoryChat: (prompt: string, history?: any[]) => invoke<string>('send_global_memory_chat', { prompt, history }),
+    generateMultimodalSummary: (lectureId: string, prompt: string, systemInstruction: string) => invoke<string>('generate_multimodal_summary', { lectureId, prompt, systemInstruction }),
     saveLiveScratchpad: (lectureId: string, notes: string) => invoke<void>('save_live_scratchpad', { input: { lectureId, notes } }),
     pushToComposio: (task: string, owner: string, priority: string, destination: string) => invoke<string>('push_to_composio', { input: { task, owner, priority, destination } }),
     transcribeLiveAudioChunk: (audioBase64: string, mimeType: string, languageHint?: string) => 

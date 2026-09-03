@@ -57,7 +57,7 @@ function AppInner(): React.ReactElement {
     // If recording or paused, only force navigation if we are coming from a non-active screen
     // This allows the user to browse Notes, History, or Settings while recording!
     if (sessionState === 'recording' || sessionState === 'paused') {
-      if (['connecting', 'permission', 'error'].includes(currentScreen)) {
+      if (['idle', 'connecting', 'permission', 'error'].includes(currentScreen)) {
         navigate(sessionState === 'paused' ? 'paused' : 'recording');
       }
       return;

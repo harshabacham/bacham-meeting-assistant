@@ -11,16 +11,19 @@ lazy_static! {
     pub static ref WS_CLIENTS: Arc<Mutex<Vec<mpsc::Sender<String>>>> = Arc::new(Mutex::new(Vec::new()));
 }
 
-pub async fn broadcast_to_extension(message: String) {
+pub async fn broadcast_to_extension(message: String) -> bool {
     let mut clients = WS_CLIENTS.lock().await;
     let mut i = 0;
+    let mut sent_count = 0;
     while i < clients.len() {
         if clients[i].send(message.clone()).await.is_err() {
             clients.remove(i);
         } else {
+            sent_count += 1;
             i += 1;
         }
     }
+    sent_count > 0
 }
 
 #[derive(Serialize, Deserialize, Debug)]

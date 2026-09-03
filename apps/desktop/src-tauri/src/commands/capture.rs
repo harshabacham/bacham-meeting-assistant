@@ -342,3 +342,12 @@ pub async fn save_keyframe(app: AppHandle, input: SaveKeyframeInput, state: taur
     Ok(rel_path)
 }
 
+#[tauri::command]
+pub async fn trigger_extension_recording() -> AppResult<()> {
+    let sent = crate::ws_server::broadcast_to_extension("{\"type\":\"OPEN_RECORD_POPUP\"}".to_string()).await;
+    if !sent {
+        return Err(crate::error::AppError::Internal("Extension not connected".to_string()));
+    }
+    Ok(())
+}
+

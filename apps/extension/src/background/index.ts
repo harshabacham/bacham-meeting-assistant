@@ -92,8 +92,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return messageHandler.onMessage(message, sender, sendResponse);
 });
 
-chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  const currentUrl = changeInfo.url || tab.url;
+  if (currentUrl && currentUrl.includes('bacham_record=true')) {
+    logger.info(MODULE, 'Desktop trigger URL detected, redirecting to extension page for user gesture', { url: currentUrl });
+    chrome.tabs.update(tabId, { url: chrome.runtime.getURL('src/popup/index.html') });
+    return;
+  }
+
   if (changeInfo.status === 'complete' && tab.url) {
+
     if (
       tab.url.includes('meet.google.com') || 
       tab.url.includes('zoom.us/wc') ||
@@ -141,6 +149,13 @@ void lifecycleHandler.rehydrate();
 
 // Attempt to connect to Desktop App on every wake
 messagingClient.connect();
+
+messagingClient.onMessage((msg) => {
+  if (msg.type === 'OPEN_RECORD_POPUP') {
+    logger.info(MODULE, 'Received OPEN_RECORD_POPUP from Desktop App, opening extension UI');
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/popup/index.html') });
+  }
+});
 
 // Forward specific backend messages to the active tab's content script
 messagingClient.onMessage((msg) => {

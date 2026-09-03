@@ -34,6 +34,8 @@ export enum MessageType {
   TRANSCRIPT_SEGMENT = 'TRANSCRIPT_SEGMENT',
   /** Live interview insight broadcast from Desktop. */
   INTERVIEW_INSIGHT = 'INTERVIEW_INSIGHT',
+  /** Trigger to open the extension popup from Desktop. */
+  OPEN_RECORD_POPUP = 'OPEN_RECORD_POPUP',
 
   // --- Internal (Popup ↔ Background) ---
   /** Popup requests current full state. Payload: none. */

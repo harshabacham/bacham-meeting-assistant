@@ -253,25 +253,47 @@ export function createMessageHandler(
 
         // Immediately send START_CAPTURE with no initial delay to prevent streamId expiration
         let captureStarted = false;
+        let lastError = '';
         for (let attempt = 0; attempt < 5; attempt++) {
           try {
-            await chrome.runtime.sendMessage({
+            const response = await chrome.runtime.sendMessage({
               target: 'offscreen',
               type: 'START_CAPTURE',
               payload: { streamId: captureResult.streamId, config: captureConfig, sessionId: session.id }
             });
+            if (response && response.success === false) {
+              // The offscreen document explicitly caught an error (e.g. user clicked Cancel).
+              // Do NOT retry, because retrying will just spam the user with the getDisplayMedia popup.
+              lastError = response.error || 'Unknown offscreen capture error';
+              break;
+            }
             captureStarted = true;
             break;
           } catch (err: any) {
-            log.warn(MODULE, `START_CAPTURE attempt ${attempt + 1} failed — retrying`, { err: err?.message });
+            // This catch block handles connection errors (e.g. if the offscreen doc is still booting up).
+            lastError = err?.message || 'Unknown error';
+            log.warn(MODULE, `START_CAPTURE attempt ${attempt + 1} failed — retrying`, { err: lastError });
             await new Promise(resolve => setTimeout(resolve, 50)); // Very fast retry
           }
         }
+        
         if (!captureStarted) {
           log.error(MODULE, 'Failed to start capture in offscreen doc after retries');
+          
+          // Revert session since capture failed (e.g. user clicked Cancel)
+          try {
+             await sessionService.discardSession();
+          } catch (e) {
+             log.warn(MODULE, 'Failed to cleanup session after capture failure', { err: e });
+          }
+          
+          await browserAction.setBadgeText('');
+          await browserAction.setIcon('idle');
+
+          return { success: false, error: `Failed to start capture: ${lastError}` };
         }
 
-        return { success: true, data: { session: updatedSession, tab } };
+        return { success: true, data: { session: updatedSession, sessionState: updatedSession.state, tab } };
       }
 
       case MessageType.PAUSE_SESSION: {

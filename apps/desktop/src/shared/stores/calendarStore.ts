@@ -19,6 +19,7 @@ export interface CalendarEvent {
   meetingUrl?: string;
   lectureId?: string;
   isExam?: boolean;
+  reminderMinutes?: number; // e.g. 10, 30, 60. If null, use default.
 }
 
 export interface DeviceFlowData {
@@ -324,12 +325,25 @@ export const useCalendarStore = create<CalendarState>()(
                 ? createIsoDate(eventData.dateStr, eventData.endTime) 
                 : new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString(); // Default 1 hr
 
-            const payload = {
+            const payload: any = {
                 summary: eventData.title,
                 description: eventData.description || "",
                 start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
                 end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
             };
+
+            if (eventData.reminderMinutes !== undefined) {
+                if (eventData.reminderMinutes === null) {
+                    payload.reminders = { useDefault: true };
+                } else {
+                    payload.reminders = {
+                        useDefault: false,
+                        overrides: [
+                            { method: 'popup', minutes: eventData.reminderMinutes }
+                        ]
+                    };
+                }
+            }
 
             const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
                 method: 'POST',
@@ -392,12 +406,25 @@ export const useCalendarStore = create<CalendarState>()(
                 ? createIsoDate(targetDateStr, targetEndTime) 
                 : new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString();
 
-            const payload = {
+            const payload: any = {
                 summary: eventData.title || existingEvent.title,
                 description: eventData.description !== undefined ? eventData.description : existingEvent.description,
                 start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
                 end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
             };
+
+            if (eventData.reminderMinutes !== undefined) {
+                if (eventData.reminderMinutes === null) {
+                    payload.reminders = { useDefault: true };
+                } else {
+                    payload.reminders = {
+                        useDefault: false,
+                        overrides: [
+                            { method: 'popup', minutes: eventData.reminderMinutes }
+                        ]
+                    };
+                }
+            }
 
             const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
                 method: 'PATCH',

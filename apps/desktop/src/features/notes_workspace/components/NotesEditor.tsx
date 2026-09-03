@@ -19,10 +19,10 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
-import { TauriClient } from '@/infrastructure/tauri-client';
+import { TauriClient, Screenshot } from '@/infrastructure/tauri-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
 const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) => {
@@ -253,6 +253,15 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     });
 
     const noteIdRef = useRef(note.id);
+    const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        if (viewMode === 'transcript' && note.isMeeting && note.id) {
+            TauriClient.getScreenshots(note.id).then(setScreenshots).catch(console.error);
+        }
+    }, [viewMode, note.id, note.isMeeting]);
+
     useEffect(() => {
         if (!editor || note.id === noteIdRef.current) return;
         noteIdRef.current = note.id;
@@ -374,15 +383,17 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
 
         setIsGeneratingSummary(true);
         try {
-            const prompt = `You are an executive meeting assistant and expert multilingual translator. Analyze the following meeting content/transcript (which may be in English, Hindi, Telugu, Tamil, Spanish, French, German, Japanese, or mixed code-switching like Hinglish):
-
-Meeting Title: "${note.title || 'Untitled Meeting'}"
+            const systemInstruction = `You are an executive meeting assistant and expert multilingual translator. Analyze the following meeting content/transcript (which may be in English, Hindi, Telugu, Tamil, Spanish, French, German, Japanese, or mixed code-switching like Hinglish).
+If screenshots/slides are provided, incorporate their visual information into your summary.`;
+            
+            const prompt = `Meeting Title: "${note.title || 'Untitled Meeting'}"
 Meeting Text:
 ${textToSummarize}
 
 Instructions:
 - If the text is in another language or mixed (e.g. Hindi, Telugu, Spanish), understand the full context accurately.
-- Provide a structured, polished executive summary with clear English headings and rich bilingual context where applicable:
+- Provide a structured, polished executive summary with clear English headings and rich bilingual context where applicable.
+- If visual slides/screenshots are provided, explicitly mention key diagrams or data shown in them.
 
 Structure your response with:
 ## ✨ Executive Overview
@@ -397,7 +408,15 @@ Structure your response with:
 ## 💡 Strategic Decisions & Next Steps
 (Decisions finalized and agreed milestones)`;
 
-            const response = await TauriClient.sendGlobalMemoryChat(prompt, []);
+            let response = '';
+            if (note.isMeeting && note.id) {
+                // Multimodal endpoint fetches screenshots from DB automatically
+                response = await TauriClient.generateMultimodalSummary(note.id, prompt, systemInstruction);
+            } else {
+                const combinedPrompt = `${systemInstruction}\n\n${prompt}`;
+                response = await TauriClient.sendGlobalMemoryChat(combinedPrompt, []);
+            }
+            
             setAiSummary(response);
             localStorage.setItem(`summary_${note.id}`, response);
             onUpdate({ summary: response });
@@ -600,17 +619,24 @@ Return only the polished transcript text:`;
                     <button
                         data-tauri-drag-region="false"
                         type="button"
-                        onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
+                        onClick={async () => {
+                            try {
+                                await invoke('trigger_extension_recording');
+                            } catch(e) {
+                                console.error('Failed to trigger recording', e);
+                                alert(`Failed to start recording: ${e}\n\nPlease make sure the BACHAM browser extension is installed and active.`);
+                            }
+                        }}
                         className={cn(
                             "px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
                             isTranscriptOpen
                                 ? "bg-[var(--destructive)] hover:opacity-90 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse"
                                 : "bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)]"
                         )}
-                        title="Record Meeting & Live Transcription"
+                        title="Record Meeting in Browser Extension"
                     >
                         <Mic size={13} />
-                        <span>{isTranscriptOpen ? 'Recording...' : 'Record'}</span>
+                        <span>Record</span>
                     </button>
 
                     <div className="h-4 w-px bg-[var(--border)] mx-0.5" />
@@ -966,12 +992,49 @@ Return only the polished transcript text:`;
                                 <div className="w-full lg:w-1/2 lg:sticky lg:top-0">
                                     <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-[var(--border)] shadow-sm">
                                         <video 
+                                            ref={videoRef}
                                             src={convertFileSrc(note.videoPath)} 
                                             controls 
                                             className="w-full aspect-video object-contain bg-black"
                                             controlsList="nodownload"
                                         />
                                     </div>
+                                    
+                                    {/* Horizontal Screenshot Gallery */}
+                                    {screenshots.length > 0 && (
+                                        <div className="mt-4 pb-2 w-full overflow-x-auto flex gap-3 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[var(--border)] scrollbar-track-transparent">
+                                            {screenshots.map((s) => {
+                                                // Calculate relative timestamp for the badge
+                                                const timeInSec = Math.max(0, Math.floor((s.capturedAt - note.createdAt) / 1000));
+                                                const mins = Math.floor(timeInSec / 60);
+                                                const secs = timeInSec % 60;
+                                                const timeString = `${mins}:${secs.toString().padStart(2, '0')}`;
+                                                
+                                                return (
+                                                    <div 
+                                                        key={s.id} 
+                                                        onClick={() => {
+                                                            if (videoRef.current) {
+                                                                videoRef.current.currentTime = timeInSec;
+                                                                videoRef.current.play().catch(() => {});
+                                                            }
+                                                        }}
+                                                        className="snap-start shrink-0 w-32 aspect-video bg-black/5 dark:bg-white/5 rounded-lg overflow-hidden border border-[var(--border)] hover:border-[var(--accent)] transition-all cursor-pointer relative group"
+                                                        title={`Jump to ${timeString}`}
+                                                    >
+                                                        <img 
+                                                            src={convertFileSrc(s.filePath)} 
+                                                            alt={`Snapshot at ${timeString}`}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm shadow-sm group-hover:bg-[var(--accent)] transition-colors">
+                                                            {timeString}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Right Column: Transcript */}
@@ -1040,7 +1103,9 @@ Return only the polished transcript text:`;
                                             </p>
                                             <button
                                                 type="button"
-                                                onClick={() => setIsTranscriptOpen(true)}
+                                                onClick={async () => {
+                                                    await open('https://app.bacham.com/record');
+                                                }}
                                                 className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
                                             >
                                                 <Mic size={13} />
@@ -1116,7 +1181,14 @@ Return only the polished transcript text:`;
                                         </p>
                                         <button
                                             type="button"
-                                            onClick={() => setIsTranscriptOpen(true)}
+                                            onClick={async () => {
+                                                try {
+                                                    await invoke('trigger_extension_recording');
+                                                } catch(e) {
+                                                    console.error('Failed to trigger recording', e);
+                                                    alert(`Failed to start recording: ${e}\n\nPlease make sure the BACHAM browser extension is installed and active.`);
+                                                }
+                                            }}
                                             className="px-4 py-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
                                         >
                                             <Mic size={13} />
@@ -1153,22 +1225,7 @@ Return only the polished transcript text:`;
                 </div>
             )}
 
-            {/* Granola Live Transcript Floating Panel */}
-            <LiveTranscriptPanel 
-                isOpen={isTranscriptOpen}
-                isStreaming={isStreaming}
-                onStreamingChange={setIsStreaming}
-                onClose={() => setIsTranscriptOpen(false)}
-                onProcess={handleProcessTranscript}
-                onInsertQuote={(quoteText) => {
-                    if (editor) {
-                        editor.commands.focus();
-                        editor.commands.insertContent(`
-                            <blockquote><p><em>"${quoteText}"</em></p></blockquote><p></p>
-                        `);
-                    }
-                }}
-            />
+            {/* Live Transcript Panel has been removed to rely on browser extension */}
         </div>
     );
 }

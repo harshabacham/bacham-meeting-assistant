@@ -55,22 +55,22 @@ export function ComingUpCalendarWidget() {
   return (
     <div className="w-full flex flex-col gap-3">
       {/* Widget Header matching Granola */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-baseline gap-4">
-          <h2 className="text-2xl font-serif font-medium text-[var(--text-primary)] tracking-tight">
-            Coming up
-          </h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-2xl font-serif font-medium text-[var(--text-primary)] tracking-tight">
+          Coming up
+        </h2>
+
+        <div className="flex items-center gap-4 text-[var(--text-muted)]">
           <button 
             onClick={() => navigate('/tasks?view=calendar')} 
-            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:underline transition-colors"
+            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
           >
             View all
           </button>
-        </div>
 
-        {/* Pagination Controls */}
-        <div className="flex items-center gap-1 text-[var(--text-muted)]">
-          <button
+          {/* Pagination Controls */}
+          <div className="flex items-center gap-1">
+            <button
             onClick={handlePrev}
             disabled={pageIndex === 0}
             className="p-1 rounded-lg hover:bg-[var(--surface-hover)] disabled:opacity-30 transition-colors"
@@ -88,8 +88,9 @@ export function ComingUpCalendarWidget() {
           </button>
         </div>
       </div>
+    </div>
 
-      {/* Main Agenda Card matching Granola */}
+    {/* Main Agenda Card matching Granola */}
       <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col divide-y divide-[var(--border)]/40 relative">
         {!isConnected ? (
           <div className="py-8 text-center text-xs text-[var(--text-muted)] flex flex-col items-center gap-3">

@@ -143,6 +143,7 @@ pub fn run() {
             commands::native::fetch_ical_feed,
             commands::native::fetch_url_with_auth,
             commands::native::fetch_custom,
+            commands::capture::trigger_extension_recording,
             commands::db_health_check,
             commands::logger_write,
             // Lectures
@@ -248,6 +249,7 @@ pub fn run() {
             commands::ai::update_action_item_status,
             commands::ai::global_ask_ai,
             commands::ai::send_global_memory_chat,
+            commands::ai::generate_multimodal_summary,
             commands::ai::translate_transcript,
             commands::ai::generate_pre_meeting_brief,
             commands::ai::transcribe_live_audio_chunk,

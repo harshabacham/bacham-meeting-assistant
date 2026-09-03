@@ -32,6 +32,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
   
   // Optional fields
   const [location, setLocation] = useState('');
+  const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -63,6 +64,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
       setColor(eventToEdit.color || COLORS[0]);
       
       setLocation(eventToEdit.meetingUrl || '');
+      setReminderMinutes(eventToEdit.reminderMinutes ?? null);
       
     } else {
       setMode('edit');
@@ -73,6 +75,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
       setDescription('');
       setColor(COLORS[0]);
       setLocation('');
+      setReminderMinutes(null);
     }
   }, [eventToEdit, isOpen]);
 
@@ -100,7 +103,8 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
           endTime: formatTimeForSave(endTime),
           description,
           color,
-          meetingUrl: location
+          meetingUrl: location,
+          reminderMinutes
         });
         showToast('Event updated successfully', 'success');
       } else {
@@ -115,7 +119,8 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
           dayNum: new Date(dateStr).getDate(),
           monthStr: new Date(dateStr).toLocaleString('default', { month: 'short' }),
           dayOfWeek: new Date(dateStr).toLocaleString('default', { weekday: 'short' }),
-          meetingUrl: location
+          meetingUrl: location,
+          reminderMinutes
         });
         showToast('Event added successfully', 'success');
       }
@@ -269,6 +274,26 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
                      />
                    </div>
                 </div>
+
+                 <div className="flex items-center gap-4">
+                   <Bell size={18} className="text-[var(--text-muted)] shrink-0" />
+                   <div className="flex-1">
+                     <select
+                       value={reminderMinutes === null ? 'default' : reminderMinutes}
+                       onChange={(e) => setReminderMinutes(e.target.value === 'default' ? null : parseInt(e.target.value))}
+                       className="w-full px-4 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)]"
+                     >
+                       <option value="default">Default calendar reminder</option>
+                       <option value="0">At time of event</option>
+                       <option value="5">5 minutes before</option>
+                       <option value="10">10 minutes before</option>
+                       <option value="15">15 minutes before</option>
+                       <option value="30">30 minutes before</option>
+                       <option value="60">1 hour before</option>
+                       <option value="1440">1 day before</option>
+                     </select>
+                   </div>
+                 </div>
 
                 <div className="flex items-start gap-4">
                    <AlignLeft size={18} className="text-[var(--text-muted)] shrink-0 mt-2.5" />

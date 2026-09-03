@@ -77,7 +77,12 @@ export function useSession(): UseSessionReturn {
         payload: intent,
       });
       if (!res.success) {
-        setError(res.error ?? 'Failed to start session');
+        if (res.error?.includes('Permission denied by user') || res.error?.includes('NotAllowedError')) {
+          // User clicked cancel. Ignore the error and let the app return to idle.
+          setError(null);
+        } else {
+          setError(res.error ?? 'Failed to start session');
+        }
       } else if (res.data) {
         setSession(res.data.session);
         setSessionState(res.data.sessionState);
@@ -90,13 +95,19 @@ export function useSession(): UseSessionReturn {
   const pause = useCallback(async (): Promise<void> => {
     const res = await sendToBackground<undefined, Session>({ type: MessageType.PAUSE_SESSION });
     if (!res.success) setError(res.error ?? 'Failed to pause');
-    else if (res.data) setSession(res.data);
+    else if (res.data) {
+      setSession(res.data);
+      setSessionState('paused');
+    }
   }, []);
 
   const resume = useCallback(async (): Promise<void> => {
     const res = await sendToBackground<undefined, Session>({ type: MessageType.RESUME_SESSION });
     if (!res.success) setError(res.error ?? 'Failed to resume');
-    else if (res.data) setSession(res.data);
+    else if (res.data) {
+      setSession(res.data);
+      setSessionState('recording');
+    }
   }, []);
 
   const stop = useCallback(async (): Promise<void> => {

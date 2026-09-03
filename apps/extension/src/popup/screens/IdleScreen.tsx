@@ -4,7 +4,6 @@ import type { StartSessionIntent, LectureSummary } from '@/shared/types';
 import { useCapture } from '@/shared/hooks/useCapture';
 import { useSession } from '@/shared/hooks/useSession';
 import {
-  Menu,
   Plus,
   Search,
   SlidersHorizontal,
@@ -346,13 +345,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
           REC Note
         </h1>
         <div className="relative">
-          <button
-            onClick={() => setSettingsModalOpen(!settingsModalOpen)}
-            className="p-2 -mr-2 rounded-xl hover:bg-slate-100 text-slate-800 transition-colors cursor-pointer"
-          >
-            <Menu size={22} strokeWidth={2.5} />
-          </button>
-          <span className="absolute top-1.5 right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+          {/* Removed top right menu as requested */}
         </div>
       </div>
 
@@ -601,6 +594,25 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                     className="w-14 px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[12px] font-bold text-center text-slate-800"
                   />
                   <span className="text-[12px] text-slate-500 font-medium">sec</span>
+                </div>
+              </div>
+
+              {/* Resolution */}
+              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                <div>
+                  <span className="text-[13px] font-bold text-slate-800 block">Resolution</span>
+                  <span className="text-[11px] text-slate-400">Capture video quality</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={captureConfig.resolution || 'auto'}
+                    onChange={(e) => void updateConfig({ ...captureConfig, resolution: e.target.value as any })}
+                    className="px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-[12px] font-bold text-slate-800 outline-none"
+                  >
+                    <option value="auto">Auto</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                  </select>
                 </div>
               </div>
 

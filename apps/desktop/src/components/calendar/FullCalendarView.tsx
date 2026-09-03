@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Search, CheckSquare, ChevronDown } fro
 import { EventModal } from './EventModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 // Helper to parse "10:30 AM" into hours (e.g. 10.5)
 function parseTimeToHours(timeStr?: string): number {
@@ -25,15 +26,24 @@ const truncate = (str: string, length: number) => {
 };
 
 const colorPalette = [
-  { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
-  { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
-  { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/20' },
-  { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
-  { bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
+  { bg: 'bg-purple-500/20 hover:bg-purple-500/30', text: 'text-purple-700 dark:text-purple-300' },
+  { bg: 'bg-emerald-500/20 hover:bg-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300' },
+  { bg: 'bg-rose-500/20 hover:bg-rose-500/30', text: 'text-rose-700 dark:text-rose-300' },
+  { bg: 'bg-amber-500/20 hover:bg-amber-500/30', text: 'text-amber-700 dark:text-amber-300' },
+  { bg: 'bg-sky-500/20 hover:bg-sky-500/30', text: 'text-sky-700 dark:text-sky-300' },
+  { bg: 'bg-indigo-500/20 hover:bg-indigo-500/30', text: 'text-indigo-700 dark:text-indigo-300' },
 ];
 
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 export function FullCalendarView() {
-  const { events } = useCalendarStore();
+  const { events, editEvent, syncNow, autoSyncEnabled } = useCalendarStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   
@@ -44,6 +54,27 @@ export function FullCalendarView() {
 
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  // Real-Time Sync on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (autoSyncEnabled) {
+        syncNow().catch(console.error);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [autoSyncEnabled, syncNow]);
+
+  // Drag and Drop Logic
+  const handleDropEvent = async (eventId: string, newDateStr: string) => {
+    const evt = events.find(e => e.id === eventId);
+    if (evt && evt.dateStr !== newDateStr) {
+      // Optimistically update
+      await editEvent(eventId, { dateStr: newDateStr });
+      showToast('Event rescheduled', 'success');
+    }
+  };
 
   // Navigation Logic
   const handlePrev = () => {
@@ -105,81 +136,72 @@ export function FullCalendarView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg)] text-[var(--text-primary)] font-sans border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+    <div className="flex flex-col h-full bg-black/40 text-[var(--text-primary)] font-sans rounded-2xl overflow-hidden shadow-2xl relative border border-white/5 backdrop-blur-xl">
       
       {/* Universal Header */}
-      <div className="flex items-center justify-between py-4 px-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 z-10 relative">
+      <div className="flex items-center justify-between py-4 px-6 border-b border-white/10 bg-white/5 backdrop-blur-md shrink-0 z-20 relative shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="flex flex-col items-center justify-center bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl w-14 h-14 shadow-sm">
-            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{shortMonthName}</span>
-            <span className="text-xl font-extrabold text-[var(--accent)]">{todayDate}</span>
+          <div className="flex flex-col items-center justify-center bg-black/40 border border-white/5 rounded-xl w-14 h-14 shadow-inner">
+            <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">{shortMonthName}</span>
+            <span className="text-xl font-extrabold text-[var(--accent)] drop-shadow-md">{todayDate}</span>
           </div>
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-white/90">
               {monthName} {yearStr}
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-[var(--border)] text-[var(--text-muted)] mt-1 bg-[var(--surface-raised)]">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 text-white/60 bg-black/20 uppercase tracking-wider">
                 {titleBadge}
               </span>
             </h2>
-            <p className="text-sm text-[var(--text-muted)]">{titleSubtitle}</p>
+            <p className="text-sm text-white/50">{titleSubtitle}</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 relative">
+        <div className="flex flex-wrap items-center gap-4 relative">
           <button 
             onClick={() => showToast('Search functionality coming soon!', 'info')}
-            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-2"
+            className="text-white/50 hover:text-white/90 transition-colors p-2"
           >
-            <Search size={20} />
+            <Search size={18} />
           </button>
           
-          <div className="flex items-center border border-[var(--border)] rounded-md bg-[var(--surface-raised)] shadow-sm h-9">
-            <button onClick={handlePrev} className="px-2 h-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors border-r border-[var(--border)]">
-              <ChevronLeft size={18} />
+          {/* Segmented Control - View Mode */}
+          <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5 shadow-inner">
+            {['month', 'week', 'day'].map((m) => (
+              <button
+                key={m}
+                onClick={() => setViewMode(m as any)}
+                className={`px-4 py-1.5 rounded-md text-[11px] uppercase tracking-wider font-bold transition-all ${viewMode === m ? 'bg-white/20 text-white shadow-sm' : 'text-white/40 hover:text-white/80'}`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          
+          {/* Segmented Control - Date Nav */}
+          <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5 shadow-inner">
+            <button onClick={handlePrev} className="p-1.5 rounded-md hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+              <ChevronLeft size={16} />
             </button>
-            <button onClick={handleToday} className="px-4 h-full text-sm font-semibold hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-primary)] border-r border-[var(--border)]">
+            <button onClick={handleToday} className="px-3 py-1.5 rounded-md text-[11px] uppercase tracking-wider font-bold hover:bg-white/10 transition-colors text-white/80 hover:text-white">
               Today
             </button>
-            <button onClick={handleNext} className="px-2 h-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors">
-              <ChevronRight size={18} />
+            <button onClick={handleNext} className="p-1.5 rounded-md hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+              <ChevronRight size={16} />
             </button>
-          </div>
-
-          {/* View Mode Dropdown */}
-          <div className="relative">
-            <button 
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 border border-[var(--border)] rounded-md bg-[var(--surface-raised)] shadow-sm h-9 px-3 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors w-[120px] justify-between"
-            >
-              {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} view <ChevronDown size={14} className="text-[var(--text-muted)]" />
-            </button>
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-md shadow-lg z-50 overflow-hidden">
-                {['month', 'week', 'day'].map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => { setViewMode(m as any); setDropdownOpen(false); }}
-                    className={`block w-full text-left px-3 py-2 text-sm font-semibold hover:bg-[var(--surface-hover)] ${viewMode === m ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}
-                  >
-                    {m.charAt(0).toUpperCase() + m.slice(1)} view
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           
           <button 
             onClick={() => navigate('/tasks')}
-            className="flex items-center gap-2 border border-[var(--border)] rounded-md bg-[var(--surface-raised)] shadow-sm h-9 px-3 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+            className="flex items-center gap-2 bg-black/40 rounded-lg border border-white/5 shadow-inner h-9 px-3 text-[11px] uppercase tracking-wider font-bold text-white/60 hover:text-white hover:bg-white/10 transition-all"
           >
-            <CheckSquare size={14} className="text-[var(--text-muted)]" />
+            <CheckSquare size={14} />
           </button>
 
           <button 
             onClick={() => { setEventToEdit(null); setIsEventModalOpen(true); }}
-            className="flex items-center gap-1.5 px-4 h-9 rounded-md bg-[var(--accent)] hover:opacity-90 text-[var(--bg)] text-sm font-bold shadow-sm transition-opacity"
+            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-gradient-to-b from-[var(--accent)] to-[var(--accent-dark)] hover:brightness-110 shadow-[0_0_15px_var(--accent-alpha)] text-black text-[12px] font-bold transition-all"
           >
-            <Plus size={16} /> Add event
+            <Plus size={16} strokeWidth={3} /> Add event
           </button>
         </div>
       </div>
@@ -190,8 +212,9 @@ export function FullCalendarView() {
           <MonthView 
             currentDate={currentDate} 
             eventsByDay={eventsByDay} 
-            onEditEvent={(e) => { setEventToEdit(e); setIsEventModalOpen(true); }}
-            onAddEvent={(dateStr) => { setEventToEdit({ dateStr, startTime: '12:00 PM' } as any); setIsEventModalOpen(true); }}
+            onEditEvent={(e: any) => { setEventToEdit(e); setIsEventModalOpen(true); }}
+            onAddEvent={(dateStr: string) => { setEventToEdit({ dateStr, startTime: '12:00 PM' } as any); setIsEventModalOpen(true); }}
+            onDropEvent={handleDropEvent}
           />
         )}
         {viewMode === 'week' && (
@@ -223,7 +246,7 @@ export function FullCalendarView() {
 // -----------------------------------------------------------------------------
 // MONTH VIEW
 // -----------------------------------------------------------------------------
-function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent }: any) {
+function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEvent }: any) {
   const gridDays = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -249,33 +272,41 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent }: any) {
   }, [currentDate]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="grid grid-cols-7 border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
+    <div className="flex flex-col h-full bg-black/20">
+      <div className="grid grid-cols-7 border-b border-white/10 bg-black/20 backdrop-blur-md shrink-0 relative z-10">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center py-3 text-[13px] font-semibold text-[var(--text-secondary)] border-r border-[var(--border)] last:border-r-0">
+          <div key={day} className="text-center py-3 text-[12px] uppercase tracking-wider font-bold text-[var(--text-secondary)] border-r border-white/5 last:border-r-0">
             {day}
           </div>
         ))}
       </div>
-      <div className="flex-1 overflow-y-auto bg-[var(--bg)] custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         <div className="grid grid-cols-7 min-h-full auto-rows-fr">
           {gridDays.map((cell, i) => {
             const dayEvents = eventsByDay[cell.dateStr] || [];
             return (
               <div 
                 key={i} 
-                className={`min-h-[120px] p-2 border-r border-b border-[var(--border)] flex flex-col gap-1 transition-colors ${
-                  !cell.isCurrentMonth ? 'bg-[var(--surface)] opacity-50' : 'bg-[var(--bg)] hover:bg-[var(--surface-hover)] cursor-pointer'
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const eventId = e.dataTransfer.getData('text/plain');
+                  if (eventId && onDropEvent) {
+                    onDropEvent(eventId, cell.dateStr);
+                  }
+                }}
+                className={`min-h-[140px] p-2 border-r border-b border-white/5 flex flex-col gap-1.5 transition-colors relative group ${
+                  !cell.isCurrentMonth ? 'bg-gradient-to-br from-black/40 to-black/10 opacity-50' : 'bg-transparent hover:bg-white/5 cursor-pointer'
                 }`}
                 onClick={() => cell.isCurrentMonth && onAddEvent(cell.dateStr)}
               >
-                <div className="flex justify-start mb-1">
-                  <div className={`w-6 h-6 flex items-center justify-center rounded-full text-[13px] font-bold ${
+                <div className="flex justify-end mb-1">
+                  <div className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-bold ${
                     cell.isToday 
-                      ? 'bg-[var(--accent)] text-[var(--bg)]' 
+                      ? 'bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/30' 
                       : !cell.isCurrentMonth 
-                        ? 'text-[var(--text-muted)] font-medium' 
-                        : 'text-[var(--text-primary)]'
+                        ? 'text-white/30 font-medium' 
+                        : 'text-white/80'
                   }`}>
                     {cell.date.getDate()}
                   </div>
@@ -284,15 +315,27 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent }: any) {
                   {dayEvents.slice(0, 4).map((evt: any, idx: number) => {
                     const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
                     const style = colorPalette[colorIndex];
+                    const customRgba = evt.color ? hexToRgba(evt.color, 0.15) : null;
                     return (
-                      <div 
+                      <motion.div 
                         key={evt.id}
+                        layoutId={evt.id}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', evt.id);
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
-                        className={`px-2 py-1 rounded text-[11px] font-bold leading-tight truncate flex items-center justify-between cursor-pointer border hover:brightness-110 ${style.bg} ${style.text} ${style.border}`}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold leading-tight flex items-center justify-between cursor-pointer border border-white/10 shadow-sm ${!customRgba ? style.bg : ''} ${!customRgba ? style.text : ''}`}
+                        style={customRgba ? { backgroundColor: customRgba, color: evt.color } : {}}
                       >
-                        <span className="truncate">{truncate(evt.title, 12)}</span>
-                        {evt.startTime && <span className="opacity-80 ml-1 shrink-0">{evt.startTime}</span>}
-                      </div>
+                        <span className="truncate flex-1 pr-2">{evt.title}</span>
+                        {evt.startTime && <span className="opacity-80 shrink-0 text-[10px] font-medium tracking-wide">{evt.startTime}</span>}
+                      </motion.div>
                     );
                   })}
                   {dayEvents.length > 4 && (
@@ -343,21 +386,21 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full bg-black/20">
       {/* Main Timeline Area */}
       <div className="flex-1 flex flex-col h-full min-w-0">
         
         {/* Day Headers */}
-        <div className="flex border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
-          <div className="w-16 shrink-0 border-r border-[var(--border)]" />
+        <div className="flex border-b border-white/10 bg-black/20 backdrop-blur-md shrink-0 sticky top-0 z-20 shadow-sm">
+          <div className="w-16 shrink-0 border-r border-white/5" />
           {days.map((day, i) => {
             const isToday = day.toLocaleDateString() === new Date().toLocaleDateString();
             return (
-              <div key={i} className={`flex-1 min-w-[100px] border-r border-[var(--border)] last:border-r-0 py-3 flex flex-col items-center justify-center`}>
-                <span className={`text-[12px] font-semibold ${isToday ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'}`}>
+              <div key={i} className={`flex-1 min-w-[100px] border-r border-white/5 last:border-r-0 py-4 flex flex-col items-center justify-center`}>
+                <span className={`text-[11px] uppercase tracking-wider font-bold ${isToday ? 'text-[var(--accent)]' : 'text-white/50'}`}>
                   {day.toLocaleString('default', { weekday: 'short' })}
                 </span>
-                <span className={`text-[20px] font-extrabold mt-1 w-9 h-9 flex items-center justify-center rounded-full ${isToday ? 'bg-[var(--accent)] text-[var(--bg)]' : 'text-[var(--text-primary)]'}`}>
+                <span className={`text-[22px] font-extrabold mt-1.5 w-10 h-10 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/30' : 'text-white/80 hover:bg-white/10 cursor-pointer'}`} onClick={() => onSelectDate(day)}>
                   {day.getDate()}
                 </span>
               </div>
@@ -370,11 +413,11 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
           
           <div className="flex relative" style={{ height: `${24 * 60}px` }}>
             {/* Time Labels */}
-            <div className="w-16 shrink-0 border-r border-[var(--border)] bg-[var(--surface)] relative z-10">
+            <div className="w-16 shrink-0 border-r border-white/5 bg-transparent relative z-10">
               {hours.map((hour) => (
                 <div 
                   key={hour} 
-                  className="absolute w-full text-right pr-2 text-[10px] font-semibold text-[var(--text-muted)]" 
+                  className="absolute w-full text-right pr-3 text-[10px] font-bold tracking-wider text-white/30 uppercase" 
                   style={{ top: `${hour * 60}px`, transform: 'translateY(-50%)' }}
                 >
                   {hour === 0 ? '' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
@@ -389,12 +432,12 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
               const isToday = day.toLocaleDateString() === now.toLocaleDateString();
 
               return (
-                <div key={i} className="flex-1 min-w-[100px] border-r border-[var(--border)] last:border-r-0 relative group">
+                <div key={i} className="flex-1 min-w-[100px] border-r border-white/5 last:border-r-0 relative group">
                   {/* Grid Lines */}
                   {hours.map(hour => (
                     <div 
                       key={hour} 
-                      className="absolute w-full border-t border-[var(--border)]" 
+                      className="absolute w-full border-t border-white/5" 
                       style={{ top: `${hour * 60}px` }} 
                     />
                   ))}
@@ -403,7 +446,7 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                   {hours.map(hour => (
                     <div 
                       key={`slot-${hour}`}
-                      className="absolute w-full opacity-0 hover:opacity-100 hover:bg-[var(--surface-raised)] transition-colors cursor-pointer"
+                      className="absolute w-full opacity-0 hover:opacity-100 hover:bg-white/5 transition-colors cursor-pointer"
                       style={{ top: `${hour * 60}px`, height: '60px', zIndex: 5 }}
                       onClick={() => onAddEvent(dStr, `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`)}
                     />
@@ -415,8 +458,8 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                       className="absolute left-0 w-full z-20 pointer-events-none"
                       style={{ top: `${(now.getHours() * 60) + now.getMinutes()}px` }}
                     >
-                      <div className="relative border-t-2 border-[var(--accent)]">
-                        <div className="absolute left-[-4px] top-[-5px] w-2 h-2 rounded-full bg-[var(--accent)]" />
+                      <div className="relative border-t-[2px] border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                        <div className="absolute left-[-4px] top-[-5px] w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
                       </div>
                     </div>
                   )}
@@ -429,21 +472,25 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
 
                     const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
                     const style = colorPalette[colorIndex];
+                    const customRgba = evt.color ? hexToRgba(evt.color, 0.25) : null;
 
                     return (
-                      <div
+                      <motion.div
                         key={evt.id}
+                        layoutId={`timeline-${evt.id}`}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
-                        className={`absolute left-1 right-2 rounded-md p-2 overflow-hidden cursor-pointer border shadow-sm transition-all hover:shadow-md hover:brightness-110 ${style.bg} ${style.border}`}
+                        whileHover={{ scale: 1.02, zIndex: 30 }}
+                        className={`absolute left-1.5 right-2.5 rounded-lg p-2.5 overflow-hidden cursor-pointer shadow-sm transition-shadow hover:shadow-lg hover:brightness-110 border border-white/10 ${!customRgba ? style.bg : ''} ${!customRgba ? style.text : ''}`}
                         style={{
                           top: `${startH * 60}px`,
                           height: `${(endH - startH) * 60}px`,
-                          zIndex: 10
+                          zIndex: 10,
+                          ...(customRgba ? { backgroundColor: customRgba, color: evt.color } : {})
                         }}
                       >
-                        <div className={`text-[12px] font-bold leading-tight ${style.text}`}>{evt.title}</div>
-                        <div className={`text-[10px] font-medium leading-tight opacity-80 mt-1 ${style.text}`}>{evt.startTime} {evt.endTime && `- ${evt.endTime}`}</div>
-                      </div>
+                        <div className="text-[11.5px] font-bold leading-tight truncate">{evt.title}</div>
+                        <div className="text-[10px] font-medium leading-tight opacity-80 mt-1 truncate">{evt.startTime} {evt.endTime && `- ${evt.endTime}`}</div>
+                      </motion.div>
                     );
                   })}
                 </div>
