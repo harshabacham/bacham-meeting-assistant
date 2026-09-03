@@ -20,7 +20,7 @@ interface AgenticAiChatProps {
     contextName: string;
     contextText?: string;
     recipes: AiRecipe[];
-    position?: 'fixed' | 'absolute' | 'relative';
+    position?: 'fixed' | 'absolute' | 'relative' | 'tab';
     className?: string;
     isRecordingOpen?: boolean;
     isRecording?: boolean;
@@ -116,9 +116,128 @@ export function AgenticAiChat({
     return (
         <>
             {/* ═══════════════════════════════════════════════════════════════════════ */}
+            {/* 0. TAB INLINE RENDER MODE                                              */}
+            {/* ═══════════════════════════════════════════════════════════════════════ */}
+            {position === 'tab' && (
+                <div className={cn("flex flex-col h-full w-full max-w-3xl mx-auto px-8 py-8 font-sans", className)}>
+                    {/* Chat Timeline */}
+                    <div className="flex-1 overflow-y-auto pr-4 mb-4 space-y-6 scroll-smooth pb-32">
+                        {transcript.length === 0 && !loading && (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[var(--text-muted)] gap-3 mt-10">
+                                <div className="w-12 h-12 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)] shadow-xs">
+                                    <Bot size={24} />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-[var(--text-primary)] text-base mb-1">Meeting AI Assistant</p>
+                                    <p className="text-sm text-[var(--text-muted)] max-w-xs leading-normal mx-auto">
+                                        Ask questions, generate meeting summaries, or extract action items directly into your notes.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {transcript.map((msg, i) => (
+                            <div key={i} className="flex flex-col gap-1.5">
+                                {msg.role === 'user' ? (
+                                    <div className="ml-auto bg-[var(--text-primary)] text-[var(--bg)] font-medium px-4 py-2.5 rounded-2xl rounded-tr-xs max-w-[85%] shadow-xs text-sm leading-relaxed">
+                                        {msg.content}
+                                    </div>
+                                ) : (
+                                    <div className="mr-auto w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl rounded-tl-xs p-5 shadow-xs flex flex-col gap-3">
+                                        <div 
+                                            className="text-[var(--text-primary)] leading-relaxed space-y-2 text-sm font-sans prose prose-neutral dark:prose-invert max-w-none"
+                                            dangerouslySetInnerHTML={{ 
+                                                __html: msg.content
+                                                    .replace(/^### (.*$)/gim, '<h4 class="text-[14px] font-semibold text-[var(--text-primary)] mt-3 mb-1.5">$1</h4>')
+                                                    .replace(/^## (.*$)/gim, '<h3 class="text-[16px] font-semibold text-[var(--text-primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">$1</h3>')
+                                                    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-[var(--text-primary)]">$1</strong>')
+                                                    .replace(/^- (.*$)/gim, '<li class="ml-4 list-disc text-sm text-[var(--text-secondary)]">$1</li>')
+                                                    .replace(/\n/g, '<br/>')
+                                            }}
+                                        />
+                                        
+                                        {/* Action bar on AI response */}
+                                        <div className="flex items-center gap-2 pt-3 border-t border-[var(--border)] text-xs text-[var(--text-muted)] mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopyMessage(msg.content, i)}
+                                                className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors cursor-pointer px-2.5 py-1.5 rounded-md hover:bg-[var(--surface-hover)]"
+                                            >
+                                                {copiedIndex === i ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                                                <span>{copiedIndex === i ? 'Copied' : 'Copy'}</span>
+                                            </button>
+                                            
+                                            {onInsertToEditor && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onInsertToEditor(msg.content)}
+                                                    className="flex items-center gap-1 text-[var(--accent)] hover:underline font-semibold ml-auto cursor-pointer px-2.5 py-1.5 rounded-md hover:bg-[var(--accent-dim)] transition-colors"
+                                                >
+                                                    <Plus size={14} />
+                                                    <span>Insert to Note</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                        {loading && (
+                            <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 w-fit shadow-xs">
+                                <RefreshCw size={14} className="text-[var(--accent)] animate-spin" />
+                                <span>Synthesizing response...</span>
+                            </div>
+                        )}
+
+                        <div ref={bottomRef} className="h-4" />
+                    </div>
+
+                    {/* Bottom Input & Quick Suggestion Chips */}
+                    <div className="pt-4 border-t border-[var(--border)] shrink-0">
+                        {/* Suggestion Chips */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-1 no-scrollbar">
+                            {activeRecipes.map((item) => (
+                                <button
+                                    type="button"
+                                    key={item.label}
+                                    onClick={() => handleAskAi(item.prompt)}
+                                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                >
+                                    <item.icon size={13} className="text-[var(--accent)]" />
+                                    <span>{item.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Main Input Field */}
+                        <form onSubmit={handleSubmit} className="flex items-center gap-3 bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--text-primary)] rounded-xl pl-4 pr-1.5 py-1.5 transition-all shadow-sm">
+                            <Sparkles size={16} className="text-[var(--text-muted)] shrink-0" />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={inputText}
+                                onChange={e => setInputText(e.target.value)}
+                                placeholder={placeholder || "Ask AI anything about this note..."}
+                                className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium py-2.5"
+                            />
+                            <button 
+                                type="submit" 
+                                disabled={loading || !inputText.trim()}
+                                className="p-2 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] disabled:opacity-30 text-[var(--bg)] rounded-lg transition-all shrink-0 cursor-pointer shadow-xs"
+                            >
+                                <ArrowUp size={15} className="font-bold" />
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════════ */}
             {/* 1. EXPANDED GRANOLA AI COPILOT DRAWER                                  */}
             {/* ═══════════════════════════════════════════════════════════════════════ */}
-            <AnimatePresence>
+            {position !== 'tab' && (
+                <AnimatePresence>
                 {expanded && (
                     <motion.div
                         initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -278,11 +397,12 @@ export function AgenticAiChat({
                     </motion.div>
                 )}
             </AnimatePresence>
+            )}
 
             {/* ═══════════════════════════════════════════════════════════════════════ */}
             {/* 2. PREMIUM DARK AI CHAT DOCK (UNEXPANDED)                               */}
             {/* ═══════════════════════════════════════════════════════════════════════ */}
-            {!expanded && (
+            {position !== 'tab' && !expanded && (
                 <div className={cn(
                     position === 'relative' 
                         ? "w-full max-w-2xl mx-auto px-4 pointer-events-auto mt-6" 

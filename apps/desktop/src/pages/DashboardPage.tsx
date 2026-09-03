@@ -507,7 +507,6 @@ export function DashboardPage() {
           <div className="h-6" aria-hidden="true" />
         </div>
       </div>
-      <GlobalAskAI />
     </div>
   );
 }

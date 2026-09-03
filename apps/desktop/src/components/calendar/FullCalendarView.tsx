@@ -1,0 +1,517 @@
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { CalendarEvent, useCalendarStore } from '@/shared/stores/calendarStore';
+import { ChevronLeft, ChevronRight, Plus, Search, CheckSquare, ChevronDown } from 'lucide-react';
+import { EventModal } from './EventModal';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useNavigate } from 'react-router-dom';
+
+// Helper to parse "10:30 AM" into hours (e.g. 10.5)
+function parseTimeToHours(timeStr?: string): number {
+  if (!timeStr) return 0;
+  const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return 0;
+  let h = parseInt(match[1]);
+  const m = parseInt(match[2]);
+  const ampm = match[3].toUpperCase();
+  
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  
+  return h + m / 60;
+}
+
+const truncate = (str: string, length: number) => {
+  return str.length > length ? str.substring(0, length) + '...' : str;
+};
+
+const colorPalette = [
+  { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
+  { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
+  { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/20' },
+  { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
+  { bg: 'bg-sky-500/10', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-500/20' },
+];
+
+export function FullCalendarView() {
+  const { events } = useCalendarStore();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
+  
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<CalendarEvent | null>(null);
+  
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+
+  // Navigation Logic
+  const handlePrev = () => {
+    const d = new Date(currentDate);
+    if (viewMode === 'month') d.setMonth(d.getMonth() - 1);
+    else if (viewMode === 'week') d.setDate(d.getDate() - 7);
+    else d.setDate(d.getDate() - 1);
+    setCurrentDate(d);
+  };
+
+  const handleNext = () => {
+    const d = new Date(currentDate);
+    if (viewMode === 'month') d.setMonth(d.getMonth() + 1);
+    else if (viewMode === 'week') d.setDate(d.getDate() + 7);
+    else d.setDate(d.getDate() + 1);
+    setCurrentDate(d);
+  };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  // Group events by day string "YYYY-MM-DD"
+  const eventsByDay = useMemo(() => {
+    const grouped: Record<string, CalendarEvent[]> = {};
+    events.forEach(evt => {
+      const evtDate = new Date(evt.dateStr);
+      const dStr = evtDate.toLocaleDateString('en-CA');
+      if (!grouped[dStr]) grouped[dStr] = [];
+      grouped[dStr].push(evt);
+    });
+    return grouped;
+  }, [events]);
+
+  const monthName = currentDate.toLocaleString('default', { month: 'long' });
+  const shortMonthName = currentDate.toLocaleString('default', { month: 'short' });
+  const yearStr = currentDate.getFullYear();
+  const todayDate = currentDate.getDate();
+
+  // Title formatting based on viewMode
+  let titleSubtitle = '';
+  let titleBadge = '';
+
+  if (viewMode === 'month') {
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    titleSubtitle = `${firstDay.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })} – ${lastDay.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    titleBadge = 'Month View';
+  } else if (viewMode === 'week') {
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    titleSubtitle = `${startOfWeek.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })} – ${endOfWeek.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    titleBadge = `Week ${Math.ceil(currentDate.getDate() / 7)}`;
+  } else {
+    titleSubtitle = currentDate.toLocaleString('default', { weekday: 'long' });
+    titleBadge = 'Day View';
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-[var(--bg)] text-[var(--text-primary)] font-sans border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+      
+      {/* Universal Header */}
+      <div className="flex items-center justify-between py-4 px-6 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 z-10 relative">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center justify-center bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl w-14 h-14 shadow-sm">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{shortMonthName}</span>
+            <span className="text-xl font-extrabold text-[var(--accent)]">{todayDate}</span>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
+              {monthName} {yearStr}
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-[var(--border)] text-[var(--text-muted)] mt-1 bg-[var(--surface-raised)]">
+                {titleBadge}
+              </span>
+            </h2>
+            <p className="text-sm text-[var(--text-muted)]">{titleSubtitle}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 relative">
+          <button 
+            onClick={() => showToast('Search functionality coming soon!', 'info')}
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-2"
+          >
+            <Search size={20} />
+          </button>
+          
+          <div className="flex items-center border border-[var(--border)] rounded-md bg-[var(--surface-raised)] shadow-sm h-9">
+            <button onClick={handlePrev} className="px-2 h-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors border-r border-[var(--border)]">
+              <ChevronLeft size={18} />
+            </button>
+            <button onClick={handleToday} className="px-4 h-full text-sm font-semibold hover:bg-[var(--surface-hover)] transition-colors text-[var(--text-primary)] border-r border-[var(--border)]">
+              Today
+            </button>
+            <button onClick={handleNext} className="px-2 h-full hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          {/* View Mode Dropdown */}
+          <div className="relative">
+            <button 
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-2 border border-[var(--border)] rounded-md bg-[var(--surface-raised)] shadow-sm h-9 px-3 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors w-[120px] justify-between"
+            >
+              {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} view <ChevronDown size={14} className="text-[var(--text-muted)]" />
+            </button>
+            {dropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-md shadow-lg z-50 overflow-hidden">
+                {['month', 'week', 'day'].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => { setViewMode(m as any); setDropdownOpen(false); }}
+                    className={`block w-full text-left px-3 py-2 text-sm font-semibold hover:bg-[var(--surface-hover)] ${viewMode === m ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}
+                  >
+                    {m.charAt(0).toUpperCase() + m.slice(1)} view
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <button 
+            onClick={() => navigate('/tasks')}
+            className="flex items-center gap-2 border border-[var(--border)] rounded-md bg-[var(--surface-raised)] shadow-sm h-9 px-3 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            <CheckSquare size={14} className="text-[var(--text-muted)]" />
+          </button>
+
+          <button 
+            onClick={() => { setEventToEdit(null); setIsEventModalOpen(true); }}
+            className="flex items-center gap-1.5 px-4 h-9 rounded-md bg-[var(--accent)] hover:opacity-90 text-[var(--bg)] text-sm font-bold shadow-sm transition-opacity"
+          >
+            <Plus size={16} /> Add event
+          </button>
+        </div>
+      </div>
+
+      {/* View Content */}
+      <div className="flex-1 overflow-hidden relative">
+        {viewMode === 'month' && (
+          <MonthView 
+            currentDate={currentDate} 
+            eventsByDay={eventsByDay} 
+            onEditEvent={(e) => { setEventToEdit(e); setIsEventModalOpen(true); }}
+            onAddEvent={(dateStr) => { setEventToEdit({ dateStr, startTime: '12:00 PM' } as any); setIsEventModalOpen(true); }}
+          />
+        )}
+        {viewMode === 'week' && (
+          <TimelineView 
+            mode="week"
+            currentDate={currentDate} 
+            eventsByDay={eventsByDay}
+            onEditEvent={(e) => { setEventToEdit(e); setIsEventModalOpen(true); }}
+            onAddEvent={(dateStr, timeStr) => { setEventToEdit({ dateStr, startTime: timeStr } as any); setIsEventModalOpen(true); }}
+          />
+        )}
+        {viewMode === 'day' && (
+          <TimelineView 
+            mode="day"
+            currentDate={currentDate} 
+            eventsByDay={eventsByDay}
+            onEditEvent={(e) => { setEventToEdit(e); setIsEventModalOpen(true); }}
+            onAddEvent={(dateStr, timeStr) => { setEventToEdit({ dateStr, startTime: timeStr } as any); setIsEventModalOpen(true); }}
+            onSelectDate={(d) => setCurrentDate(d)}
+          />
+        )}
+      </div>
+      
+      <EventModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} eventToEdit={eventToEdit} />
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MONTH VIEW
+// -----------------------------------------------------------------------------
+function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent }: any) {
+  const gridDays = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const startOffset = firstDay.getDay(); 
+    
+    const lastDay = new Date(year, month + 1, 0);
+    const totalDays = lastDay.getDate();
+    
+    const totalCells = startOffset + totalDays > 35 ? 42 : 35;
+    
+    return Array.from({ length: totalCells }, (_, i) => {
+      const dayOffset = i - startOffset;
+      const d = new Date(year, month, 1 + dayOffset);
+      return {
+        date: d,
+        isCurrentMonth: d.getMonth() === month,
+        isToday: d.toLocaleDateString() === new Date().toLocaleDateString(),
+        dateStr: d.toLocaleDateString('en-CA'),
+      };
+    });
+  }, [currentDate]);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="grid grid-cols-7 border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center py-3 text-[13px] font-semibold text-[var(--text-secondary)] border-r border-[var(--border)] last:border-r-0">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto bg-[var(--bg)] custom-scrollbar">
+        <div className="grid grid-cols-7 min-h-full auto-rows-fr">
+          {gridDays.map((cell, i) => {
+            const dayEvents = eventsByDay[cell.dateStr] || [];
+            return (
+              <div 
+                key={i} 
+                className={`min-h-[120px] p-2 border-r border-b border-[var(--border)] flex flex-col gap-1 transition-colors ${
+                  !cell.isCurrentMonth ? 'bg-[var(--surface)] opacity-50' : 'bg-[var(--bg)] hover:bg-[var(--surface-hover)] cursor-pointer'
+                }`}
+                onClick={() => cell.isCurrentMonth && onAddEvent(cell.dateStr)}
+              >
+                <div className="flex justify-start mb-1">
+                  <div className={`w-6 h-6 flex items-center justify-center rounded-full text-[13px] font-bold ${
+                    cell.isToday 
+                      ? 'bg-[var(--accent)] text-[var(--bg)]' 
+                      : !cell.isCurrentMonth 
+                        ? 'text-[var(--text-muted)] font-medium' 
+                        : 'text-[var(--text-primary)]'
+                  }`}>
+                    {cell.date.getDate()}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 overflow-hidden">
+                  {dayEvents.slice(0, 4).map((evt: any, idx: number) => {
+                    const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
+                    const style = colorPalette[colorIndex];
+                    return (
+                      <div 
+                        key={evt.id}
+                        onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
+                        className={`px-2 py-1 rounded text-[11px] font-bold leading-tight truncate flex items-center justify-between cursor-pointer border hover:brightness-110 ${style.bg} ${style.text} ${style.border}`}
+                      >
+                        <span className="truncate">{truncate(evt.title, 12)}</span>
+                        {evt.startTime && <span className="opacity-80 ml-1 shrink-0">{evt.startTime}</span>}
+                      </div>
+                    );
+                  })}
+                  {dayEvents.length > 4 && (
+                    <div className="text-[11px] font-medium text-[var(--text-muted)] pl-1 mt-0.5">
+                      {dayEvents.length - 4} more...
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// TIMELINE VIEW (Week and Day)
+// -----------------------------------------------------------------------------
+function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent, onSelectDate }: any) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [now, setNow] = useState(new Date());
+
+  // Scroll to 8 AM on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 8 * 60 - 20;
+    }
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const days = useMemo(() => {
+    if (mode === 'day') {
+      return [currentDate];
+    } else {
+      const startOfWeek = new Date(currentDate);
+      startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(startOfWeek);
+        d.setDate(startOfWeek.getDate() + i);
+        return d;
+      });
+    }
+  }, [currentDate, mode]);
+
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  return (
+    <div className="flex h-full w-full">
+      {/* Main Timeline Area */}
+      <div className="flex-1 flex flex-col h-full min-w-0">
+        
+        {/* Day Headers */}
+        <div className="flex border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
+          <div className="w-16 shrink-0 border-r border-[var(--border)]" />
+          {days.map((day, i) => {
+            const isToday = day.toLocaleDateString() === new Date().toLocaleDateString();
+            return (
+              <div key={i} className={`flex-1 min-w-[100px] border-r border-[var(--border)] last:border-r-0 py-3 flex flex-col items-center justify-center`}>
+                <span className={`text-[12px] font-semibold ${isToday ? 'text-[var(--accent)]' : 'text-[var(--text-secondary)]'}`}>
+                  {day.toLocaleString('default', { weekday: 'short' })}
+                </span>
+                <span className={`text-[20px] font-extrabold mt-1 w-9 h-9 flex items-center justify-center rounded-full ${isToday ? 'bg-[var(--accent)] text-[var(--bg)]' : 'text-[var(--text-primary)]'}`}>
+                  {day.getDate()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Scrollable Timeline */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative" ref={scrollRef}>
+          
+          <div className="flex relative" style={{ height: `${24 * 60}px` }}>
+            {/* Time Labels */}
+            <div className="w-16 shrink-0 border-r border-[var(--border)] bg-[var(--surface)] relative z-10">
+              {hours.map((hour) => (
+                <div 
+                  key={hour} 
+                  className="absolute w-full text-right pr-2 text-[10px] font-semibold text-[var(--text-muted)]" 
+                  style={{ top: `${hour * 60}px`, transform: 'translateY(-50%)' }}
+                >
+                  {hour === 0 ? '' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+                </div>
+              ))}
+            </div>
+
+            {/* Grid Columns */}
+            {days.map((day, i) => {
+              const dStr = day.toLocaleDateString('en-CA');
+              const dayEvents = eventsByDay[dStr] || [];
+              const isToday = day.toLocaleDateString() === now.toLocaleDateString();
+
+              return (
+                <div key={i} className="flex-1 min-w-[100px] border-r border-[var(--border)] last:border-r-0 relative group">
+                  {/* Grid Lines */}
+                  {hours.map(hour => (
+                    <div 
+                      key={hour} 
+                      className="absolute w-full border-t border-[var(--border)]" 
+                      style={{ top: `${hour * 60}px` }} 
+                    />
+                  ))}
+                  
+                  {/* Clickable slot area */}
+                  {hours.map(hour => (
+                    <div 
+                      key={`slot-${hour}`}
+                      className="absolute w-full opacity-0 hover:opacity-100 hover:bg-[var(--surface-raised)] transition-colors cursor-pointer"
+                      style={{ top: `${hour * 60}px`, height: '60px', zIndex: 5 }}
+                      onClick={() => onAddEvent(dStr, `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`)}
+                    />
+                  ))}
+
+                  {/* Current Time Indicator */}
+                  {isToday && (
+                    <div 
+                      className="absolute left-0 w-full z-20 pointer-events-none"
+                      style={{ top: `${(now.getHours() * 60) + now.getMinutes()}px` }}
+                    >
+                      <div className="relative border-t-2 border-[var(--accent)]">
+                        <div className="absolute left-[-4px] top-[-5px] w-2 h-2 rounded-full bg-[var(--accent)]" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Render Events */}
+                  {dayEvents.map((evt: any, idx: number) => {
+                    const startH = parseTimeToHours(evt.startTime);
+                    let endH = parseTimeToHours(evt.endTime) || (startH + 1);
+                    if (endH <= startH) endH = startH + 1;
+
+                    const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
+                    const style = colorPalette[colorIndex];
+
+                    return (
+                      <div
+                        key={evt.id}
+                        onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
+                        className={`absolute left-1 right-2 rounded-md p-2 overflow-hidden cursor-pointer border shadow-sm transition-all hover:shadow-md hover:brightness-110 ${style.bg} ${style.border}`}
+                        style={{
+                          top: `${startH * 60}px`,
+                          height: `${(endH - startH) * 60}px`,
+                          zIndex: 10
+                        }}
+                      >
+                        <div className={`text-[12px] font-bold leading-tight ${style.text}`}>{evt.title}</div>
+                        <div className={`text-[10px] font-medium leading-tight opacity-80 mt-1 ${style.text}`}>{evt.startTime} {evt.endTime && `- ${evt.endTime}`}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Day View Sidebar */}
+      {mode === 'day' && (
+        <div className="w-[300px] shrink-0 border-l border-[var(--border)] bg-[var(--surface)] flex flex-col hidden lg:flex">
+          {/* Mini Calendar */}
+          <div className="p-6 border-b border-[var(--border)]">
+             <div className="flex items-center justify-between mb-4">
+               <button onClick={() => onSelectDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"><ChevronLeft size={16}/></button>
+               <span className="text-sm font-bold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+               <button onClick={() => onSelectDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"><ChevronRight size={16}/></button>
+             </div>
+             
+             <div className="grid grid-cols-7 gap-y-2 text-center mb-2">
+                {['S','M','T','W','T','F','S'].map((d, i) => (
+                  <div key={i} className="text-[10px] font-bold text-[var(--text-muted)]">{d}</div>
+                ))}
+                {/* Simplified mini grid generation */}
+                {Array.from({length: 42}, (_, i) => {
+                   const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1 - new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() + i);
+                   const isTargetMonth = d.getMonth() === currentDate.getMonth();
+                   const isSelected = d.toDateString() === currentDate.toDateString();
+                   return (
+                     <div 
+                       key={i} 
+                       onClick={() => onSelectDate(d)}
+                       className={`text-xs py-1.5 rounded-full font-medium cursor-pointer transition-colors ${
+                         isSelected ? 'bg-[var(--accent)] text-[var(--bg)] shadow-sm' : 
+                         !isTargetMonth ? 'text-[var(--text-muted)] opacity-50' : 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'
+                       }`}
+                     >
+                       {d.getDate()}
+                     </div>
+                   );
+                })}
+             </div>
+          </div>
+
+          {/* Event Context (Mocking right sidebar detail panel) */}
+          <div className="flex-1 p-6 overflow-y-auto">
+             <h4 className="text-sm font-bold text-[var(--text-secondary)] mb-4 uppercase tracking-wider">Schedule</h4>
+             
+             {eventsByDay[currentDate.toLocaleDateString('en-CA')]?.length > 0 ? (
+               <div className="flex flex-col gap-4">
+                 {eventsByDay[currentDate.toLocaleDateString('en-CA')].map((evt: any, i: number) => {
+                   const style = colorPalette[i % colorPalette.length];
+                   return (
+                     <div key={evt.id} className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
+                       <h3 className={`font-bold text-[14px] mb-2 ${style.text}`}>{evt.title}</h3>
+                       <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{currentDate.toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                       <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{evt.startTime} {evt.endTime ? `- ${evt.endTime}` : ''}</p>
+                     </div>
+                   );
+                 })}
+               </div>
+             ) : (
+               <p className="text-[13px] text-[var(--text-muted)] text-center mt-10">No events scheduled for this day.</p>
+             )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

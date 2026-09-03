@@ -287,15 +287,17 @@ export const useCalendarStore = create<CalendarState>()(
       },
 
       addEvent: async (eventData) => {
-        const { accessToken, isConnected } = get();
+        const { accessToken } = get();
         
         const newEvent: CalendarEvent = {
           ...eventData,
           id: `evt_${Date.now()}`,
         };
-        const { accessToken } = get();
+        
+        // Optimistically update local state immediately
+        set(state => ({ events: [...state.events, newEvent] }));
+
         if (!accessToken) {
-            console.error("Cannot add event without OAuth access token.");
             return;
         }
 
@@ -352,12 +354,18 @@ export const useCalendarStore = create<CalendarState>()(
 
       editEvent: async (eventId, eventData) => {
         const { accessToken, events } = get();
+        
+        const existingEvent = events.find(e => e.id === eventId);
+        if (!existingEvent) return;
+
+        // Optimistically update local state immediately
+        set(state => ({
+            events: state.events.map(e => e.id === eventId ? { ...e, ...eventData } : e)
+        }));
+
         if (!accessToken) return;
 
         try {
-            // Keep existing payload base
-            const existingEvent = events.find(e => e.id === eventId);
-            if (!existingEvent) return;
 
             const createIsoDate = (dateStr: string, timeStr?: string) => {
                 const date = new Date(dateStr);
@@ -412,6 +420,10 @@ export const useCalendarStore = create<CalendarState>()(
 
       deleteEvent: async (id: string) => {
         const { accessToken } = get();
+        
+        // Optimistically update local state immediately
+        set(state => ({ events: state.events.filter(e => e.id !== id) }));
+
         if (!accessToken) return;
 
         try {
@@ -420,10 +432,8 @@ export const useCalendarStore = create<CalendarState>()(
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
 
-            if (response.ok || response.status === 204) {
-                set(state => ({ events: state.events.filter(e => e.id !== id) }));
-            } else {
-                console.error("Failed to delete event", await response.text());
+            if (!response.ok && response.status !== 204) {
+                console.error("Failed to delete event from Google Calendar", await response.text());
             }
         } catch (e) {
             console.error("Error deleting event:", e);

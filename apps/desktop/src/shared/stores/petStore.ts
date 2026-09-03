@@ -70,9 +70,11 @@ interface PetState {
   selectedPetId: PetId;
   petSize: number; // in pixels, default 68
   isTuckedAway: boolean;
+  hidePet: boolean;
   setSelectedPetId: (id: PetId) => void;
   setPetSize: (size: number) => void;
   setIsTuckedAway: (tucked: boolean) => void;
+  setHidePet: (hide: boolean) => void;
   toggleTuckedAway: () => void;
 }
 
@@ -87,6 +89,7 @@ const loadInitialState = () => {
         selectedPetId: (parsed.selectedPetId || 'codex') as PetId,
         petSize: parsed.petSize || 68,
         isTuckedAway: Boolean(parsed.isTuckedAway),
+        hidePet: Boolean(parsed.hidePet),
       };
     }
   } catch (e) {
@@ -96,6 +99,7 @@ const loadInitialState = () => {
     selectedPetId: 'codex' as PetId,
     petSize: 68,
     isTuckedAway: false,
+    hidePet: false,
   };
 };
 
@@ -108,6 +112,7 @@ export const usePetStore = create<PetState>((set, get) => {
         selectedPetId: get().selectedPetId,
         petSize: get().petSize,
         isTuckedAway: get().isTuckedAway,
+        hidePet: get().hidePet,
         ...state,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
@@ -132,6 +137,11 @@ export const usePetStore = create<PetState>((set, get) => {
     setIsTuckedAway: (tucked: boolean) => {
       set({ isTuckedAway: tucked });
       persist({ isTuckedAway: tucked });
+    },
+
+    setHidePet: (hide: boolean) => {
+      set({ hidePet: hide });
+      persist({ hidePet: hide });
     },
 
     toggleTuckedAway: () => {

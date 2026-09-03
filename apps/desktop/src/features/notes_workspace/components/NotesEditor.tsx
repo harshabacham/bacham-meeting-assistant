@@ -185,8 +185,8 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const folderMenuRef = useRef<HTMLDivElement>(null);
     const dateMenuRef = useRef<HTMLDivElement>(null);
 
-    // ── 3-WAY VIEW MODES: 'summary' | 'notes' | 'transcript' ──────────────────────
-    const [viewMode, setViewMode] = useState<'summary' | 'notes' | 'transcript'>('summary');
+    // ── 4-WAY VIEW MODES: 'summary' | 'notes' | 'transcript' | 'chat' ──────────────
+    const [viewMode, setViewMode] = useState<'summary' | 'notes' | 'transcript' | 'chat'>('summary');
     const [rawTranscript, setRawTranscript] = useState<string>(() => note.transcript || localStorage.getItem(`transcript_${note.id}`) || '');
     const [aiSummary, setAiSummary] = useState<string>(() => note.summary || localStorage.getItem(`summary_${note.id}`) || '');
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -575,6 +575,22 @@ Return only the polished transcript text:`;
                         <Mic size={12} className={viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70"} />
                         <span>Transcript</span>
                         {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
+                    </button>
+
+                    {/* 4. Chat Button */}
+                    <button
+                        data-tauri-drag-region="false"
+                        type="button"
+                        onClick={() => setViewMode('chat')}
+                        className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            viewMode === 'chat'
+                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
+                        )}
+                    >
+                        <Sparkles size={12} className={viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70"} />
+                        <span>Chat</span>
                     </button>
                 </div>
 
@@ -1114,25 +1130,28 @@ Return only the polished transcript text:`;
                 </div>
             )}
 
-            {/* AI Assistant Chat Dock */}
-            <AgenticAiChat 
-                contextName={note.title || 'Untitled Note'} 
-                contextText={note.content.replace(/<[^>]+>/g, ' ')}
-                isRecordingOpen={isTranscriptOpen}
-                isRecording={isStreaming}
-                onToggleRecording={() => setIsStreaming(!isStreaming)}
-                onStopRecording={() => setIsTranscriptOpen(false)}
-                recipes={NOTE_RECIPES}
-                    onInsertToEditor={(content) => {
-                        if (editor) {
-                            editor.commands.insertContent(`
-                                <div class="my-3 p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm leading-relaxed shadow-xs">
-                                    ${content.replace(/\n/g, '<br/>')}
-                                </div>
-                            `);
-                        }
-                    }}
-                />
+            {/* ════════════════════════════════════════════════════════════════════════════ */}
+            {/* VIEW 4: ✨ AI CHAT CANVAS                                                   */}
+            {/* ════════════════════════════════════════════════════════════════════════════ */}
+            {viewMode === 'chat' && (
+                <div className="flex-1 overflow-hidden flex flex-col relative h-full">
+                    <AgenticAiChat 
+                        contextName={note.title || 'Untitled Note'} 
+                        contextText={note.content.replace(/<[^>]+>/g, ' ')}
+                        recipes={NOTE_RECIPES}
+                        position="tab"
+                        onInsertToEditor={(content) => {
+                            if (editor) {
+                                editor.commands.insertContent(`
+                                    <div class="my-3 p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm leading-relaxed shadow-xs">
+                                        ${content.replace(/\n/g, '<br/>')}
+                                    </div>
+                                `);
+                            }
+                        }}
+                    />
+                </div>
+            )}
 
             {/* Granola Live Transcript Floating Panel */}
             <LiveTranscriptPanel 

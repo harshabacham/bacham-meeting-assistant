@@ -13,7 +13,7 @@ interface SettingsState {
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: {
-    theme: 'light',
+    theme: 'dark',
     accentColor: 'lime',
     language: 'en',
     spokenLanguage: 'auto',

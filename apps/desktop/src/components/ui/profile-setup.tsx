@@ -307,7 +307,7 @@ export function ProfileSetup({ onComplete, className, defaultUsername = "", defa
                     whileHover={shouldReduceMotion ? {} : { scale: 1.06 }}
                     whileTap={shouldReduceMotion ? {} : { scale: 0.94 }}
                   >
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="scale-[2.3] transform">{avatar.svg}</div>
                     </div>
                     {isSelected && (

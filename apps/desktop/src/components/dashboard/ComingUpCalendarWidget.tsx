@@ -56,9 +56,17 @@ export function ComingUpCalendarWidget() {
     <div className="w-full flex flex-col gap-3">
       {/* Widget Header matching Granola */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-serif font-medium text-[var(--text-primary)] tracking-tight">
-          Coming up
-        </h2>
+        <div className="flex items-baseline gap-4">
+          <h2 className="text-2xl font-serif font-medium text-[var(--text-primary)] tracking-tight">
+            Coming up
+          </h2>
+          <button 
+            onClick={() => navigate('/tasks?view=calendar')} 
+            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:underline transition-colors"
+          >
+            View all
+          </button>
+        </div>
 
         {/* Pagination Controls */}
         <div className="flex items-center gap-1 text-[var(--text-muted)]">

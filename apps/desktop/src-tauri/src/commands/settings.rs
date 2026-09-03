@@ -45,7 +45,7 @@ pub async fn settings_get(state: State<'_, DbState>) -> AppResult<Settings> {
     let pool = &state.pool;
     
     let theme_row = sqlx::query("SELECT value FROM settings WHERE key = 'theme'").fetch_optional(pool).await?;
-    let theme = theme_row.map(|r| r.get("value")).unwrap_or_else(|| "system".to_string());
+    let theme = theme_row.map(|r| r.get("value")).unwrap_or_else(|| "dark".to_string());
     
     let accent_row = sqlx::query("SELECT value FROM settings WHERE key = 'accent_color'").fetch_optional(pool).await?;
     let accent_color = accent_row.map(|r| r.get("value")).unwrap_or_else(|| "lime".to_string());

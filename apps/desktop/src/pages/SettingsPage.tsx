@@ -39,7 +39,7 @@ export function SettingsPage() {
     const { user, setUser } = useAuthStore();
     const [searchParams, setSearchParams] = useSearchParams();
     const { showToast } = useToast();
-    const { selectedPetId, setSelectedPetId, petSize, setPetSize, isTuckedAway, toggleTuckedAway } = usePetStore();
+    const { selectedPetId, setSelectedPetId, petSize, setPetSize, isTuckedAway, toggleTuckedAway, hidePet, setHidePet } = usePetStore();
     const { t } = useTranslation();
 
 
@@ -163,12 +163,21 @@ export function SettingsPage() {
                                                             ...auth.currentUser,
                                                             displayName: data.username,
                                                             photoURL: `avatar:${data.avatarId}`
-                                                        });
+                                                        } as any);
                                                         showToast(`Profile updated to ${data.username}!`, 'success');
                                                     } catch (error) {
                                                         console.error("Failed to update profile", error);
                                                         showToast("Failed to update profile.", 'error');
                                                     }
+                                                } else {
+                                                    // Guest user fallback
+                                                    setUser({
+                                                        ...(user || {}),
+                                                        displayName: data.username,
+                                                        photoURL: `avatar:${data.avatarId}`,
+                                                        email: user?.email || 'guest@bacham.app'
+                                                    } as any);
+                                                    showToast(`Guest profile updated to ${data.username}!`, 'success');
                                                 }
                                             }}
                                         />
@@ -649,6 +658,21 @@ export function SettingsPage() {
                                                 onChange={(e) => setPetSize(parseInt(e.target.value))}
                                                 className="w-full h-2 bg-surface-raised rounded-lg appearance-none cursor-pointer accent-primary"
                                             />
+                                        </div>
+
+                                        <div className="pt-4 border-t border-border">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="text-sm font-medium text-foreground">Hide Pet Globally</h3>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">Remove the digital pet entirely from the application interface.</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setHidePet(!hidePet)}
+                                                    className={`w-10 h-5 rounded-full transition-colors relative flex items-center shrink-0 ${hidePet ? 'bg-red-500/20 border border-red-500/30' : 'bg-surface-raised border border-border'}`}
+                                                >
+                                                    <div className={`w-3.5 h-3.5 rounded-full shadow-sm transition-transform absolute left-[3px] ${hidePet ? 'translate-x-5 bg-red-500' : 'translate-x-0 bg-muted-foreground'}`} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
