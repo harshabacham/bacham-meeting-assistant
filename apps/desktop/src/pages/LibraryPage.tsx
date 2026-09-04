@@ -52,6 +52,18 @@ export function LibraryPage() {
     const [quickLookLecture, setQuickLookLecture] = useState<Lecture | null>(null);
     const [isAddingToFolder, setIsAddingToFolder] = useState(false);
     const [batchMoveFolderDialogOpen, setBatchMoveFolderDialogOpen] = useState(false);
+    const [isSelectMode, setIsSelectMode] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isSelectMode) {
+                setIsSelectMode(false);
+                setSelectedIds(new Set());
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isSelectMode]);
 
     useEffect(() => {
         fetchFolders();
@@ -124,6 +136,7 @@ export function LibraryPage() {
     const toggleSelect = useCallback((id: string, e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        setIsSelectMode(true);
 
         if (e.shiftKey && lastSelectedId) {
             const currentIndex = filtered.findIndex(l => l.id === id);
@@ -159,6 +172,7 @@ export function LibraryPage() {
         const idsToDelete = [...selectedIds];
         await trashLectures(idsToDelete);
         setSelectedIds(new Set());
+        setIsSelectMode(false);
         showToast(`${idsToDelete.length} lectures moved to trash.`, 'info', {
             label: 'Undo',
             onClick: async () => {
@@ -172,6 +186,7 @@ export function LibraryPage() {
         if (await showConfirm(`Are you sure you want to permanently delete ${idsToDelete.length} lectures? This cannot be undone.`)) {
             await hardDeleteLectures(idsToDelete);
             setSelectedIds(new Set());
+            setIsSelectMode(false);
         }
     };
 
@@ -179,6 +194,7 @@ export function LibraryPage() {
         const idsToArchive = [...selectedIds];
         await setArchived(idsToArchive, true);
         setSelectedIds(new Set());
+        setIsSelectMode(false);
     };
 
     const handleBatchExport = async () => {
@@ -250,6 +266,8 @@ ${transcript || '*(No transcript recorded)*'}
                 }
             }
 
+            setSelectedIds(new Set());
+            setIsSelectMode(false);
             showToast(`Exported ${idsToExport.length} meeting${idsToExport.length === 1 ? '' : 's'} to Markdown!`, 'success');
         } catch (err: any) {
             console.error('Batch export error:', err);
@@ -282,6 +300,7 @@ ${transcript || '*(No transcript recorded)*'}
         try {
             await moveLectures(lectureIds, folderId);
             setSelectedIds(new Set());
+            setIsSelectMode(false);
             showToast(folderId ? `Moved ${lectureIds.length} meeting${lectureIds.length === 1 ? '' : 's'} to folder.` : `Removed from folder.`, 'success');
         } catch (err: any) {
             showToast(`Failed to move: ${err.message || err}`, 'error');
@@ -336,36 +355,62 @@ ${transcript || '*(No transcript recorded)*'}
                         </button>
                     )}
                     
-                    {/* Select All / Deselect All Toggle */}
+                    {/* Select Mode / Select All Toggle */}
                     {filtered.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (selectedIds.size === filtered.length) {
-                                    setSelectedIds(new Set());
-                                } else {
-                                    setSelectedIds(new Set(filtered.map(l => l.id)));
-                                }
-                            }}
-                            className={cn(
-                                'btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none',
-                                selectedIds.size > 0 
-                                    ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15' 
-                                    : 'bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground'
-                            )}
-                            title={selectedIds.size === filtered.length ? "Deselect all" : "Select all"}
-                        >
-                            {selectedIds.size === filtered.length ? (
-                                <CheckSquare size={13} className="text-primary" />
-                            ) : selectedIds.size > 0 ? (
-                                <MinusSquare size={13} className="text-primary" />
-                            ) : (
-                                <Square size={13} className="text-muted-foreground" />
-                            )}
-                            <span className="hidden sm:inline">
-                                {selectedIds.size > 0 ? `${selectedIds.size} Selected` : 'Select all'}
-                            </span>
-                        </button>
+                        !isSelectMode ? (
+                            <button
+                                type="button"
+                                onClick={() => setIsSelectMode(true)}
+                                className="btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground"
+                                title="Select meetings"
+                            >
+                                <CheckSquare size={13} className="text-muted-foreground" />
+                                <span className="hidden sm:inline">Select</span>
+                            </button>
+                        ) : (
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (selectedIds.size === filtered.length) {
+                                            setSelectedIds(new Set());
+                                        } else {
+                                            setSelectedIds(new Set(filtered.map(l => l.id)));
+                                        }
+                                    }}
+                                    className={cn(
+                                        'btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none',
+                                        selectedIds.size > 0 
+                                            ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15' 
+                                            : 'bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground'
+                                    )}
+                                    title={selectedIds.size === filtered.length ? "Deselect all" : "Select all visible"}
+                                >
+                                    {selectedIds.size === filtered.length ? (
+                                        <CheckSquare size={13} className="text-primary" />
+                                    ) : selectedIds.size > 0 ? (
+                                        <MinusSquare size={13} className="text-primary" />
+                                    ) : (
+                                        <Square size={13} className="text-muted-foreground" />
+                                    )}
+                                    <span className="hidden sm:inline">
+                                        {selectedIds.size === filtered.length ? 'Deselect all' : selectedIds.size > 0 ? `${selectedIds.size} Selected` : 'Select all'}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSelectMode(false);
+                                        setSelectedIds(new Set());
+                                    }}
+                                    className="btn px-2 py-1.5 text-xs font-medium gap-1 transition-colors border bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground select-none"
+                                    title="Cancel selection"
+                                >
+                                    <X size={13} />
+                                    <span className="hidden sm:inline">Done</span>
+                                </button>
+                            </div>
+                        )
                     )}
                     
                     {/* Sort */}
@@ -522,6 +567,7 @@ ${transcript || '*(No transcript recorded)*'}
                                             key={lecture.id}
                                             lecture={lecture}
                                             isSelected={selectedIds.has(lecture.id)}
+                                            isSelectMode={isSelectMode}
                                             onSelect={toggleSelect}
                                             onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
                                             onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
@@ -546,6 +592,7 @@ ${transcript || '*(No transcript recorded)*'}
                                             key={lecture.id}
                                             lecture={lecture}
                                             isSelected={selectedIds.has(lecture.id)}
+                                            isSelectMode={isSelectMode}
                                             onSelect={toggleSelect}
                                             onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
                                             onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
@@ -597,8 +644,12 @@ ${transcript || '*(No transcript recorded)*'}
                 onRestore={systemView === 'trash' ? async () => {
                     await restoreLectures([...selectedIds]);
                     setSelectedIds(new Set());
+                    setIsSelectMode(false);
                 } : undefined}
-                onClear={() => setSelectedIds(new Set())}
+                onClear={() => {
+                    setSelectedIds(new Set());
+                    setIsSelectMode(false);
+                }}
                 mode={systemView === 'trash' ? 'trash' : 'library'}
             />
 
@@ -627,12 +678,21 @@ ${transcript || '*(No transcript recorded)*'}
 }
 
 // ─── Grid Card ───────────────────────────────────────────────────────────────
-const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelected, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
+const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelected, isSelectMode, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const mins = Math.round((lecture.durationMs ?? 0) / 60000);
     const dateStr = new Date(lecture.createdAt).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
     });
+
+    const handleCardClick = (e: React.MouseEvent) => {
+        if (isSelectMode) {
+            e.stopPropagation();
+            if (onSelect) onSelect(lecture.id, e);
+        } else {
+            onClick(e);
+        }
+    };
 
     return (
         <div
@@ -640,8 +700,8 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
                 'group relative flex flex-col text-left bg-surface hover:bg-surface-hover border rounded-xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary h-full',
                 isSelected ? 'border-primary ring-1 ring-primary shadow-sm bg-primary/5' : 'border-border/60 hover:border-border'
             )}
-            onClick={onClick}
-            draggable={true}
+            onClick={handleCardClick}
+            draggable={!isSelectMode}
             onDragStart={(e) => {
                 if ((e.target as HTMLElement).closest('button, input, .no-drag')) {
                     e.preventDefault();
@@ -662,7 +722,9 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
                             "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mt-0.5 no-drag",
                             isSelected 
                                 ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
-                                : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
+                                : isSelectMode
+                                    ? "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
+                                    : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
                         )}
                         title={isSelected ? "Deselect" : "Select"}
                         aria-label={isSelected ? "Deselect" : "Select"}
@@ -776,7 +838,7 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
 });
 
 // ─── List Row ─────────────────────────────────────────────────────────────────
-const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
+const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, isSelectMode, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const durationMin = Math.round(lecture.durationMs / 60000);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
 
@@ -788,13 +850,22 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
         });
     }, [lecture.id]);
 
+    const handleRowClick = (e: React.MouseEvent) => {
+        if (isSelectMode) {
+            e.stopPropagation();
+            if (onSelect) onSelect(lecture.id, e);
+        } else {
+            onClick(e);
+        }
+    };
+
     return (
         <div
             className={cn('group relative flex items-center px-4 py-2.5 cursor-pointer rounded-xl transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5', 
                 isSelected ? 'bg-primary/5 ring-1 ring-primary shadow-sm' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-border/60 hover:border-border'
             )}
-            onClick={onClick}
-            draggable={true}
+            onClick={handleRowClick}
+            draggable={!isSelectMode}
             onDragStart={(e) => {
                 if ((e.target as HTMLElement).closest('button, input, .no-drag')) {
                     e.preventDefault();
@@ -817,7 +888,9 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                     "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mr-3 no-drag",
                     isSelected 
                         ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
-                        : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
+                        : isSelectMode
+                            ? "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
+                            : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
                 )}
                 title={isSelected ? "Deselect" : "Select"}
                 aria-label={isSelected ? "Deselect" : "Select"}
