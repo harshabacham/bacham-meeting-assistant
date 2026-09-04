@@ -1,14 +1,14 @@
-import { Trash2, RotateCcw, Copy, Merge, Archive } from 'lucide-react';
+import React from 'react';
+import { Trash2, RotateCcw, Archive, FolderInput, Download, X } from 'lucide-react';
 
 interface MultiSelectBarProps {
     selectedCount: number;
     onDelete: () => void;
     onHardDelete?: () => void;
     onRestore?: () => void;
-    onDuplicate?: () => void;
-    onMerge?: () => void;
     onArchive?: () => void;
     onMoveToFolder?: (e: React.MouseEvent) => void;
+    onExport?: () => void;
     onClear: () => void;
     mode?: 'library' | 'trash';
     confirmHardDelete?: boolean;
@@ -19,10 +19,9 @@ export function MultiSelectBar({
     onDelete,
     onHardDelete,
     onRestore,
-    onDuplicate,
-    onMerge,
     onArchive,
     onMoveToFolder,
+    onExport,
     onClear,
     mode = 'library',
     confirmHardDelete = false,
@@ -30,21 +29,13 @@ export function MultiSelectBar({
     if (selectedCount === 0) return null;
 
     return (
-        <div className="floating-bar">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 p-1.5 pl-3.5 bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--border)] rounded-2xl shadow-2xl text-[var(--text-primary)] animate-in fade-in slide-in-from-bottom-4 duration-200 select-none">
             {/* Count */}
-            <div className="flex items-center gap-2 pr-3 border-r" style={{ borderColor: 'var(--overlay-10)' }}>
-                <span
-                    className="flex items-center justify-center rounded-lg font-bold"
-                    style={{
-                        width: 26, height: 26,
-                        background: 'var(--accent)',
-                        color: 'var(--color-black)',
-                        fontSize: 13,
-                    }}
-                >
+            <div className="flex items-center gap-2 pr-3 border-r border-[var(--border)] shrink-0">
+                <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-md bg-[var(--text-primary)] text-[var(--bg)] font-bold text-xs shadow-2xs">
                     {selectedCount}
                 </span>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                <span className="text-xs text-[var(--text-muted)] font-medium">
                     selected
                 </span>
             </div>
@@ -53,96 +44,74 @@ export function MultiSelectBar({
             {mode === 'trash' ? (
                 <>
                     <button
+                        type="button"
                         onClick={onRestore}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                        style={{ fontSize: 13, color: '#4DFF91', background: 'rgba(77,255,145,0.1)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(77,255,145,0.2)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(77,255,145,0.1)')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-emerald-500 hover:bg-emerald-500/10 transition-colors"
                     >
                         <RotateCcw size={14} />
-                        Restore
+                        <span>Restore</span>
                     </button>
                     <button
+                        type="button"
                         onClick={onHardDelete || onDelete}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                        style={{ fontSize: 13, color: 'var(--destructive)', background: 'rgba(255,77,77,0.1)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,77,77,0.2)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,77,77,0.1)')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
                     >
                         <Trash2 size={14} />
-                        {confirmHardDelete ? '⚠ Click again to confirm' : 'Delete permanently'}
+                        <span>{confirmHardDelete ? 'Confirm Delete' : 'Delete forever'}</span>
                     </button>
                 </>
             ) : (
                 <>
-                    {onDuplicate && selectedCount === 1 && (
+                    {onMoveToFolder && (
                         <button
-                            onClick={onDuplicate}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                            style={{ fontSize: 13, color: 'var(--text-secondary)', background: 'transparent' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--overlay-06)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            type="button"
+                            onClick={onMoveToFolder}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
                         >
-                            <Copy size={14} />
-                            Duplicate
+                            <FolderInput size={14} className="text-primary" />
+                            <span>Move to folder</span>
                         </button>
                     )}
-                    {onMerge && selectedCount === 2 && (
+                    {onExport && (
                         <button
-                            onClick={onMerge}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                            style={{ fontSize: 13, color: 'var(--accent)', background: 'var(--accent-dim)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(166,255,0,0.2)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent-dim)')}
+                            type="button"
+                            onClick={onExport}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
                         >
-                            <Merge size={14} />
-                            Merge
+                            <Download size={14} className="text-primary" />
+                            <span>Export</span>
                         </button>
                     )}
                     {onArchive && (
                         <button
+                            type="button"
                             onClick={onArchive}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                            style={{ fontSize: 13, color: 'var(--text-secondary)', background: 'transparent' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--overlay-06)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
                         >
                             <Archive size={14} />
-                            Archive
-                        </button>
-                    )}
-                    {onMoveToFolder && (
-                        <button
-                            onClick={onMoveToFolder}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                            style={{ fontSize: 13, color: 'var(--text-secondary)', background: 'transparent' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--overlay-06)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-folder-input"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-1.2-1.8A2 2 0 0 0 7.55 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M2 14h10"/><path d="m9 11 3 3-3 3"/></svg>
-                            Move to folder
+                            <span>Archive</span>
                         </button>
                     )}
                     <button
+                        type="button"
                         onClick={onDelete}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                        style={{ fontSize: 13, color: 'var(--destructive)', background: 'rgba(255,77,77,0.1)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,77,77,0.2)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,77,77,0.1)')}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
                     >
                         <Trash2 size={14} />
-                        Move to trash
+                        <span>Move to trash</span>
                     </button>
                 </>
             )}
 
             {/* Clear selection */}
-            <div className="pl-3 border-l" style={{ borderColor: 'var(--overlay-10)' }}>
+            <div className="pl-1.5 border-l border-[var(--border)] shrink-0">
                 <button
+                    type="button"
                     onClick={onClear}
-                    style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+                    title="Deselect all"
                 >
-                    ✕
+                    <X size={14} />
                 </button>
             </div>
         </div>

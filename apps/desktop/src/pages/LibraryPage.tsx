@@ -7,15 +7,13 @@ import { useFolderStore } from '@/shared/stores/folderStore';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import { MultiSelectBar } from '@/components/library/MultiSelectBar';
-import { FilterPanel } from '@/components/library/FilterPanel';
 import { FolderDashboard } from '@/components/library/FolderDashboard';
 import { LecturePropertiesPanel } from '@/components/library/LecturePropertiesPanel';
 import { KnowledgeGraphView } from '@/components/library/KnowledgeGraphView';
-import { FilterQuery } from '@/infrastructure/tauri-client';
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
-    Trash2, Filter, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network,
-    Folder, Check, X, ChevronRight
+    Trash2, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network,
+    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { cn, Button } from '@/components';
@@ -49,8 +47,6 @@ export function LibraryPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
     const [groupByCourse] = useState(false);
-    const [showFilterPanel, setShowFilterPanel] = useState(false);
-    const [currentFilter, setCurrentFilter] = useState<FilterQuery | null>(null);
     const [showProperties, setShowProperties] = useState(false);
     const [showFolderDashboard, setShowFolderDashboard] = useState(true);
     const [quickLookLecture, setQuickLookLecture] = useState<Lecture | null>(null);
@@ -67,14 +63,10 @@ export function LibraryPage() {
 
     useEffect(() => { 
         if (systemView === 'all') {
-            const baseFilter = currentFilter ? JSON.parse(JSON.stringify(currentFilter)) : { matchType: 'All', conditions: [] };
-            
-            if (!baseFilter.conditions.some((c: any) => c.field === 'isArchived')) {
-                baseFilter.conditions.push({ field: 'isArchived', operator: 'is_false', value: true });
-            }
+            const baseFilter: any = { matchType: 'All', conditions: [] };
+            baseFilter.conditions.push({ field: 'isArchived', operator: 'is_false', value: true });
 
             if (selectedFolderId) {
-                baseFilter.conditions = baseFilter.conditions.filter((c: any) => c.field !== 'folderId');
                 baseFilter.conditions.push({ field: 'folderId', operator: 'equals', value: selectedFolderId });
             }
             fetchLectures(JSON.stringify(baseFilter));
@@ -83,7 +75,7 @@ export function LibraryPage() {
         } else if (systemView === 'archive') {
             fetchLectures(JSON.stringify({ matchType: 'All', conditions: [{ field: 'isArchived', operator: 'is_true', value: true }] }));
         }
-    }, [fetchLectures, currentFilter, systemView, selectedFolderId]);
+    }, [fetchLectures, systemView, selectedFolderId]);
 
     const sourceLectures = systemView === 'trash' ? trash : lectures;
     const filtered = sourceLectures
@@ -189,6 +181,82 @@ export function LibraryPage() {
         setSelectedIds(new Set());
     };
 
+    const handleBatchExport = async () => {
+        const idsToExport = Array.from(selectedIds);
+        if (idsToExport.length === 0) return;
+
+        showToast(`Preparing export for ${idsToExport.length} meeting${idsToExport.length === 1 ? '' : 's'}...`, 'info');
+
+        try {
+            for (let i = 0; i < idsToExport.length; i++) {
+                const id = idsToExport[i];
+                const lecture = sourceLectures.find(l => l.id === id);
+                if (!lecture) continue;
+
+                let notes = '';
+                let transcript = '';
+                let summary = '';
+
+                try {
+                    notes = (await TauriClient.getNotes(id)) || '';
+                } catch {}
+                try {
+                    summary = (await TauriClient.getSummary(id)) || '';
+                } catch {}
+                try {
+                    transcript = (await TauriClient.getTranscript(id)) || '';
+                } catch {}
+
+                const dateStr = new Date(lecture.createdAt).toLocaleString();
+                const durationMin = Math.round((lecture.durationMs ?? 0) / 60000);
+
+                const mdContent = `# ${lecture.title || 'Untitled Meeting'}
+
+- **Date**: ${dateStr}
+- **Duration**: ${durationMin} min
+- **Subject / Course**: ${lecture.course || lecture.subject || 'None'}
+- **Teacher / Speaker**: ${lecture.teacher || 'None'}
+- **Tags**: ${lecture.tags && lecture.tags.length > 0 ? lecture.tags.join(', ') : 'None'}
+
+---
+
+## Notes & Summary
+${notes || summary || '*(No summary or notes generated)*'}
+
+---
+
+## Transcript
+${transcript || '*(No transcript recorded)*'}
+`;
+
+                const safeTitle = (lecture.title || 'meeting')
+                    .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+                    .trim()
+                    .replace(/\s+/g, '_')
+                    .toLowerCase();
+
+                const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${safeTitle || 'meeting'}_notes.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                if (idsToExport.length > 1 && i < idsToExport.length - 1) {
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+
+            showToast(`Exported ${idsToExport.length} meeting${idsToExport.length === 1 ? '' : 's'} to Markdown!`, 'success');
+        } catch (err: any) {
+            console.error('Batch export error:', err);
+            showToast(`Failed to export: ${err?.message || err}`, 'error');
+        }
+    };
+
     const handleDeleteSingle = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         await trashLectures([id]);
@@ -268,15 +336,37 @@ export function LibraryPage() {
                         </button>
                     )}
                     
-                    {/* Filter Toggle */}
-                    <button
-                        onClick={() => setShowFilterPanel(f => !f)}
-                        className={cn('btn', showFilterPanel ? 'btn-primary' : 'btn-secondary', currentFilter && currentFilter.conditions.length > 0 ? 'text-[var(--accent)]' : '')}
-                        style={{ padding: '6px 10px' }}
-                        title="Smart Filters"
-                    >
-                        <Filter size={14} />
-                    </button>
+                    {/* Select All / Deselect All Toggle */}
+                    {filtered.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (selectedIds.size === filtered.length) {
+                                    setSelectedIds(new Set());
+                                } else {
+                                    setSelectedIds(new Set(filtered.map(l => l.id)));
+                                }
+                            }}
+                            className={cn(
+                                'btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none',
+                                selectedIds.size > 0 
+                                    ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15' 
+                                    : 'bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground'
+                            )}
+                            title={selectedIds.size === filtered.length ? "Deselect all" : "Select all"}
+                        >
+                            {selectedIds.size === filtered.length ? (
+                                <CheckSquare size={13} className="text-primary" />
+                            ) : selectedIds.size > 0 ? (
+                                <MinusSquare size={13} className="text-primary" />
+                            ) : (
+                                <Square size={13} className="text-muted-foreground" />
+                            )}
+                            <span className="hidden sm:inline">
+                                {selectedIds.size > 0 ? `${selectedIds.size} Selected` : 'Select all'}
+                            </span>
+                        </button>
+                    )}
                     
                     {/* Sort */}
                     <select
@@ -362,14 +452,6 @@ export function LibraryPage() {
                     )}
                 </div>
             </div>
-            )}
-
-            {/* Filter Panel */}
-            {!isShowingDashboard && showFilterPanel && (
-                <FilterPanel 
-                    currentFilter={currentFilter}
-                    onChange={setCurrentFilter}
-                />
             )}
 
             {/* Content */}
@@ -509,10 +591,9 @@ export function LibraryPage() {
                 selectedCount={selectedIds.size}
                 onDelete={handleDelete}
                 onHardDelete={handleHardDelete}
-                onDuplicate={undefined}
-                onMerge={undefined}
                 onArchive={systemView !== 'trash' ? handleBatchArchive : undefined}
                 onMoveToFolder={systemView !== 'trash' ? () => setBatchMoveFolderDialogOpen(true) : undefined}
+                onExport={systemView !== 'trash' ? handleBatchExport : undefined}
                 onRestore={systemView === 'trash' ? async () => {
                     await restoreLectures([...selectedIds]);
                     setSelectedIds(new Set());
@@ -546,7 +627,7 @@ export function LibraryPage() {
 }
 
 // ─── Grid Card ───────────────────────────────────────────────────────────────
-const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelected, onSelect: _onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
+const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelected, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const mins = Math.round((lecture.durationMs ?? 0) / 60000);
     const dateStr = new Date(lecture.createdAt).toLocaleDateString(undefined, {
         month: "short",
@@ -570,7 +651,24 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
             }}
         >
             <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-start gap-2 flex-1 min-w-0">
+                <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelect) onSelect(lecture.id, e);
+                        }}
+                        className={cn(
+                            "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mt-0.5 no-drag",
+                            isSelected 
+                                ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
+                                : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
+                        )}
+                        title={isSelected ? "Deselect" : "Select"}
+                        aria-label={isSelected ? "Deselect" : "Select"}
+                    >
+                        {isSelected && <Check size={11} strokeWidth={3} />}
+                    </button>
                     <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">
                         {lecture.title || "Untitled Lecture"}
                     </p>
@@ -678,7 +776,7 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
 });
 
 // ─── List Row ─────────────────────────────────────────────────────────────────
-const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, onSelect: _onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
+const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const durationMin = Math.round(lecture.durationMs / 60000);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
 
@@ -708,6 +806,24 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
             <div className="absolute -left-3 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground z-10" title="Drag to organize">
                 <GripVertical size={14} />
             </div>
+
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelect) onSelect(lecture.id, e);
+                }}
+                className={cn(
+                    "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mr-3 no-drag",
+                    isSelected 
+                        ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
+                        : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
+                )}
+                title={isSelected ? "Deselect" : "Select"}
+                aria-label={isSelected ? "Deselect" : "Select"}
+            >
+                {isSelected && <Check size={11} strokeWidth={3} />}
+            </button>
 
             <div className="flex-1 min-w-0 pr-4 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 border border-border/5 bg-surface-raised">
