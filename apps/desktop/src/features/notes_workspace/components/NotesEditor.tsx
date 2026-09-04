@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extension-placeholder';
@@ -15,7 +15,8 @@ import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { 
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
-    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, List
+    FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, List,
+    MoreHorizontal, Bookmark, Trash2, VideoOff
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
@@ -24,11 +25,103 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { ExportPdfDialog } from './ExportPdfDialog';
 
-const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) => {
+export function parseTimestampToSeconds(ts: string): number | null {
+    if (!ts) return null;
+    const clean = ts.trim().replace(/^\[|\]$/g, '');
+    const match = clean.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (!match) return null;
+    if (match[3] !== undefined) {
+        const hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2], 10);
+        const seconds = parseInt(match[3], 10);
+        return hours * 3600 + minutes * 60 + seconds;
+    } else {
+        const minutes = parseInt(match[1], 10);
+        const seconds = parseInt(match[2], 10);
+        return minutes * 60 + seconds;
+    }
+}
+
+export function extractTimestamp(raw: string): { timestamp: string | null; cleanText: string } {
+    if (!raw) return { timestamp: null, cleanText: '' };
+    const bracketMatch = raw.match(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/);
+    if (bracketMatch) {
+        return {
+            timestamp: bracketMatch[1],
+            cleanText: raw.replace(bracketMatch[0], '').trim()
+        };
+    }
+    const leadingMatch = raw.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\b/);
+    if (leadingMatch) {
+        return {
+            timestamp: leadingMatch[1],
+            cleanText: raw.replace(leadingMatch[0], '').trim()
+        };
+    }
+    return { timestamp: null, cleanText: raw };
+}
+
+function renderNodesWithTimestamps(node: React.ReactNode, onSeek?: (ts: string) => void): React.ReactNode {
+    if (typeof node === 'string') {
+        const tsRegex = /\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g;
+        if (!tsRegex.test(node)) return node;
+
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        tsRegex.lastIndex = 0;
+        while ((match = tsRegex.exec(node)) !== null) {
+            if (match.index > lastIndex) {
+                parts.push(node.slice(lastIndex, match.index));
+            }
+            const ts = match[1];
+            parts.push(
+                <button
+                    key={`${ts}-${match.index}`}
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onSeek?.(ts);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-1 rounded text-[11px] font-mono font-semibold bg-[var(--accent-dim)] text-[var(--accent)] hover:bg-[var(--accent)]/25 border border-[var(--accent)]/30 cursor-pointer align-middle transition-all hover:scale-105 active:scale-95 shadow-2xs"
+                    title={`Jump to ${ts} in recording`}
+                >
+                    <span>⏱</span>
+                    <span>{ts}</span>
+                </button>
+            );
+            lastIndex = tsRegex.lastIndex;
+        }
+        if (lastIndex < node.length) {
+            parts.push(node.slice(lastIndex));
+        }
+        return parts;
+    }
+
+    if (Array.isArray(node)) {
+        return React.Children.map(node, (child) => renderNodesWithTimestamps(child, onSeek));
+    }
+
+    if (React.isValidElement(node)) {
+        const elementProps = node.props as { children?: React.ReactNode };
+        if (elementProps && elementProps.children) {
+            return React.cloneElement(node, {
+                ...elementProps,
+                children: renderNodesWithTimestamps(elementProps.children, onSeek),
+            } as any);
+        }
+    }
+
+    return node;
+}
+
+const StructuredSummaryViewer = ({ summaryString, onSeek }: { summaryString: string; onSeek?: (ts: string) => void }) => {
     try {
         const data = JSON.parse(summaryString);
-        if (data && (data.executive_summary || data.discussion_points || data.key_takeaways)) {
+        if (data && (data.executive_summary || data.discussion_points || data.key_takeaways || data.crm_metadata)) {
             return (
                 <div className="space-y-6">
                     {data.executive_summary && (
@@ -69,9 +162,17 @@ const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) =
                                     <div key={idx} className="bg-black/5 dark:bg-white/5 rounded-lg p-3">
                                         <div className="flex items-center justify-between mb-1.5">
                                             <span className="font-semibold text-sm text-[var(--text-primary)]">{point.topic}</span>
-                                            <span className="text-xs font-medium text-[var(--text-muted)] bg-[var(--surface)] px-1.5 py-0.5 rounded border border-[var(--border)]">
-                                                {point.timestamp}
-                                            </span>
+                                            {point.timestamp && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onSeek?.(point.timestamp)}
+                                                    className="inline-flex items-center gap-1 text-xs font-mono font-medium text-[var(--accent)] bg-[var(--accent-dim)] hover:bg-[var(--accent)]/20 px-2 py-0.5 rounded-md border border-[var(--accent)]/30 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                                    title={`Jump to ${point.timestamp} in recording`}
+                                                >
+                                                    <span>⏱</span>
+                                                    <span>{point.timestamp}</span>
+                                                </button>
+                                            )}
                                         </div>
                                         <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
                                             {point.details}
@@ -82,31 +183,122 @@ const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) =
                         </div>
                     )}
                     {data.crm_metadata && (data.crm_metadata.action_items?.length > 0 || data.crm_metadata.key_decisions?.length > 0) && (
-                        <div className="pt-2 border-t border-[var(--border)] grid grid-cols-2 gap-4">
+                        <div className="pt-4 border-t border-[var(--border)] grid grid-cols-1 md:grid-cols-2 gap-6">
                             {data.crm_metadata.action_items?.length > 0 && (
-                                <div>
-                                    <h4 className="text-[13px] font-semibold text-[var(--text-primary)] mb-2">Action Items</h4>
-                                    <ul className="space-y-1.5">
-                                        {data.crm_metadata.action_items.map((item: string, idx: number) => (
-                                            <li key={idx} className="flex items-start gap-2 text-[13px] text-[var(--text-secondary)]">
-                                                <div className="mt-1.5 w-1 h-1 rounded-full bg-red-500 shrink-0" />
-                                                <span>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                <div className="space-y-2">
+                                    <h4 className="text-[14px] font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                                        <CheckSquare size={15} className="text-emerald-500" />
+                                        <span>Action Items</span>
+                                        <span className="text-xs font-normal text-[var(--text-muted)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded-full">
+                                            {data.crm_metadata.action_items.length}
+                                        </span>
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {data.crm_metadata.action_items.map((rawItem: any, idx: number) => {
+                                            const isObj = typeof rawItem === 'object' && rawItem !== null;
+                                            const task = isObj ? (rawItem.task || '') : String(rawItem);
+                                            const owner = isObj ? (rawItem.owner || '') : '';
+                                            const dueDate = isObj ? (rawItem.due_date || rawItem.dueDate || '') : '';
+                                            const priority = isObj ? (rawItem.priority || '') : '';
+
+                                            const objTs = isObj ? (rawItem.timestamp || rawItem.timestamp_hint) : null;
+                                            const { timestamp: extractedTs, cleanText } = extractTimestamp(task);
+                                            const timestamp = objTs || extractedTs;
+                                            const displayTask = isObj ? task : cleanText;
+
+                                            return (
+                                                <div 
+                                                    key={idx} 
+                                                    className="group flex flex-col gap-1.5 p-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--border)] hover:border-[var(--accent)]/40 transition-all"
+                                                >
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="flex items-start gap-2 min-w-0">
+                                                            <div className="mt-1 w-2 h-2 rounded-full bg-emerald-500 shrink-0 group-hover:scale-125 transition-transform" />
+                                                            <span className="text-[13px] font-medium text-[var(--text-primary)] leading-snug break-words">
+                                                                {displayTask}
+                                                            </span>
+                                                        </div>
+                                                        {timestamp && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => onSeek?.(timestamp)}
+                                                                className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--accent)] bg-[var(--accent-dim)] hover:bg-[var(--accent)]/25 px-2 py-0.5 rounded-md border border-[var(--accent)]/30 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                                                title={`Jump to ${timestamp} in recording`}
+                                                            >
+                                                                <span>⏱</span>
+                                                                <span>{timestamp}</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {(owner || dueDate || priority) && (
+                                                        <div className="flex items-center gap-2 pl-4 text-[11px] text-[var(--text-muted)]">
+                                                            {owner && (
+                                                                <span className="bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded font-medium text-[var(--text-secondary)]">
+                                                                    @{owner}
+                                                                </span>
+                                                            )}
+                                                            {dueDate && (
+                                                                <span className="text-[var(--text-muted)]">
+                                                                    Due: {dueDate}
+                                                                </span>
+                                                            )}
+                                                            {priority && (
+                                                                <span className={cn(
+                                                                    "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
+                                                                    priority === 'urgent' ? 'bg-red-500/10 text-red-500' :
+                                                                    priority === 'high' ? 'bg-orange-500/10 text-orange-500' :
+                                                                    'bg-blue-500/10 text-blue-500'
+                                                                )}>
+                                                                    {priority}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                             {data.crm_metadata.key_decisions?.length > 0 && (
-                                <div>
-                                    <h4 className="text-[13px] font-semibold text-[var(--text-primary)] mb-2">Key Decisions</h4>
-                                    <ul className="space-y-1.5">
-                                        {data.crm_metadata.key_decisions.map((item: string, idx: number) => (
-                                            <li key={idx} className="flex items-start gap-2 text-[13px] text-[var(--text-secondary)]">
-                                                <div className="mt-1.5 w-1 h-1 rounded-full bg-orange-500 shrink-0" />
-                                                <span>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                <div className="space-y-2">
+                                    <h4 className="text-[14px] font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                                        <Sparkles size={15} className="text-amber-500" />
+                                        <span>Key Decisions</span>
+                                        <span className="text-xs font-normal text-[var(--text-muted)] bg-[var(--surface-muted)] px-1.5 py-0.5 rounded-full">
+                                            {data.crm_metadata.key_decisions.length}
+                                        </span>
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {data.crm_metadata.key_decisions.map((rawDecision: any, idx: number) => {
+                                            const text = typeof rawDecision === 'string' ? rawDecision : (rawDecision.decision || rawDecision.text || '');
+                                            const { timestamp, cleanText } = extractTimestamp(text);
+                                            return (
+                                                <div 
+                                                    key={idx}
+                                                    className="flex items-start justify-between gap-2 p-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-[var(--border)]"
+                                                >
+                                                    <div className="flex items-start gap-2 min-w-0">
+                                                        <div className="mt-1 w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                                                        <span className="text-[13px] text-[var(--text-secondary)] leading-snug">
+                                                            {cleanText}
+                                                        </span>
+                                                    </div>
+                                                    {timestamp && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => onSeek?.(timestamp)}
+                                                            className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--accent)] bg-[var(--accent-dim)] hover:bg-[var(--accent)]/25 px-2 py-0.5 rounded-md border border-[var(--accent)]/30 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                                                            title={`Jump to ${timestamp} in recording`}
+                                                        >
+                                                            <span>⏱</span>
+                                                            <span>{timestamp}</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -121,7 +313,17 @@ const StructuredSummaryViewer = ({ summaryString }: { summaryString: string }) =
     // Fallback to markdown
     return (
         <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:text-[var(--text-primary)] prose-headings:font-semibold prose-strong:text-[var(--text-primary)] prose-strong:font-bold prose-a:text-[var(--accent)] prose-p:my-2 prose-ul:my-2 prose-li:my-0.5">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown 
+                remarkPlugins={[remarkGfm]}
+                components={{
+                    li: ({ children, ...props }) => (
+                        <li {...props}>{renderNodesWithTimestamps(children, onSeek)}</li>
+                    ),
+                    p: ({ children, ...props }) => (
+                        <p {...props}>{renderNodesWithTimestamps(children, onSeek)}</p>
+                    )
+                }}
+            >
                 {summaryString}
             </ReactMarkdown>
         </div>
@@ -143,8 +345,8 @@ const NOTE_RECIPES: AiRecipe[] = [
         icon: CheckSquare,
         prompt: (noteTitle: string) => `Analyze "${noteTitle}" and extract every single concrete action item and commitment. Format output cleanly as:
 ## 📋 Action Items & Deliverables
-For each item, format as a markdown checklist with owner and due date if mentioned:
-- [ ] **<Imperative Task>** — @<Owner> (Due: <Deadline>)
+For each item, format as a markdown checklist with exact transcript timestamp [MM:SS], owner, and due date:
+- [ ] [MM:SS] **<Imperative Task>** — @<Owner> (Due: <Deadline>)
   > 💬 Context: "<Brief verbatim quote or reference>"
 
 Group tasks by category:
@@ -169,9 +371,11 @@ interface NotesEditorProps {
     focusMode?: boolean;
     onBack?: () => void;
     onUpdate: (patch: Partial<Note>) => void;
+    onDelete?: () => void;
+    onDeleteVideo?: () => void;
 }
 
-export function NotesEditor({ note, folders = [], folderName = 'All Notes', focusMode = false, onBack, onUpdate }: NotesEditorProps) {
+export function NotesEditor({ note, folders = [], folderName = 'All Notes', focusMode = false, onBack, onUpdate, onDelete, onDeleteVideo }: NotesEditorProps) {
     const navigate = useNavigate();
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [tagInput, setTagInput] = useState('');
@@ -181,9 +385,24 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const [copied, setCopied] = useState(false);
     const [dateMenuOpen, setDateMenuOpen] = useState(false);
     const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
+    const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+    const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
 
     const folderMenuRef = useRef<HTMLDivElement>(null);
     const dateMenuRef = useRef<HTMLDivElement>(null);
+    const moreMenuRef = useRef<HTMLDivElement>(null);
+    const titleInputRef = useRef<HTMLInputElement>(null);
+
+    // Close menus when clicking outside
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) setFolderMenuOpen(false);
+            if (dateMenuRef.current && !dateMenuRef.current.contains(e.target as Node)) setDateMenuOpen(false);
+            if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) setMoreMenuOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     // ── 4-WAY VIEW MODES: 'summary' | 'notes' | 'transcript' | 'chat' ──────────────
     const [viewMode, setViewMode] = useState<'summary' | 'notes' | 'transcript' | 'chat'>('summary');
@@ -257,10 +476,10 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
-        if (viewMode === 'transcript' && note.isMeeting && note.id) {
+        if (note.isMeeting && note.id) {
             TauriClient.getScreenshots(note.id).then(setScreenshots).catch(console.error);
         }
-    }, [viewMode, note.id, note.isMeeting]);
+    }, [note.id, note.isMeeting]);
 
     useEffect(() => {
         if (!editor || note.id === noteIdRef.current) return;
@@ -362,20 +581,6 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         }
     };
 
-    const handleExportFile = () => {
-        const title = `# ${note.title || 'Untitled Note'}\n\n`;
-        const bodyText = note.content.replace(/<p>/g, '').replace(/<\/p>/g, '\n').replace(/<[^>]+>/g, '');
-        const blob = new Blob([title + bodyText], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${(note.title || 'note').replace(/[^a-z0-9]/gi, '_')}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
-
     // ── AI Multilingual Synthesis Engine ─────────────────────────────────────
     const handleGenerateSummary = async (transcriptOverride?: string) => {
         const textToSummarize = transcriptOverride || rawTranscript || (editor ? editor.getText() : '');
@@ -403,7 +608,8 @@ Structure your response with:
 (Bulleted actionable insights, core discussion topics, and important context)
 
 ## 📋 Action Items & Deliverables
-(Specific checkboxes or tasks with owners or timelines mentioned)
+(Specific checkboxes or tasks. You MUST include the exact transcript timestamp [MM:SS] when each task was committed or discussed, in format:
+- [ ] [MM:SS] **<Task>** — @<Owner> (Due: <Deadline>))
 
 ## 💡 Strategic Decisions & Next Steps
 (Decisions finalized and agreed milestones)`;
@@ -468,6 +674,28 @@ Structure your response with:
             </div>
         `);
         setViewMode('notes');
+    };
+
+    const handleSeekToTimestamp = (timestampStr: string) => {
+        const secs = parseTimestampToSeconds(timestampStr);
+        if (secs === null) return;
+
+        // Switch to transcript view so user sees player and transcript context
+        setViewMode('transcript');
+
+        // Play the video at the given timestamp
+        setTimeout(() => {
+            if (videoRef.current) {
+                videoRef.current.currentTime = secs;
+                videoRef.current.play().catch(() => {});
+                videoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 150);
+
+        // Filter or highlight transcript matching the timestamp
+        if (rawTranscript) {
+            setTranscriptSearch(timestampStr);
+        }
     };
 
     const [isPolishingTranscript, setIsPolishingTranscript] = useState(false);
@@ -652,12 +880,98 @@ Return only the polished transcript text:`;
                         </button>
                         <button
                             type="button"
-                            onClick={handleExportFile}
+                            onClick={() => setIsExportPdfOpen(true)}
                             className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
-                            title="Export markdown file"
+                            title="Export as PDF"
                         >
                             <Download size={14} />
                         </button>
+
+                        <div className="relative" ref={moreMenuRef}>
+                            <button
+                                type="button"
+                                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+                                className={cn(
+                                    "p-1.5 rounded-md hover:bg-[var(--surface-hover)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer",
+                                    moreMenuOpen ? "bg-[var(--surface-hover)] text-[var(--text-primary)] border-[var(--border)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                )}
+                                title="More options"
+                            >
+                                <MoreHorizontal size={14} />
+                            </button>
+                            {moreMenuOpen && (
+                                <div className="absolute top-9 right-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1.5 w-44">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onUpdate({ isPinned: !note.isPinned });
+                                            setMoreMenuOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                                    >
+                                        <Bookmark size={13} className={note.isPinned ? "fill-current" : ""} />
+                                        <span>{note.isPinned ? 'Remove Bookmark' : 'Bookmark'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMoreMenuOpen(false);
+                                            setViewMode('notes');
+                                            setTimeout(() => {
+                                                if (titleInputRef.current) {
+                                                    titleInputRef.current.focus();
+                                                    titleInputRef.current.select();
+                                                }
+                                            }, 50);
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                                    >
+                                        <Edit3 size={13} />
+                                        <span>Rename</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMoreMenuOpen(false);
+                                            setIsExportPdfOpen(true);
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                                    >
+                                        <FileText size={13} className="text-red-500" />
+                                        <span>Export as PDF</span>
+                                    </button>
+                                    <div className="h-px w-full bg-[var(--border)] my-1 opacity-50" />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMoreMenuOpen(false);
+                                            if (onDelete && confirm('Are you sure you want to delete this?')) {
+                                                onDelete();
+                                            }
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-red-500 hover:bg-red-500/10 transition-colors text-left"
+                                    >
+                                        <Trash2 size={13} />
+                                        <span>Delete</span>
+                                    </button>
+                                    {note.videoPath && onDeleteVideo && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMoreMenuOpen(false);
+                                                if (confirm('Are you sure you want to delete the video? Your notes and transcript will be kept.')) {
+                                                    onDeleteVideo();
+                                                }
+                                            }}
+                                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-orange-500 hover:bg-orange-500/10 transition-colors text-left"
+                                        >
+                                            <VideoOff size={13} />
+                                            <span>Delete Video</span>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -726,7 +1040,7 @@ Return only the polished transcript text:`;
                         {aiSummary ? (
                             <div className="text-sm text-[var(--text-primary)] leading-relaxed font-sans max-w-none">
                                 <div className="p-6 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                                    <StructuredSummaryViewer summaryString={aiSummary} />
+                                    <StructuredSummaryViewer summaryString={aiSummary} onSeek={handleSeekToTimestamp} />
                                 </div>
                             </div>
                         ) : (
@@ -770,6 +1084,7 @@ Return only the polished transcript text:`;
                         {/* Note Title */}
                         <div className="mb-4">
                             <input
+                                ref={titleInputRef}
                                 type="text"
                                 value={note.title}
                                 onChange={handleTitleChange}
@@ -1030,6 +1345,21 @@ Return only the polished transcript text:`;
                                                         <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm shadow-sm group-hover:bg-[var(--accent)] transition-colors">
                                                             {timeString}
                                                         </div>
+                                                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (confirm('Delete this screenshot?')) {
+                                                                        TauriClient.deleteScreenshot(s.id).catch(console.error);
+                                                                        setScreenshots(prev => prev.filter(x => x.id !== s.id));
+                                                                    }
+                                                                }}
+                                                                className="p-1 bg-black/40 hover:bg-red-500/80 text-white rounded-md backdrop-blur-sm shadow-sm transition-colors cursor-pointer"
+                                                                title="Delete Screenshot"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -1224,6 +1554,17 @@ Return only the polished transcript text:`;
                     />
                 </div>
             )}
+
+            {/* Export as PDF Dialog Modal */}
+            <ExportPdfDialog
+                isOpen={isExportPdfOpen}
+                onClose={() => setIsExportPdfOpen(false)}
+                note={note}
+                folderName={folderName}
+                summary={aiSummary}
+                transcript={rawTranscript}
+                screenshots={screenshots}
+            />
 
             {/* Live Transcript Panel has been removed to rely on browser extension */}
         </div>

@@ -88,21 +88,28 @@ export const TasksPage: React.FC = () => {
       const localCustomRaw = localStorage.getItem('bacham_custom_global_tasks');
       const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
 
-      const mappedBackendItems: GlobalActionItem[] = (items || []).map((t: any, idx: number) => ({
-        id: t.id || `backend_item_${t.lectureId}_${idx}`,
-        lectureId: t.lectureId,
-        lectureTitle: t.lectureTitle || 'Meeting Note',
-        task: t.task,
-        owner: t.owner || 'Me',
-        rawQuote: t.rawQuote || t.raw_quote,
-        timestamp: t.timestamp || t.timestamp_str,
-        dueDate: t.dueDate || t.due_date,
-        dueDateIso: t.dueDateIso || t.due_date_iso,
-        priority: (t.priority?.toLowerCase() as any) || 'medium',
-        category: (t.category?.toLowerCase() as any) || 'general',
-        status: t.status === 'done' ? 'done' : 'todo',
-        createdAt: Date.now() - idx * 1000,
-      }));
+      const mappedBackendItems: GlobalActionItem[] = (items || []).map((t: any, idx: number) => {
+        const rawTask = t.task || '';
+        const tsMatch = rawTask.match(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/);
+        const extractedTs = tsMatch ? tsMatch[1] : null;
+        const cleanTask = tsMatch ? rawTask.replace(tsMatch[0], '').trim() : rawTask;
+
+        return {
+          id: t.id || `backend_item_${t.lectureId}_${idx}`,
+          lectureId: t.lectureId,
+          lectureTitle: t.lectureTitle || 'Meeting Note',
+          task: cleanTask,
+          owner: t.owner || 'Me',
+          rawQuote: t.rawQuote || t.raw_quote,
+          timestamp: t.timestamp || t.timestamp_str || extractedTs || undefined,
+          dueDate: t.dueDate || t.due_date,
+          dueDateIso: t.dueDateIso || t.due_date_iso,
+          priority: (t.priority?.toLowerCase() as any) || 'medium',
+          category: (t.category?.toLowerCase() as any) || 'general',
+          status: t.status === 'done' ? 'done' : 'todo',
+          createdAt: Date.now() - idx * 1000,
+        };
+      });
 
       const combined = [...customTasks, ...mappedBackendItems, ...parsedNoteTasks];
       const uniqueTasks = Array.from(new Map(combined.map(item => [item.id, item])).values());
@@ -518,8 +525,14 @@ const TaskRow = ({
         </div>
 
         {/* Source / Metadata */}
-        {!isDone && (task.lectureTitle || task.dueDate || task.owner !== 'Me') && (
+        {!isDone && (task.lectureTitle || task.dueDate || task.owner !== 'Me' || task.timestamp) && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[12px] font-medium text-[var(--text-muted)]">
+            {task.timestamp && (
+              <span className="flex items-center gap-1 font-mono text-[11px] font-medium text-[var(--accent)] bg-[var(--accent-dim)] px-2 py-0.5 rounded-md border border-[var(--accent)]/30">
+                ⏱ {task.timestamp}
+              </span>
+            )}
+
             {task.lectureTitle && (
               <span 
                 onClick={(e) => { e.stopPropagation(); onClick(); }}

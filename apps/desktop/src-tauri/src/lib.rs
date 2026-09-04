@@ -135,6 +135,7 @@ pub fn run() {
             commands::storage::storage_change_location,
             commands::storage::storage_get_breakdown,
             commands::storage::storage_delete_video,
+            commands::storage::storage_delete_screenshot,
             commands::storage::storage_backup_database,
             commands::window::window_minimize,
             commands::window::window_maximize,
@@ -299,6 +300,8 @@ pub fn run() {
             commands::export::export_folder_cram_sheet,
             commands::export::generate_highlights_reel,
             commands::export::generate_magic_link_html,
+            commands::export::save_pdf_base64,
+            commands::export::open_file_path,
             // Dashboard
             commands::dashboard::dashboard_summary,
             // Search

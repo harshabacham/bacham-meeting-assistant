@@ -12,3 +12,7 @@ The following rules have been adopted to improve the AI's output, inspired by in
 
 ## Composio Protocol (API Readiness)
 - **Rule:** When building features that interact with external services, always structure the backend architecture to be modular and easily pluggable (like a Composio tool), ensuring clean separation between external API calls and core application logic.
+
+## GitHub Auto-Push Protocol (Continuous Sync)
+- **Rule:** Automatically commit and push all updated and verified code to GitHub (`git add . && git commit -m "..." && git push origin main`) after completing any feature, bug fix, or changes requested by the user.
+- **Why:** Keeps the remote repository continuously in sync with the latest working state with zero manual user intervention needed.

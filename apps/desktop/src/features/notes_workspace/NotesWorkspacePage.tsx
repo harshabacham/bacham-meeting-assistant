@@ -307,6 +307,15 @@ export function NotesWorkspacePage() {
         }
     }, [refreshWorkspaceData]);
 
+    const handleDeleteVideo = useCallback(async (id: string) => {
+        try {
+            await TauriClient.deleteVideoAsset(id);
+            refreshWorkspaceData();
+        } catch (e) {
+            console.error('Failed to delete video', e);
+        }
+    }, [refreshWorkspaceData]);
+
     const activeNoteFolderName = activeNote?.folderId 
         ? folders.find(f => f.id === activeNote.folderId)?.name || 'Folder'
         : (activeFolder?.name || 'All Notes');
@@ -326,6 +335,18 @@ export function NotesWorkspacePage() {
                             refreshWorkspaceData();
                         }}
                         onUpdate={(patch) => handleUpdateNote(activeNote.id, patch)}
+                        onDelete={() => {
+                            if (activeNote.isMeeting) {
+                                handleDeleteLecture(activeNote.id);
+                            } else {
+                                handleDeleteNote(activeNote.id);
+                            }
+                            setActiveNoteId(null);
+                            setSearchParams(new URLSearchParams());
+                        }}
+                        onDeleteVideo={() => {
+                            handleDeleteVideo(activeNote.id);
+                        }}
                     />
                 ) : (
                     <NotesDashboard

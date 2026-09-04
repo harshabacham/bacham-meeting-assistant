@@ -197,3 +197,40 @@ pub async fn generate_magic_link_html(
 
     Ok(html)
 }
+
+#[tauri::command]
+pub async fn save_pdf_base64(
+    path: String,
+    base64_content: String,
+) -> AppResult<String> {
+    use base64::Engine;
+    let clean_base64 = if let Some(idx) = base64_content.find(',') {
+        &base64_content[idx + 1..]
+    } else {
+        &base64_content
+    };
+    let bytes = base64::engine::general_purpose::STANDARD.decode(clean_base64)
+        .map_err(|e| crate::error::AppError::Internal(format!("Base64 decode error: {}", e)))?;
+    let dest = PathBuf::from(&path);
+    if let Some(parent) = dest.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(&dest, &bytes)?;
+    Ok(path)
+}
+
+#[tauri::command]
+pub fn open_file_path(path: String) -> AppResult<()> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let _ = Command::new("cmd")
+            .args(["/c", "start", "", &path])
+            .spawn();
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = open::that(&path);
+    }
+    Ok(())
+}

@@ -367,7 +367,11 @@ export function NotesDashboard({
                                                                             <div className="h-px w-full bg-[var(--border)] my-0.5 opacity-50" />
                                                                             <button
                                                                                 onClick={() => {
-                                                                                    if (onDeleteNote) onDeleteNote(note.id);
+                                                                                    if (note.isMeeting) {
+                                                                                        if (onDeleteLecture) onDeleteLecture(note.id);
+                                                                                    } else {
+                                                                                        if (onDeleteNote) onDeleteNote(note.id);
+                                                                                    }
                                                                                     setActiveNoteMenu(null);
                                                                                 }}
                                                                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-red-500 hover:bg-red-500/10 transition-colors"
@@ -380,7 +384,11 @@ export function NotesDashboard({
                                                                         <>
                                                                             <button
                                                                                 onClick={() => {
-                                                                                    if (onRestoreNote) onRestoreNote(note.id);
+                                                                                    if (note.isMeeting) {
+                                                                                        if (onRestoreLecture) onRestoreLecture(note.id);
+                                                                                    } else {
+                                                                                        if (onRestoreNote) onRestoreNote(note.id);
+                                                                                    }
                                                                                     setActiveNoteMenu(null);
                                                                                 }}
                                                                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
@@ -391,7 +399,11 @@ export function NotesDashboard({
                                                                             <div className="h-px w-full bg-[var(--border)] my-0.5 opacity-50" />
                                                                             <button
                                                                                 onClick={() => {
-                                                                                    if (onHardDeleteNote) onHardDeleteNote(note.id);
+                                                                                    if (note.isMeeting) {
+                                                                                        if (onHardDeleteLecture) onHardDeleteLecture(note.id);
+                                                                                    } else {
+                                                                                        if (onHardDeleteNote) onHardDeleteNote(note.id);
+                                                                                    }
                                                                                     setActiveNoteMenu(null);
                                                                                 }}
                                                                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-red-500 hover:bg-red-500/10 transition-colors"

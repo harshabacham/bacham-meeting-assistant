@@ -147,6 +147,35 @@ pub async fn storage_delete_video(id: String, state: State<'_, DbState>) -> AppR
     Ok(())
 }
 
+#[tauri::command]
+pub async fn storage_delete_screenshot(id: String, state: State<'_, DbState>) -> AppResult<()> {
+    let pool = &state.pool;
+    
+    // Get path
+    let row = sqlx::query("SELECT file_path FROM screenshots WHERE id = ?")
+        .bind(&id)
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(r) = row {
+        let sp: Option<String> = r.try_get("file_path").unwrap_or(None);
+        if let Some(path_str) = sp {
+            let path = PathBuf::from(path_str);
+            if path.exists() {
+                std::fs::remove_file(path).unwrap_or_else(|e| eprintln!("Failed to delete screenshot file: {}", e));
+            }
+        }
+        
+        // Delete record
+        sqlx::query("DELETE FROM screenshots WHERE id = ?")
+            .bind(&id)
+            .execute(pool)
+            .await?;
+    }
+
+    Ok(())
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupDatabaseInput {

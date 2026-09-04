@@ -45,6 +45,8 @@ pub async fn extract_action_items(lecture_id: &str, pool: &SqlitePool) -> AppRes
                \"context\": \"string (Brief context on why this task is needed)\",\n\
                \"due_date\": \"string (e.g. 'Next Friday', 'EOD tomorrow', or null if none)\",\n\
                \"due_date_iso\": \"string (ISO 8601 format if possible to infer, else null)\",\n\
+               \"timestamp\": \"string (Exact time in transcript, e.g. '04:15' or '01:12:30', or null if untimed)\",\n\
+               \"timestamp_ms\": \"number (Timestamp converted to milliseconds, or null)\",\n\
                \"timestamp_hint\": \"string (Approximate time or context clue, e.g. 'Near the end')\"\n\
              }}\n\
            ]\n\

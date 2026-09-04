@@ -237,6 +237,7 @@ export const TauriClient = {
     changeStorageLocation: (newPath: string) => invoke<any>('storage_change_location', { input: { newPath } }),
     getStorageBreakdown: () => invoke<StorageBreakdown>('storage_get_breakdown'),
     deleteVideoAsset: (id: string) => invoke<void>('storage_delete_video', { id }),
+    deleteScreenshot: (id: string) => invoke<void>('storage_delete_screenshot', { id }),
     backupDatabase: (destinationPath: string) => invoke<void>('storage_backup_database', { input: { destinationPath } }),
 
     // Native Capture
