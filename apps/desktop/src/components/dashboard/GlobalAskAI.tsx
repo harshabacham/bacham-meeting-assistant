@@ -25,10 +25,28 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
   const navigate = useNavigate();
 
   const [isMarking, setIsMarking] = useState(false);
-  const bubbleTimeoutRef = useRef<NodeJS.Timeout>();
+  const bubbleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Need access to store to update it locally and trigger refetch
   const { lectures, fetchLectures } = useLectureStore();
+
+  const dragConstraintsRef = useRef(null);
+
+  const [savedPosition, setSavedPosition] = useState(() => {
+    const saved = localStorage.getItem('pet-position');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return { x: 0, y: 0 };
+  });
+
+  const handleDragEnd = (_event: any, info: any) => {
+    setSavedPosition((prev: any) => {
+      const newPos = { x: prev.x + info.offset.x, y: prev.y + info.offset.y };
+      localStorage.setItem('pet-position', JSON.stringify(newPos));
+      return newPos;
+    });
+  };
 
   const triggerBubble = () => {
     if (pendingTasks.length > 0) {
@@ -53,7 +71,7 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
       setIsMarking(true);
       
       try {
-          const note = lectures.find(l => l.id === activeTask.noteId);
+          const note = lectures.find(l => l.id === activeTask.noteId) as any;
           if (note) {
               // We need to replace `- [ ] taskText` with `- [x] taskText`
               let newContent = note.content || '';
@@ -100,24 +118,6 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
   };
 
   if (isTuckedAway || hidePet) return null;
-
-  const dragConstraintsRef = useRef(null);
-
-  const [savedPosition, setSavedPosition] = useState(() => {
-    const saved = localStorage.getItem('pet-position');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return { x: 0, y: 0 };
-  });
-
-  const handleDragEnd = (event: any, info: any) => {
-    setSavedPosition((prev: any) => {
-      const newPos = { x: prev.x + info.offset.x, y: prev.y + info.offset.y };
-      localStorage.setItem('pet-position', JSON.stringify(newPos));
-      return newPos;
-    });
-  };
 
   return (
     <div ref={dragConstraintsRef} className="fixed inset-0 z-50 pointer-events-none">
@@ -249,7 +249,7 @@ export const GlobalAskAI: React.FC = () => {
         return dateB - dateA;
     });
 
-    sortedLectures.forEach(note => {
+    sortedLectures.forEach((note: any) => {
         let match;
         // Search in content
         if (note.content) {
