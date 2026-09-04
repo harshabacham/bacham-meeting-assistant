@@ -67,7 +67,8 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
     }
 
     const { folder, recentLectures, recentNotes } = dashboard;
-
+    const uniqueLectures = (recentLectures || []).filter((lec, idx, arr) => arr.findIndex(l => l.id === lec.id) === idx);
+    const uniqueNotes = (recentNotes || []).filter((note, idx, arr) => arr.findIndex(n => n.id === note.id) === idx);
 
     const folderColor = folder.color || 'bg-primary/20 text-primary';
 
@@ -168,7 +169,7 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                                 >
                                     <Plus size={14} className="text-primary" /> Add Meetings
                                 </Button>
-                                {recentLectures.length > 0 && (
+                                {uniqueLectures.length > 0 && (
                                     <Button variant="ghost" className="text-xs px-2.5 py-1 text-muted-foreground hover:text-foreground" onClick={onViewAll}>
                                         View All
                                     </Button>
@@ -176,7 +177,7 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                             </div>
                         </div>
                         
-                        {recentLectures.length === 0 ? (
+                        {uniqueLectures.length === 0 ? (
                             <div className="p-8 border border-dashed border-border/60 rounded-xl flex flex-col items-center justify-center text-center bg-surface/30">
                                 <LayoutList className="mb-3 opacity-40 text-primary" size={28} />
                                 <p className="text-sm font-semibold text-foreground">No meetings in this folder yet</p>
@@ -192,7 +193,7 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 gap-3">
-                                {recentLectures.map((lecture: Lecture) => (
+                                {uniqueLectures.map((lecture: Lecture) => (
                                     <div 
                                         key={lecture.id}
                                         onClick={() => navigate(`/lectures/${lecture.id}`)}
@@ -221,14 +222,14 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                             <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/notes')}>New Note</Button>
                         </div>
                         
-                        {recentNotes.length === 0 ? (
+                        {uniqueNotes.length === 0 ? (
                             <div className="p-8 border border-dashed border-border/60 rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-surface/30">
                                 <PenTool className="mb-3 opacity-40" size={28} />
                                 <p className="text-sm">Create study plans or scratchpad notes for this folder.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {recentNotes.map((note: any) => (
+                                {uniqueNotes.map((note: any) => (
                                     <div key={note.id} onClick={() => navigate('/notes')}>
                                         <Card className="p-4 flex flex-col hover:border-primary/40 cursor-pointer transition-colors bg-surface/50 border-border/40 shadow-sm">
                                         <div className="flex items-start justify-between mb-2">

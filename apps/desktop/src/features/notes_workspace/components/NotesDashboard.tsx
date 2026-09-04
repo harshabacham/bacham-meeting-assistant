@@ -20,6 +20,7 @@ import { cn } from '@/components';
 import { Note } from '../NotesWorkspacePage';
 import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { TauriClient } from '@/infrastructure/tauri-client';
+import { AddLecturesDialog } from '@/components/library/AddLecturesDialog';
 
 const DASHBOARD_RECIPES: AiRecipe[] = [
     {
@@ -60,6 +61,7 @@ interface NotesDashboardProps {
     onDeleteLecture?: (id: string) => void;
     onRestoreLecture?: (id: string) => void;
     onHardDeleteLecture?: (id: string) => void;
+    onRefreshWorkspace?: () => void;
 }
 
 export function NotesDashboard({ 
@@ -76,13 +78,15 @@ export function NotesDashboard({
     onRestoreNote,
     onDeleteLecture,
     onRestoreLecture,
-    onHardDeleteLecture
+    onHardDeleteLecture,
+    onRefreshWorkspace
 }: NotesDashboardProps) {
     const navigate = useNavigate();
     const [searchQuery] = useState('');
     const [activeTab] = useState<'notes' | 'files'>('notes');
     const [filterMode] = useState<'all' | 'todos' | 'projects'>('all');
     const [isViewingAll, setIsViewingAll] = useState(false);
+    const [isAddingMeetings, setIsAddingMeetings] = useState(false);
     const [trashedLectures, setTrashedLectures] = useState<any[]>([]);
 
     useEffect(() => {
@@ -190,6 +194,17 @@ export function NotesDashboard({
                 </div>
                 {!isTrashView && (
                     <div className="flex items-center gap-2">
+                        {activeFolderId && (
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingMeetings(true)}
+                                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-accent)] text-xs font-medium transition-all cursor-pointer shadow-2xs"
+                                title="Add meetings to this folder"
+                            >
+                                <Plus size={12} className="text-primary" />
+                                <span>Add Meetings</span>
+                            </button>
+                        )}
                         <button
                             onClick={onCreateNote}
                             className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-primary)] text-[var(--bg)] text-xs font-semibold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
@@ -541,6 +556,18 @@ export function NotesDashboard({
                     <div className="h-8" />
                 </div>
             </div>
+
+            {/* Add Meetings Dialog */}
+            {isAddingMeetings && activeFolderId && (
+                <AddLecturesDialog
+                    isOpen={isAddingMeetings}
+                    onClose={() => setIsAddingMeetings(false)}
+                    folderId={activeFolderId}
+                    onSuccess={() => {
+                        if (onRefreshWorkspace) onRefreshWorkspace();
+                    }}
+                />
+            )}
         </div>
     );
 }

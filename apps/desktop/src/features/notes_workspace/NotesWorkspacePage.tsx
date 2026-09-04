@@ -110,7 +110,14 @@ export function NotesWorkspacePage() {
             });
 
             const combined = [...regularNotes, ...meetingNotes].sort((a, b) => b.updatedAt - a.updatedAt);
-            setNotes(combined);
+            const seenIds = new Set<string>();
+            const uniqueNotes: Note[] = [];
+            for (const n of combined) {
+                if (!n || !n.id || seenIds.has(n.id)) continue;
+                seenIds.add(n.id);
+                uniqueNotes.push(n);
+            }
+            setNotes(uniqueNotes);
         }).catch(e => console.error('Failed to fetch unified workspace notes', e));
     }, []);
 
@@ -364,6 +371,7 @@ export function NotesWorkspacePage() {
                         onDeleteLecture={handleDeleteLecture}
                         onRestoreLecture={handleRestoreLecture}
                         onHardDeleteLecture={handleHardDeleteLecture}
+                        onRefreshWorkspace={refreshWorkspaceData}
                     />
                 )}
             </div>

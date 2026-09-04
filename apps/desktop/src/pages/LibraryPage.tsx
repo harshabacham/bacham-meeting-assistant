@@ -839,72 +839,130 @@ function BatchMoveFolderDialog({
     onSelectFolder: (folderId: string | null) => void;
 }) {
     const [search, setSearch] = useState('');
+
+    // Deduplicate folders
+    const uniqueFolders = React.useMemo(() => {
+        const seen = new Set<string>();
+        const list: typeof folders = [];
+        for (const f of folders) {
+            if (!f || !f.id || seen.has(f.id)) continue;
+            seen.add(f.id);
+            list.push(f);
+        }
+        return list;
+    }, [folders]);
+
+    const filtered = React.useMemo(() => {
+        if (!search.trim()) return uniqueFolders;
+        const q = search.toLowerCase().trim();
+        return uniqueFolders.filter(f => (f.name || '').toLowerCase().includes(q));
+    }, [uniqueFolders, search]);
+
     if (!isOpen) return null;
 
-    const filtered = folders.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
-
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-                <div className="flex items-center justify-between p-4 border-b border-border bg-surface/50">
-                    <div>
-                        <h3 className="text-base font-semibold text-foreground">Move to Folder</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">Move {selectedCount} selected meeting{selectedCount === 1 ? '' : 's'}</p>
-                    </div>
-                    <button onClick={onClose} className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors">
-                        <X size={18} />
-                    </button>
-                </div>
-
-                <div className="p-3 border-b border-border">
-                    <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <input 
-                            autoFocus
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Search folders…"
-                            className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-                        />
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    <button
-                        onClick={() => { onSelectFolder(null); onClose(); }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors text-left"
-                    >
-                        <div className="w-6 h-6 rounded-md bg-surface-raised flex items-center justify-center text-muted-foreground">
-                            <X size={12} />
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <motion.div 
+                    initial={{ scale: 0.96, opacity: 0, y: 8 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.96, opacity: 0, y: 8 }}
+                    transition={{ type: "spring", duration: 0.2, bounce: 0 }}
+                    className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh] text-[var(--text-primary)]"
+                >
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <FolderInput size={15} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Move to Folder</h3>
+                                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                                    Move <strong className="font-bold text-[var(--text-primary)]">{selectedCount}</strong> selected meeting{selectedCount === 1 ? '' : 's'}
+                                </p>
+                            </div>
                         </div>
-                        <span>Remove from folder (Move to Root)</span>
-                    </button>
+                        <button 
+                            type="button"
+                            onClick={onClose} 
+                            className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+                        >
+                            <X size={15} />
+                        </button>
+                    </div>
 
-                    {filtered.length === 0 ? (
-                        <div className="text-center py-8 text-xs text-muted-foreground">
-                            {search ? 'No matching folders found' : 'No folders available'}
+                    <div className="px-5 py-2.5 border-b border-[var(--border)] bg-[var(--surface)]/50 shrink-0">
+                        <div className="relative">
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+                            <input 
+                                autoFocus
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Search folders…"
+                                className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl pl-8 pr-8 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--border-accent)] transition-colors shadow-2xs"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] p-0.5"
+                                >
+                                    <X size={12} />
+                                </button>
+                            )}
                         </div>
-                    ) : (
-                        filtered.map(f => (
-                            <button
-                                key={f.id}
-                                onClick={() => { onSelectFolder(f.id); onClose(); }}
-                                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground hover:bg-surface-hover transition-colors text-left group"
-                            >
-                                <div className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                    {f.icon ? <span>{f.icon}</span> : <Folder size={12} />}
-                                </div>
-                                <span className="truncate flex-1">{f.name}</span>
-                                <ChevronRight size={13} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                        ))
-                    )}
-                </div>
+                    </div>
 
-                <div className="p-3 border-t border-border bg-surface/50 flex justify-end">
-                    <Button variant="ghost" onClick={onClose} className="text-xs px-3 py-1.5">Cancel</Button>
-                </div>
+                    <div className="flex-1 overflow-y-auto px-4 py-2.5 space-y-1">
+                        <button
+                            type="button"
+                            onClick={() => { onSelectFolder(null); onClose(); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left group"
+                        >
+                            <div className="w-7 h-7 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] group-hover:text-[var(--text-primary)] shrink-0 transition-colors">
+                                <X size={12} />
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <span className="font-semibold text-xs text-[var(--text-primary)]">No Folder (Root Library)</span>
+                                <span className="text-[10px] text-[var(--text-muted)]">Remove from any folder</span>
+                            </div>
+                        </button>
+
+                        <div className="h-px bg-[var(--border)]/40 my-1 mx-2" />
+
+                        {filtered.length === 0 ? (
+                            <div className="text-center py-8 text-xs text-[var(--text-muted)]">
+                                {search ? 'No matching folders found' : 'No folders created yet'}
+                            </div>
+                        ) : (
+                            filtered.map(f => (
+                                <button
+                                    key={f.id}
+                                    type="button"
+                                    onClick={() => { onSelectFolder(f.id); onClose(); }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left group"
+                                >
+                                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+                                        {f.icon ? <span>{f.icon}</span> : <Folder size={12} />}
+                                    </div>
+                                    <span className="truncate flex-1 font-medium">{f.name}</span>
+                                    <ChevronRight size={13} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </button>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="px-5 py-3 border-t border-[var(--border)] bg-[var(--surface)] shrink-0 flex justify-end">
+                        <button 
+                            type="button"
+                            onClick={onClose} 
+                            className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </motion.div>
             </div>
-        </div>
+        </AnimatePresence>
     );
 }
