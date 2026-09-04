@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { BachamPlugin } from '@/core/integrations/types';
 import * as LucideIcons from 'lucide-react';
 import { 
@@ -134,20 +133,16 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md" onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+      <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-surface border border-border/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-2xl bg-surface border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-border/60 bg-surface-raised/40 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-border bg-surface-raised flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-background border border-border/70 flex items-center justify-center text-primary shadow-inner">
-              <Icon size={22} />
+            <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary shadow-sm">
+              <Icon size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
@@ -156,12 +151,12 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
                   {plugin.manifest.category}
                 </span>
                 {isConnected ? (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                     Connected
                   </span>
                 ) : (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground border border-border/60">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-surface-raised text-muted-foreground border border-border">
                     Setup Needed
                   </span>
                 )}
@@ -172,17 +167,17 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
+            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-6 overflow-y-auto space-y-5">
           {/* Active AI shortcut pill if applicable */}
           {isAiProvider && isConnected && (
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-primary/15 via-primary/5 to-transparent border border-primary/25">
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-surface-raised border border-border">
               <div className="flex items-center gap-2.5">
                 <Sparkles size={16} className="text-primary" />
                 <div>
@@ -198,7 +193,7 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
                 <button
                   type="button"
                   onClick={handleSetActiveAi}
-                  className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-sm shrink-0"
+                  className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:brightness-105 transition-all shadow-sm shrink-0 cursor-pointer"
                 >
                   Set as Active
                 </button>
@@ -208,8 +203,8 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
 
           {/* Setup Guide Step-by-Step */}
           {guide && (
-            <div className="p-4 rounded-2xl bg-surface-raised/40 border border-border/60 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-border/40">
+            <div className="p-4 rounded-xl bg-surface-raised border border-border space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-border">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-foreground">How to Connect in 30 Seconds</span>
                 </div>
@@ -217,7 +212,7 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
                   <button
                     type="button"
                     onClick={() => openUrl(guide.url as string)}
-                    className="px-3 py-1 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    className="px-3 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                   >
                     <span>{guide.urlLabel || 'Open Developer Portal'}</span>
                     <ExternalLink size={12} />
@@ -228,16 +223,16 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
               <ol className="space-y-2 text-xs text-muted-foreground leading-relaxed">
                 {guide.steps.map((step, i) => (
                   <li key={i} className="flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 border border-primary/25">
+                    <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 border border-primary/20">
                       {i + 1}
                     </span>
-                    <span className="text-foreground/90">{step}</span>
+                    <span className="text-foreground">{step}</span>
                   </li>
                 ))}
               </ol>
 
               {guide.whereToUse && (
-                <div className="pt-2 border-t border-border/30 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="pt-2 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
                   <Compass size={14} className="text-primary shrink-0" />
                   <span><strong>Where to use in Bacham:</strong> {guide.whereToUse}</span>
                 </div>
@@ -402,7 +397,7 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

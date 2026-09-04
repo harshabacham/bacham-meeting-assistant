@@ -102,7 +102,7 @@ export function SettingsPage() {
 
             {/* Main Content Area */}
             <main className="flex-1 overflow-y-auto relative bg-background">
-                <div className="max-w-4xl mx-auto px-12 py-10">
+                <div className={cn("mx-auto py-8 transition-all duration-200", activeTab === 'integrations' ? "w-full max-w-full px-6 lg:px-10" : "max-w-4xl px-12 py-10")}>
 
                     {/* Settings Navigation Header */}
                     <div className="flex items-center gap-2 border-b border-border pb-5 mb-8 overflow-x-auto scrollbar-none">

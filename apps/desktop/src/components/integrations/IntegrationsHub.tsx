@@ -6,7 +6,6 @@ import {
   Calendar, BrainCircuit, Filter, CheckCircle2,
   PlugZap, ArrowUpRight, Lock, X
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCalendarStore } from '@/shared/stores/calendarStore';
 
@@ -95,35 +94,28 @@ export const IntegrationsHub: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Hero Header Card */}
-      <motion.div 
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="relative overflow-hidden rounded-3xl bg-surface/70 border border-border/80 p-8 shadow-2xl backdrop-blur-xl"
-      >
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold shadow-sm">
+    <div className="space-y-6 w-full pb-12">
+      {/* Hero Header Card - Solid clean colors, no glass effect */}
+      <div className="relative rounded-2xl bg-surface border border-border p-6 md:p-8 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold">
               <PlugZap size={13} />
-              <span>Bacham App Ecosystem</span>
+              <span>Workspace Integrations</span>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
               Integrations & Tools Hub
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Connect your favorite workflow tools, note-taking apps, calendar schedules, and AI inference models. All API tokens and webhooks remain 100% on this device.
+              Connect external services, note vaults, team communication channels, and offline AI models. All API keys and tokens are encrypted locally on your device.
             </p>
           </div>
 
           {/* Quick Stats Bento */}
           <div className="grid grid-cols-2 gap-3 shrink-0">
-            <div className="p-4 rounded-2xl bg-surface-raised/70 border border-border/60 shadow-inner flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-surface-raised border border-border flex flex-col justify-between min-w-[130px]">
               <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold">
-                <CheckCircle2 size={14} className="text-emerald-400" />
+                <CheckCircle2 size={14} className="text-emerald-500 dark:text-emerald-400" />
                 <span>Active</span>
               </div>
               <div className="mt-2 flex items-baseline gap-1.5">
@@ -132,55 +124,50 @@ export const IntegrationsHub: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-surface-raised/70 border border-border/60 shadow-inner flex flex-col justify-between">
+            <div className="p-4 rounded-xl bg-surface-raised border border-border flex flex-col justify-between min-w-[130px]">
               <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold">
-                <ShieldCheck size={14} className="text-emerald-400" />
+                <ShieldCheck size={14} className="text-emerald-500 dark:text-emerald-400" />
                 <span>Security</span>
               </div>
               <div className="mt-2">
-                <span className="text-xs font-bold text-emerald-400 block">AES-GCM</span>
-                <span className="text-[10px] text-muted-foreground">On-device only</span>
+                <span className="text-xs font-bold text-emerald-500 dark:text-emerald-400 block">AES-GCM Local</span>
+                <span className="text-[10px] text-muted-foreground">Zero Cloud Keys</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mt-8">
+        <div className="relative mt-6">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search integrations by name, tool, or keyword (e.g. Slack, Notion, Obsidian, Llama)..."
-            className="w-full bg-background/90 border border-border/80 rounded-2xl pl-11 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-inner"
+            placeholder="Search integrations by name, tool, or keyword (e.g. Slack, Notion, Obsidian, Calendar, Claude, Ollama)..."
+            className="w-full bg-background border border-border rounded-xl pl-11 pr-10 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 cursor-pointer"
             >
               <X size={15} />
             </button>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Popular Workflows Bento Banner */}
-      <motion.div 
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Workflow 1: Tasks Sync */}
         <div 
           onClick={() => setSelectedCategory('tasks')}
-          className="group relative overflow-hidden rounded-3xl bg-surface/40 border border-border/60 hover:border-primary/40 p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+          className="group rounded-2xl bg-surface border border-border hover:border-foreground/20 hover:bg-surface-raised p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-sm"
         >
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
                 <CheckSquare size={16} />
               </div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
@@ -189,14 +176,14 @@ export const IntegrationsHub: React.FC = () => {
             </div>
             <h3 className="text-sm font-bold text-foreground">Push Tasks to Slack & Notion</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Extract meeting action items automatically and dispatch checklists straight into your team's channels.
+              Extract meeting action items and dispatch formatted task checklists directly to your team's channels.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-border/40 flex items-center gap-2 text-[11px] font-bold text-primary">
+          <div className="mt-4 pt-3 border-t border-border flex items-center gap-2 text-xs font-bold text-primary">
             <button 
               type="button" 
               onClick={(e) => { e.stopPropagation(); navigate('/tasks'); }}
-              className="hover:underline flex items-center gap-1"
+              className="hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>Go to Tasks Page</span>
               <ArrowUpRight size={12} />
@@ -207,14 +194,14 @@ export const IntegrationsHub: React.FC = () => {
         {/* Workflow 2: Calendar Auto-Record */}
         <div 
           onClick={() => setSelectedCategory('calendar')}
-          className="group relative overflow-hidden rounded-3xl bg-surface/40 border border-border/60 hover:border-blue-500/40 p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+          className="group rounded-2xl bg-surface border border-border hover:border-foreground/20 hover:bg-surface-raised p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-sm"
         >
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center">
                 <Calendar size={16} />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-blue-400 transition-colors flex items-center gap-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-blue-500 transition-colors flex items-center gap-1">
                 View Tools <ArrowUpRight size={12} />
               </span>
             </div>
@@ -223,11 +210,11 @@ export const IntegrationsHub: React.FC = () => {
               Sync scheduled meetings from Google Calendar to detect Zoom & Google Meet calls and auto-record on time.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-border/40 flex items-center gap-2 text-[11px] font-bold text-blue-400">
+          <div className="mt-4 pt-3 border-t border-border flex items-center gap-2 text-xs font-bold text-blue-500 dark:text-blue-400">
             <button 
               type="button" 
               onClick={(e) => { e.stopPropagation(); setSyncModalOpen(true); }}
-              className="hover:underline flex items-center gap-1"
+              className="hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>Sync Google Calendar</span>
               <ArrowUpRight size={12} />
@@ -238,31 +225,31 @@ export const IntegrationsHub: React.FC = () => {
         {/* Workflow 3: Offline Private AI */}
         <div 
           onClick={() => setSelectedCategory('ai')}
-          className="group relative overflow-hidden rounded-3xl bg-surface/40 border border-border/60 hover:border-cyan-500/40 p-5 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+          className="group rounded-2xl bg-surface border border-border hover:border-foreground/20 hover:bg-surface-raised p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-sm"
         >
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-500 dark:text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
                 <Lock size={16} />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-cyan-400 transition-colors flex items-center gap-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground group-hover:text-cyan-500 transition-colors flex items-center gap-1">
                 View Tools <ArrowUpRight size={12} />
               </span>
             </div>
             <h3 className="text-sm font-bold text-foreground">100% Private Offline AI</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Run local open-source models with Ollama or LM Studio. Zero cloud requests, zero subscriptions, complete confidentiality.
+              Run local open-source models with Ollama or LM Studio. Zero cloud requests, zero subscriptions, complete privacy.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-border/40 flex items-center gap-2 text-[11px] font-bold text-cyan-400">
+          <div className="mt-4 pt-3 border-t border-border flex items-center gap-2 text-xs font-bold text-cyan-500 dark:text-cyan-400">
             <span>Ollama & LM Studio ready</span>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Filter Tabs Ribbon */}
-      <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-4 overflow-x-auto scrollbar-none">
-        <div className="flex items-center gap-2">
+      {/* Filter Tabs Ribbon - Flex-wrap to prevent cutoffs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="flex flex-wrap items-center gap-2">
           {[
             { id: 'all', label: 'All Tools', count: allPlugins.length, icon: PlugZap },
             { id: 'tasks', label: 'Tasks & Team', count: 2, icon: CheckSquare },
@@ -276,16 +263,16 @@ export const IntegrationsHub: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setSelectedCategory(tab.id as CategoryFilter)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.02]'
-                    : 'bg-surface border border-border/70 text-muted-foreground hover:text-foreground hover:bg-surface-hover'
+                    ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                    : 'bg-surface border border-border text-muted-foreground hover:text-foreground hover:bg-surface-raised'
                 }`}
               >
                 <tab.icon size={13} />
                 <span>{tab.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  isActive ? 'bg-black/20 text-primary-foreground' : 'bg-muted/70 text-muted-foreground'
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                  isActive ? 'bg-black/20 text-primary-foreground' : 'bg-surface-raised text-muted-foreground border border-border/60'
                 }`}>
                   {tab.count}
                 </span>
@@ -295,14 +282,14 @@ export const IntegrationsHub: React.FC = () => {
         </div>
 
         {/* Active counter pill */}
-        <div className="text-xs font-medium text-muted-foreground shrink-0 hidden md:block">
+        <div className="text-xs font-medium text-muted-foreground shrink-0">
           Showing <span className="font-bold text-foreground">{filteredPlugins.length}</span> integrations
         </div>
       </div>
 
-      {/* Integration Cards Grid */}
+      {/* Integration Cards Grid - Uses full width with responsive columns */}
       {filteredPlugins.length === 0 ? (
-        <div className="py-16 flex flex-col items-center justify-center text-center bg-surface/30 border border-border/60 rounded-3xl border-dashed">
+        <div className="py-16 flex flex-col items-center justify-center text-center bg-surface border border-border rounded-2xl border-dashed">
           <Filter size={36} className="text-muted-foreground/40 mb-3" />
           <h3 className="text-sm font-bold text-foreground">No integrations match your search</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm">
@@ -310,13 +297,13 @@ export const IntegrationsHub: React.FC = () => {
           </p>
           <button
             onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
-            className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 transition-all shadow-sm"
+            className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:brightness-105 transition-all shadow-sm cursor-pointer"
           >
             Clear Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(220px,auto)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4">
           {filteredPlugins.map(plugin => (
             <IntegrationCard 
               key={plugin.manifest.id} 
@@ -328,21 +315,21 @@ export const IntegrationsHub: React.FC = () => {
       )}
 
       {/* Privacy Guarantee Footer */}
-      <div className="p-6 rounded-3xl bg-surface/30 border border-border/50 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+      <div className="p-5 rounded-2xl bg-surface border border-border flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
             <ShieldCheck size={18} />
           </div>
           <div>
             <p className="font-bold text-foreground">Privacy & Security First</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              All credentials are encrypted with AES-GCM and stored solely in your local machine's operating system vault.
+              All credentials and API tokens are encrypted with AES-GCM and stored solely in your local machine's operating system vault.
             </p>
           </div>
         </div>
         <div className="flex items-center gap-4 text-[11px] shrink-0 font-medium">
-          <span className="flex items-center gap-1 text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
             Zero Cloud Storage of Keys
           </span>
         </div>
