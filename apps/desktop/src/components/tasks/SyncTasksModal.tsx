@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   X, Check, Copy, ExternalLink, Loader2, 
-  CheckSquare, Send, ChevronDown, ChevronUp, Hash, BookOpen
+  CheckSquare, Send, ChevronDown, ChevronUp, Hash, BookOpen, Mail
 } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { AuthManager } from '@/core/integrations/AuthManager';
@@ -241,6 +241,21 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
     } catch (err) {
       console.error(err);
       showToast('Failed to copy to clipboard', 'error');
+    }
+  };
+
+  // 6. Email Task Digest
+  const handleEmailDigest = async () => {
+    try {
+      const today = new Date().toLocaleDateString(undefined, { 
+        year: 'numeric', month: 'short', day: 'numeric' 
+      });
+      const subject = encodeURIComponent(`Action Items Digest — ${today} (${targetTasks.length} tasks)`);
+      const body = encodeURIComponent(buildTasksMarkdown().slice(0, 2500));
+      await openUrl(`mailto:?subject=${subject}&body=${body}`);
+      showToast('Opened email draft with action items!', 'success');
+    } catch (err: any) {
+      showToast(`Failed to open email: ${err?.message || err}`, 'error');
     }
   };
 
@@ -521,6 +536,35 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
             >
               {copiedMarkdown ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
               <span>{copiedMarkdown ? 'Copied!' : 'Copy'}</span>
+            </button>
+          </div>
+
+          {/* Target 4: Email Task Digest (Gmail & Mail) */}
+          <div className="p-4 rounded-xl bg-[var(--surface-raised)]/40 border border-[var(--border)] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20 flex items-center justify-center shrink-0">
+                <Mail size={18} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[var(--text-primary)]">Email Task Digest</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                    Ready
+                  </span>
+                </div>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                  Open pre-filled draft in Gmail or default mail app to send to assignees
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleEmailDigest}
+              className="px-3.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-600 dark:text-red-400 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Send size={12} />
+              <span>Email</span>
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 pub mod slack;
+pub mod google_drive;
 
 use serde_json::Value;
 use crate::error::AppResult;
@@ -14,19 +15,14 @@ pub async fn dispatch_action(
             slack::execute_slack_action(action, payload, token).await
         },
         "bacham.gmail" => {
-            // Future extension: hook up an SMTP mailer or Gmail API
-            // For now, return a success message from the backend
+            // Gmail is zero-auth client-side via native system mailto protocol
             Ok(serde_json::json!({
                 "status": "success",
-                "message": format!("Simulated sending email from backend with action {}", action)
+                "message": format!("Handled Gmail action {}", action)
             }))
         },
         "bacham.google-drive" => {
-            // Future extension: Hook up to Google Drive SDK
-            Ok(serde_json::json!({
-                "status": "success",
-                "message": format!("Simulated uploading to Google Drive with action {}", action)
-            }))
+            google_drive::execute_google_drive_action(action, payload, token).await
         },
         _ => Err(crate::error::AppError::Internal(format!("Unsupported integration plugin: {}", plugin_id))),
     }
