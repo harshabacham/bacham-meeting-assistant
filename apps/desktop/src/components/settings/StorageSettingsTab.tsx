@@ -211,7 +211,7 @@ export const StorageSettingsTab: React.FC = () => {
 
         <div>
           <label className="text-xs font-semibold text-foreground block mb-1">Current Directory</label>
-          <div className="bg-surface-raised border border-border rounded-xl px-3.5 py-2 font-mono text-xs text-muted-foreground truncate">
+          <div className="bg-surface-raised border border-border rounded-xl px-3.5 py-2 font-mono text-xs text-foreground font-medium truncate">
             {settings?.storageRootPath || 'Default (Documents/BACHAM)'}
           </div>
         </div>

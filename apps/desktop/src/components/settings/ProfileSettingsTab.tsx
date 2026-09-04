@@ -125,7 +125,7 @@ export const ProfileSettingsTab: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <input 
-                className="w-full bg-surface-raised border border-border rounded-xl px-3.5 py-2 text-xs text-muted-foreground outline-none cursor-not-allowed" 
+                className="w-full bg-surface-raised border border-border rounded-xl px-3.5 py-2 text-xs text-foreground font-medium opacity-90 outline-none cursor-not-allowed" 
                 value={user?.email || 'guest@bacham.app'} 
                 disabled 
               />

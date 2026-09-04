@@ -38,6 +38,7 @@ html, body, #root {
 
 /* ─── BACHAM V2 Premium Design Tokens ─────────────────────────────────────────────── */
 :root {
+  color-scheme: dark;
   /* Core palette - Lime Theme */
   --color-black:     #0A0A0C;
   --color-dark-gray: #141517;
@@ -125,6 +126,7 @@ html, body, #root {
 }
 
 .light {
+  color-scheme: light;
   /* High-end "Clean. Modern. Premium." Light Mode */
   --bg:              #F7F7F2;
   --surface:         #FCFCF9;
@@ -180,6 +182,10 @@ html, body, #root {
   --input:               rgba(0,0,0,0.04);
   --ring:                var(--accent);
   --border-color:        var(--border);
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 .light .prose-invert {
@@ -246,6 +252,22 @@ html, body, #root {
   ::selection {
     background: var(--accent-dim);
     color: var(--accent);
+  }
+
+  /* Form elements theme normalization - guarantees theme colors across all native controls */
+  select, input, textarea {
+    background-color: var(--surface-raised);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  select option {
+    background-color: var(--surface);
+    color: var(--text-primary);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--text-muted);
   }
 
   /* Custom scrollbar — hidden for a cleaner UI while keeping scroll functionality */
@@ -522,7 +544,7 @@ html, body, #root {
   /* Input */
   .input-field {
     width: 100%;
-    background: rgba(255,255,255,0.06);
+    background: var(--surface-raised);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 8px 12px;
@@ -535,7 +557,7 @@ html, body, #root {
   .input-field::placeholder { color: var(--text-muted); }
   .input-field:focus {
     border-color: var(--border-accent);
-    background: rgba(255,255,255,0.08);
+    background: var(--surface-raised);
     box-shadow: 0 0 0 3px var(--accent-glow);
   }
 

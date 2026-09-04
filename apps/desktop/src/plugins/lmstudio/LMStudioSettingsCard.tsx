@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { TauriClient } from '@/infrastructure/tauri-client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import { AuthManager } from '@/core/integrations/AuthManager';
 
 export function LMStudioSettingsCard() {
@@ -90,19 +90,22 @@ export function LMStudioSettingsCard() {
       )}
       
       <div>
-        <label className="text-[11px] font-medium text-foreground mb-1 block">
+        <label className="text-[11px] font-medium text-foreground mb-1.5 block">
           Default Model
         </label>
-        <select 
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
-          className="w-full bg-background/60 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-        >
-          {models.map(model => (
-            <option key={model} value={model}>{model}</option>
-          ))}
-        </select>
-        <p className="text-[10px] text-muted-foreground mt-1">
+        <div className="relative">
+          <select 
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="w-full appearance-none bg-surface-raised hover:bg-surface-hover border border-border rounded-xl pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground focus:outline-none focus:border-primary transition-colors cursor-pointer shadow-sm"
+          >
+            {models.map(model => (
+              <option key={model} value={model} className="bg-surface text-foreground py-1">{model}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-1.5">
           Select the model currently loaded in your LM Studio server.
         </p>
       </div>

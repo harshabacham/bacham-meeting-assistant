@@ -41,7 +41,13 @@ module.exports = {
         ring:         "var(--ring)",
         background:   "var(--bg)",
         foreground:   "var(--text-primary)",
-        surface:      "var(--surface)",
+        surface: {
+          DEFAULT:    "var(--surface)",
+          raised:     "var(--surface-raised)",
+          hover:      "var(--surface-hover)",
+        },
+        'surface-raised': "var(--surface-raised)",
+        'surface-hover':  "var(--surface-hover)",
         
         primary: {
           DEFAULT:    "var(--primary)",

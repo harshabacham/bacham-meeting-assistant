@@ -197,16 +197,16 @@ export const AISettingsTab: React.FC = () => {
             </p>
           </div>
 
-          <div className="relative w-40 shrink-0">
+          <div className="relative w-44 shrink-0">
             <select 
               value={settings?.aiMaxRetries || 5}
               onChange={(e) => updateSettings({ aiMaxRetries: parseInt(e.target.value) })}
-              className="w-full bg-surface-raised border border-border rounded-xl px-3 py-2 text-xs text-foreground outline-none focus:border-primary transition-all appearance-none cursor-pointer font-medium"
+              className="w-full appearance-none bg-surface-raised hover:bg-surface-hover border border-border focus:border-primary rounded-xl pl-3.5 pr-8 py-2 text-xs text-foreground outline-none transition-all cursor-pointer font-semibold shadow-sm"
             >
-              <option value={1}>1 (Strict - Fast fail)</option>
-              <option value={3}>3 (Balanced)</option>
-              <option value={5}>5 (Resilient - Recommended)</option>
-              <option value={10}>10 (High persistence)</option>
+              <option value={1} className="bg-surface text-foreground">1 (Strict - Fast fail)</option>
+              <option value={3} className="bg-surface text-foreground">3 (Balanced)</option>
+              <option value={5} className="bg-surface text-foreground">5 (Resilient - Recommended)</option>
+              <option value={10} className="bg-surface text-foreground">10 (High persistence)</option>
             </select>
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
           </div>

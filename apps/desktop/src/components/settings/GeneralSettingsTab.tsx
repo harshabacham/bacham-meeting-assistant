@@ -3,7 +3,7 @@ import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { useAnimatedTheme } from '@/components/ui/animated-theme-toggler';
 import { 
   Sun, Moon, Monitor, Globe, 
-  Calendar, Check, SlidersHorizontal
+  Calendar, Check, SlidersHorizontal, ChevronDown
 } from 'lucide-react';
 
 export const GeneralSettingsTab: React.FC = () => {
@@ -149,15 +149,20 @@ export const GeneralSettingsTab: React.FC = () => {
             </p>
           </div>
 
-          <select
-            value={settings?.language || 'en'}
-            onChange={(e) => updateSettings({ language: e.target.value })}
-            className="w-48 bg-surface-raised border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:border-primary transition-all cursor-pointer"
-          >
-            {languages.map(lang => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
+          <div className="relative w-52 shrink-0">
+            <select
+              value={settings?.language || 'en'}
+              onChange={(e) => updateSettings({ language: e.target.value })}
+              className="w-full appearance-none bg-surface-raised hover:bg-surface-hover border border-border focus:border-primary rounded-xl pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none transition-all cursor-pointer shadow-sm"
+            >
+              {languages.map(lang => (
+                <option key={lang.code} value={lang.code} className="bg-surface text-foreground py-1">
+                  {lang.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
 
         {/* Spoken Language */}
@@ -169,15 +174,20 @@ export const GeneralSettingsTab: React.FC = () => {
             </p>
           </div>
 
-          <select
-            value={settings?.spokenLanguage || 'auto'}
-            onChange={(e) => updateSettings({ spokenLanguage: e.target.value })}
-            className="w-48 bg-surface-raised border border-border rounded-xl px-3 py-2 text-xs font-medium text-foreground outline-none focus:border-primary transition-all cursor-pointer"
-          >
-            {spokenLanguages.map(lang => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
+          <div className="relative w-52 shrink-0">
+            <select
+              value={settings?.spokenLanguage || 'auto'}
+              onChange={(e) => updateSettings({ spokenLanguage: e.target.value })}
+              className="w-full appearance-none bg-surface-raised hover:bg-surface-hover border border-border focus:border-primary rounded-xl pl-3.5 pr-9 py-2 text-xs font-semibold text-foreground outline-none transition-all cursor-pointer shadow-sm"
+            >
+              {spokenLanguages.map(lang => (
+                <option key={lang.code} value={lang.code} className="bg-surface text-foreground py-1">
+                  {lang.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
       </div>
     </div>
