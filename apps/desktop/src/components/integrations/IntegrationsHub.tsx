@@ -44,6 +44,14 @@ export const IntegrationsHub: React.FC = () => {
     return Object.values(connectedMap).filter(Boolean).length;
   }, [connectedMap]);
 
+  const aiCount = useMemo(() => {
+    return allPlugins.filter(p => p.manifest.category === 'AI Providers').length;
+  }, [allPlugins]);
+
+  const toolsCount = useMemo(() => {
+    return allPlugins.filter(p => p.manifest.category !== 'AI Providers').length;
+  }, [allPlugins]);
+
   // Filter plugins based on category & search
   const filteredPlugins = useMemo(() => {
     return allPlugins.filter(plugin => {
@@ -53,8 +61,8 @@ export const IntegrationsHub: React.FC = () => {
         const matchesName = plugin.manifest.name.toLowerCase().includes(query);
         const matchesDesc = plugin.manifest.description.toLowerCase().includes(query);
         const matchesCategory = plugin.manifest.category.toLowerCase().includes(query);
-        const matchesWhere = plugin.manifest.setupGuide?.whereToUse?.toLowerCase().includes(query) || false;
-        if (!matchesName && !matchesDesc && !matchesCategory && !matchesWhere) {
+        const matchesId = plugin.manifest.id.toLowerCase().includes(query);
+        if (!matchesName && !matchesDesc && !matchesCategory && !matchesId) {
           return false;
         }
       }
@@ -78,18 +86,25 @@ export const IntegrationsHub: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const tabs: { id: CategoryFilter; label: string; count: number }[] = [
+    { id: 'all', label: 'All Integrations', count: allPlugins.length },
+    { id: 'connected', label: 'Connected', count: connectedCount },
+    { id: 'ai', label: 'AI Inference', count: aiCount },
+    { id: 'tools', label: 'Apps & Storage', count: toolsCount },
+  ];
+
   return (
     <div className="space-y-6 w-full pb-10">
-      {/* Simple Clean Header & Search Toolbar */}
+      {/* Header & Search Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Integrations</h2>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Integrations Hub</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Connect your calendar, team communication channels, note vaults, and AI models.
+            Connect calendars, cloud storage vaults, team messaging, and LLM inference providers.
           </p>
         </div>
 
-        {/* Compact Search Bar */}
+        {/* Search Bar */}
         <div className="relative w-full sm:w-72 shrink-0">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <input
@@ -110,28 +125,25 @@ export const IntegrationsHub: React.FC = () => {
         </div>
       </div>
 
-      {/* Simple Category Tabs */}
+      {/* Category Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {[
-          { id: 'all', label: 'All Tools', count: allPlugins.length },
-          { id: 'connected', label: 'Connected', count: connectedCount },
-          { id: 'ai', label: 'AI Inference', count: 7 },
-          { id: 'tools', label: 'Apps & Storage', count: 6 },
-        ].map(tab => {
+        {tabs.map(tab => {
           const isActive = selectedCategory === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => setSelectedCategory(tab.id as CategoryFilter)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              onClick={() => setSelectedCategory(tab.id)}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-primary text-primary-foreground font-bold shadow-sm'
+                  ? 'bg-foreground text-background font-bold shadow-sm'
                   : 'bg-surface border border-border text-muted-foreground hover:text-foreground hover:bg-surface-raised'
               }`}
             >
               <span>{tab.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                isActive ? 'bg-black/20 text-primary-foreground' : 'bg-surface-raised text-muted-foreground border border-border/50'
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                isActive 
+                  ? 'bg-background/20 text-background font-bold' 
+                  : 'bg-surface-raised text-muted-foreground border border-border/50'
               }`}>
                 {tab.count}
               </span>
@@ -140,7 +152,7 @@ export const IntegrationsHub: React.FC = () => {
         })}
       </div>
 
-      {/* Clean Grid of Cards */}
+      {/* Clean 3-Column Responsive Grid */}
       {filteredPlugins.length === 0 ? (
         <div className="py-12 flex flex-col items-center justify-center text-center bg-surface border border-border rounded-2xl border-dashed">
           <Filter size={32} className="text-muted-foreground/40 mb-2" />
@@ -156,7 +168,7 @@ export const IntegrationsHub: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPlugins.map(plugin => (
             <IntegrationCard 
               key={plugin.manifest.id} 

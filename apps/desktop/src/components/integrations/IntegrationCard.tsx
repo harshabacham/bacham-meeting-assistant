@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BachamPlugin } from '@/core/integrations/types';
 import * as LucideIcons from 'lucide-react';
-import { CheckCircle2, PlugZap, Sparkles, ArrowRight } from 'lucide-react';
+import { PlugZap, Sparkles, ArrowRight } from 'lucide-react';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { ConnectIntegrationModal } from './ConnectIntegrationModal';
 
@@ -26,6 +26,46 @@ const BRAND_THEMES: Record<string, { bg: string; text: string; border: string }>
   'bacham.openrouter': { bg: 'bg-blue-600/10 dark:bg-blue-600/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-600/30' },
 };
 
+const CLEAN_TITLES: Record<string, string> = {
+  'bacham.gemini': 'Google Gemini',
+  'bacham.anthropic': 'Anthropic Claude',
+  'bacham.openai': 'OpenAI (ChatGPT)',
+  'bacham.grok': 'xAI Grok',
+  'bacham.ollama': 'Ollama (Offline)',
+  'bacham.lmstudio': 'LM Studio (Local)',
+  'bacham.openrouter': 'OpenRouter',
+  'bacham.google-calendar': 'Google Calendar',
+  'bacham.google-drive': 'Google Drive',
+  'bacham.gmail': 'Gmail & Email',
+  'bacham.notion': 'Notion',
+  'bacham.localfolder': 'Local Markdown Vault',
+  'bacham.slack': 'Slack',
+};
+
+const CLEAN_DESCRIPTIONS: Record<string, string> = {
+  'bacham.gemini': 'Gemini 2.0 Flash & Pro models for cloud transcription and meeting summaries.',
+  'bacham.anthropic': 'Claude 3.5 Sonnet & Haiku models for deep reasoning and meeting notes.',
+  'bacham.openai': 'GPT-4o & GPT-4o mini inference for summaries and action items.',
+  'bacham.grok': 'Fast, accurate real-time Grok reasoning models for meeting intelligence.',
+  'bacham.ollama': '100% private, on-device local models (Llama 3, Mistral, Gemma).',
+  'bacham.lmstudio': 'Run private offline inference via local LM Studio server.',
+  'bacham.openrouter': 'Unified gateway to hundreds of open-source and proprietary models.',
+  'bacham.google-calendar': 'Auto-detect scheduled meetings and sync your calendar events.',
+  'bacham.google-drive': 'Directly upload and backup recordings and notes to Google Drive.',
+  'bacham.gmail': 'Send meeting recaps, action items, and notes via Gmail or email client.',
+  'bacham.notion': 'Export notes, summaries, and action item databases to Notion.',
+  'bacham.localfolder': 'Auto-save notes as structured Markdown into Obsidian or local vault.',
+  'bacham.slack': 'Share meeting recaps and action items directly to Slack channels.',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  'AI Providers': 'AI Model',
+  'Calendar': 'Calendar Sync',
+  'Communication': 'Email & Messaging',
+  'Storage': 'Cloud & Local Storage',
+  'Notes': 'Workspace & Notes',
+};
+
 export function IntegrationCard({ plugin, onStatusChange }: IntegrationCardProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +73,6 @@ export function IntegrationCard({ plugin, onStatusChange }: IntegrationCardProps
   const { settings } = useSettingsStore();
 
   const Icon = (LucideIcons as any)[plugin.manifest.icon || 'PlugZap'] || PlugZap;
-  const guide = plugin.manifest.setupGuide;
   const brand = BRAND_THEMES[plugin.manifest.id] || { 
     bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/20' 
   };
@@ -41,6 +80,10 @@ export function IntegrationCard({ plugin, onStatusChange }: IntegrationCardProps
   const isAiProvider = plugin.manifest.category === 'AI Providers';
   const isActiveAi = isAiProvider && settings?.aiProvider === plugin.manifest.id;
   const isNoAuth = plugin.auth?.type === 'none';
+
+  const title = CLEAN_TITLES[plugin.manifest.id] || plugin.manifest.name;
+  const description = CLEAN_DESCRIPTIONS[plugin.manifest.id] || plugin.manifest.description;
+  const categoryLabel = CATEGORY_LABELS[plugin.manifest.category] || plugin.manifest.category;
 
   const checkConnection = async () => {
     if (plugin.auth?.isConnected) {
@@ -61,70 +104,59 @@ export function IntegrationCard({ plugin, onStatusChange }: IntegrationCardProps
     <>
       <div 
         onClick={() => setIsModalOpen(true)}
-        className="group relative bg-surface border border-border hover:border-foreground/20 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer min-h-[180px]"
+        className="group relative bg-surface border border-border hover:border-foreground/20 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer hover:bg-surface-raised/40"
       >
-        <div className="space-y-3">
-          {/* Header Row */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-10 h-10 rounded-xl ${brand.bg} border ${brand.border} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 duration-200`}>
-                <Icon size={18} className={brand.text} />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-bold text-foreground tracking-tight truncate">
-                    {plugin.manifest.name}
-                  </h3>
-                  {isActiveAi && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 text-[9px] font-bold border border-violet-500/20 shrink-0">
-                      <Sparkles size={9} /> Active
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground font-medium truncate">
-                  {plugin.manifest.category}
-                </p>
-              </div>
+        <div>
+          {/* Top Row: Brand Icon & High-Signal Status Badges Only */}
+          <div className="flex items-center justify-between mb-4">
+            <div className={`w-10 h-10 rounded-xl ${brand.bg} border ${brand.border} flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 duration-200 shadow-sm`}>
+              <Icon size={19} className={brand.text} />
             </div>
 
-            {/* Status Badge */}
-            <div className="shrink-0">
+            {/* Status indicators (uncluttered: only shows when actually connected / active / built-in) */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {isActiveAi && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400 text-[10px] font-bold border border-violet-500/20">
+                  <Sparkles size={10} /> Active Engine
+                </span>
+              )}
               {isNoAuth ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
-                  <CheckCircle2 size={11} /> Built-in
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-raised text-muted-foreground text-[10px] font-medium border border-border">
+                  Built-in
                 </span>
               ) : isConnected ? (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                   Connected
                 </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-raised text-muted-foreground text-[10px] font-medium border border-border">
-                  Not connected
-                </span>
-              )}
+              ) : null}
             </div>
           </div>
 
-          {/* Description */}
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {plugin.manifest.description}
+          {/* Title - Full Width, Clean, Never Truncates */}
+          <h3 className="text-sm font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+            {title}
+          </h3>
+
+          {/* Crisp, Scannable 2-Line Description (No clumsy filler text) */}
+          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+            {description}
           </p>
         </div>
 
-        {/* Footer Row */}
-        <div className="pt-3 border-t border-border flex items-center justify-between gap-2 mt-auto">
-          {guide?.whereToUse ? (
-            <span className="text-[10px] text-muted-foreground truncate max-w-[140px]" title={guide.whereToUse}>
-              {guide.whereToUse}
-            </span>
-          ) : (
-            <span />
-          )}
+        {/* Clean Footer Row: Clean Category on Left, Clear Action on Right */}
+        <div className="pt-3.5 mt-4 border-t border-border flex items-center justify-between">
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {categoryLabel}
+          </span>
 
-          <div className="flex items-center gap-1 text-xs font-semibold text-primary group-hover:translate-x-0.5 transition-transform">
-            <span>{isNoAuth ? 'Details' : isConnected ? 'Configure' : 'Connect'}</span>
-            <ArrowRight size={13} />
+          <div className={`flex items-center gap-1 text-xs font-semibold transition-all ${
+            isConnected || isNoAuth
+              ? 'text-muted-foreground group-hover:text-foreground'
+              : 'text-primary group-hover:translate-x-0.5'
+          }`}>
+            <span>{isNoAuth ? 'Configure' : isConnected ? 'Configure' : 'Connect'}</span>
+            <ArrowRight size={12} />
           </div>
         </div>
       </div>
