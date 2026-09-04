@@ -31,7 +31,6 @@ const STUDENT_NAV_ITEMS = [
     { path: '/lectures', label: 'Library', icon: Library },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
-    { path: '/integrations', label: 'Integrations', icon: PlugZap },
 ];
 
 const PRO_NAV_ITEMS = [
@@ -39,7 +38,6 @@ const PRO_NAV_ITEMS = [
     { path: '/lectures', label: 'Meetings', icon: Library },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Action Items', icon: CheckSquare },
-    { path: '/integrations', label: 'Integrations', icon: PlugZap },
 ];
 
 

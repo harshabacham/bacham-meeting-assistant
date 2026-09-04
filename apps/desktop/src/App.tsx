@@ -19,7 +19,6 @@ const TrashPage = lazy(() => import("./pages/TrashPage").then(m => ({ default: m
 const AiWorkspacePage = lazy(() => import("./features/ai_workspace/AiWorkspacePage").then(m => ({ default: m.AiWorkspacePage })));
 const NotesWorkspacePage = lazy(() => import("./features/notes_workspace/NotesWorkspacePage").then(m => ({ default: m.NotesWorkspacePage })));
 const TasksPage = lazy(() => import("./pages/TasksPage").then(m => ({ default: m.TasksPage })));
-const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage").then(m => ({ default: m.IntegrationsPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
 const TermsPage = lazy(() => import("./pages/TermsPage").then(m => ({ default: m.TermsPage })));
@@ -115,7 +114,7 @@ function App() {
                     <Route path="ai" element={<AiWorkspacePage />} />
                     <Route path="notes" element={<NotesWorkspacePage />} />
                     <Route path="tasks" element={<TasksPage />} />
-                    <Route path="integrations" element={<IntegrationsPage />} />
+                    <Route path="integrations" element={<Navigate to="/settings?tab=integrations" replace />} />
                     <Route path="trash" element={<TrashPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="terms" element={<TermsPage />} />
