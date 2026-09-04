@@ -3,6 +3,7 @@ import { Markdown as ReactMarkdown } from '@/components/ui/markdown';
 import { ChevronDown, ChevronRight, BookOpen, Code, FileText, CheckCircle, Clock, Info, Target, Briefcase, Sparkles, Loader2, Layers, Zap } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
+import { InlineStudyQuiz } from './InlineStudyQuiz';
 
 interface Props {
   data: any;
@@ -318,6 +319,10 @@ export const LectureIntelligenceView: React.FC<Props> = ({ data }) => {
                   </ul>
                 </div>
               )}
+              
+              {/* Inline Quiz Generator at the bottom of the Summary */}
+              <InlineStudyQuiz lectureId={data.lecture_information?.id} />
+              
             </div>
           )}
         </section>

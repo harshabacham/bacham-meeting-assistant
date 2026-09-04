@@ -26,12 +26,12 @@ const truncate = (str: string, length: number) => {
 };
 
 const colorPalette = [
-  { bg: 'bg-purple-500/20 hover:bg-purple-500/30', text: 'text-purple-700 dark:text-purple-300' },
-  { bg: 'bg-emerald-500/20 hover:bg-emerald-500/30', text: 'text-emerald-700 dark:text-emerald-300' },
-  { bg: 'bg-rose-500/20 hover:bg-rose-500/30', text: 'text-rose-700 dark:text-rose-300' },
-  { bg: 'bg-amber-500/20 hover:bg-amber-500/30', text: 'text-amber-700 dark:text-amber-300' },
-  { bg: 'bg-sky-500/20 hover:bg-sky-500/30', text: 'text-sky-700 dark:text-sky-300' },
-  { bg: 'bg-indigo-500/20 hover:bg-indigo-500/30', text: 'text-indigo-700 dark:text-indigo-300' },
+  { bg: 'bg-purple-200', text: 'text-purple-900' },
+  { bg: 'bg-emerald-200', text: 'text-emerald-900' },
+  { bg: 'bg-rose-200', text: 'text-rose-900' },
+  { bg: 'bg-amber-200', text: 'text-amber-900' },
+  { bg: 'bg-sky-200', text: 'text-sky-900' },
+  { bg: 'bg-indigo-200', text: 'text-indigo-900' },
 ];
 
 const hexToRgba = (hex: string, alpha: number) => {
@@ -136,41 +136,40 @@ export function FullCalendarView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-black/40 text-[var(--text-primary)] font-sans rounded-2xl overflow-hidden shadow-2xl relative border border-white/5 backdrop-blur-xl">
+    <div className="flex flex-col h-full text-[var(--text-primary)] font-sans relative">
       
       {/* Universal Header */}
-      <div className="flex items-center justify-between py-4 px-6 border-b border-white/10 bg-white/5 backdrop-blur-md shrink-0 z-20 relative shadow-sm">
+      <div className="flex items-center justify-between py-4 px-8 border-b border-[var(--border)]/40 bg-[var(--surface-raised)]/50 backdrop-blur-md shrink-0 z-20 relative shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="flex flex-col items-center justify-center bg-black/40 border border-white/5 rounded-xl w-14 h-14 shadow-inner">
-            <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">{shortMonthName}</span>
-            <span className="text-xl font-extrabold text-[var(--accent)] drop-shadow-md">{todayDate}</span>
+          <div className="flex flex-col items-center justify-center bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)]/50 rounded-xl w-14 h-14 shadow-inner">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{shortMonthName}</span>
+            <span className="text-xl font-extrabold text-[var(--accent)] drop-shadow-sm">{todayDate}</span>
           </div>
           <div>
-            <h2 className="text-xl font-bold flex items-center gap-2 text-white/90">
+            <h2 className="text-[22px] font-bold flex items-center gap-3 text-[var(--text-primary)] tracking-tight">
               {monthName} {yearStr}
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-white/10 text-white/60 bg-black/20 uppercase tracking-wider">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-[var(--border)]/50 text-[var(--text-secondary)] bg-[var(--surface)]/50 backdrop-blur uppercase tracking-wider shadow-sm">
                 {titleBadge}
               </span>
             </h2>
-            <p className="text-sm text-white/50">{titleSubtitle}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 relative">
           <button 
             onClick={() => showToast('Search functionality coming soon!', 'info')}
-            className="text-white/50 hover:text-white/90 transition-colors p-2"
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-2"
           >
             <Search size={18} />
           </button>
           
           {/* Segmented Control - View Mode */}
-          <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5 shadow-inner">
+          <div className="flex items-center bg-[var(--surface)]/40 backdrop-blur-md rounded-xl p-1 border border-[var(--border)]/50 shadow-inner">
             {['month', 'week', 'day'].map((m) => (
               <button
                 key={m}
                 onClick={() => setViewMode(m as any)}
-                className={`px-4 py-1.5 rounded-md text-[11px] uppercase tracking-wider font-bold transition-all ${viewMode === m ? 'bg-white/20 text-white shadow-sm' : 'text-white/40 hover:text-white/80'}`}
+                className={`px-4 py-1.5 rounded-lg text-[11px] uppercase tracking-wider font-bold transition-all ${viewMode === m ? 'bg-[var(--surface-raised)] shadow-md border border-white/5 text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface)]/30'}`}
               >
                 {m}
               </button>
@@ -178,30 +177,30 @@ export function FullCalendarView() {
           </div>
           
           {/* Segmented Control - Date Nav */}
-          <div className="flex items-center bg-black/40 rounded-lg p-1 border border-white/5 shadow-inner">
-            <button onClick={handlePrev} className="p-1.5 rounded-md hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+          <div className="flex items-center bg-[var(--surface)]/40 backdrop-blur-md rounded-xl p-1 border border-[var(--border)]/50 shadow-inner">
+            <button onClick={handlePrev} className="p-1.5 rounded-lg hover:bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
               <ChevronLeft size={16} />
             </button>
-            <button onClick={handleToday} className="px-3 py-1.5 rounded-md text-[11px] uppercase tracking-wider font-bold hover:bg-white/10 transition-colors text-white/80 hover:text-white">
+            <button onClick={handleToday} className="px-3 py-1.5 rounded-lg text-[11px] uppercase tracking-wider font-bold hover:bg-[var(--surface-raised)] transition-colors text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
               Today
             </button>
-            <button onClick={handleNext} className="p-1.5 rounded-md hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+            <button onClick={handleNext} className="p-1.5 rounded-lg hover:bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
               <ChevronRight size={16} />
             </button>
           </div>
           
           <button 
             onClick={() => navigate('/tasks')}
-            className="flex items-center gap-2 bg-black/40 rounded-lg border border-white/5 shadow-inner h-9 px-3 text-[11px] uppercase tracking-wider font-bold text-white/60 hover:text-white hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 bg-[var(--surface)]/40 backdrop-blur-md rounded-xl border border-[var(--border)]/50 shadow-inner h-9 px-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] transition-all"
           >
-            <CheckSquare size={14} />
+            <CheckSquare size={16} />
           </button>
 
           <button 
             onClick={() => { setEventToEdit(null); setIsEventModalOpen(true); }}
-            className="flex items-center gap-1.5 px-4 h-9 rounded-lg bg-gradient-to-b from-[var(--accent)] to-[var(--accent-dark)] hover:brightness-110 shadow-[0_0_15px_var(--accent-alpha)] text-black text-[12px] font-bold transition-all"
+            className="flex items-center gap-1.5 px-4 h-9 rounded-xl bg-[var(--accent)] hover:opacity-90 shadow-[0_0_15px_var(--accent-alpha)] text-[var(--bg)] text-[12px] font-bold transition-opacity"
           >
-            <Plus size={16} strokeWidth={3} /> Add event
+            <Plus size={16} strokeWidth={2.5} /> Add Event
           </button>
         </div>
       </div>
@@ -272,10 +271,10 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
   }, [currentDate]);
 
   return (
-    <div className="flex flex-col h-full bg-black/20">
-      <div className="grid grid-cols-7 border-b border-white/10 bg-black/20 backdrop-blur-md shrink-0 relative z-10">
+    <div className="flex flex-col h-full bg-[var(--bg)]">
+      <div className="grid grid-cols-7 border-b border-[var(--border)]/40 bg-[var(--surface-raised)]/30 backdrop-blur-md shrink-0 relative z-10">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center py-3 text-[12px] uppercase tracking-wider font-bold text-[var(--text-secondary)] border-r border-white/5 last:border-r-0">
+          <div key={day} className="text-center py-3 text-[11px] uppercase tracking-wider font-bold text-[var(--text-secondary)] border-r border-[var(--border)]/30 last:border-r-0">
             {day}
           </div>
         ))}
@@ -295,18 +294,18 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                     onDropEvent(eventId, cell.dateStr);
                   }
                 }}
-                className={`min-h-[140px] p-2 border-r border-b border-white/5 flex flex-col gap-1.5 transition-colors relative group ${
-                  !cell.isCurrentMonth ? 'bg-gradient-to-br from-black/40 to-black/10 opacity-50' : 'bg-transparent hover:bg-white/5 cursor-pointer'
+                className={`min-h-[140px] p-2 border-r border-b border-[var(--border)]/30 flex flex-col gap-1.5 transition-colors relative group ${
+                  !cell.isCurrentMonth ? 'bg-[var(--surface)]/30 opacity-60' : 'bg-transparent hover:bg-[var(--surface)]/20 cursor-pointer'
                 }`}
                 onClick={() => cell.isCurrentMonth && onAddEvent(cell.dateStr)}
               >
                 <div className="flex justify-end mb-1">
                   <div className={`w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-bold ${
                     cell.isToday 
-                      ? 'bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/30' 
+                      ? 'bg-[var(--accent)] text-[var(--bg)] shadow-lg shadow-[var(--accent)]/30' 
                       : !cell.isCurrentMonth 
-                        ? 'text-white/30 font-medium' 
-                        : 'text-white/80'
+                        ? 'text-[var(--text-muted)] font-medium' 
+                        : 'text-[var(--text-primary)]'
                   }`}>
                     {cell.date.getDate()}
                   </div>
@@ -315,7 +314,6 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                   {dayEvents.slice(0, 4).map((evt: any, idx: number) => {
                     const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
                     const style = colorPalette[colorIndex];
-                    const customRgba = evt.color ? hexToRgba(evt.color, 0.15) : null;
                     return (
                       <motion.div 
                         key={evt.id}
@@ -330,8 +328,7 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                           e.stopPropagation();
                         }}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
-                        className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold leading-tight flex items-center justify-between cursor-pointer border border-white/10 shadow-sm ${!customRgba ? style.bg : ''} ${!customRgba ? style.text : ''}`}
-                        style={customRgba ? { backgroundColor: customRgba, color: evt.color } : {}}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold leading-tight flex items-center justify-between cursor-pointer shadow-sm hover:brightness-105 transition-all ${style.bg} ${style.text}`}
                       >
                         <span className="truncate flex-1 pr-2">{evt.title}</span>
                         {evt.startTime && <span className="opacity-80 shrink-0 text-[10px] font-medium tracking-wide">{evt.startTime}</span>}
@@ -386,21 +383,21 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
-    <div className="flex h-full w-full bg-black/20">
+    <div className="flex h-full w-full bg-[var(--bg)]">
       {/* Main Timeline Area */}
       <div className="flex-1 flex flex-col h-full min-w-0">
         
         {/* Day Headers */}
-        <div className="flex border-b border-white/10 bg-black/20 backdrop-blur-md shrink-0 sticky top-0 z-20 shadow-sm">
-          <div className="w-16 shrink-0 border-r border-white/5" />
+        <div className="flex border-b border-[var(--border)]/40 bg-[var(--surface-raised)]/30 backdrop-blur-md shrink-0 sticky top-0 z-20 shadow-sm">
+          <div className="w-16 shrink-0 border-r border-[var(--border)]/30" />
           {days.map((day, i) => {
             const isToday = day.toLocaleDateString() === new Date().toLocaleDateString();
             return (
-              <div key={i} className={`flex-1 min-w-[100px] border-r border-white/5 last:border-r-0 py-4 flex flex-col items-center justify-center`}>
-                <span className={`text-[11px] uppercase tracking-wider font-bold ${isToday ? 'text-[var(--accent)]' : 'text-white/50'}`}>
+              <div key={i} className={`flex-1 min-w-[100px] border-r border-[var(--border)]/30 last:border-r-0 py-4 flex flex-col items-center justify-center`}>
+                <span className={`text-[11px] uppercase tracking-wider font-bold ${isToday ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'}`}>
                   {day.toLocaleString('default', { weekday: 'short' })}
                 </span>
-                <span className={`text-[22px] font-extrabold mt-1.5 w-10 h-10 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-[var(--accent)] text-black shadow-lg shadow-[var(--accent)]/30' : 'text-white/80 hover:bg-white/10 cursor-pointer'}`} onClick={() => onSelectDate(day)}>
+                <span className={`text-[20px] font-extrabold mt-1 w-9 h-9 flex items-center justify-center rounded-full transition-all ${isToday ? 'bg-[var(--accent)] text-[var(--bg)] shadow-md shadow-[var(--accent)]/30' : 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)] cursor-pointer'}`} onClick={() => onSelectDate(day)}>
                   {day.getDate()}
                 </span>
               </div>
@@ -413,11 +410,11 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
           
           <div className="flex relative" style={{ height: `${24 * 60}px` }}>
             {/* Time Labels */}
-            <div className="w-16 shrink-0 border-r border-white/5 bg-transparent relative z-10">
+            <div className="w-16 shrink-0 border-r border-[var(--border)]/30 bg-transparent relative z-10">
               {hours.map((hour) => (
                 <div 
                   key={hour} 
-                  className="absolute w-full text-right pr-3 text-[10px] font-bold tracking-wider text-white/30 uppercase" 
+                  className="absolute w-full text-right pr-3 text-[10px] font-bold tracking-wider text-[var(--text-muted)] uppercase" 
                   style={{ top: `${hour * 60}px`, transform: 'translateY(-50%)' }}
                 >
                   {hour === 0 ? '' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
@@ -432,12 +429,12 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
               const isToday = day.toLocaleDateString() === now.toLocaleDateString();
 
               return (
-                <div key={i} className="flex-1 min-w-[100px] border-r border-white/5 last:border-r-0 relative group">
+                <div key={i} className="flex-1 min-w-[100px] border-r border-[var(--border)]/30 last:border-r-0 relative group">
                   {/* Grid Lines */}
                   {hours.map(hour => (
                     <div 
                       key={hour} 
-                      className="absolute w-full border-t border-white/5" 
+                      className="absolute w-full border-t border-[var(--border)]/30" 
                       style={{ top: `${hour * 60}px` }} 
                     />
                   ))}
@@ -446,7 +443,7 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                   {hours.map(hour => (
                     <div 
                       key={`slot-${hour}`}
-                      className="absolute w-full opacity-0 hover:opacity-100 hover:bg-white/5 transition-colors cursor-pointer"
+                      className="absolute w-full opacity-0 hover:opacity-100 hover:bg-[var(--surface-raised)]/30 transition-colors cursor-pointer"
                       style={{ top: `${hour * 60}px`, height: '60px', zIndex: 5 }}
                       onClick={() => onAddEvent(dStr, `${hour === 0 ? 12 : hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`)}
                     />
@@ -472,7 +469,6 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
 
                     const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
                     const style = colorPalette[colorIndex];
-                    const customRgba = evt.color ? hexToRgba(evt.color, 0.25) : null;
 
                     return (
                       <motion.div
@@ -480,12 +476,11 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                         layoutId={`timeline-${evt.id}`}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
                         whileHover={{ scale: 1.02, zIndex: 30 }}
-                        className={`absolute left-1.5 right-2.5 rounded-lg p-2.5 overflow-hidden cursor-pointer shadow-sm transition-shadow hover:shadow-lg hover:brightness-110 border border-white/10 ${!customRgba ? style.bg : ''} ${!customRgba ? style.text : ''}`}
+                        className={`absolute left-1.5 right-2.5 rounded-lg p-2.5 overflow-hidden cursor-pointer shadow-sm transition-shadow hover:shadow-lg hover:brightness-105 ${style.bg} ${style.text}`}
                         style={{
                           top: `${startH * 60}px`,
                           height: `${(endH - startH) * 60}px`,
-                          zIndex: 10,
-                          ...(customRgba ? { backgroundColor: customRgba, color: evt.color } : {})
+                          zIndex: 10
                         }}
                       >
                         <div className="text-[11.5px] font-bold leading-tight truncate">{evt.title}</div>
