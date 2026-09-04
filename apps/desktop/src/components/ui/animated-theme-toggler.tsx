@@ -22,9 +22,9 @@ interface AnimatedThemeTogglerProps extends React.ComponentPropsWithoutRef<"butt
    * Controlled theme value. When provided, the parent owns persistence
    * (e.g. `next-themes`) and this component will not write to localStorage.
    */
-  theme?: "light" | "dark"
+  theme?: "light" | "dark" | "system"
   /** Called on toggle. Pair with `theme` for controlled usage. */
-  onThemeChange?: (theme: "light" | "dark") => void
+  onThemeChange?: (theme: "light" | "dark" | "system") => void
 }
 
 function polygonCollapsed(point: string, vertexCount: number): string {
@@ -74,71 +74,54 @@ function getThemeTransitionClipPaths(
       const dx = (Math.sqrt(3) / 2) * scale
       const verts = [
         point(cx, cy - scale),
-        point(cx + dx, cy + 0.5 * scale),
-        point(cx - dx, cy + 0.5 * scale),
+        point(cx + dx, cy + scale * 0.5),
+        point(cx - dx, cy + scale * 0.5),
       ].join(", ")
       return [polygonCollapsed(point(cx, cy), 3), `polygon(${verts})`]
     }
     case "diamond": {
-      // Slightly larger than the view-transition circle radius so axis-aligned coverage matches the circle reveal.
-      const R = maxRadius * Math.SQRT2
-      const end = [
-        point(cx, cy - R),
-        point(cx + R, cy),
-        point(cx, cy + R),
-        point(cx - R, cy),
+      const scale = maxRadius * 1.05
+      const verts = [
+        point(cx, cy - scale),
+        point(cx + scale, cy),
+        point(cx, cy + scale),
+        point(cx - scale, cy),
       ].join(", ")
-      return [polygonCollapsed(point(cx, cy), 4), `polygon(${end})`]
+      return [polygonCollapsed(point(cx, cy), 4), `polygon(${verts})`]
     }
     case "hexagon": {
-      const R = maxRadius * Math.SQRT2
-      const verts: string[] = []
-      for (let i = 0; i < 6; i++) {
-        const a = -Math.PI / 2 + (i * Math.PI) / 3
-        verts.push(point(cx + R * Math.cos(a), cy + R * Math.sin(a)))
-      }
-      return [
-        polygonCollapsed(point(cx, cy), 6),
-        `polygon(${verts.join(", ")})`,
-      ]
+      const scale = maxRadius * 1.05
+      const cos30 = Math.cos(Math.PI / 6)
+      const sin30 = 0.5
+      const verts = [
+        point(cx, cy - scale),
+        point(cx + scale * cos30, cy - scale * sin30),
+        point(cx + scale * cos30, cy + scale * sin30),
+        point(cx, cy + scale),
+        point(cx - scale * cos30, cy + scale * sin30),
+        point(cx - scale * cos30, cy - scale * sin30),
+      ].join(", ")
+      return [polygonCollapsed(point(cx, cy), 6), `polygon(${verts})`]
     }
     case "rectangle": {
-      const halfW = Math.max(cx, viewportWidth - cx)
-      const halfH = Math.max(cy, viewportHeight - cy)
       const end = [
-        point(cx - halfW, cy - halfH),
-        point(cx + halfW, cy - halfH),
-        point(cx + halfW, cy + halfH),
-        point(cx - halfW, cy + halfH),
+        point(0, 0),
+        point(viewportWidth, 0),
+        point(viewportWidth, viewportHeight),
+        point(0, viewportHeight),
       ].join(", ")
       return [polygonCollapsed(point(cx, cy), 4), `polygon(${end})`]
     }
     case "star": {
-      // Small overscan so the last frames never leave a 1px seam before the transition group ends.
-      const R = maxRadius * Math.SQRT2 * 1.03
-      const innerRatio = 0.42
-      const starPolygon = (radius: number) => {
-        const verts: string[] = []
-        for (let i = 0; i < 5; i++) {
-          const outerA = -Math.PI / 2 + (i * 2 * Math.PI) / 5
-          verts.push(
-            point(
-              cx + radius * Math.cos(outerA),
-              cy + radius * Math.sin(outerA)
-            )
-          )
-          const innerA = outerA + Math.PI / 5
-          verts.push(
-            point(
-              cx + radius * innerRatio * Math.cos(innerA),
-              cy + radius * innerRatio * Math.sin(innerA)
-            )
-          )
-        }
-        return `polygon(${verts.join(", ")})`
+      const outerR = maxRadius * 1.15
+      const innerR = outerR * 0.382
+      const points: string[] = []
+      for (let i = 0; i < 10; i++) {
+        const angle = (i * Math.PI) / 5 - Math.PI / 2
+        const r = i % 2 === 0 ? outerR : innerR
+        points.push(point(cx + r * Math.cos(angle), cy + r * Math.sin(angle)))
       }
-      const startR = Math.max(2, R * 0.025)
-      return [starPolygon(startR), starPolygon(R)]
+      return [polygonCollapsed(point(cx, cy), 10), `polygon(${points.join(", ")})`]
     }
     default:
       return [
@@ -152,7 +135,9 @@ export function useAnimatedTheme({ duration = 400, variant = "circle", fromCente
   const shape = variant ?? "circle"
   const isControlled = theme !== undefined
   const [internalIsDark, setInternalIsDark] = useState(false)
-  const isDark = isControlled ? theme === "dark" : internalIsDark
+  const isDark = isControlled 
+    ? (theme === "dark" || (theme === "system" && (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches))) 
+    : internalIsDark
   const isTransitioningRef = useRef(false)
 
   useEffect(() => {
@@ -164,8 +149,14 @@ export function useAnimatedTheme({ duration = 400, variant = "circle", fromCente
     return () => observer.disconnect()
   }, [isControlled])
 
-  const toggleTheme = useCallback((e?: React.MouseEvent | React.TouchEvent | HTMLElement) => {
-    if (isTransitioningRef.current || document.documentElement.dataset.magicuiThemeVt === "active") return
+  const setTheme = useCallback((targetTheme: "light" | "dark" | "system", e?: React.MouseEvent | React.TouchEvent | HTMLElement) => {
+    if (isTransitioningRef.current || document.documentElement.dataset.magicuiThemeVt === "active") {
+      onThemeChange?.(targetTheme)
+      return
+    }
+
+    const isSystemDark = typeof window !== "undefined" ? window.matchMedia("(prefers-color-scheme: dark)").matches : false
+    const targetIsDark = targetTheme === "dark" || (targetTheme === "system" && isSystemDark)
     
     let x = window.innerWidth / 2;
     let y = window.innerHeight / 2;
@@ -189,11 +180,10 @@ export function useAnimatedTheme({ duration = 400, variant = "circle", fromCente
     const maxRadius = Math.hypot(Math.max(x, viewportWidth - x), Math.max(y, viewportHeight - y))
 
     const applyTheme = () => {
-      const newTheme = !isDark
       document.documentElement.classList.remove("light", "dark")
-      document.documentElement.classList.add(newTheme ? "dark" : "light")
-      if (isControlled) onThemeChange?.(newTheme ? "dark" : "light")
-      else { setInternalIsDark(newTheme); localStorage.setItem("theme", newTheme ? "dark" : "light") }
+      document.documentElement.classList.add(targetIsDark ? "dark" : "light")
+      if (isControlled) onThemeChange?.(targetTheme)
+      else { setInternalIsDark(targetIsDark); localStorage.setItem("theme", targetTheme) }
     }
 
     if (typeof document.startViewTransition !== "function") {
@@ -227,9 +217,13 @@ export function useAnimatedTheme({ duration = 400, variant = "circle", fromCente
         })
       }).catch(() => {})
     }
-  }, [shape, fromCenter, duration, isDark, isControlled, onThemeChange])
+  }, [shape, fromCenter, duration, isControlled, onThemeChange])
 
-  return { isDark, toggleTheme }
+  const toggleTheme = useCallback((e?: React.MouseEvent | React.TouchEvent | HTMLElement) => {
+    setTheme(isDark ? "light" : "dark", e)
+  }, [isDark, setTheme])
+
+  return { isDark, toggleTheme, setTheme }
 }
 
 export const AnimatedThemeToggler = ({

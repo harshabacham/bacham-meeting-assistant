@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
+import { useAnimatedTheme } from '@/components/ui/animated-theme-toggler';
 import { 
   Sun, Moon, Monitor, Globe, 
   Calendar, Check, SlidersHorizontal
@@ -7,6 +8,11 @@ import {
 
 export const GeneralSettingsTab: React.FC = () => {
   const { settings, updateSettings } = useSettingsStore();
+
+  const { setTheme } = useAnimatedTheme({
+    theme: (settings?.theme as any) || 'dark',
+    onThemeChange: (newTheme) => updateSettings({ theme: newTheme })
+  });
 
   const themes = [
     { id: 'dark', label: 'Dark Mode', icon: Moon, desc: 'High-contrast dark palette' },
@@ -67,7 +73,7 @@ export const GeneralSettingsTab: React.FC = () => {
             return (
               <div
                 key={theme.id}
-                onClick={() => updateSettings({ theme: theme.id })}
+                onClick={(e) => setTheme(theme.id as any, e)}
                 className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
                   isSelected
                     ? 'bg-primary/5 border-primary shadow-sm ring-1 ring-primary/30'
