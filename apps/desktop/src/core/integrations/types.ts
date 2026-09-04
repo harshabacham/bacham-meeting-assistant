@@ -12,6 +12,8 @@ export interface BachamPlugin {
       url?: string;
       urlLabel?: string;
       steps: string[];
+      note?: string;
+      whereToUse?: string;
     };
   };
   auth?: {

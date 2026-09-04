@@ -10,6 +10,7 @@ const LMStudioPlugin: BachamPlugin = {
     name: 'LM Studio',
     version: '1.0.0',
     description: 'Use local LM Studio models for private, offline meeting summaries.',
+    icon: 'HardDrive',
     category: 'AI Providers',
     permissions: ['Local Network Access'],
     author: 'Bacham',
@@ -17,14 +18,15 @@ const LMStudioPlugin: BachamPlugin = {
       url: 'https://lmstudio.ai/',
       urlLabel: 'Download LM Studio',
       steps: [
-        'Download and install LM Studio from lmstudio.ai',
-        'Open LM Studio and search for a model (e.g., Llama 3) to download',
-        'Click the "Local Server" tab (↔️ icon) on the left sidebar',
-        'Select your downloaded model from the top dropdown',
-        'Click the green "Start Server" button',
-        'Copy the server URL (usually http://localhost:1234/v1) and paste it below',
-        'Click Connect, then click the Gear icon ⚙️ to confirm your model'
-      ]
+        'Download and install LM Studio from lmstudio.ai for your OS.',
+        'In LM Studio, search and download any model (e.g. Llama 3.1 8B, Qwen 2.5, Mistral).',
+        'Click the "Local Server" tab (↔️ icon in the left sidebar of LM Studio).',
+        'Select your downloaded model from the dropdown at the top and click the green "Start Server" button.',
+        'Paste the server URL below (default: http://localhost:1234/v1) and click "Connect".',
+        'Click the Gear icon ⚙️ to test your local server and confirm your active model!'
+      ],
+      whereToUse: 'Private Offline AI Summaries with GPU acceleration (100% Local)',
+      note: 'Zero cost, 100% private. Works completely offline without an internet connection.'
     }
   },
   auth: {

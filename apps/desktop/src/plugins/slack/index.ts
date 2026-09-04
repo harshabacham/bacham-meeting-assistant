@@ -16,12 +16,17 @@ const SlackPlugin: BachamPlugin = {
     author: 'Bacham',
     setupGuide: {
       url: 'https://api.slack.com/messaging/webhooks',
-      urlLabel: 'Slack API',
+      urlLabel: 'Slack Webhook Console',
       steps: [
-        'Create an Incoming Webhook in your Slack Workspace.',
-        'Copy the Webhook URL.',
-        'Paste the URL below and click Save.'
-      ]
+        'Open api.slack.com/messaging/webhooks and click "Create your Slack app" (or choose an existing app).',
+        'Select your team\'s Slack Workspace.',
+        'In the left sidebar, click "Incoming Webhooks" and toggle the switch to "On".',
+        'Click "Add New Webhook to Workspace" at the bottom of the page.',
+        'Choose the channel where notes and tasks should be posted (e.g. #general, #meetings, or #action-items) and click "Allow".',
+        'Copy the generated Webhook URL (starts with https://hooks.slack.com/services/...) and paste it below.'
+      ],
+      whereToUse: 'Tasks Page ("Sync Tasks" button) & Notes Editor ("Share & Export" > Send to Slack)',
+      note: 'Webhooks are 100% private to your workspace. The token is encrypted locally with AES-GCM on this device.'
     }
   },
   auth: {

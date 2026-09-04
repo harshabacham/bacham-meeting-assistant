@@ -15,12 +15,16 @@ const GeminiPlugin: BachamPlugin = {
     author: 'Bacham',
     setupGuide: {
       url: 'https://aistudio.google.com/app/apikey',
-      urlLabel: 'Get API Key',
+      urlLabel: 'Google AI Studio',
       steps: [
-        'Open Google AI Studio.',
-        'Click "Create API Key".',
-        'Copy your API key and paste it below.'
-      ]
+        'Open aistudio.google.com/app/apikey and sign in with your Google account.',
+        'Click "Create API Key" and select an existing Google Cloud project (or create a new one in 1 click).',
+        'Copy your key (starts with AIzaSy...). Google AI Studio offers a free tier with zero initial cost!',
+        'Paste the key below and click "Connect".',
+        'Gemini powers high-speed Cloud Transcription, Semantic Smart Search, and ultra-fast meeting summarization.'
+      ],
+      whereToUse: 'Transcription Engine, Semantic Smart Search & AI Summaries (Gemini 1.5 Flash/Pro)',
+      note: 'Expected format: starts with AIzaSy... Generous free tier provided by Google AI Studio.'
     }
   },
   auth: {

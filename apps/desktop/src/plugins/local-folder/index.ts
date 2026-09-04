@@ -16,10 +16,15 @@ const LocalFolderPlugin: BachamPlugin = {
     author: 'Bacham',
     setupGuide: {
       steps: [
-        'Enter the full folder path where you want notes saved (e.g. C:\\Users\\Name\\Documents\\ObsidianVault).',
-        'Click "Save Setup" to connect the destination folder.',
-        'You can now export any meeting directly into this folder with a single click.'
-      ]
+        'Decide where on your computer you want Markdown notes and action checklists saved.',
+        'Obsidian / Logseq users: Open your Vault, right-click the folder where you want notes, and copy the full path.',
+        'Enter the full folder path below:',
+        '• Windows: C:\\Users\\<YourName>\\Documents\\ObsidianVault\\Meetings',
+        '• macOS / Linux: /Users/<YourName>/Documents/ObsidianVault/Meetings',
+        'Click "Save Setup". Notes will be exported automatically as clean .md files with YAML frontmatter, action items, and summaries.'
+      ],
+      whereToUse: 'Notes Editor ("Share & Export" > Export Markdown File) & Automatic Post-Meeting Sync',
+      note: 'Compatible with Obsidian, Logseq, VS Code, Notion, or any folder on your hard drive.'
     }
   },
   auth: {

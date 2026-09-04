@@ -15,12 +15,16 @@ const AnthropicPlugin: BachamPlugin = {
     author: 'Bacham',
     setupGuide: {
       url: 'https://console.anthropic.com/settings/keys',
-      urlLabel: 'Get API Key',
+      urlLabel: 'Anthropic Console Keys',
       steps: [
-        'Open the Anthropic Console.',
-        'Navigate to Settings > API Keys.',
-        'Create a new API Key and paste it below.'
-      ]
+        'Open console.anthropic.com/settings/keys and sign in with your Anthropic account.',
+        'Click "Create Key", label it "Bacham Meeting Assistant", and copy your secret key.',
+        'Check Plans & Billing to make sure you have active credits deposited.',
+        'Paste the key below (starts with sk-ant-api03-) and click "Connect".',
+        'Set Claude as your active AI engine in Settings > AI & General to enjoy nuanced, high-fidelity meeting summaries.'
+      ],
+      whereToUse: 'AI Meeting Summaries, Complex Decision Analysis & Meeting Synthesis',
+      note: 'Expected format: starts with sk-ant-api03-. Claude 3.5 Sonnet is supported.'
     }
   },
   auth: {

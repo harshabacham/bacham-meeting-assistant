@@ -15,12 +15,16 @@ const OpenAIPlugin: BachamPlugin = {
     author: 'Bacham',
     setupGuide: {
       url: 'https://platform.openai.com/api-keys',
-      urlLabel: 'Get API Key',
+      urlLabel: 'OpenAI API Keys',
       steps: [
-        'Open the OpenAI Developer Platform.',
-        'Navigate to the API Keys section.',
-        'Create a new secret key and paste it below.'
-      ]
+        'Open platform.openai.com/api-keys and log in or create an account.',
+        'Click "+ Create new secret key", name it "Bacham Meeting Assistant", and copy your secret key.',
+        'Important: Verify your account has billing credits under Settings > Billing (requires min $5 credit balance).',
+        'Paste your secret key below (starts with sk-proj- or sk-) and click "Connect".',
+        'Once connected, go to Settings > AI & General to choose GPT-4o as your Active Inference Engine.'
+      ],
+      whereToUse: 'AI Meeting Summaries, Live Copilot, Action Item Detection & Meeting Questions',
+      note: 'Expected format: starts with sk-proj- or sk-. Token is encrypted locally with AES-GCM.'
     }
   },
   auth: {

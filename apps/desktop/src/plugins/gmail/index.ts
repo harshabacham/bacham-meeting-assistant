@@ -13,6 +13,16 @@ const GmailPlugin: BachamPlugin = {
     category: 'Communication',
     permissions: ['Send Email'],
     author: 'Bacham',
+    setupGuide: {
+      steps: [
+        'Zero setup required! Bacham connects to your system\'s native email handler automatically.',
+        'Ensure your operating system has a default email app configured (e.g. Gmail in Chrome/Edge, Outlook, Apple Mail, or Thunderbird).',
+        'How to use: Open any meeting in the Notes Workspace, click "Share & Export", and choose "Share via Email".',
+        'A pre-formatted email draft will immediately open with the meeting summary, decisions, and action items ready to send to your team.'
+      ],
+      whereToUse: 'Notes Editor ("Share & Export" > Share via Email)',
+      note: '100% private. Never asks for your email password or OAuth tokens. Drafts open locally in your email client.'
+    }
   },
   auth: {
     type: 'none',

@@ -20,15 +20,18 @@ const NotionPlugin: BachamPlugin = {
     permissions: ['Create Pages', 'Write Content'],
     author: 'Bacham',
     setupGuide: {
-      url: 'https://www.notion.so/my-integrations',
-      urlLabel: 'Notion Integrations',
+      url: 'https://www.notion.so/profile/integrations',
+      urlLabel: 'Notion Integrations Portal',
       steps: [
-        'Open notion.so/my-integrations and click "+ New integration".',
-        'Name your integration "Bacham" and copy the Internal Integration Secret.',
-        'Open the Notion page where you want to export notes, click "..." in the top right, select "Connect to", and choose "Bacham".',
-        'Copy the Page ID from your Notion page URL (the 32-character string at the end of the URL).',
-        'Paste your Secret and Page ID below and click Save.'
-      ]
+        'Open notion.so/profile/integrations (or notion.so/my-integrations) and click "+ New integration".',
+        'Name your integration "Bacham" and click Submit. Copy the "Internal Integration Secret" (starts with secret_ or ntn_).',
+        'In Notion, go to the page or database where you want meeting notes and tasks exported.',
+        'CRITICAL STEP: Click the "..." (three dots) in the top right corner of that Notion page, select "Connect to" (or "Add connections"), and choose "Bacham". Without this step, Notion will return a 404 error.',
+        'Copy the Page ID from the URL bar: it is the 32-character hexadecimal string at the end of the URL (e.g. if URL is notion.so/My-Page-3b1a2c3d4e5f60718293a4b5c6d7e8f9, the Page ID is 3b1a2c3d4e5f60718293a4b5c6d7e8f9).',
+        'Paste your Secret and Page ID below and click "Save Setup".'
+      ],
+      whereToUse: 'Tasks Page ("Sync Tasks" button) & Notes Editor ("Share & Export" > Send to Notion)',
+      note: 'Tip: If Notion ever reports "Object not found", re-check Step 4 to make sure the "Bacham" integration connection is granted to that exact page.'
     }
   },
   auth: {

@@ -336,31 +336,46 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="pt-3 border-t border-[var(--border)]/40 space-y-2.5"
+                className="pt-3 border-t border-[var(--border)]/40 space-y-3"
               >
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-[var(--text-secondary)]">Incoming Webhook URL</span>
-                  <button
-                    type="button"
-                    onClick={() => openUrl('https://api.slack.com/messaging/webhooks')}
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    <span>Get Webhook</span>
-                    <ExternalLink size={10} />
-                  </button>
+                {/* Step-by-step guidance for Slack */}
+                <div className="bg-[var(--surface)] border border-[var(--border)]/60 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-primary)]">
+                    <span>How to get your Slack Webhook</span>
+                    <button
+                      type="button"
+                      onClick={() => openUrl('https://api.slack.com/messaging/webhooks')}
+                      className="text-primary hover:underline flex items-center gap-1 font-semibold text-[10px]"
+                    >
+                      <span>Open Slack API</span>
+                      <ExternalLink size={10} />
+                    </button>
+                  </div>
+                  <ol className="text-[10px] text-[var(--text-muted)] space-y-1 list-decimal list-inside leading-relaxed">
+                    <li>Click "Create your Slack app" (or choose an existing app).</li>
+                    <li>Turn on <strong>Incoming Webhooks</strong> in the left sidebar.</li>
+                    <li>Click <strong>"Add New Webhook to Workspace"</strong> and pick your channel.</li>
+                    <li>Copy the webhook URL (starts with <code className="text-primary font-mono text-[9px]">https://hooks.slack.com/...</code>).</li>
+                  </ol>
                 </div>
-                <input
-                  type="url"
-                  value={slackWebhookUrl}
-                  onChange={(e) => setSlackWebhookUrl(e.target.value)}
-                  placeholder="https://hooks.slack.com/services/..."
-                  className="w-full px-3 py-2 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] outline-none focus:border-primary transition-all font-mono"
-                />
+
+                <div>
+                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                    Incoming Webhook URL
+                  </label>
+                  <input
+                    type="url"
+                    value={slackWebhookUrl}
+                    onChange={(e) => setSlackWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.slack.com/services/..."
+                    className="w-full px-3 py-2 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] outline-none focus:border-primary transition-all font-mono"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handleSaveSlackConfig}
                   disabled={isSavingSlack || !slackWebhookUrl.trim()}
-                  className="w-full py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {isSavingSlack ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                   <span>Save & Connect Slack</span>
@@ -423,43 +438,60 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="pt-3 border-t border-[var(--border)]/40 space-y-2.5"
+                className="pt-3 border-t border-[var(--border)]/40 space-y-3"
               >
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-[var(--text-secondary)]">Internal Integration Secret</span>
-                  <button
-                    type="button"
-                    onClick={() => openUrl('https://www.notion.so/my-integrations')}
-                    className="text-primary hover:underline flex items-center gap-1"
-                  >
-                    <span>Get Secret</span>
-                    <ExternalLink size={10} />
-                  </button>
+                {/* Step-by-step guidance for Notion */}
+                <div className="bg-[var(--surface)] border border-[var(--border)]/60 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-primary)]">
+                    <span>How to connect your Notion page</span>
+                    <button
+                      type="button"
+                      onClick={() => openUrl('https://www.notion.so/profile/integrations')}
+                      className="text-primary hover:underline flex items-center gap-1 font-semibold text-[10px]"
+                    >
+                      <span>Notion Integrations</span>
+                      <ExternalLink size={10} />
+                    </button>
+                  </div>
+                  <ol className="text-[10px] text-[var(--text-muted)] space-y-1.5 list-decimal list-inside leading-relaxed">
+                    <li>Click "+ New integration", name it "Bacham", and copy the <strong>Internal Integration Secret</strong>.</li>
+                    <li>In Notion, open the page you want to export to.</li>
+                    <li><span className="text-amber-400 font-bold">Important:</span> Click <code className="bg-surface-hover px-1 rounded">...</code> in the top right &gt; <strong>Connect to</strong> &gt; choose <strong>Bacham</strong>.</li>
+                    <li>Copy the 32-character Page ID from the end of the page URL.</li>
+                  </ol>
                 </div>
-                <input
-                  type="password"
-                  value={notionSecret}
-                  onChange={(e) => setNotionSecret(e.target.value)}
-                  placeholder="secret_..."
-                  className="w-full px-3 py-2 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] outline-none focus:border-primary transition-all font-mono"
-                />
 
-                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                  Target Page ID
+                <div>
+                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                    Internal Integration Secret (starts with secret_ or ntn_)
+                  </label>
+                  <input
+                    type="password"
+                    value={notionSecret}
+                    onChange={(e) => setNotionSecret(e.target.value)}
+                    placeholder="secret_... or ntn_..."
+                    className="w-full px-3 py-2 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] outline-none focus:border-primary transition-all font-mono"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={notionPageId}
-                  onChange={(e) => setNotionPageId(e.target.value)}
-                  placeholder="Page ID from Notion page URL (32 characters)"
-                  className="w-full px-3 py-2 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] outline-none focus:border-primary transition-all font-mono"
-                />
+
+                <div>
+                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                    Target Page ID (32-character string from Notion URL)
+                  </label>
+                  <input
+                    type="text"
+                    value={notionPageId}
+                    onChange={(e) => setNotionPageId(e.target.value)}
+                    placeholder="e.g. 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+                    className="w-full px-3 py-2 text-xs bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--text-primary)] outline-none focus:border-primary transition-all font-mono"
+                  />
+                </div>
 
                 <button
                   type="button"
                   onClick={handleSaveNotionConfig}
                   disabled={isSavingNotion || !notionSecret.trim() || !notionPageId.trim()}
-                  className="w-full py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   {isSavingNotion ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                   <span>Save & Connect Notion</span>

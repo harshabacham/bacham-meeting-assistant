@@ -9,17 +9,22 @@ const OpenRouterPlugin: BachamPlugin = {
     name: 'OpenRouter',
     version: '1.0.0',
     description: 'Use OpenRouter to access hundreds of open-source and proprietary models globally.',
+    icon: 'Network',
     category: 'AI Providers',
     permissions: ['AI Inference'],
     author: 'Bacham',
     setupGuide: {
       url: 'https://openrouter.ai/keys',
-      urlLabel: 'Get API Key',
+      urlLabel: 'OpenRouter API Keys',
       steps: [
-        'Open OpenRouter and log in.',
-        'Navigate to the Keys section.',
-        'Generate a new API Key and paste it below.'
-      ]
+        'Open openrouter.ai/keys and sign in or create an account.',
+        'Click "Create Key", name it "Bacham Meeting Assistant", and copy your generated key.',
+        'Add credits to your OpenRouter balance via credit card or crypto (supports flexible pay-as-you-go).',
+        'Paste your key below (starts with sk-or-v1-) and click "Connect".',
+        'Access 200+ top AI models (DeepSeek R1/V3, Claude 3.5 Sonnet, GPT-4o, Llama 3.3) through one single key!'
+      ],
+      whereToUse: 'AI Meeting Summaries, Global Multi-Model Access & Automatic Fallback',
+      note: 'Expected format: starts with sk-or-v1-... Encrypted locally with AES-GCM.'
     }
   },
   auth: {

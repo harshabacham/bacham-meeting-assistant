@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { 
-  CheckSquare, Plus, Trash2, Calendar, Copy, Check, 
-  Code2, FileText, Target, CheckCircle2, Circle, AlertCircle, Clock, Share2
+  CheckSquare, Plus, Trash2, Copy, Check, 
+  FileText, Target, CheckCircle2, AlertCircle, Clock, Share2
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/ToastProvider';
-import { useCalendarStore } from '@/shared/stores/calendarStore';
-import { EventModal } from '@/components/calendar/EventModal';
-import { FullCalendarView } from '@/components/calendar/FullCalendarView';
 import { SyncTasksModal } from '@/components/tasks/SyncTasksModal';
 
 export interface GlobalActionItem {
@@ -48,9 +45,6 @@ export const TasksPage: React.FC = () => {
   const [copiedAll, setCopiedAll] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { events: calEvents, deleteEvent } = useCalendarStore();
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [eventToEdit, setEventToEdit] = useState<any>(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const navigate = useNavigate();

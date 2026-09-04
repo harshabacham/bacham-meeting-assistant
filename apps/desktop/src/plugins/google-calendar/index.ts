@@ -12,6 +12,18 @@ const GoogleCalendarPlugin: BachamPlugin = {
     category: 'Calendar',
     permissions: ['Read Calendars', 'Read Events'],
     author: 'Bacham',
+    setupGuide: {
+      url: 'https://calendar.google.com/calendar/r/settings',
+      urlLabel: 'Calendar Settings',
+      steps: [
+        'Option 1 (1-Click Google OAuth): Click "Connect" to open the Calendar Sync modal and sign in with Google to grant read-only access.',
+        'Option 2 (Zero-OAuth Secret iCal): Open Google Calendar in your browser > Settings > Settings for my calendars > Integrate calendar.',
+        'Scroll down to "Secret address in iCal format", copy the secret URL, and paste it into the Calendar Sync modal.',
+        'Once connected, Bacham automatically detects upcoming meetings and auto-starts recordings on time.'
+      ],
+      whereToUse: 'Calendar Page, Home Dashboard & Auto-Record prompt',
+      note: 'Only requires read-only event permissions. Your personal data is never modified.'
+    }
   },
   auth: {
     type: 'oauth2',

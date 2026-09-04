@@ -15,12 +15,16 @@ const GrokPlugin: BachamPlugin = {
     author: 'Bacham',
     setupGuide: {
       url: 'https://console.x.ai/',
-      urlLabel: 'Get API Key',
+      urlLabel: 'xAI Console Keys',
       steps: [
-        'Open the xAI Console.',
-        'Navigate to API Keys.',
-        'Create a new API Key and paste it below.'
-      ]
+        'Open console.x.ai and sign in with your X (Twitter) or Google account.',
+        'Navigate to the "API Keys" section and click "+ Create API Key".',
+        'Copy your generated secret key (starts with xai-).',
+        'Ensure you have credit balance available under Billing & Invoices.',
+        'Paste the key below and click "Connect". Then select Grok in Settings > AI & General.'
+      ],
+      whereToUse: 'AI Meeting Summaries & Fast Intelligence (Grok-2 & Grok-2-mini)',
+      note: 'Expected format: starts with xai-... Token is encrypted locally with AES-GCM.'
     }
   },
   auth: {
