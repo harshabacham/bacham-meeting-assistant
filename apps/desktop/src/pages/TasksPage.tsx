@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { 
   CheckSquare, Plus, Trash2, Calendar, Copy, Check, 
-  Code2, FileText, Target, CheckCircle2, Circle, AlertCircle, Clock
+  Code2, FileText, Target, CheckCircle2, Circle, AlertCircle, Clock, Share2
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { EventModal } from '@/components/calendar/EventModal';
 import { FullCalendarView } from '@/components/calendar/FullCalendarView';
+import { SyncTasksModal } from '@/components/tasks/SyncTasksModal';
 
 export interface GlobalActionItem {
   id: string;
@@ -50,6 +51,7 @@ export const TasksPage: React.FC = () => {
   const { events: calEvents, deleteEvent } = useCalendarStore();
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<any>(null);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -273,24 +275,42 @@ export const TasksPage: React.FC = () => {
               </p>
             </div>
 
-            {/* View Toggles */}
-            <div className="flex items-center p-1 rounded-xl bg-[var(--surface-raised)]/40 backdrop-blur-md border border-[var(--border)]/50 shadow-inner">
+            {/* Header Actions */}
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => { setViewMode('tasks'); setSearchParams({}); }}
-                className={`px-4 py-1.5 text-[12px] font-bold tracking-wide uppercase rounded-lg transition-all ${
-                  viewMode === 'tasks' ? 'bg-[var(--surface)] shadow-md border border-white/5 text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]/30'
-                }`}
+                type="button"
+                onClick={() => setIsSyncModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer"
+                title="Sync action items to Slack or Notion"
               >
-                Tasks
+                <Share2 size={13} />
+                <span>Sync Tasks</span>
+                {pendingCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full bg-white/20 text-[10px] font-bold">
+                    {pendingCount}
+                  </span>
+                )}
               </button>
-              <button
-                onClick={() => { setViewMode('calendar'); setSearchParams({ view: 'calendar' }); }}
-                className={`px-4 py-1.5 text-[12px] font-bold tracking-wide uppercase rounded-lg transition-all ${
-                  viewMode === 'calendar' ? 'bg-[var(--surface)] shadow-md border border-white/5 text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]/30'
-                }`}
-              >
-                Calendar
-              </button>
+
+              {/* View Toggles */}
+              <div className="flex items-center p-1 rounded-xl bg-[var(--surface-raised)]/40 backdrop-blur-md border border-[var(--border)]/50 shadow-inner">
+                <button
+                  onClick={() => { setViewMode('tasks'); setSearchParams({}); }}
+                  className={`px-4 py-1.5 text-[12px] font-bold tracking-wide uppercase rounded-lg transition-all ${
+                    viewMode === 'tasks' ? 'bg-[var(--surface)] shadow-md border border-white/5 text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]/30'
+                  }`}
+                >
+                  Tasks
+                </button>
+                <button
+                  onClick={() => { setViewMode('calendar'); setSearchParams({ view: 'calendar' }); }}
+                  className={`px-4 py-1.5 text-[12px] font-bold tracking-wide uppercase rounded-lg transition-all ${
+                    viewMode === 'calendar' ? 'bg-[var(--surface)] shadow-md border border-white/5 text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface)]/30'
+                  }`}
+                >
+                  Calendar
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -472,6 +492,13 @@ export const TasksPage: React.FC = () => {
         isOpen={isEventModalOpen} 
         onClose={() => setIsEventModalOpen(false)} 
         eventToEdit={eventToEdit} 
+      />
+
+      <SyncTasksModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        tasks={sortedTasks}
+        filterTab={filterTab}
       />
     </div>
   );
