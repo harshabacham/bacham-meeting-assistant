@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Copy, Check, Mail, Loader2, PlugZap, FileText, Eye, Download, ChevronLeft, Sparkles } from 'lucide-react';
+import { X, Copy, Check, Mail, Loader2, FileText, Eye, Download, ChevronLeft, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
-import { pluginManager } from '@/core/integrations/PluginManager';
-import { BachamPlugin } from '@/core/integrations/types';
 import jsPDF from 'jspdf';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { save } from '@tauri-apps/plugin-dialog';
@@ -281,29 +279,15 @@ function PreviewPanel({
 
 export function ExportPushDialog({ isOpen, onClose, lectureId, lectureTitle, summary, artifacts, transcript }: ExportPushDialogProps) {
   const [copied, setCopied] = useState(false);
-  const [exportPlugins, setExportPlugins] = useState<BachamPlugin[]>([]);
-  const [pluginStatuses, setPluginStatuses] = useState<Record<string, 'idle' | 'loading' | 'success' | 'error'>>({});
   const [view, setView] = useState<DialogView>('options');
   const [previewFormat, setPreviewFormat] = useState<PreviewFormat>('markdown');
-  
   const [magicLinkCache, setMagicLinkCache] = useState<string>('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-
   const { showToast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
       setView('options');
-      const loadPlugins = async () => {
-        const allPlugins = pluginManager.getPlugins().filter(p => p.actions?.export);
-        const connectedPlugins = [];
-        for (const p of allPlugins) {
-          const connected = p.auth?.type === 'none' ? true : await p.auth?.isConnected?.();
-          if (connected) connectedPlugins.push(p);
-        }
-        setExportPlugins(connectedPlugins);
-      };
-      loadPlugins();
     }
   }, [isOpen]);
 
@@ -372,21 +356,6 @@ ${markdownToHtml(markdownContent)}
     const subject = encodeURIComponent(`Meeting Notes: ${lectureTitle}`);
     const body = encodeURIComponent(markdownContent.substring(0, 2000));
     window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
-  };
-
-  const handlePluginExport = async (plugin: BachamPlugin) => {
-    if (!plugin.actions?.export) return;
-    setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'loading' }));
-    try {
-      await plugin.actions.export({ title: lectureTitle, summary, content: markdownContent });
-      setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'success' }));
-      setTimeout(() => setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'idle' })), 3000);
-    } catch (e: any) {
-      console.error('[Export Error]', e);
-      showToast(`Export Failed: ${e.message}`, 'error');
-      setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'error' }));
-      setTimeout(() => setPluginStatuses(prev => ({ ...prev, [plugin.manifest.id]: 'idle' })), 4000);
-    }
   };
 
   const handleExportMarkdownFile = async () => {
@@ -597,36 +566,6 @@ ${markdownToHtml(markdownContent)}
                 color="indigo"
                 onPreview={() => openPreview('json')}
               />
-
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mt-6 mb-3">Your Connected Plugins</p>
-
-              {exportPlugins.length === 0 ? (
-                <div className="bg-surface/50 border border-border/40 rounded-2xl p-6 text-center">
-                  <PlugZap size={24} className="mx-auto text-muted-foreground/50 mb-3" />
-                  <h3 className="text-sm font-medium text-foreground">No plugins connected</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Go to Settings &rarr; Integrations to connect Notion, Slack, and more.</p>
-                </div>
-              ) : (
-                exportPlugins.map(plugin => {
-                  const status = pluginStatuses[plugin.manifest.id] || 'idle';
-                  const isSending = status === 'loading';
-                  let desc = plugin.manifest.description;
-                  if (status === 'success') desc = '✓ Export successful!';
-                  if (status === 'error') desc = '✗ Export failed. Check connection.';
-                  return (
-                    <IntegrationCard
-                      key={plugin.manifest.id}
-                      icon={PlugZap}
-                      title={`Send to ${plugin.manifest.name}`}
-                      description={desc}
-                      action={() => handlePluginExport(plugin)}
-                      actionLabel={isSending ? 'Sending' : 'Send'}
-                      isLoading={isSending}
-                      color="purple"
-                    />
-                  );
-                })
-              )}
             </div>
           </>
         )}
