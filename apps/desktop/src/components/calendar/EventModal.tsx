@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, Calendar, Clock, AlignLeft, MapPin, 
-  Users, Bell, Trash2, Edit3, Copy, Video, Type 
+  X, Clock, AlignLeft, MapPin, 
+  Bell, Trash2, Edit3, Video, Type 
 } from 'lucide-react';
 import { useCalendarStore, CalendarEvent } from '@/shared/stores/calendarStore';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -104,7 +104,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
           description,
           color,
           meetingUrl: location,
-          reminderMinutes
+          reminderMinutes: reminderMinutes ?? undefined
         });
         showToast('Event updated successfully', 'success');
       } else {
@@ -120,7 +120,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
           monthStr: new Date(dateStr).toLocaleString('default', { month: 'short' }),
           dayOfWeek: new Date(dateStr).toLocaleString('default', { weekday: 'short' }),
           meetingUrl: location,
-          reminderMinutes
+          reminderMinutes: reminderMinutes ?? undefined
         });
         showToast('Event added successfully', 'success');
       }

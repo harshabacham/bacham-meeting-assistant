@@ -5,11 +5,11 @@ import { useToast } from '@/components/ui/ToastProvider';
 
 import { pluginManager } from '@/core/integrations/PluginManager';
 import { IntegrationCard } from '@/components/integrations/IntegrationCard';
+import { IntegrationsHub } from '@/components/integrations/IntegrationsHub';
 import { TauriClient, StorageBreakdown } from '@/infrastructure/tauri-client';
 import {
     Settings, Shield, HardDrive, Key, Search, 
-    Trash2, LayoutList, Sparkles, ChevronRight, Database, BrainCircuit, Eye, EyeOff,
-    HelpCircle, ShieldCheck, CheckSquare, FileText, Zap
+    Trash2, LayoutList, Sparkles, ChevronRight, Database, BrainCircuit, Eye, EyeOff
 } from 'lucide-react';
 import { usePetStore, PET_DEFINITIONS } from '@/shared/stores/petStore';
 import { PetAvatar } from '@/components/pets/PetAvatars';
@@ -680,78 +680,7 @@ export function SettingsPage() {
                             )}
 
                             {activeTab === 'integrations' && (
-                                <div className="space-y-8">
-                                    <div>
-                                        <h2 className="text-2xl font-bold tracking-tight text-foreground">Integrations</h2>
-                                        <p className="text-muted-foreground mt-1 text-sm">Connect Bacham to your favourite tools. Plugins run entirely locally on your device.</p>
-                                    </div>
-
-                                    {/* How Integrations Work & Instructions Guide Banner */}
-                                    <div className="bg-surface border border-border/70 rounded-3xl p-6 shadow-sm shadow-black/5 backdrop-blur-xl space-y-4">
-                                        <div className="flex items-center justify-between pb-3 border-b border-border/50">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
-                                                    <HelpCircle size={18} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-sm font-bold text-foreground">How Integrations Work in Bacham</h3>
-                                                    <p className="text-xs text-muted-foreground">Everything you need to know about connecting and using your tools</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-semibold border border-emerald-500/20">
-                                                <ShieldCheck size={13} /> 100% Local & Encrypted
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
-                                            <div className="p-3.5 rounded-2xl bg-surface-raised/60 border border-border/40 space-y-1.5">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                                                    <CheckSquare size={14} className="text-emerald-400" />
-                                                    <span>Push Tasks (Slack & Notion)</span>
-                                                </div>
-                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                    On the <strong>Tasks</strong> page, click <strong>"Sync Tasks"</strong> to dispatch meeting action items, assignees, and deadlines straight into your team's Slack channel or Notion database.
-                                                </p>
-                                            </div>
-
-                                            <div className="p-3.5 rounded-2xl bg-surface-raised/60 border border-border/40 space-y-1.5">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                                                    <FileText size={14} className="text-primary" />
-                                                    <span>Share & Export Notes</span>
-                                                </div>
-                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                    In any meeting's <strong>Notes Editor</strong>, click <strong>"Share & Export"</strong> to push summaries to Notion, post to Slack, save to an Obsidian vault, or open a Gmail draft.
-                                                </p>
-                                            </div>
-
-                                            <div className="p-3.5 rounded-2xl bg-surface-raised/60 border border-border/40 space-y-1.5">
-                                                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                                                    <Zap size={14} className="text-amber-400" />
-                                                    <span>Easy Step-by-Step Setup</span>
-                                                </div>
-                                                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                                    Click <strong>"How to Connect & Use"</strong> on any card below to view direct portal links and exact steps to get your keys or webhook URLs in seconds.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(180px,auto)]">
-                                        {pluginManager.getPlugins().length === 0 ? (
-                                            <div className="col-span-full py-12 flex flex-col items-center justify-center text-center bg-surface border border-border rounded-2xl border-dashed">
-                                                <BrainCircuit size={32} className="text-muted-foreground mb-3" />
-                                                <h3 className="text-sm font-semibold text-foreground">No Plugins Installed</h3>
-                                                <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                                                    You haven't installed any integrations yet. Future updates will allow you to browse and install community plugins right here.
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            pluginManager.getPlugins().filter(p => p.manifest.category !== 'AI Providers').map(plugin => (
-                                                <IntegrationCard key={plugin.manifest.id} plugin={plugin} />
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
+                                <IntegrationsHub />
                             )}
 
                             {activeTab === 'storage' && (

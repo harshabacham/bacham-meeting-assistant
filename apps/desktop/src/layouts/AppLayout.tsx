@@ -8,7 +8,7 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, Bookmark, Archive, Trash2, ChevronDown, CheckSquare, Sparkles, Plus, PlugZap
+    Library, BrainCircuit, Edit3, Bookmark, Archive, ChevronDown, CheckSquare, Sparkles, Plus, PlugZap
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
@@ -31,6 +31,7 @@ const STUDENT_NAV_ITEMS = [
     { path: '/lectures', label: 'Library', icon: Library },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+    { path: '/integrations', label: 'Integrations', icon: PlugZap },
 ];
 
 const PRO_NAV_ITEMS = [
@@ -38,6 +39,7 @@ const PRO_NAV_ITEMS = [
     { path: '/lectures', label: 'Meetings', icon: Library },
     { path: '/notes', label: 'Notes', icon: Edit3 },
     { path: '/tasks', label: 'Action Items', icon: CheckSquare },
+    { path: '/integrations', label: 'Integrations', icon: PlugZap },
 ];
 
 

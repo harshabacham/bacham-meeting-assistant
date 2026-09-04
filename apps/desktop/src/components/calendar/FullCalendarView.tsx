@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { CalendarEvent, useCalendarStore } from '@/shared/stores/calendarStore';
-import { ChevronLeft, ChevronRight, Plus, Search, CheckSquare, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search, CheckSquare } from 'lucide-react';
 import { EventModal } from './EventModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useNavigate } from 'react-router-dom';
@@ -21,10 +21,6 @@ function parseTimeToHours(timeStr?: string): number {
   return h + m / 60;
 }
 
-const truncate = (str: string, length: number) => {
-  return str.length > length ? str.substring(0, length) + '...' : str;
-};
-
 const colorPalette = [
   { bg: 'bg-purple-200', text: 'text-purple-900' },
   { bg: 'bg-emerald-200', text: 'text-emerald-900' },
@@ -34,14 +30,6 @@ const colorPalette = [
   { bg: 'bg-indigo-200', text: 'text-indigo-900' },
 ];
 
-const hexToRgba = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
 export function FullCalendarView() {
   const { events, editEvent, syncNow, autoSyncEnabled } = useCalendarStore();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -49,8 +37,6 @@ export function FullCalendarView() {
   
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<CalendarEvent | null>(null);
-  
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -152,6 +138,9 @@ export function FullCalendarView() {
                 {titleBadge}
               </span>
             </h2>
+            {titleSubtitle && (
+              <p className="text-xs text-[var(--text-muted)] font-medium mt-0.5">{titleSubtitle}</p>
+            )}
           </div>
         </div>
 
@@ -221,8 +210,8 @@ export function FullCalendarView() {
             mode="week"
             currentDate={currentDate} 
             eventsByDay={eventsByDay}
-            onEditEvent={(e) => { setEventToEdit(e); setIsEventModalOpen(true); }}
-            onAddEvent={(dateStr, timeStr) => { setEventToEdit({ dateStr, startTime: timeStr } as any); setIsEventModalOpen(true); }}
+            onEditEvent={(e: any) => { setEventToEdit(e); setIsEventModalOpen(true); }}
+            onAddEvent={(dateStr: string, timeStr: string) => { setEventToEdit({ dateStr, startTime: timeStr } as any); setIsEventModalOpen(true); }}
           />
         )}
         {viewMode === 'day' && (
@@ -230,9 +219,9 @@ export function FullCalendarView() {
             mode="day"
             currentDate={currentDate} 
             eventsByDay={eventsByDay}
-            onEditEvent={(e) => { setEventToEdit(e); setIsEventModalOpen(true); }}
-            onAddEvent={(dateStr, timeStr) => { setEventToEdit({ dateStr, startTime: timeStr } as any); setIsEventModalOpen(true); }}
-            onSelectDate={(d) => setCurrentDate(d)}
+            onEditEvent={(e: any) => { setEventToEdit(e); setIsEventModalOpen(true); }}
+            onAddEvent={(dateStr: string, timeStr: string) => { setEventToEdit({ dateStr, startTime: timeStr } as any); setIsEventModalOpen(true); }}
+            onSelectDate={(d: Date) => setCurrentDate(d)}
           />
         )}
       </div>
@@ -323,7 +312,7 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                         whileHover={{ scale: 1.02, y: -2 }}
                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         draggable
-                        onDragStart={(e) => {
+                        onDragStart={(e: any) => {
                           e.dataTransfer.setData('text/plain', evt.id);
                           e.stopPropagation();
                         }}
@@ -538,10 +527,10 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
              {eventsByDay[currentDate.toLocaleDateString('en-CA')]?.length > 0 ? (
                <div className="flex flex-col gap-4">
                  {eventsByDay[currentDate.toLocaleDateString('en-CA')].map((evt: any, i: number) => {
-                   const style = colorPalette[i % colorPalette.length];
-                   return (
-                     <div key={evt.id} className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
-                       <h3 className={`font-bold text-[14px] mb-2 ${style.text}`}>{evt.title}</h3>
+                    const style = colorPalette[i % colorPalette.length];
+                    return (
+                      <div key={evt.id} className={`p-4 rounded-xl border ${style.bg}`}>
+                        <h3 className={`font-bold text-[14px] mb-2 ${style.text}`}>{evt.title}</h3>
                        <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{currentDate.toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
                        <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{evt.startTime} {evt.endTime ? `- ${evt.endTime}` : ''}</p>
                      </div>

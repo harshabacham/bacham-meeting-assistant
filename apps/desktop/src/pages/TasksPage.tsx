@@ -7,6 +7,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/ToastProvider';
+import { FullCalendarView } from '@/components/calendar/FullCalendarView';
 import { SyncTasksModal } from '@/components/tasks/SyncTasksModal';
 
 export interface GlobalActionItem {
@@ -482,11 +483,6 @@ export const TasksPage: React.FC = () => {
 
       </div>
       
-      <EventModal 
-        isOpen={isEventModalOpen} 
-        onClose={() => setIsEventModalOpen(false)} 
-        eventToEdit={eventToEdit} 
-      />
 
       <SyncTasksModal
         isOpen={isSyncModalOpen}
