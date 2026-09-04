@@ -160,9 +160,11 @@ export const useLectureStore = create<LectureState>((set, get) => ({
         }));
         try {
             await TauriClient.moveLectures(ids, targetFolderId);
-        } catch (e) {
-            console.error(e);
             await get().fetchLectures();
+        } catch (e) {
+            console.error("Failed to move lectures:", e);
+            await get().fetchLectures();
+            throw e;
         }
     }
 }));

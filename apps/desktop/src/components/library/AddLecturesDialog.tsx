@@ -8,9 +8,10 @@ interface AddLecturesDialogProps {
     isOpen: boolean;
     onClose: () => void;
     folderId: string;
+    onSuccess?: () => void;
 }
 
-export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDialogProps) {
+export function AddLecturesDialog({ isOpen, onClose, folderId, onSuccess }: AddLecturesDialogProps) {
     const { lectures, moveLectures } = useLectureStore();
     const [query, setQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -23,13 +24,14 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
     const filtered = availableLectures.filter(l => {
         if (!query) return true;
         const q = query.toLowerCase();
-        return l.title.toLowerCase().includes(q) || (l.course || '').toLowerCase().includes(q);
+        return (l.title || '').toLowerCase().includes(q) || (l.course || '').toLowerCase().includes(q) || (l.subject || '').toLowerCase().includes(q);
     });
 
     useEffect(() => {
         if (isOpen) {
             setQuery('');
             setSelectedIds(new Set());
+            useLectureStore.getState().fetchLectures();
         }
     }, [isOpen]);
 
@@ -50,9 +52,11 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
         setIsSaving(true);
         try {
             await moveLectures(Array.from(selectedIds), folderId);
+            showToast(`Added ${selectedIds.size} meeting${selectedIds.size === 1 ? '' : 's'} to folder.`, 'success');
+            onSuccess?.();
             onClose();
         } catch (err: any) {
-            showToast(`Error adding lectures: ${err.message}`, 'error');
+            showToast(`Error adding meetings: ${err.message || err}`, 'error');
         } finally {
             setIsSaving(false);
         }
@@ -63,7 +67,7 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
             <div className="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                 
                 <div className="flex items-center justify-between p-4 border-b border-border bg-surface/50">
-                    <h2 className="text-lg font-semibold text-foreground">Add Lectures to Folder</h2>
+                    <h2 className="text-lg font-semibold text-foreground">Add Meetings to Folder</h2>
                     <button onClick={onClose} className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors">
                         <X size={18} />
                     </button>
@@ -74,7 +78,7 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input
                             autoFocus
-                            placeholder="Search lectures..."
+                            placeholder="Search meetings by title, subject, course..."
                             className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none focus:border-accent transition-colors text-foreground placeholder:text-muted-foreground shadow-inner"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
@@ -85,7 +89,7 @@ export function AddLecturesDialog({ isOpen, onClose, folderId }: AddLecturesDial
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {filtered.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                            <p className="mb-2">No available lectures found.</p>
+                            <p className="mb-2">No available meetings found.</p>
                             {query && <p className="text-xs">Try a different search term.</p>}
                         </div>
                     ) : (

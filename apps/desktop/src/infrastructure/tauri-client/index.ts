@@ -280,7 +280,7 @@ export const TauriClient = {
     renameFolder: (id: string, name: string) => invoke<void>('rename_folder', { id, name }),
     duplicateFolder: (id: string, deep: boolean) => invoke<Folder>('duplicate_folder', { id, deep }),
     moveFolder: (id: string, newParentId: string | null) => 
-        invoke<void>('move_folder', { id, new_parent_id: newParentId }),
+        invoke<void>('move_folder', { id, newParentId }),
     reorderFolders: (parentId: string | null, orderedIds: string[]) => 
         invoke<void>('reorder_folders', { parentId, orderedIds }),
     setFolderFavorite: (id: string, favorite: boolean) => invoke<void>('set_folder_favorite', { id, favorite }),
@@ -429,7 +429,7 @@ export const TauriClient = {
 
     // ── Organization ───────────────────────────────────────────────────────
     moveLectures: (lectureIds: string[], targetFolderId: string | null) => 
-        invoke<BatchResult>('move_lectures', { lecture_ids: lectureIds, target_folder_id: targetFolderId }),
+        invoke<BatchResult>('move_lectures', { lectureIds, targetFolderId }),
     setFavorite: (lectureIds: string[], favorite: boolean) => invoke<void>('set_favorite', { lectureIds, favorite }),
     setPinned: (lectureIds: string[], pinned: boolean) => invoke<void>('set_pinned', { lectureIds, pinned }),
     setArchived: (lectureIds: string[], archived: boolean) => invoke<void>('set_archived', { lectureIds, archived }),

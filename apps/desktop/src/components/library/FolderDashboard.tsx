@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { FolderDashboard as IFolderDashboard, Lecture } from '@/shared/types';
 import { Button, Card, EmptyState, Loader, cn } from '@/components';
-import { HardDrive, BrainCircuit, LayoutList, CheckCircle, PenTool, Sparkles, Folder as FolderIcon, Play } from 'lucide-react';
+import { HardDrive, BrainCircuit, LayoutList, CheckCircle, PenTool, Sparkles, Folder as FolderIcon, Play, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useToast } from '@/components/ui/ToastProvider';
 import { FolderSettingsDialog } from './FolderSettingsDialog';
+import { AddLecturesDialog } from './AddLecturesDialog';
 
 interface Props {
     folderId: string;
@@ -21,7 +22,16 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [isAddingLectures, setIsAddingLectures] = useState(false);
     const navigate = useNavigate();
+
+    const refreshDashboard = useCallback(() => {
+        getFolderDashboard(folderId)
+            .then(data => {
+                setDashboard(data);
+            })
+            .catch(console.error);
+    }, [folderId, getFolderDashboard]);
 
     useEffect(() => {
         let mounted = true;
@@ -143,22 +153,42 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                 </div>
 
                 <div className="space-y-12">
-                    {/* Recent Lectures */}
+                    {/* Recent Lectures / Meetings */}
                     <section>
                         <div className="flex items-center justify-between mb-5">
                             <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
                                 <Play size={18} className="text-primary/80" /> 
-                                Recent Lectures
+                                Recent Meetings
                             </h2>
-                            {recentLectures.length > 0 && (
-                                <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onViewAll}>View All</Button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    className="gap-1.5 text-xs font-semibold px-3 py-1.5 bg-surface hover:bg-surface-hover border-border/80"
+                                    onClick={() => setIsAddingLectures(true)}
+                                >
+                                    <Plus size={14} className="text-primary" /> Add Meetings
+                                </Button>
+                                {recentLectures.length > 0 && (
+                                    <Button variant="ghost" className="text-xs px-2.5 py-1 text-muted-foreground hover:text-foreground" onClick={onViewAll}>
+                                        View All
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                         
                         {recentLectures.length === 0 ? (
-                            <div className="p-8 border border-dashed border-border/60 rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-surface/30">
-                                <LayoutList className="mb-3 opacity-40" size={28} />
-                                <p className="text-sm">No lectures in this folder yet.</p>
+                            <div className="p-8 border border-dashed border-border/60 rounded-xl flex flex-col items-center justify-center text-center bg-surface/30">
+                                <LayoutList className="mb-3 opacity-40 text-primary" size={28} />
+                                <p className="text-sm font-semibold text-foreground">No meetings in this folder yet</p>
+                                <p className="text-xs text-muted-foreground mt-1 mb-4 max-w-sm">
+                                    Move existing meetings or recordings into this folder to organize them in one place.
+                                </p>
+                                <Button 
+                                    className="gap-1.5 font-semibold text-xs px-3.5 py-2"
+                                    onClick={() => setIsAddingLectures(true)}
+                                >
+                                    <Plus size={14} /> Add Meetings to Folder
+                                </Button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 gap-3">
@@ -217,6 +247,15 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                     </section>
                 </div>
             </div>
+
+            {isAddingLectures && (
+                <AddLecturesDialog 
+                    isOpen={isAddingLectures}
+                    onClose={() => setIsAddingLectures(false)}
+                    folderId={folder.id}
+                    onSuccess={refreshDashboard}
+                />
+            )}
         </div>
     );
 }

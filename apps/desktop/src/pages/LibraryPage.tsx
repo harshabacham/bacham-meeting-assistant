@@ -14,11 +14,13 @@ import { KnowledgeGraphView } from '@/components/library/KnowledgeGraphView';
 import { FilterQuery } from '@/infrastructure/tauri-client';
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
-    Trash2, Filter, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network
+    Trash2, Filter, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network,
+    Folder, Check, X, ChevronRight
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { cn, Button } from '@/components';
 import { AnimatePresence, motion } from 'framer-motion';
+import { AddLecturesDialog } from '@/components/library/AddLecturesDialog';
 
 type ViewMode = 'grid' | 'list' | 'graph';
 type SortMode = 'recent' | 'title' | 'duration';
@@ -29,7 +31,7 @@ import { useLearningContext } from '@/shared/hooks/useLearningContext';
 
 export function LibraryPage() {
     const { lectures, trash, fetchLectures, fetchTrash, trashLectures, restoreLectures, emptyTrash, setFavorite, setArchived, hardDeleteLectures, systemView, selectedFolderId, setSelectedFolderId, moveLectures } = useLectureStore();
-    const { folderTree } = useFolderStore();
+    const { folders, fetchFolders } = useFolderStore();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { showToast } = useToast();
@@ -52,6 +54,12 @@ export function LibraryPage() {
     const [showProperties, setShowProperties] = useState(false);
     const [showFolderDashboard, setShowFolderDashboard] = useState(true);
     const [quickLookLecture, setQuickLookLecture] = useState<Lecture | null>(null);
+    const [isAddingToFolder, setIsAddingToFolder] = useState(false);
+    const [batchMoveFolderDialogOpen, setBatchMoveFolderDialogOpen] = useState(false);
+
+    useEffect(() => {
+        fetchFolders();
+    }, [fetchFolders]);
 
     useEffect(() => {
         setShowFolderDashboard(true);
@@ -202,10 +210,14 @@ export function LibraryPage() {
         await setArchived([id], !isArchived);
     };
 
-    const handleMoveToFolder = async (folderId: string, lectureIds: string[]) => {
-        await moveLectures(lectureIds, folderId);
-        setSelectedIds(new Set());
-        showToast(`Moved ${lectureIds.length} lectures.`);
+    const handleMoveToFolder = async (folderId: string | null, lectureIds: string[]) => {
+        try {
+            await moveLectures(lectureIds, folderId);
+            setSelectedIds(new Set());
+            showToast(folderId ? `Moved ${lectureIds.length} meeting${lectureIds.length === 1 ? '' : 's'} to folder.` : `Removed from folder.`, 'success');
+        } catch (err: any) {
+            showToast(`Failed to move: ${err.message || err}`, 'error');
+        }
     };
 
     const isShowingDashboard = Boolean(selectedFolderId && systemView === 'all' && !query && showFolderDashboard);
@@ -299,6 +311,17 @@ export function LibraryPage() {
                         </button>
                     </div>
 
+                    {/* Add Meetings Button when in a folder */}
+                    {selectedFolderId && (
+                        <Button 
+                            variant="outline"
+                            onClick={() => setIsAddingToFolder(true)}
+                            className="font-semibold text-xs flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-surface-hover border-border/80 text-foreground"
+                        >
+                            <Plus size={14} className="text-primary" /> Add Meetings
+                        </Button>
+                    )}
+
                     {/* New Actions Overflow Menu */}
                     {systemView !== 'trash' && systemView !== 'archive' && (
                         <DropdownMenu>
@@ -372,18 +395,28 @@ export function LibraryPage() {
                             
                             <div className="relative z-10 flex flex-col items-center">
                                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-surface-raised border border-border/80 text-muted-foreground/80 group-hover:text-primary group-hover:border-primary/20 group-hover:bg-primary/5 transition-all duration-300 shadow-inner mb-5">
-                                    <BookOpen size={22} className="group-hover:scale-110 transition-transform duration-300" />
+                                    {selectedFolderId ? <Folder size={22} className="text-primary" /> : <BookOpen size={22} className="group-hover:scale-110 transition-transform duration-300" />}
                                 </div>
                                 <h3 className="font-bold text-foreground text-base tracking-tight mb-2">
                                     {query ? 'No results found' : 
+                                     selectedFolderId ? 'No meetings in this folder yet' :
                                      ['pinned', 'collections'].includes(currentView || '') ? 'Coming Soon' : 
                                      currentView === 'bookmarks' ? 'No bookmarks yet' : 'No lectures yet'}
                                 </h3>
-                                <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px] mx-auto">
+                                <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px] mx-auto mb-4">
                                     {query ? `No lectures match "${query}"` : 
+                                     selectedFolderId ? 'Add existing meetings or recordings to this folder to organize them.' :
                                      ['pinned', 'collections'].includes(currentView || '') ? `The ${currentView} feature is scheduled for Phase 2.` : 
                                      currentView === 'bookmarks' ? 'Star a lecture to see it here' : 'Start recording from the Chrome extension'}
                                 </p>
+                                {selectedFolderId && !query && (
+                                    <Button 
+                                        onClick={() => setIsAddingToFolder(true)}
+                                        className="gap-1.5 font-semibold text-xs mt-1 px-3.5 py-2"
+                                    >
+                                        <Plus size={14} /> Add Meetings to Folder
+                                    </Button>
+                                )}
                             </div>
                         </motion.div>
                     </div>
@@ -411,8 +444,8 @@ export function LibraryPage() {
                                             onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
                                             onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
                                             onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
-                                            onMoveToFolder={(folderId: string) => handleMoveToFolder(folderId, [lecture.id])}
-                                            folderTree={folderTree}
+                                            onMoveToFolder={(folderId: string | null) => handleMoveToFolder(folderId, [lecture.id])}
+                                            folders={folders}
                                             onClick={() => navigate(`/lectures/${lecture.id}`)}
                                             onDragStart={(e: React.DragEvent) => {
                                                 const ids = selectedIds.has(lecture.id) ? Array.from(selectedIds) : [lecture.id];
@@ -435,8 +468,8 @@ export function LibraryPage() {
                                             onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
                                             onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
                                             onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
-                                            onMoveToFolder={(folderId: string) => handleMoveToFolder(folderId, [lecture.id])}
-                                            folderTree={folderTree}
+                                            onMoveToFolder={(folderId: string | null) => handleMoveToFolder(folderId, [lecture.id])}
+                                            folders={folders}
                                             onClick={() => navigate(`/lectures/${lecture.id}`)}
                                             onDragStart={(e: React.DragEvent) => {
                                                 const ids = selectedIds.has(lecture.id) ? Array.from(selectedIds) : [lecture.id];
@@ -479,14 +512,7 @@ export function LibraryPage() {
                 onDuplicate={undefined}
                 onMerge={undefined}
                 onArchive={systemView !== 'trash' ? handleBatchArchive : undefined}
-                onMoveToFolder={systemView !== 'trash' ? (_e?: any) => {
-                    const folderName = prompt("Enter the exact name of the folder to move to (or cancel):");
-                    if (folderName) {
-                        const folder = folderTree.find((f: any) => f.folder.name.toLowerCase() === folderName.toLowerCase());
-                        if (folder) handleMoveToFolder(folder.folder.id, Array.from(selectedIds));
-                        else showToast("Folder not found.", 'error');
-                    }
-                } : undefined}
+                onMoveToFolder={systemView !== 'trash' ? () => setBatchMoveFolderDialogOpen(true) : undefined}
                 onRestore={systemView === 'trash' ? async () => {
                     await restoreLectures([...selectedIds]);
                     setSelectedIds(new Set());
@@ -494,12 +520,33 @@ export function LibraryPage() {
                 onClear={() => setSelectedIds(new Set())}
                 mode={systemView === 'trash' ? 'trash' : 'library'}
             />
+
+            {isAddingToFolder && selectedFolderId && (
+                <AddLecturesDialog 
+                    isOpen={isAddingToFolder}
+                    onClose={() => setIsAddingToFolder(false)}
+                    folderId={selectedFolderId}
+                    onSuccess={() => {
+                        fetchLectures();
+                    }}
+                />
+            )}
+
+            {batchMoveFolderDialogOpen && (
+                <BatchMoveFolderDialog 
+                    isOpen={batchMoveFolderDialogOpen}
+                    onClose={() => setBatchMoveFolderDialogOpen(false)}
+                    selectedCount={selectedIds.size}
+                    folders={folders}
+                    onSelectFolder={(folderId) => handleMoveToFolder(folderId, Array.from(selectedIds))}
+                />
+            )}
         </div>
     );
 }
 
 // ─── Grid Card ───────────────────────────────────────────────────────────────
-const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelected, onSelect: _onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folderTree = [] }: any) {
+const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelected, onSelect: _onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const mins = Math.round((lecture.durationMs ?? 0) / 60000);
     const dateStr = new Date(lecture.createdAt).toLocaleDateString(undefined, {
         month: "short",
@@ -552,15 +599,40 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
                                     <DropdownMenuSubTrigger className="cursor-pointer">
                                         <FolderInput size={14} className="mr-2 text-muted-foreground" /> Move to Folder
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent>
-                                        {folderTree.length === 0 && (
+                                    <DropdownMenuSubContent className="max-h-60 overflow-y-auto w-52">
+                                        {lecture.folderId && (
+                                            <>
+                                                <DropdownMenuItem 
+                                                    onClick={(e) => { e.stopPropagation(); onMoveToFolder(null); }}
+                                                    className="cursor-pointer text-muted-foreground hover:text-foreground"
+                                                >
+                                                    <X size={14} className="mr-2" /> Remove from folder (Root)
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                            </>
+                                        )}
+                                        {folders.length === 0 && (
                                             <DropdownMenuItem disabled>No folders</DropdownMenuItem>
                                         )}
-                                        {folderTree.map((node: any) => (
-                                            <DropdownMenuItem key={node.folder.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(node.folder.id); }}>
-                                                {node.folder.name}
-                                            </DropdownMenuItem>
-                                        ))}
+                                        {folders.map((f: any) => {
+                                            const isCurrent = lecture.folderId === f.id;
+                                            return (
+                                                <DropdownMenuItem 
+                                                    key={f.id} 
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        if (!isCurrent) onMoveToFolder(f.id); 
+                                                    }}
+                                                    className={cn("cursor-pointer flex items-center justify-between", isCurrent && "font-semibold text-primary")}
+                                                >
+                                                    <span className="flex items-center gap-1.5 truncate">
+                                                        {f.icon ? <span>{f.icon}</span> : <Folder size={13} className="text-muted-foreground shrink-0" />}
+                                                        <span className="truncate">{f.name}</span>
+                                                    </span>
+                                                    {isCurrent && <Check size={13} className="text-primary ml-2 shrink-0" />}
+                                                </DropdownMenuItem>
+                                            );
+                                        })}
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }} className="cursor-pointer">
@@ -606,7 +678,7 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
 });
 
 // ─── List Row ─────────────────────────────────────────────────────────────────
-const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, onSelect: _onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folderTree = [] }: any) {
+const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, onSelect: _onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const durationMin = Math.round(lecture.durationMs / 60000);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
 
@@ -696,15 +768,40 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                                     <DropdownMenuSubTrigger className="cursor-pointer">
                                         <FolderInput size={14} className="mr-2 text-muted-foreground" /> Move to Folder
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent>
-                                        {folderTree.length === 0 && (
+                                    <DropdownMenuSubContent className="max-h-60 overflow-y-auto w-52">
+                                        {lecture.folderId && (
+                                            <>
+                                                <DropdownMenuItem 
+                                                    onClick={(e) => { e.stopPropagation(); onMoveToFolder(null); }}
+                                                    className="cursor-pointer text-muted-foreground hover:text-foreground"
+                                                >
+                                                    <X size={14} className="mr-2" /> Remove from folder (Root)
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                            </>
+                                        )}
+                                        {folders.length === 0 && (
                                             <DropdownMenuItem disabled>No folders</DropdownMenuItem>
                                         )}
-                                        {folderTree.map((node: any) => (
-                                            <DropdownMenuItem key={node.folder.id} onClick={(e) => { e.stopPropagation(); onMoveToFolder(node.folder.id); }}>
-                                                {node.folder.name}
-                                            </DropdownMenuItem>
-                                        ))}
+                                        {folders.map((f: any) => {
+                                            const isCurrent = lecture.folderId === f.id;
+                                            return (
+                                                <DropdownMenuItem 
+                                                    key={f.id} 
+                                                    onClick={(e) => { 
+                                                        e.stopPropagation(); 
+                                                        if (!isCurrent) onMoveToFolder(f.id); 
+                                                    }}
+                                                    className={cn("cursor-pointer flex items-center justify-between", isCurrent && "font-semibold text-primary")}
+                                                >
+                                                    <span className="flex items-center gap-1.5 truncate">
+                                                        {f.icon ? <span>{f.icon}</span> : <Folder size={13} className="text-muted-foreground shrink-0" />}
+                                                        <span className="truncate">{f.name}</span>
+                                                    </span>
+                                                    {isCurrent && <Check size={13} className="text-primary ml-2 shrink-0" />}
+                                                </DropdownMenuItem>
+                                            );
+                                        })}
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }} className="cursor-pointer">
@@ -727,3 +824,87 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
         </div>
     );
 });
+
+function BatchMoveFolderDialog({
+    isOpen,
+    onClose,
+    selectedCount,
+    folders,
+    onSelectFolder,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    selectedCount: number;
+    folders: any[];
+    onSelectFolder: (folderId: string | null) => void;
+}) {
+    const [search, setSearch] = useState('');
+    if (!isOpen) return null;
+
+    const filtered = folders.filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-surface border border-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+                <div className="flex items-center justify-between p-4 border-b border-border bg-surface/50">
+                    <div>
+                        <h3 className="text-base font-semibold text-foreground">Move to Folder</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">Move {selectedCount} selected meeting{selectedCount === 1 ? '' : 's'}</p>
+                    </div>
+                    <button onClick={onClose} className="p-1 rounded hover:bg-surface-hover text-muted-foreground transition-colors">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-3 border-b border-border">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input 
+                            autoFocus
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search folders…"
+                            className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    <button
+                        onClick={() => { onSelectFolder(null); onClose(); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors text-left"
+                    >
+                        <div className="w-6 h-6 rounded-md bg-surface-raised flex items-center justify-center text-muted-foreground">
+                            <X size={12} />
+                        </div>
+                        <span>Remove from folder (Move to Root)</span>
+                    </button>
+
+                    {filtered.length === 0 ? (
+                        <div className="text-center py-8 text-xs text-muted-foreground">
+                            {search ? 'No matching folders found' : 'No folders available'}
+                        </div>
+                    ) : (
+                        filtered.map(f => (
+                            <button
+                                key={f.id}
+                                onClick={() => { onSelectFolder(f.id); onClose(); }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-foreground hover:bg-surface-hover transition-colors text-left group"
+                            >
+                                <div className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                    {f.icon ? <span>{f.icon}</span> : <Folder size={12} />}
+                                </div>
+                                <span className="truncate flex-1">{f.name}</span>
+                                <ChevronRight size={13} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </button>
+                        ))
+                    )}
+                </div>
+
+                <div className="p-3 border-t border-border bg-surface/50 flex justify-end">
+                    <Button variant="ghost" onClick={onClose} className="text-xs px-3 py-1.5">Cancel</Button>
+                </div>
+            </div>
+        </div>
+    );
+}
