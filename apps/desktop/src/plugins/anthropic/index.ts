@@ -28,12 +28,12 @@ const AnthropicPlugin: BachamPlugin = {
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
       
-      // Structural validation for Anthropic API Keys (e.g. sk-ant-api03-...)
-      if (!/^sk-ant-[a-zA-Z0-9\-_]{50,}$/.test(token)) {
+      const trimmed = token.trim();
+      if (!trimmed.startsWith('sk-ant-') || trimmed.length < 20) {
         throw new Error('Invalid Anthropic API Key format. Must start with sk-ant-');
       }
       
-      await AuthManager.setToken(PLUGIN_ID, token);
+      await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {
       await AuthManager.removeToken(PLUGIN_ID);

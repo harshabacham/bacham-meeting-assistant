@@ -12,6 +12,7 @@ export function GoogleCalendarSyncModal() {
     calendarEmail,
     iCalUrl,
     isSyncing,
+    connectGoogleCalendar,
     connectGoogleCalendarOAuth,
     disconnectCalendar,
     syncNow,
@@ -23,6 +24,8 @@ export function GoogleCalendarSyncModal() {
 
   const [activeTab, setActiveTab] = useState<'account' | 'event'>('account');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [customIcalUrl, setCustomIcalUrl] = useState('');
+  const [showIcalInput, setShowIcalInput] = useState(false);
 
   React.useEffect(() => {
     setLocalError(null);
@@ -274,6 +277,58 @@ export function GoogleCalendarSyncModal() {
                         )}
                       </button>
                     )}
+
+                    {/* Alternative: Secret Address (iCal URL) Zero-OAuth Sync */}
+                    <div className="pt-2 border-t border-border/40">
+                      {!showIcalInput ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowIcalInput(true)}
+                          className="w-full py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-hover/50 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <span>Or sync directly with Secret Address URL (Zero-OAuth)</span>
+                        </button>
+                      ) : (
+                        <div className="space-y-2.5 p-3 rounded-xl bg-surface-raised/60 border border-border/50">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-foreground">Google Calendar Secret Address</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowIcalInput(false)}
+                              className="text-[10px] text-muted-foreground hover:text-foreground"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          <input
+                            type="url"
+                            value={customIcalUrl}
+                            onChange={(e) => setCustomIcalUrl(e.target.value)}
+                            placeholder="https://calendar.google.com/calendar/ical/.../basic.ics"
+                            className="w-full px-3 py-2 text-xs bg-surface border border-border/80 rounded-lg text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary transition-all font-mono"
+                          />
+                          <p className="text-[10px] text-muted-foreground leading-relaxed">
+                            Found in Google Calendar Settings &rarr; Integrate Calendar &rarr; "Secret address in iCal format".
+                          </p>
+                          <button
+                            type="button"
+                            disabled={!customIcalUrl.trim() || isSyncing}
+                            onClick={async () => {
+                              setLocalError(null);
+                              try {
+                                await connectGoogleCalendar("Google Calendar", customIcalUrl.trim());
+                              } catch (err: any) {
+                                setLocalError(err.message || "Failed to sync via iCal URL.");
+                              }
+                            }}
+                            className="w-full py-2 bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary rounded-lg text-xs font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+                          >
+                            {isSyncing ? <RefreshCw size={12} className="animate-spin" /> : <Calendar size={12} />}
+                            <span>Sync with Secret Address</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="pt-2 flex justify-end">

@@ -1,53 +1,43 @@
 import { BachamPlugin } from '@/core/integrations/types';
-import { AuthManager } from '@/core/integrations/AuthManager';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 const PLUGIN_ID = 'bacham.gmail';
 
 const GmailPlugin: BachamPlugin = {
   manifest: {
     id: PLUGIN_ID,
-    name: 'Gmail',
+    name: 'Gmail & Email',
     version: '1.0.0',
-    description: 'Email meeting summaries and action items automatically to participants.',
+    description: 'Email meeting summaries, action items, and notes via your default email client or Gmail.',
     icon: 'Mail',
     category: 'Communication',
     permissions: ['Send Email'],
     author: 'Bacham',
   },
   auth: {
-    type: 'api_key',
-    authenticate: async (token?: string) => {
-      if (!token) throw new Error("API token is required"); await AuthManager.setToken(PLUGIN_ID, token);
-    },
-    disconnect: async () => {
-      await AuthManager.removeToken(PLUGIN_ID);
-    },
-    isConnected: async () => {
-      return await AuthManager.isAuthenticated(PLUGIN_ID);
-    }
+    type: 'none',
+    authenticate: async () => {},
+    disconnect: async () => {},
+    isConnected: async () => true,
   },
   actions: {
     export: async (data: any) => {
-      const token = await AuthManager.getToken(PLUGIN_ID);
-      if (!token) throw new Error('Gmail API Token not configured.');
-
       try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const res: any = await invoke('execute_integration', {
-          input: {
-            pluginId: PLUGIN_ID,
-            action: 'export',
-            payload: data,
-            authToken: token
-          }
-        });
+        const title = data.title || 'Meeting Summary';
+        const bodyText = data.content || data.summary || 'Meeting notes from Bacham';
+        const subject = encodeURIComponent(title);
+        const body = encodeURIComponent(bodyText.slice(0, 2500));
         
-        return { status: 'success', message: res.message || 'Email sent successfully.' };
+        const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+        await openUrl(mailtoUrl);
+        
+        return { status: 'success', message: 'Opened draft in your email client.' };
       } catch (e: any) {
-        console.error("Gmail export error", e);
-        return { status: 'error', message: e || 'Failed to send Email.' };
+        console.error("Email export error", e);
+        return { status: 'error', message: e?.message || 'Failed to open email client.' };
       }
     }
   }
 };
+
 export default GmailPlugin;

@@ -2,8 +2,10 @@ use crate::error::{AppResult, AppError};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PushNotionInput {
     pub token: String,
+    #[serde(alias = "page_id")]
     pub page_id: String,
     pub title: String,
     pub content: String,

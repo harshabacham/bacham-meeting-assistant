@@ -30,7 +30,7 @@ const SlackPlugin: BachamPlugin = {
       { id: 'webhookUrl', label: 'Webhook URL', placeholder: 'https://hooks.slack.com/services/...', type: 'password' }
     ],
     authenticate: async (credentials?: any) => {
-      const token = credentials?.webhookUrl;
+      const token = typeof credentials === 'string' ? credentials : (credentials?.webhookUrl || credentials?.token);
       if (!token) throw new Error('Webhook URL is required');
       await AuthManager.setToken(PLUGIN_ID, token.trim());
     },

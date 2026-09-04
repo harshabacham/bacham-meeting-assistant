@@ -132,12 +132,8 @@ export const useCalendarStore = create<CalendarState>()(
       connectGoogleCalendarOAuth: async () => {
         set({ isSyncing: true, syncError: null, deviceFlowData: null });
         try {
-          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-          const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-          
-          if (!clientId) {
-            throw new Error("Missing VITE_GOOGLE_CLIENT_ID in environment variables.");
-          }
+          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '439614603794-tupmghbga6mkho95e7rms1ml8du979bn.apps.googleusercontent.com';
+          const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '';
 
           // 1. Request Device Code (Upgraded Scope)
           const codeResponse = await fetch('https://oauth2.googleapis.com/device/code', {

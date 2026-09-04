@@ -234,3 +234,13 @@ pub fn open_file_path(path: String) -> AppResult<()> {
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn save_text_file(path: String, content: String) -> AppResult<String> {
+    let dest = PathBuf::from(&path);
+    if let Some(parent) = dest.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(&dest, content.as_bytes())?;
+    Ok(path)
+}

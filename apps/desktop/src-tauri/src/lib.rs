@@ -301,6 +301,7 @@ pub fn run() {
             commands::export::generate_highlights_reel,
             commands::export::generate_magic_link_html,
             commands::export::save_pdf_base64,
+            commands::export::save_text_file,
             commands::export::open_file_path,
             // Dashboard
             commands::dashboard::dashboard_summary,

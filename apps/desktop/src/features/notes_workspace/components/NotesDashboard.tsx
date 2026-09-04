@@ -17,12 +17,15 @@ import {
     Sparkles,
     Video,
     BookOpen,
-    RefreshCw
+    RefreshCw,
+    PlugZap
 } from 'lucide-react';
 import { cn } from '@/components';
 import { Note } from '../NotesWorkspacePage';
 import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { TauriClient } from '@/infrastructure/tauri-client';
+import { pluginManager } from '@/core/integrations/PluginManager';
+import { useCalendarStore } from '@/shared/stores/calendarStore';
 
 const DASHBOARD_RECIPES: AiRecipe[] = [
     {
@@ -89,6 +92,7 @@ export function NotesDashboard({
     const [isViewingAll, setIsViewingAll] = useState(false);
 
     const [trashedLectures, setTrashedLectures] = useState<any[]>([]);
+    const [pluginsState, setPluginsState] = useState<Array<{ id: string; name: string; description: string; category: string; isConnected: boolean }>>([]);
 
     useEffect(() => {
         if (activeFolderId === 'system:trash') {
@@ -97,6 +101,26 @@ export function NotesDashboard({
             setTrashedLectures([]);
         }
     }, [activeFolderId]);
+
+    useEffect(() => {
+        if (integrationsOpen) {
+            const checkConnections = async () => {
+                const list = pluginManager.getPlugins();
+                const states = await Promise.all(list.map(async p => {
+                    const connected = p.auth?.type === 'none' ? true : (await p.auth?.isConnected?.() ?? false);
+                    return {
+                        id: p.manifest.id,
+                        name: p.manifest.name,
+                        description: p.manifest.description,
+                        category: p.manifest.category,
+                        isConnected: connected
+                    };
+                }));
+                setPluginsState(states);
+            };
+            checkConnections();
+        }
+    }, [integrationsOpen]);
 
     // Hover Menu & Rename States
     const [activeNoteMenu, setActiveNoteMenu] = useState<string | null>(null);
@@ -194,13 +218,24 @@ export function NotesDashboard({
                     )}
                 </div>
                 {!isTrashView && (
-                    <button
-                        onClick={onCreateNote}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-primary)] text-[var(--bg)] text-xs font-semibold hover:opacity-90 active:scale-95 transition-all"
-                    >
-                        <Plus size={12} />
-                        New Note
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setIntegrationsOpen(true)}
+                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-accent)] text-xs font-medium transition-all cursor-pointer shadow-2xs"
+                            title="Manage Connected Workspace Integrations"
+                        >
+                            <PlugZap size={12} className="text-primary" />
+                            <span>Integrations</span>
+                        </button>
+                        <button
+                            onClick={onCreateNote}
+                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--text-primary)] text-[var(--bg)] text-xs font-semibold hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Plus size={12} />
+                            New Note
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -548,37 +583,78 @@ export function NotesDashboard({
             {/* Integrations Modal */}
             {integrationsOpen && (
                 <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-[var(--surface)] border border-[var(--border-accent)] rounded-2xl p-6 max-w-md w-full shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-4">
-                            <span className="font-bold text-sm text-[var(--text-primary)]">Workspace Integrations</span>
-                            <button onClick={() => setIntegrationsOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                    <div className="bg-[var(--surface)] border border-[var(--border-accent)] rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-4 shrink-0">
+                            <div>
+                                <span className="font-bold text-sm text-[var(--text-primary)]">Workspace Integrations</span>
+                                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Export notes, sync calendars, and automate workflows</p>
+                            </div>
+                            <button onClick={() => setIntegrationsOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg">
                                 <X size={16} />
                             </button>
                         </div>
-                        <div className="space-y-3 mb-6">
-                            {[
-                                { icon: BookOpen, label: 'Notion & Markdown', sub: 'Sync and export notes to Notion', badge: 'Connected' },
-                                { icon: Calendar, label: 'Calendar & Meetings', sub: 'Link recordings to calendar events', badge: 'Active' },
-                                { icon: FileText, label: 'SQLite Database', sub: `${notes.length} notes stored locally`, badge: 'Local DB' },
-                            ].map(({ icon: Icon, label, sub, badge }) => (
-                                <div key={label} className="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <Icon size={16} className="text-[var(--accent)]" />
-                                        <div>
-                                            <div className="text-xs font-bold text-[var(--text-primary)]">{label}</div>
-                                            <div className="text-[10px] text-[var(--text-muted)]">{sub}</div>
+                        <div className="space-y-2.5 mb-5 overflow-y-auto pr-1">
+                            {pluginsState.length === 0 ? (
+                                <div className="text-center py-6 text-xs text-[var(--text-muted)]">
+                                    Loading integrations...
+                                </div>
+                            ) : (
+                                pluginsState.map(plugin => (
+                                    <div 
+                                        key={plugin.id} 
+                                        className="p-3 rounded-xl bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--border-accent)] transition-all flex items-center justify-between gap-3 cursor-pointer group"
+                                        onClick={() => {
+                                            if (plugin.id === 'bacham.google-calendar') {
+                                                setIntegrationsOpen(false);
+                                                useCalendarStore.getState().setSyncModalOpen(true);
+                                            } else {
+                                                setIntegrationsOpen(false);
+                                                navigate('/settings');
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="p-2 rounded-lg bg-[var(--surface-raised)] text-[var(--text-primary)] group-hover:text-primary transition-colors shrink-0">
+                                                <PlugZap size={15} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-xs font-bold text-[var(--text-primary)] truncate">{plugin.name}</div>
+                                                <div className="text-[10px] text-[var(--text-muted)] truncate">{plugin.description}</div>
+                                            </div>
+                                        </div>
+                                        <div className="shrink-0 flex items-center gap-1.5">
+                                            <span className={cn(
+                                                "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                                plugin.isConnected
+                                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                                                    : "bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)]"
+                                            )}>
+                                                {plugin.isConnected ? 'Connected' : 'Configure'}
+                                            </span>
                                         </div>
                                     </div>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">{badge}</span>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
-                        <button
-                            onClick={() => setIntegrationsOpen(false)}
-                            className="w-full py-2 rounded-xl bg-[var(--text-primary)] text-[var(--bg)] text-xs font-bold hover:opacity-90 transition-opacity"
-                        >
-                            Close
-                        </button>
+                        <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)] shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIntegrationsOpen(false);
+                                    navigate('/settings');
+                                }}
+                                className="flex-1 py-2 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] hover:bg-[var(--surface-hover)] text-[var(--text-primary)] text-xs font-semibold transition-all text-center cursor-pointer"
+                            >
+                                Open Settings
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIntegrationsOpen(false)}
+                                className="flex-1 py-2 rounded-xl bg-[var(--text-primary)] text-[var(--bg)] text-xs font-bold hover:opacity-90 transition-opacity text-center cursor-pointer"
+                            >
+                                Done
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

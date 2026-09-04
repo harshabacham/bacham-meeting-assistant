@@ -16,7 +16,7 @@ import {
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
     FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, List,
-    MoreHorizontal, Bookmark, Trash2, VideoOff
+    MoreHorizontal, Bookmark, Trash2, VideoOff, Share2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LiveTranscriptPanel } from './LiveTranscriptPanel';
@@ -26,6 +26,7 @@ import remarkGfm from 'remark-gfm';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { ExportPdfDialog } from './ExportPdfDialog';
+import { ExportPushDialog } from '@/components/workspace/ExportPushDialog';
 
 export function parseTimestampToSeconds(ts: string): number | null {
     if (!ts) return null;
@@ -387,6 +388,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
     const [moreMenuOpen, setMoreMenuOpen] = useState(false);
     const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
+    const [isExportPushOpen, setIsExportPushOpen] = useState(false);
 
     const folderMenuRef = useRef<HTMLDivElement>(null);
     const dateMenuRef = useRef<HTMLDivElement>(null);
@@ -886,6 +888,14 @@ Return only the polished transcript text:`;
                         >
                             <Download size={14} />
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsExportPushOpen(true)}
+                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            title="Push to Integrations (Slack, Notion, Local Folder, Email)"
+                        >
+                            <Share2 size={14} />
+                        </button>
 
                         <div className="relative" ref={moreMenuRef}>
                             <button
@@ -900,7 +910,7 @@ Return only the polished transcript text:`;
                                 <MoreHorizontal size={14} />
                             </button>
                             {moreMenuOpen && (
-                                <div className="absolute top-9 right-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1.5 w-44">
+                                <div className="absolute top-9 right-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1.5 w-48">
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -939,6 +949,17 @@ Return only the polished transcript text:`;
                                     >
                                         <FileText size={13} className="text-red-500" />
                                         <span>Export as PDF</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMoreMenuOpen(false);
+                                            setIsExportPushOpen(true);
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                                    >
+                                        <Share2 size={13} className="text-indigo-400" />
+                                        <span>Push to Integrations...</span>
                                     </button>
                                     <div className="h-px w-full bg-[var(--border)] my-1 opacity-50" />
                                     <button
@@ -1564,6 +1585,34 @@ Return only the polished transcript text:`;
                 summary={aiSummary}
                 transcript={rawTranscript}
                 screenshots={screenshots}
+            />
+
+            {/* Push to Integrations Dialog Modal */}
+            <ExportPushDialog
+                isOpen={isExportPushOpen}
+                onClose={() => setIsExportPushOpen(false)}
+                lectureId={note.id}
+                lectureTitle={note.title || 'Untitled Note'}
+                summary={aiSummary || note.content.replace(/<[^>]+>/g, ' ').slice(0, 1000)}
+                artifacts={{
+                    lecture_intelligence: {
+                        action_items: (() => {
+                            const items: Array<{ task: string; owner?: string; due_date?: string }> = [];
+                            const combined = (note.content || '').replace(/<[^>]+>/g, '\n') + '\n' + (aiSummary || '');
+                            const lines = combined.split('\n');
+                            for (const l of lines) {
+                                const clean = l.trim();
+                                if (clean.startsWith('[ ]') || clean.startsWith('- [ ]') || clean.startsWith('* [ ]')) {
+                                    items.push({ task: clean.replace(/^(\[ \]|-\s*\[ \]|[*]\s*\[ \])\s*/, '') });
+                                }
+                            }
+                            return items;
+                        })(),
+                        key_decisions: [],
+                        key_questions: []
+                    }
+                }}
+                transcript={rawTranscript}
             />
 
             {/* Live Transcript Panel has been removed to rely on browser extension */}

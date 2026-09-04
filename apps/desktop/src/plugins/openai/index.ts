@@ -28,18 +28,12 @@ const OpenAIPlugin: BachamPlugin = {
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
       
-      // Validate the token by hitting the models endpoint
-      const res = await fetch('https://api.openai.com/v1/models', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!res.ok) {
-        throw new Error('Invalid OpenAI API Key');
+      const trimmed = token.trim();
+      if (!trimmed.startsWith('sk-') || trimmed.length < 20) {
+        throw new Error('Invalid OpenAI API Key format. Must start with "sk-".');
       }
       
-      await AuthManager.setToken(PLUGIN_ID, token);
+      await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {
       await AuthManager.removeToken(PLUGIN_ID);
