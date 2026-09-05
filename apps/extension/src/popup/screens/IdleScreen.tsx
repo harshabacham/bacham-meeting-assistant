@@ -363,34 +363,34 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
         {/* 2. Top Capture Config Bar: Video/Audio Switch + Mic Toggle */}
         <div className="flex items-center gap-2 relative z-30">
           
-          {/* Segmented Mode Selector: Video vs Audio Only */}
+          {/* Segmented Mode Selector: Video + Audio vs Only Audio */}
           <div className="flex-1 flex items-center p-1 rounded-xl bg-[#141517] border border-white/10 shadow-xs">
             <button
               type="button"
               onClick={() => void updateConfig({ ...captureConfig, video: true, captureMode: 'tab' })}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
                 isVideoMode
                   ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-sm'
                   : 'text-white/50 hover:text-white hover:bg-white/5'
               }`}
               title="Record Video & Audio (Screen capture)"
             >
-              <Video size={14} className="shrink-0" />
-              <span className="truncate">Video</span>
+              <Video size={13} className="shrink-0" />
+              <span className="truncate">Video + Audio</span>
             </button>
 
             <button
               type="button"
               onClick={() => void updateConfig({ ...captureConfig, video: false, captureMode: 'audio' })}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
                 !isVideoMode
                   ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-sm'
                   : 'text-white/50 hover:text-white hover:bg-white/5'
               }`}
-              title="Record Audio Only (No screen capture)"
+              title="Record Only Audio (No screen capture)"
             >
-              <Volume2 size={14} className="shrink-0" />
-              <span className="truncate">Audio Only</span>
+              <Volume2 size={13} className="shrink-0" />
+              <span className="truncate">Only Audio</span>
             </button>
           </div>
 
