@@ -244,6 +244,48 @@ export function createMessageHandler(
         };
         messagingClient.send(sessionStartMsg);
 
+        // Signal desktop application to unminimize, restore, and focus
+        messagingClient.send({
+          version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+          type: 'OPEN_APP' as any,
+          payload: { route: `/session/${session.id}` },
+          timestamp: Date.now(),
+        });
+
+        // Launch the application if it is closed:
+        // 1. Via Chrome Native Messaging host
+        try {
+          chrome.runtime.sendNativeMessage(
+            'com.bacham.host',
+            {
+              version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+              type: 'OPEN_APP',
+              payload: { route: `/session/${session.id}` },
+              timestamp: Date.now(),
+            },
+            () => {
+              if (chrome.runtime.lastError) {
+                log.debug(MODULE, 'sendNativeMessage launch', {
+                  err: chrome.runtime.lastError.message,
+                });
+              }
+            }
+          );
+        } catch (e) {
+          log.debug(MODULE, 'Native messaging error', { err: e });
+        }
+
+        // 2. Via registered custom protocol handler (bacham://open) if offline
+        fetch('http://127.0.0.1:1422/health', { signal: AbortSignal.timeout(500) })
+          .catch(() => {
+            log.info(MODULE, 'Desktop app closed — launching via bacham:// protocol');
+            chrome.tabs.create({ url: 'bacham://open', active: false }, (newTab) => {
+              setTimeout(() => {
+                if (newTab?.id) chrome.tabs.remove(newTab.id).catch(() => {});
+              }, 1200);
+            });
+          });
+
         // Send metadata
         await metadataService.sendMetadata(tab.id, session.id, intent.courseLabel);
 

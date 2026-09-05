@@ -20,28 +20,26 @@ pub fn run() {
 
     let mut builder = tauri::Builder::default();
 
-    if !is_native_messaging {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(main_window) = app.get_webview_window("main") {
-                let _ = main_window.show();
-                let _ = main_window.unminimize();
-                let _ = main_window.set_focus();
-            } else {
-                let _ = tauri::webview::WebviewWindowBuilder::new(
-                    app,
-                    "main",
-                    tauri::WebviewUrl::default()
-                )
-                .title("BACHAM")
-                .inner_size(1200.0, 800.0)
-                .decorations(false)
-                .transparent(true)
-                .visible(true)
-                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .build();
-            }
-        }));
-    }
+    builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(main_window) = app.get_webview_window("main") {
+            let _ = main_window.show();
+            let _ = main_window.unminimize();
+            let _ = main_window.set_focus();
+        } else {
+            let _ = tauri::webview::WebviewWindowBuilder::new(
+                app,
+                "main",
+                tauri::WebviewUrl::default()
+            )
+            .title("BACHAM")
+            .inner_size(1200.0, 800.0)
+            .decorations(false)
+            .transparent(true)
+            .visible(true)
+            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .build();
+        }
+    }));
 
     builder = builder
         .plugin(tauri_plugin_fs::init())
@@ -61,15 +59,11 @@ pub fn run() {
             let bacham_dir = docs.join("BACHAM");
             let db_path = bacham_dir.join("Data").join("bacham.sqlite");
             
-            let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
-            
             // Ensure main window is present and visible
             if let Some(main_window) = app.get_webview_window("main") {
-                if !is_native_messaging {
-                    let _ = main_window.show();
-                    let _ = main_window.unminimize();
-                    let _ = main_window.set_focus();
-                }
+                let _ = main_window.show();
+                let _ = main_window.unminimize();
+                let _ = main_window.set_focus();
             } else {
                 let main_window = tauri::webview::WebviewWindowBuilder::new(
                     app,
@@ -80,7 +74,7 @@ pub fn run() {
                 .inner_size(1200.0, 800.0)
                 .decorations(false)
                 .transparent(true)
-                .visible(false)
+                .visible(true)
                 .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .on_new_window(move |_url, _features| {
                     tauri::webview::NewWindowResponse::Allow
@@ -88,9 +82,29 @@ pub fn run() {
                 .build()
                 .expect("Failed to build main window");
                 
-                if !is_native_messaging {
-                    let _ = main_window.show();
-                    let _ = main_window.set_focus();
+                let _ = main_window.show();
+                let _ = main_window.unminimize();
+                let _ = main_window.set_focus();
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                if let Ok(exe_path) = std::env::current_exe() {
+                    use std::os::windows::process::CommandExt;
+                    let exe_str = exe_path.to_string_lossy().to_string();
+                    let _ = std::process::Command::new("reg")
+                        .args(&["add", "HKCU\\Software\\Classes\\bacham", "/ve", "/t", "REG_SZ", "/d", "URL:BACHAM Protocol", "/f"])
+                        .creation_flags(0x08000000)
+                        .output();
+                    let _ = std::process::Command::new("reg")
+                        .args(&["add", "HKCU\\Software\\Classes\\bacham", "/v", "URL Protocol", "/t", "REG_SZ", "/d", "", "/f"])
+                        .creation_flags(0x08000000)
+                        .output();
+                    let cmd_str = format!("\"{}\" \"%1\"", exe_str);
+                    let _ = std::process::Command::new("reg")
+                        .args(&["add", "HKCU\\Software\\Classes\\bacham\\shell\\open\\command", "/ve", "/t", "REG_SZ", "/d", &cmd_str, "/f"])
+                        .creation_flags(0x08000000)
+                        .output();
                 }
             }
             
