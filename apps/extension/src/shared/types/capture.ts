@@ -1,3 +1,5 @@
+export type CaptureResolution = 'auto' | '720p' | '1080p' | '1440p' | '4k';
+
 export interface CaptureConfig {
   /** Whether to capture tab audio. */
   readonly audio: boolean;
@@ -11,7 +13,7 @@ export interface CaptureConfig {
    */
   readonly screenshotIntervalMs?: number;
   /** Recording resolution constraint */
-  readonly resolution?: 'auto' | '720p' | '1080p';
+  readonly resolution?: CaptureResolution;
   /** Whether to capture the current tab, window/screen, or audio only. Defaults to 'tab' if omitted. */
   readonly captureMode?: 'tab' | 'screen' | 'window' | 'walkthrough' | 'audio';
 }

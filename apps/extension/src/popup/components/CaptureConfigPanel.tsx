@@ -10,7 +10,7 @@ interface CaptureConfigPanelProps {
 }
 
 /**
- * Capture configuration panel — toggle audio, video, screenshot interval.
+ * Capture configuration panel — toggle audio, video, resolution, screenshot interval.
  */
 export function CaptureConfigPanel({ config, onChange, disabled = false }: CaptureConfigPanelProps): React.ReactElement {
   const handleAudioToggle = (): void => {
@@ -53,14 +53,14 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
           onClick={() => onChange({ ...config, captureMode: 'tab' })}
           disabled={disabled}
           className={[
-            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm transition-colors duration-fast border',
+            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all duration-fast border',
             captureMode === 'tab'
-              ? 'bg-accent-purple/10 border-accent-purple text-accent-purple'
+              ? 'bg-[#BAFF29]/15 border-[#BAFF29] text-[#BAFF29] shadow-[0_0_12px_rgba(186,255,41,0.2)]'
               : 'bg-surface-2 border-border-subtle text-text-secondary hover:bg-surface-3',
             disabled ? 'opacity-50 cursor-not-allowed' : '',
           ].join(' ')}
         >
-          <AppWindow size={16} />
+          <AppWindow size={15} />
           Current Tab
         </button>
         <button
@@ -68,14 +68,14 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
           onClick={() => onChange({ ...config, captureMode: 'screen' })}
           disabled={disabled}
           className={[
-            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm transition-colors duration-fast border',
+            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all duration-fast border',
             captureMode === 'screen'
-              ? 'bg-accent-purple/10 border-accent-purple text-accent-purple'
+              ? 'bg-[#BAFF29]/15 border-[#BAFF29] text-[#BAFF29] shadow-[0_0_12px_rgba(186,255,41,0.2)]'
               : 'bg-surface-2 border-border-subtle text-text-secondary hover:bg-surface-3',
             disabled ? 'opacity-50 cursor-not-allowed' : '',
           ].join(' ')}
         >
-          <Monitor size={16} />
+          <Monitor size={15} />
           Entire Screen
         </button>
         <button
@@ -83,14 +83,14 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
           onClick={() => onChange({ ...config, captureMode: 'walkthrough' })}
           disabled={disabled}
           className={[
-            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded text-sm transition-colors duration-fast border',
+            'flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all duration-fast border',
             captureMode === 'walkthrough'
-              ? 'bg-accent-purple/10 border-accent-purple text-accent-purple'
+              ? 'bg-[#BAFF29]/15 border-[#BAFF29] text-[#BAFF29] shadow-[0_0_12px_rgba(186,255,41,0.2)]'
               : 'bg-surface-2 border-border-subtle text-text-secondary hover:bg-surface-3',
             disabled ? 'opacity-50 cursor-not-allowed' : '',
           ].join(' ')}
         >
-          <Video size={16} />
+          <Video size={15} />
           Walkthrough
         </button>
       </div>
@@ -98,14 +98,14 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
       {/* Audio toggle */}
       <label
         className={[
-          'flex items-center justify-between p-2.5 rounded bg-surface-2 border cursor-pointer',
+          'flex items-center justify-between p-2.5 rounded-xl bg-surface-2 border cursor-pointer',
           'transition-colors duration-fast hover:bg-surface-3',
-          config.audio ? 'border-accent-purple/40' : 'border-border-subtle',
+          config.audio ? 'border-[#BAFF29]/50' : 'border-border-subtle',
           disabled ? 'opacity-50 cursor-not-allowed' : '',
         ].join(' ')}
       >
         <span className="flex items-center gap-2 text-sm text-text-secondary">
-          <Mic size={14} className={config.audio ? 'text-accent-purple' : 'text-text-tertiary'} />
+          <Mic size={14} className={config.audio ? 'text-[#BAFF29]' : 'text-text-tertiary'} />
           Audio
         </span>
         <input
@@ -122,14 +122,14 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
       {/* Video toggle */}
       <label
         className={[
-          'flex items-center justify-between p-2.5 rounded bg-surface-2 border cursor-pointer',
+          'flex items-center justify-between p-2.5 rounded-xl bg-surface-2 border cursor-pointer',
           'transition-colors duration-fast hover:bg-surface-3',
-          config.video ? 'border-accent-purple/40' : 'border-border-subtle',
+          config.video ? 'border-[#BAFF29]/50' : 'border-border-subtle',
           disabled ? 'opacity-50 cursor-not-allowed' : '',
         ].join(' ')}
       >
         <span className="flex items-center gap-2 text-sm text-text-secondary">
-          <Video size={14} className={config.video ? 'text-accent-purple' : 'text-text-tertiary'} />
+          <Video size={14} className={config.video ? 'text-[#BAFF29]' : 'text-text-tertiary'} />
           Video
         </span>
         <input
@@ -145,8 +145,8 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
 
       {/* Resolution Selector (Only if video is enabled) */}
       {config.video && (
-        <div className="flex items-center gap-3 px-2.5 py-2 bg-surface-1 rounded border border-border-subtle">
-          <label htmlFor="resolution-select" className="text-xs text-text-tertiary whitespace-nowrap">
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-surface-1 rounded-xl border border-border-subtle">
+          <label htmlFor="resolution-select" className="text-xs font-semibold text-text-tertiary whitespace-nowrap">
             Resolution
           </label>
           <select
@@ -155,14 +155,16 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
             onChange={(e) => onChange({ ...config, resolution: e.target.value as any })}
             disabled={disabled}
             className={[
-              'flex-1 px-2 py-1 text-xs bg-surface-2 border border-border-default rounded',
-              'text-text-primary focus:outline-none focus:border-accent-purple',
-              'transition-colors duration-fast',
+              'flex-1 px-2.5 py-1.5 text-xs bg-surface-2 border border-border-default rounded-lg',
+              'text-text-primary focus:outline-none focus:border-[#BAFF29]',
+              'transition-colors duration-fast cursor-pointer',
             ].join(' ')}
           >
-            <option value="auto">Auto (Default)</option>
-            <option value="720p">720p</option>
-            <option value="1080p">1080p</option>
+            <option value="auto">Auto (Balanced Viewport)</option>
+            <option value="720p">720p (Battery Saver)</option>
+            <option value="1080p">1080p (Full HD - Crisp)</option>
+            <option value="1440p">1440p (2K Quad HD)</option>
+            <option value="4k">4K / Native (1:1 Pixel-Perfect) ⚡</option>
           </select>
         </div>
       )}
@@ -170,14 +172,14 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
       {/* Screenshots toggle */}
       <label
         className={[
-          'flex items-center justify-between p-2.5 rounded bg-surface-2 border cursor-pointer',
+          'flex items-center justify-between p-2.5 rounded-xl bg-surface-2 border cursor-pointer',
           'transition-colors duration-fast hover:bg-surface-3',
-          screenshotsEnabled ? 'border-accent-purple/40' : 'border-border-subtle',
+          screenshotsEnabled ? 'border-[#BAFF29]/50' : 'border-border-subtle',
           disabled ? 'opacity-50 cursor-not-allowed' : '',
         ].join(' ')}
       >
         <span className="flex items-center gap-2 text-sm text-text-secondary">
-          <Camera size={14} className={screenshotsEnabled ? 'text-accent-purple' : 'text-text-tertiary'} />
+          <Camera size={14} className={screenshotsEnabled ? 'text-[#BAFF29]' : 'text-text-tertiary'} />
           Screenshots
         </span>
         <input
@@ -193,7 +195,7 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
 
       {/* Screenshot interval */}
       {screenshotsEnabled ? (
-        <div className="flex items-center gap-3 px-2.5 py-2 bg-surface-1 rounded border border-border-subtle">
+        <div className="flex items-center gap-3 px-3 py-2 bg-surface-1 rounded-xl border border-border-subtle">
           <label htmlFor="screenshot-interval" className="text-xs text-text-tertiary whitespace-nowrap">
             Every
           </label>
@@ -206,8 +208,8 @@ export function CaptureConfigPanel({ config, onChange, disabled = false }: Captu
             onChange={handleIntervalChange}
             disabled={disabled}
             className={[
-              'w-16 px-2 py-1 text-xs bg-surface-2 border border-border-default rounded',
-              'text-text-primary focus:outline-none focus:border-accent-purple',
+              'w-16 px-2 py-1 text-xs bg-surface-2 border border-border-default rounded-lg',
+              'text-text-primary focus:outline-none focus:border-[#BAFF29]',
               'transition-colors duration-fast',
             ].join(' ')}
           />
@@ -224,12 +226,12 @@ function ToggleIndicator({ active }: { active: boolean }): React.ReactElement {
       className={[
         'relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent',
         'transition-colors duration-normal',
-        active ? 'bg-accent-purple' : 'bg-surface-4',
+        active ? 'bg-[#BAFF29]' : 'bg-surface-4',
       ].join(' ')}
     >
       <span
         className={[
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow',
+          'pointer-events-none inline-block h-4 w-4 rounded-full bg-[#0A0A0C] shadow',
           'transition-transform duration-normal',
           active ? 'translate-x-4' : 'translate-x-0',
         ].join(' ')}

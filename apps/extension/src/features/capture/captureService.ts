@@ -73,6 +73,11 @@ export function createCaptureService(
 
   function selectMimeType(config: CaptureConfig): string {
     if (config.video) {
+      if (config.resolution === '4k' || config.resolution === '1440p') {
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+          return 'video/webm;codecs=vp9,opus';
+        }
+      }
       return MediaRecorder.isTypeSupported(VIDEO_MIME_TYPE) ? VIDEO_MIME_TYPE : 'video/webm';
     }
     return MediaRecorder.isTypeSupported(AUDIO_MIME_TYPE) ? AUDIO_MIME_TYPE : 'audio/webm';
@@ -213,7 +218,13 @@ export function createCaptureService(
           chromeMediaSourceId: streamId,
         };
 
-        if (config.resolution === '1080p') {
+        if (config.resolution === '4k') {
+          videoConstraints.maxWidth = 3840;
+          videoConstraints.maxHeight = 2160;
+        } else if (config.resolution === '1440p') {
+          videoConstraints.maxWidth = 2560;
+          videoConstraints.maxHeight = 1440;
+        } else if (config.resolution === '1080p') {
           videoConstraints.maxWidth = 1920;
           videoConstraints.maxHeight = 1080;
         } else if (config.resolution === '720p') {
@@ -243,7 +254,11 @@ export function createCaptureService(
       try {
         log.info(MODULE, 'Attempting getDisplayMedia stream acquisition...');
         let videoFallbackConstraints: any = true;
-        if (config.resolution === '1080p') {
+        if (config.resolution === '4k') {
+          videoFallbackConstraints = { width: { ideal: 3840, max: 3840 }, height: { ideal: 2160, max: 2160 } };
+        } else if (config.resolution === '1440p') {
+          videoFallbackConstraints = { width: { ideal: 2560, max: 2560 }, height: { ideal: 1440, max: 1440 } };
+        } else if (config.resolution === '1080p') {
           videoFallbackConstraints = { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 } };
         } else if (config.resolution === '720p') {
           videoFallbackConstraints = { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 } };
@@ -263,6 +278,17 @@ export function createCaptureService(
     mediaStream = acquiredStream;
     
     log.info(MODULE, 'MediaStream acquired', { tracks: mediaStream.getTracks().length });
+
+    // Enable 'detail' contentHint on video tracks for crystal-clear text, slides, and code
+    mediaStream.getVideoTracks().forEach(track => {
+      try {
+        if ('contentHint' in track) {
+          track.contentHint = 'detail';
+        }
+      } catch (err) {
+        log.warn(MODULE, 'Could not set contentHint on video track', { err });
+      }
+    });
 
     // Listen for unexpected stream termination (e.g. user clicks browser's native "Stop sharing")
     mediaStream.getTracks().forEach(track => {
@@ -339,7 +365,22 @@ export function createCaptureService(
     }
 
     const mimeType = selectMimeType(config);
-    const bitsPerSecond = config.video ? 2_500_000 : 128_000;
+    
+    // Calculate adaptive bitrate based on resolution
+    let bitsPerSecond = 128_000;
+    if (config.video) {
+      if (config.resolution === '4k') {
+        bitsPerSecond = 16_000_000; // 16 Mbps for 4K / Native 1:1 Pixel-Perfect
+      } else if (config.resolution === '1440p') {
+        bitsPerSecond = 10_000_000; // 10 Mbps for 1440p Quad HD
+      } else if (config.resolution === '1080p') {
+        bitsPerSecond = 6_000_000;  // 6 Mbps for 1080p Full HD
+      } else if (config.resolution === '720p') {
+        bitsPerSecond = 2_500_000;  // 2.5 Mbps for 720p
+      } else {
+        bitsPerSecond = 6_000_000;  // 6 Mbps default for auto
+      }
+    }
 
     // 2. Video Recorder
     if (config.video) {

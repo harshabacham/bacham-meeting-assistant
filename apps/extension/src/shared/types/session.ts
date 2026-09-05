@@ -58,6 +58,8 @@ export interface Session {
 /**
  * Intent to start a new session, supplied by the user.
  */
+import type { CaptureResolution } from './capture';
+
 export interface StartSessionIntent {
   courseLabel?: string;
   readonly captureAudio: boolean;
@@ -67,7 +69,7 @@ export interface StartSessionIntent {
   readonly streamId?: string;
   readonly streamHasAudio?: boolean;
   readonly screenshotIntervalMs?: number;
-  readonly resolution?: 'auto' | '720p' | '1080p';
+  readonly resolution?: CaptureResolution;
 }
 
 export interface LectureSummary {
