@@ -384,75 +384,6 @@ Best regards,`;
         onDragEnd={handleDragEnd}
         className="absolute bottom-6 right-6 flex items-end justify-end pointer-events-auto"
       >
-        {/* ─── AMBIENT EXECUTIVE CAPSULE (DOCKS BESIDE PET AVATAR) ─── */}
-        <motion.button
-          onClick={toggleExpanded}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="mr-3 mb-1.5 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-xs font-medium text-[var(--text-primary)] shadow-lg hover:border-[var(--border-accent)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer group"
-          title={`Click to open ${currentPet.name} Companion`}
-        >
-          {isFocusRunning ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono text-xs text-[var(--text-primary)] font-semibold">
-                {formatTimerSeconds(focusTimeLeft)}
-              </span>
-              <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider font-semibold">
-                Focusing
-              </span>
-            </>
-          ) : imminentMeeting ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              <span className="text-xs font-semibold text-amber-400 truncate max-w-[150px]">
-                {imminentMeeting.event.title}
-              </span>
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">
-                {imminentMeeting.isOngoing ? 'Now' : `in ${imminentMeeting.minutesUntilStart}m`}
-              </span>
-              {imminentMeeting.event.meetingUrl && (
-                <span 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleJoinMeeting(imminentMeeting.event.meetingUrl);
-                  }}
-                  className="px-2 py-0.5 rounded-md bg-emerald-500 text-zinc-950 font-bold text-[10px] hover:bg-emerald-400 transition-colors flex items-center gap-1"
-                >
-                  <Video size={10} />
-                  Join
-                </span>
-              )}
-            </>
-          ) : concludedMeeting ? (
-            <>
-              <CheckCircle2 size={13} className="text-emerald-400" />
-              <span className="text-xs text-[var(--text-primary)] truncate max-w-[140px]">
-                Debrief ready
-              </span>
-            </>
-          ) : pendingTasks.length > 0 ? (
-            <>
-              <span 
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: currentPet.color }}
-              />
-              <span className="text-xs text-[var(--text-primary)]">
-                {pendingTasks.length} {pendingTasks.length === 1 ? 'task' : 'tasks'} due
-              </span>
-            </>
-          ) : (
-            <>
-              <span 
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: currentPet.color }}
-              />
-              <span className="text-xs text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
-                {currentPet.name} Assistant
-              </span>
-            </>
-          )}
-        </motion.button>
 
         {/* ─── EXPANDED EXECUTIVE COMMAND CARD (NO TOY SPEECH TAIL, CLEAN RAYCAST STYLE) ─── */}
         <AnimatePresence>
@@ -954,6 +885,41 @@ Best regards,`;
               isThinking={isFocusRunning} 
             />
           </div>
+
+          <AnimatePresence>
+            {isHovered && !isExpanded && (
+              <motion.div
+                initial={{ opacity: 0, x: 8, scale: 0.94 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 4, scale: 0.94 }}
+                className="absolute right-[calc(100%+12px)] bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-1.5 rounded-xl whitespace-nowrap text-xs font-semibold tracking-wide text-[var(--text-primary)] shadow-md pointer-events-none flex items-center gap-2 select-none"
+              >
+                {imminentMeeting ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                    <span className="text-amber-400">
+                      {imminentMeeting.isOngoing ? 'Meeting now:' : `In ${imminentMeeting.minutesUntilStart}m:`} {imminentMeeting.event.title}
+                    </span>
+                  </>
+                ) : isFocusRunning ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>Focusing: {formatTimerSeconds(focusTimeLeft)}</span>
+                  </>
+                ) : pendingTasks.length > 0 ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentPet.color }} />
+                    <span>{currentPet.name} • {pendingTasks.length} {pendingTasks.length === 1 ? 'task' : 'tasks'} due</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: currentPet.color }} />
+                    <span>{currentPet.name} Copilot</span>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.button>
       </motion.div>
     </div>
