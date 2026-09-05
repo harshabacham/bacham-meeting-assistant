@@ -358,15 +358,17 @@ export function AppLayout() {
                                                         setSystemView={(view) => {
                                                             setSystemView(view);
                                                             setSelectedFolderId(null);
-                                                            const target = location.pathname.startsWith('/lectures') ? '/lectures' : '/notes';
-                                                            navigate(target);
+                                                            if (view === 'trash' || view === 'archive') {
+                                                                navigate(`/lectures?view=${view}`);
+                                                            } else {
+                                                                navigate('/notes');
+                                                            }
                                                         }}
                                                         selectedFolderId={selectedFolderId}
                                                         onSelectFolder={(id) => {
                                                             setSystemView('all');
                                                             setSelectedFolderId(id);
-                                                            const target = location.pathname.startsWith('/lectures') ? '/lectures' : '/notes';
-                                                            navigate(`${target}?folderId=${encodeURIComponent(id)}`);
+                                                            navigate(`/notes?folderId=${encodeURIComponent(id)}`);
                                                         }}
                                                     />
                                                 </div>

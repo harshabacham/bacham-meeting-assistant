@@ -7,7 +7,6 @@ import { useFolderStore } from '@/shared/stores/folderStore';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import { MultiSelectBar } from '@/components/library/MultiSelectBar';
-import { FolderDashboard } from '@/components/library/FolderDashboard';
 import { LecturePropertiesPanel } from '@/components/library/LecturePropertiesPanel';
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
@@ -47,7 +46,6 @@ export function LibraryPage() {
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
     const [groupByCourse] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
-    const [showFolderDashboard, setShowFolderDashboard] = useState(true);
     const [quickLookLecture, setQuickLookLecture] = useState<Lecture | null>(null);
     const [isAddingToFolder, setIsAddingToFolder] = useState(false);
     const [batchMoveFolderDialogOpen, setBatchMoveFolderDialogOpen] = useState(false);
@@ -91,10 +89,6 @@ export function LibraryPage() {
             setSelectedFolderId(paramFolderId);
         }
     }, [searchParams, selectedFolderId, setSelectedFolderId]);
-
-    useEffect(() => {
-        setShowFolderDashboard(true);
-    }, [selectedFolderId]);
 
     useEffect(() => { 
         if (systemView === 'all') {
@@ -331,25 +325,26 @@ ${transcript || '*(No transcript recorded)*'}
         }
     };
 
-    const isShowingDashboard = Boolean(selectedFolderId && systemView === 'all' && !query && showFolderDashboard);
-
     return (
         <div className="flex flex-col h-full w-full min-w-0" style={{ background: 'var(--bg)' }}>
             {/* Toolbar */}
-            {!isShowingDashboard && (
             <div className="flex items-center gap-3 pl-6 pr-[140px] py-4 border-b border-border/50 shrink-0">
                 <div className="flex items-center gap-2 mr-2">
-                    {selectedFolderId && !showFolderDashboard && !query && (
-                        <button 
-                            onClick={() => setShowFolderDashboard(true)}
-                            className="p-1 hover:bg-surface-hover rounded text-muted-foreground transition-colors mr-1"
-                            title="Back to Dashboard"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                        </button>
+                    {selectedFolderId && (
+                        <div className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-foreground mr-1">
+                            <Folder size={12} className="text-primary" />
+                            <span>{folders.find(f => f.id === selectedFolderId)?.name || 'Folder'}</span>
+                            <button 
+                                onClick={() => setSelectedFolderId(null)}
+                                className="p-0.5 hover:bg-surface-hover rounded text-muted-foreground hover:text-foreground ml-1 cursor-pointer"
+                                title="Clear folder filter"
+                            >
+                                <X size={12} />
+                            </button>
+                        </div>
                     )}
                     <h1 className="text-xl font-bold text-foreground capitalize">
-                        {currentView || (systemView === 'all' ? 'Library' : systemView)}
+                        {currentView === 'bookmarks' ? 'Bookmarks' : (systemView === 'all' ? (selectedFolderId ? 'Folder Meetings' : 'Library') : systemView)}
                     </h1>
                 </div>
 
@@ -510,15 +505,9 @@ ${transcript || '*(No transcript recorded)*'}
                     )}
                 </div>
             </div>
-            )}
 
             {/* Content */}
-            {isShowingDashboard ? (
-                <div className="flex-1 overflow-hidden relative">
-                    <FolderDashboard folderId={selectedFolderId!} onBack={() => setSelectedFolderId(null)} onViewAll={() => setShowFolderDashboard(false)} />
-                </div>
-            ) : (
-                <div className="flex-1 overflow-y-auto min-h-0 bg-[var(--bg)] p-4 sm:p-6" onClick={() => setSelectedIds(new Set())}>
+            <div className="flex-1 overflow-y-auto min-h-0 bg-[var(--bg)] p-4 sm:p-6" onClick={() => setSelectedIds(new Set())}>
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 px-4">
                         <motion.div
@@ -626,7 +615,6 @@ ${transcript || '*(No transcript recorded)*'}
                     ))
                 )}
             </div>
-            )}
             {quickLookLecture && (
                 <QuickLookPreview
                     lecture={quickLookLecture}
