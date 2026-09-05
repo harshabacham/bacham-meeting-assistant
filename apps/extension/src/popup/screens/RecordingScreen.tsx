@@ -12,11 +12,8 @@ import {
   AlertTriangle,
   HelpCircle,
   X,
-  Plus,
-  FileText,
-  Video,
-  Volume2,
   Trash2,
+  Menu,
 } from 'lucide-react';
 import { MicrophoneGuideModal } from '../components/MicrophoneGuideModal';
 import { MessageType } from '@/shared/types';
@@ -78,6 +75,7 @@ export function RecordingScreen({
   const [micBlocked, setMicBlocked] = useState(false);
   const [showMicAlert, setShowMicAlert] = useState(false);
   const [showAudioGuideModal, setShowAudioGuideModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   // Synchronize pause state with session prop
   useEffect(() => {
@@ -288,49 +286,89 @@ export function RecordingScreen({
 
   return (
     <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white select-none relative overflow-hidden">
-      {/* 1. Top Navigation Bar: Minimal Ghost Back, Dynamic Island Timer Capsule & Audio Guide */}
-      <div className="flex items-center justify-between px-4 pt-3.5 pb-2 shrink-0 bg-[#0A0A0C]">
+      {/* 1. Header: Sleek Back Arrow + Hamburger Menu with Red Pulse Indicator */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2 shrink-0 bg-[#0A0A0C] z-20">
         <button
           type="button"
           onClick={onBack}
-          className="h-7 px-2 -ml-1 rounded-lg hover:bg-white/[0.08] text-white/50 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
-          title="Back to Notes (Recording continues)"
+          className="p-1 -ml-1 text-white/50 hover:text-white transition-colors cursor-pointer active:scale-95"
+          title="Back"
         >
-          <ArrowLeft size={14} />
-          <span className="text-[11.5px] font-semibold tracking-tight">Notes</span>
+          <ArrowLeft size={20} strokeWidth={2} />
         </button>
 
-        {/* Dynamic Island-style Status Capsule */}
-        <div
-          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full shadow-xs border transition-all ${
-            isPaused
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
-          }`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-pulse'
-            }`}
-          />
-          <span className="text-[11px] font-bold font-mono tracking-wider">
-            {isPaused ? `PAUSED ${formatTime(elapsed)}` : formatTime(elapsed)}
-          </span>
-        </div>
-
-        {/* Audio & Mic Guide Icon */}
-        <div className="relative -mr-1">
+        <div className="relative">
           <button
             type="button"
-            onClick={() => setShowAudioGuideModal(true)}
-            className="w-7 h-7 rounded-lg hover:bg-white/[0.08] text-white/40 hover:text-white/80 transition-colors flex items-center justify-center cursor-pointer"
-            title="Audio & Microphone Setup"
+            onClick={() => setShowMenu((prev) => !prev)}
+            className="p-1 -mr-1 text-white/50 hover:text-white transition-colors cursor-pointer relative active:scale-95"
+            title="Recording Details & Options"
           >
-            <HelpCircle size={14} />
-            {micBlocked && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400 ring-2 ring-[#0A0A0C] animate-pulse" />
-            )}
+            <Menu size={20} strokeWidth={2} />
+            {/* Active Red Recording Indicator Dot */}
+            <span
+              className={`absolute top-0.5 right-0.5 w-2 h-2 rounded-full ${
+                isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-pulse'
+              } ring-2 ring-[#0A0A0C]`}
+            />
           </button>
+
+          {/* Minimal Dropdown Menu */}
+          <AnimatePresence>
+            {showMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowMenu(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-[#141517] border border-white/10 shadow-2xl p-2 z-50 text-[12px] space-y-1 backdrop-blur-xl"
+                >
+                  <div className="px-3 py-2 border-b border-white/[0.06] flex items-center justify-between">
+                    <span className="text-white/40 font-medium">Timer</span>
+                    <span className="font-mono font-bold text-[#BAFF29]">
+                      {isPaused ? `PAUSED (${formatTime(elapsed)})` : formatTime(elapsed)}
+                    </span>
+                  </div>
+
+                  <div className="px-3 py-2 border-b border-white/[0.06] flex items-center justify-between">
+                    <span className="text-white/40 font-medium">Capture</span>
+                    <span className="font-semibold text-white/80">
+                      {captureConfig.video === false ? 'Audio Only' : 'Video + Audio'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowAudioGuideModal(true);
+                    }}
+                    className="w-full px-3 py-2 rounded-xl text-left hover:bg-white/5 text-white/70 hover:text-white flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span>Audio & Mic Setup</span>
+                    <HelpCircle size={13} className="text-white/40" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onBack?.();
+                    }}
+                    className="w-full px-3 py-2 rounded-xl text-left hover:bg-white/5 text-white/70 hover:text-white flex items-center justify-between transition-colors cursor-pointer"
+                  >
+                    <span>All Meeting Notes</span>
+                    <ArrowLeft size={13} className="text-white/40" />
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -341,7 +379,7 @@ export function RecordingScreen({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mx-4 mb-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-start justify-between gap-2 shrink-0 shadow-xs"
+            className="mx-5 mb-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-start justify-between gap-2 shrink-0 shadow-xs z-10"
           >
             <div className="flex items-start gap-2">
               <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
@@ -373,84 +411,56 @@ export function RecordingScreen({
         )}
       </AnimatePresence>
 
-      {/* 3. Streamlined Meeting Title & Mode Strip */}
-      <div className="px-4 pb-2.5 flex items-center justify-between gap-3 shrink-0">
+      {/* 3. Main Canvas: Clean Sider-style Document Layout */}
+      <div className="flex-1 px-6 pt-3 pb-24 flex flex-col overflow-y-auto">
+        {/* Document Title */}
         <input
           type="text"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Meeting title..."
+          placeholder="Untitled"
           spellCheck={false}
-          className="flex-1 text-[15px] font-bold text-white/90 placeholder:text-white/20 bg-transparent outline-none truncate hover:text-white transition-colors"
+          className="w-full text-[26px] font-bold text-white placeholder:text-white/30 bg-transparent outline-none border-none tracking-tight pb-3 selection:bg-[#BAFF29]/25"
         />
-        <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-semibold text-[#BAFF29] bg-[#BAFF29]/10 px-2 py-0.5 rounded-md border border-[#BAFF29]/20">
-          {captureConfig.video === false ? <Volume2 size={10} /> : <Video size={10} />}
-          <span>{captureConfig.video === false ? 'Audio' : 'Video'}</span>
-        </div>
-      </div>
 
-      {/* 4. Expansive Hero Notes Canvas (Zero Dead Void Space) */}
-      <div className="flex-1 px-4 pb-16 flex flex-col min-h-0">
-        <div className="flex-1 flex flex-col rounded-2xl bg-[#121316]/90 border border-white/[0.06] p-3.5 shadow-xs focus-within:border-white/15 focus-within:bg-[#15161A] transition-all min-h-0">
-          <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.04] shrink-0">
-            <div className="flex items-center gap-1.5 text-white/40 text-[10.5px] font-bold uppercase tracking-wider">
-              <FileText size={11} className="text-[#BAFF29]" />
-              <span>Live Notes</span>
+        {/* Note Content Textarea (Document style, zero card borders) */}
+        <textarea
+          value={noteContent}
+          onChange={handleNoteChange}
+          placeholder="Enter key information, and BACHAM will help you organize it."
+          spellCheck={false}
+          className="flex-1 w-full text-[14px] text-white/80 font-normal leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/30 selection:bg-[#BAFF29]/25"
+        />
+
+        {/* Captured Slides Ribbon (if slides exist) */}
+        {snapshots.length > 0 && (
+          <div className="pt-3 pb-1 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">
+                Captured Slides ({snapshots.length})
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              {snapshots.length > 0 && (
-                <span className="text-[10px] font-medium text-white/40">
-                  {snapshots.length} slide{snapshots.length > 1 ? 's' : ''}
-                </span>
-              )}
-              <span className="text-[10px] text-white/30 font-medium">Auto-saved</span>
+            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+              {snapshots.map((snap) => (
+                <div
+                  key={snap.id}
+                  onClick={() => setSelectedSnapshot(snap)}
+                  className="w-24 h-16 rounded-xl overflow-hidden bg-[#1A1C20] border border-white/10 shrink-0 relative group cursor-pointer shadow-sm hover:border-[#BAFF29]/50 transition-all"
+                  title="Click to preview slide"
+                >
+                  <img
+                    src={snap.url}
+                    alt="Slide"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
+                  <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/80 text-[#BAFF29] text-[8.5px] font-bold font-mono border border-white/10">
+                    {snap.time}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          <textarea
-            value={noteContent}
-            onChange={handleNoteChange}
-            placeholder="Type key discussion points, decisions, or action items..."
-            spellCheck={false}
-            className="flex-1 w-full text-[13px] text-white/90 font-normal leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/20"
-          />
-
-          {/* Captured Slides Ribbon (Only appears if slides exist) */}
-          {snapshots.length > 0 && (
-            <div className="pt-2 border-t border-white/[0.04] shrink-0">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10.5px] font-semibold text-white/50">Captured Slides</span>
-                <button
-                  type="button"
-                  onClick={handleCaptureSnapshot}
-                  className="text-[10px] font-bold text-[#BAFF29] hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <Plus size={10} strokeWidth={3} />
-                  <span>Snap</span>
-                </button>
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
-                {snapshots.map((snap) => (
-                  <div
-                    key={snap.id}
-                    onClick={() => setSelectedSnapshot(snap)}
-                    className="w-20 h-14 rounded-lg overflow-hidden bg-[#1A1C20] border border-white/[0.08] shrink-0 relative group cursor-pointer shadow-xs hover:border-[#BAFF29]/50 transition-all"
-                    title="Click to preview slide"
-                  >
-                    <img
-                      src={snap.url}
-                      alt="Slide"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
-                    <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-[#0A0A0C]/90 text-[#BAFF29] text-[8.5px] font-bold font-mono border border-white/10">
-                      {snap.time}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Floating Toast Notification */}
@@ -468,29 +478,29 @@ export function RecordingScreen({
         )}
       </AnimatePresence>
 
-      {/* 5. Minimalist 36px Floating Control Dock (35% Smaller, Ergonomic) */}
-      <div className="absolute bottom-3.5 left-0 right-0 z-30 pointer-events-none flex justify-center px-4">
-        <div className="h-9 px-2 rounded-full bg-[#141517]/95 border border-white/[0.08] backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex items-center gap-2 pointer-events-auto">
-          {/* Snap Slide Button: Compact & Refined */}
-          <button
-            type="button"
-            onClick={handleCaptureSnapshot}
-            className="h-6.5 px-2.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.06] text-white/70 hover:text-white text-[11px] font-medium transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
-            title="Capture current video frame"
-          >
-            <Camera size={12} className="text-[#BAFF29]" />
-            <span>Snap</span>
-          </button>
+      {/* 4. Floating Bottom Controls: Camera circle on left + Waveform/Pause/Stop pill on right */}
+      <div className="absolute bottom-6 left-0 right-0 z-30 pointer-events-none flex items-center justify-center gap-3 px-6">
+        {/* Circular Snap Button */}
+        <button
+          type="button"
+          onClick={handleCaptureSnapshot}
+          className="w-11 h-11 rounded-full bg-[#1A1C20]/95 hover:bg-[#22252A] border border-white/10 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center justify-center text-white/75 hover:text-white hover:border-[#BAFF29]/40 active:scale-95 transition-all pointer-events-auto cursor-pointer"
+          title="Snap Slide"
+        >
+          <Camera size={17} />
+        </button>
 
-          {/* Center: Waveform + Pause/Resume Button */}
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.04]">
-            <div className="flex items-center gap-0.5 h-2.5">
+        {/* Main Recording Capsule */}
+        <div className="h-11 px-4 rounded-full bg-[#1A1C20]/95 border border-white/10 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center gap-3.5 pointer-events-auto">
+          {/* Waveform Bars + Micro Monospace Timer */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5 h-3">
               {[0.1, 0.3, 0.15, 0.4, 0.2].map((d, i) => (
                 <span
                   key={i}
                   style={{
-                    width: '1.5px',
-                    height: isPaused ? '2.5px' : '9px',
+                    width: '2px',
+                    height: isPaused ? '3px' : '12px',
                     borderRadius: '1px',
                     backgroundColor: isPaused ? 'rgba(255,255,255,0.25)' : '#BAFF29',
                     animation: isPaused ? 'none' : 'pulse 0.8s infinite',
@@ -499,30 +509,36 @@ export function RecordingScreen({
                 />
               ))}
             </div>
-            <button
-              type="button"
-              onClick={handleTogglePause}
-              className="w-5 h-5 rounded-full hover:bg-white/[0.1] text-white/70 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
-              title={isPaused ? 'Resume Recording' : 'Pause Recording'}
-            >
-              {isPaused ? (
-                <Play size={10} className="text-[#BAFF29] fill-current" />
-              ) : (
-                <Pause size={10} className="fill-current" />
-              )}
-            </button>
+            <span className="font-mono text-[11.5px] font-semibold text-white/60 select-none">
+              {formatTime(elapsed)}
+            </span>
           </div>
 
-          {/* Right: Stop & Save (Finish) Button - Elegant Rose Capsule */}
+          <div className="w-[1px] h-3.5 bg-white/10" />
+
+          {/* Pause / Resume Button */}
+          <button
+            type="button"
+            onClick={handleTogglePause}
+            className="p-1 rounded-full text-white/75 hover:text-white transition-colors cursor-pointer flex items-center justify-center active:scale-95"
+            title={isPaused ? 'Resume' : 'Pause'}
+          >
+            {isPaused ? (
+              <Play size={15} className="text-[#BAFF29] fill-current" />
+            ) : (
+              <Pause size={15} className="fill-current" />
+            )}
+          </button>
+
+          {/* Stop / Finish Button: Sider-style rounded square */}
           <button
             type="button"
             onClick={handleStopAndSave}
             disabled={isLoading}
-            className="h-6.5 px-3 rounded-full bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/25 hover:border-rose-500 text-[11px] font-semibold transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-xs"
-            title="Finish & Save Note"
+            className="w-4.5 h-4.5 rounded-[4px] bg-rose-500 hover:bg-rose-400 active:scale-90 transition-all cursor-pointer flex items-center justify-center shadow-xs"
+            title="Finish & Save"
           >
-            <Square size={9} fill="currentColor" />
-            <span>Finish</span>
+            <Square size={8} fill="currentColor" className="text-white" />
           </button>
         </div>
       </div>
