@@ -48,15 +48,14 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
   const { captureConfig, updateConfig } = useCapture();
   const { fetchHistory, sessionState } = useSession();
 
-  // Dropdown states
-  const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
+  // Modal and config states
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [micGuideModalOpen, setMicGuideModalOpen] = useState(false);
   const [micPermissionState, setMicPermissionState] = useState<'unknown' | 'granted' | 'denied' | 'prompt'>('unknown');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchInput, setShowSearchInput] = useState(false);
 
-  // Check microphone permission on mount
+  // Check microphone permission on mount & listen for runtime status updates
   useEffect(() => {
     const checkMic = async () => {
       try {
@@ -72,6 +71,18 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
       }
     };
     void checkMic();
+
+    const listener = (msg: any) => {
+      if (msg?.type === 'MIC_PERMISSION_STATUS') {
+        if (msg.payload?.granted) {
+          setMicPermissionState('granted');
+        } else {
+          setMicPermissionState('denied');
+        }
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
   }, []);
 
   // Selected saved note to view details
@@ -117,27 +128,9 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
   const isVideoMode = captureConfig.video !== false && captureConfig.captureMode !== 'audio';
   const isMicEnabled = !!captureConfig.includeMicrophone;
 
-  const handleSourceSelect = (mode: 'video' | 'audio') => {
-    if (mode === 'audio') {
-      void updateConfig({
-        ...captureConfig,
-        captureMode: 'audio',
-        audio: true,
-        video: false,
-      });
-    } else {
-      void updateConfig({
-        ...captureConfig,
-        captureMode: 'tab',
-        audio: true,
-        video: true,
-      });
-    }
-    setSourceDropdownOpen(false);
-  };
 
-  const handleToggleVideo = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleVideo = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isVideoMode) {
       void updateConfig({ ...captureConfig, video: false, captureMode: 'audio' });
     } else {
@@ -376,74 +369,47 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
       {/* Main Content Area */}
       <div className="flex-1 px-5 space-y-4 overflow-y-auto pr-4">
         
-        {/* 2. Top Capture Config Bar (Two Options: Video + Audio & Audio Only) */}
+        {/* 2. Top Capture Config Bar: Video/Audio Switch + Mic Toggle */}
         <div className="flex items-center gap-2 relative z-30">
           
-          {/* Source Dropdown Button */}
-          <div className="relative flex-1">
+          {/* Video / Audio Mode Toggle Card */}
+          <div className="flex-1 flex items-center justify-between px-3 py-2 rounded-xl border border-white/10 bg-[#141517] hover:bg-[#1A1C20] transition-all text-white text-[13px] font-semibold shadow-xs">
+            {/* Clickable Label: Toggles mode */}
             <button
-              onClick={() => setSourceDropdownOpen(!sourceDropdownOpen)}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/10 bg-[#141517] hover:bg-[#1A1C20] transition-all text-white text-[13px] font-semibold shadow-xs"
+              type="button"
+              onClick={handleToggleVideo}
+              className="flex items-center gap-2 flex-1 cursor-pointer select-none text-left py-1"
+              title={isVideoMode ? 'Click to switch to Audio Only' : 'Click to enable Video + Audio'}
             >
-              <div className="flex items-center gap-2">
-                {isVideoMode ? (
-                  <Video size={16} className="text-[#BAFF29]" />
-                ) : (
-                  <Volume2 size={16} className="text-white/70" />
-                )}
-                <span className="truncate">{isVideoMode ? 'Video + Audio' : 'Audio Only'}</span>
-                <ChevronDown size={14} className="text-white/40 shrink-0" />
-              </div>
-
-              {/* Lime Toggle Switch */}
-              <div
-                onClick={handleToggleVideo}
-                className="toggle-switch shrink-0"
-                data-state={isVideoMode ? 'checked' : 'unchecked'}
-              >
-                <span className="toggle-switch-thumb" />
-              </div>
+              {isVideoMode ? (
+                <Video size={16} className="text-[#BAFF29] shrink-0" />
+              ) : (
+                <Volume2 size={16} className="text-white/60 shrink-0" />
+              )}
+              <span className="truncate">{isVideoMode ? 'Video + Audio' : 'Audio Only'}</span>
             </button>
 
-            {/* Source Dropdown Menu */}
-            <AnimatePresence>
-              {sourceDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  className="absolute top-full left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#1A1C20] border border-white/10 shadow-2xl z-50 flex flex-col gap-1 backdrop-blur-xl"
-                >
-                  <button
-                    onClick={() => handleSourceSelect('video')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-colors text-left cursor-pointer ${
-                      isVideoMode ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-bold' : 'text-white/80 hover:bg-white/5'
-                    }`}
-                  >
-                    <Video size={16} />
-                    <span>Video + Audio</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleSourceSelect('audio')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-semibold transition-colors text-left cursor-pointer ${
-                      !isVideoMode ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-bold' : 'text-white/80 hover:bg-white/5'
-                    }`}
-                  >
-                    <Volume2 size={16} />
-                    <span>Audio Only</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Dedicated Lime Switch Toggle Button */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isVideoMode}
+              onClick={handleToggleVideo}
+              className="toggle-switch shrink-0 cursor-pointer ml-2"
+              data-state={isVideoMode ? 'checked' : 'unchecked'}
+              title={isVideoMode ? 'Video is ON (Click to turn off)' : 'Video is OFF (Click to turn on)'}
+            >
+              <span className="toggle-switch-thumb pointer-events-none" />
+            </button>
           </div>
 
           {/* Microphone Split Toggle & Setup Instructions */}
           <div className="relative flex items-center rounded-xl border border-white/10 bg-[#141517] overflow-hidden shadow-xs">
             <button
-              onClick={() => {
+              type="button"
+              onClick={async () => {
                 const nextState = !isMicEnabled;
-                void updateConfig({ ...captureConfig, includeMicrophone: nextState });
+                await updateConfig({ ...captureConfig, includeMicrophone: nextState });
                 if (nextState && micPermissionState !== 'granted') {
                   setMicGuideModalOpen(true);
                 }
@@ -461,6 +427,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
               )}
             </button>
             <button
+              type="button"
               onClick={() => setMicGuideModalOpen(true)}
               title="Microphone & Audio Setup Instructions"
               className="px-2 py-2.5 hover:bg-white/5 border-l border-white/8 text-white/40 hover:text-[#BAFF29] transition-colors cursor-pointer"
@@ -701,7 +668,10 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
       <MicrophoneGuideModal
         isOpen={micGuideModalOpen}
         onClose={() => setMicGuideModalOpen(false)}
-        onPermissionGranted={() => setMicPermissionState('granted')}
+        onPermissionGranted={() => {
+          setMicPermissionState('granted');
+          void updateConfig({ ...captureConfig, includeMicrophone: true });
+        }}
       />
     </div>
   );

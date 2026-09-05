@@ -46,7 +46,9 @@ export const DEFAULT_STORAGE: StorageSchema = {
   currentSession: null,
   captureConfig: {
     audio: true,
-    video: false,
+    video: true,
+    includeMicrophone: true,
+    captureMode: 'tab',
   },
   activeStreamId: null,
   connectionStatus: 'disconnected',
