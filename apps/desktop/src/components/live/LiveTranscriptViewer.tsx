@@ -119,28 +119,27 @@ export function LiveTranscriptViewer({ onScreenshotClick }: LiveTranscriptViewer
 
   const renderTimelineItem = (item: TimelineItem) => {
     switch (item.type) {
-      case 'caption':
+      case 'caption': {
+        const cleanContent = item.content.replace(/^\[.*?\]:\s*/, '').trim();
         return (
-          <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group relative flex flex-col gap-1 my-3 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-3.5 shadow-xs">
+          <motion.div key={item.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="group relative flex flex-col gap-1.5 my-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 shadow-xs hover:bg-[var(--surface-hover)] transition-all">
             <div className="flex items-center justify-between text-xs px-0.5">
-              <div className="flex items-center gap-1.5">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]">
-                  {item.speaker || 'Speaker'}
-                </span>
-                <span className="text-[10px] text-[var(--text-muted)]">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-              </div>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
               <button
                 type="button"
-                onClick={() => navigator.clipboard.writeText(item.content)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--surface-hover)] cursor-pointer"
+                onClick={() => navigator.clipboard.writeText(cleanContent)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--surface)] cursor-pointer"
                 title="Copy caption"
               >
                 Copy
               </button>
             </div>
-            <p className="text-[13.5px] text-[var(--text-primary)] leading-relaxed font-sans">{item.content}</p>
+            <p className="text-[13px] text-[var(--text-primary)] leading-relaxed font-sans select-text">{cleanContent}</p>
           </motion.div>
         );
+      }
       case 'screenshot':
         return (
           <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="my-3">

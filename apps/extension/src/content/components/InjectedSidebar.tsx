@@ -102,9 +102,9 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
   // Transcript Feed
   const [transcriptSearch, setTranscriptSearch] = useState('');
   const [captions, setCaptions] = useState<Array<{ id: string; speaker: string; text: string; time: string }>>([
-    { id: 'c1', speaker: 'Speaker 1', text: 'Welcome everyone! Today we will walk through the meeting capture engine and user experience.', time: '10:00 AM' },
-    { id: 'c2', speaker: 'You', text: 'I have verified that our Manifest V3 offscreen pipeline is working without user gesture errors.', time: '10:02 AM' },
-    { id: 'c3', speaker: 'Speaker 1', text: 'Super! Let us make sure the sidebar matches Sider.ai standards with friendly cartoon aesthetics.', time: '10:04 AM' },
+    { id: 'c1', speaker: '', text: 'Welcome everyone! Today we will walk through the meeting capture engine and user experience.', time: '10:00 AM' },
+    { id: 'c2', speaker: '', text: 'I have verified that our Manifest V3 offscreen pipeline is working without user gesture errors.', time: '10:02 AM' },
+    { id: 'c3', speaker: '', text: 'Super! Let us make sure the sidebar matches Sider.ai standards with friendly cartoon aesthetics.', time: '10:04 AM' },
   ]);
 
   // Toast / Copy Feedback
@@ -907,30 +907,30 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {captions
                     .filter((c) => !transcriptSearch || c.text.toLowerCase().includes(transcriptSearch.toLowerCase()))
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '12px',
-                          background: 'rgba(20, 21, 23, 0.6)',
-                          border: '1px solid rgba(255, 255, 255, 0.06)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: item.speaker === 'You' ? '#BAFF29' : '#38bdf8' }}>
-                            {item.speaker}
-                          </span>
-                          <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)' }}>{item.time}</span>
+                    .map((item) => {
+                      const cleanText = item.text.replace(/^\[.*?\]:\s*/, '').trim();
+                      return (
+                        <div
+                          key={item.id}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            background: 'rgba(20, 21, 23, 0.6)',
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)' }}>{item.time}</span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.4 }}>
+                            {cleanText}
+                          </p>
                         </div>
-                        <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.4 }}>
-                          {item.text}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             )}

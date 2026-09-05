@@ -687,12 +687,8 @@ impl NativeHost {
                         .fetch_optional(&pool)
                         .await;
 
-                        // Determine the formatted text based on speaker
-                        let formatted_text = if let Some(speaker) = &payload.speaker_name {
-                            format!("[{}]: {}", speaker, payload.text)
-                        } else {
-                            format!("[Unknown Speaker]: {}", payload.text)
-                        };
+                        // Store plain transcript text directly without synthetic speaker tags
+                        let formatted_text = payload.text.trim().to_string();
 
                         match existing {
                             Ok(Some(row)) => {

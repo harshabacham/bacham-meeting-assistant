@@ -636,7 +636,12 @@ Structure your response with:
     const handleCopyTranscript = async () => {
         if (!rawTranscript) return;
         try {
-            await navigator.clipboard.writeText(rawTranscript);
+            const plainText = rawTranscript
+                .split('\n')
+                .map(l => l.replace(/^\[.*?\]:\s*/, '').trim())
+                .filter(Boolean)
+                .join('\n\n');
+            await navigator.clipboard.writeText(plainText);
             setTranscriptCopied(true);
             setTimeout(() => setTranscriptCopied(false), 2000);
         } catch (err) {
@@ -718,7 +723,12 @@ Return only the polished transcript text:`;
 
     const handleExportTranscriptFile = () => {
         if (!rawTranscript) return;
-        const blob = new Blob([rawTranscript], { type: 'text/plain' });
+        const plainText = rawTranscript
+            .split('\n')
+            .map(l => l.replace(/^\[.*?\]:\s*/, '').trim())
+            .filter(Boolean)
+            .join('\n\n');
+        const blob = new Blob([plainText], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -731,10 +741,10 @@ Return only the polished transcript text:`;
 
     if (!editor) return null;
 
-    // Filtered transcript lines
+    // Filtered transcript lines - clean any synthetic legacy speaker tags
     const filteredTranscriptLines = (rawTranscript || '')
         .split('\n')
-        .map(l => l.trim())
+        .map(l => l.replace(/^\[.*?\]:\s*/, '').trim())
         .filter(l => Boolean(l) && (!transcriptSearch.trim() || l.toLowerCase().includes(transcriptSearch.toLowerCase())));
 
     const transcriptWordCount = (rawTranscript || '').split(/\s+/).filter(Boolean).length;
@@ -1402,16 +1412,9 @@ Return only the polished transcript text:`;
                                                 filteredTranscriptLines.map((line, idx) => (
                                                     <div 
                                                         key={idx} 
-                                                        className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
+                                                        className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all hover:bg-[var(--surface-hover)]"
                                                     >
-                                                        <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
-                                                            <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                                                                <span>Speaker {Math.floor(idx / 3) + 1}</span>
-                                                            </div>
-                                                            <span className="tabular-nums">{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
-                                                        </div>
-                                                        <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans">
+                                                        <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans select-text whitespace-pre-wrap">
                                                             {line}
                                                         </p>
                                                     </div>
@@ -1480,16 +1483,9 @@ Return only the polished transcript text:`;
                                             filteredTranscriptLines.map((line, idx) => (
                                                 <div 
                                                     key={idx} 
-                                                    className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-1.5 transition-all hover:bg-[var(--surface-hover)]"
+                                                    className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all hover:bg-[var(--surface-hover)]"
                                                 >
-                                                    <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] font-medium">
-                                                        <div className="flex items-center gap-1.5 text-[var(--accent)] font-semibold">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                                                            <span>Speaker {Math.floor(idx / 3) + 1}</span>
-                                                        </div>
-                                                        <span className="tabular-nums">{`00:${(idx * 8).toString().padStart(2, '0')}`}</span>
-                                                    </div>
-                                                    <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans">
+                                                    <p className="text-xs text-[var(--text-primary)] leading-relaxed font-sans select-text whitespace-pre-wrap">
                                                         {line}
                                                     </p>
                                                 </div>

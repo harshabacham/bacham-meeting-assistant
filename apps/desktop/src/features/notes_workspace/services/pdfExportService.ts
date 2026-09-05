@@ -576,7 +576,7 @@ export async function generateMeetingPdf(note: Note, options: PdfExportOptions):
 
     for (const line of transcriptLines) {
       if (!line.trim()) continue;
-      const cleanLine = cleanPdfText(line);
+      const cleanLine = cleanPdfText(line.replace(/^\[.*?\]:\s*/, ''));
       if (!cleanLine) continue;
       const wrapped = doc.splitTextToSize(cleanLine, contentWidth);
       for (const wLine of wrapped) {
