@@ -126,7 +126,6 @@ export const PetCompanionWidget: React.FC = () => {
   // Monitor imminent and concluded meetings every 20s
   useEffect(() => {
     const checkMeetings = () => {
-      // 1. Imminent check
       const imminent = findImminentMeeting(events, 10);
       if (imminent) {
         if (snoozedMeetingId === imminent.event.id && snoozeUntil && Date.now() < snoozeUntil) {
@@ -138,7 +137,6 @@ export const PetCompanionWidget: React.FC = () => {
         setImminentMeeting(null);
       }
 
-      // 2. Concluded check
       const concluded = findRecentlyConcludedMeeting(events, 30);
       setConcludedMeeting(concluded);
     };
@@ -251,7 +249,7 @@ export const PetCompanionWidget: React.FC = () => {
     });
   };
 
-  // Close bubble on outside click (No annoying auto-dismiss timers!)
+  // Close bubble on outside click
   useEffect(() => {
     if (!showBubble) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -267,7 +265,6 @@ export const PetCompanionWidget: React.FC = () => {
     if (showBubble) {
       setShowBubble(false);
     } else {
-      // Auto-route to the most pertinent tab
       if (imminentMeeting || concludedMeeting) {
         setActiveTab('briefing');
       } else if (isFocusRunning) {
@@ -413,7 +410,7 @@ Best regards,`;
         onDragEnd={handleDragEnd}
         className="absolute bottom-6 right-6 flex items-end justify-end pointer-events-auto"
       >
-        {/* Docked Focus Timer Capsule (Visible beside pet when focus is active or paused) */}
+        {/* Docked Focus Timer Capsule (Solid surface, zero glass blur) */}
         {(isFocusRunning || (focusTimeLeft > 0 && focusTimeLeft < focusTotalDuration)) && (
           <motion.button
             initial={{ opacity: 0, scale: 0.9, x: 10 }}
@@ -424,7 +421,7 @@ Best regards,`;
               setActiveTab('focus');
               setShowBubble(true);
             }}
-            className="mr-3 mb-2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-raised)]/95 backdrop-blur-md border border-[var(--border)] text-xs font-mono font-semibold text-[var(--text-primary)] shadow-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-all"
+            className="mr-3 mb-2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-xs font-mono font-semibold text-[var(--text-primary)] shadow-md cursor-pointer hover:bg-[var(--surface-hover)] transition-all"
             title="Open Focus Companion"
           >
             <span className={`w-2 h-2 rounded-full ${isFocusRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
@@ -435,7 +432,7 @@ Best regards,`;
           </motion.button>
         )}
 
-        {/* Main Companion Popup Bubble */}
+        {/* Main Companion Popup Bubble (Solid surface, zero glass blur) */}
         <AnimatePresence>
           {showBubble && (
             <motion.div
@@ -444,19 +441,19 @@ Best regards,`;
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 450, damping: 30 }}
-              className="absolute bottom-full mb-3 right-0 w-[390px] bg-[var(--surface)]/98 backdrop-blur-2xl border border-[var(--border)] p-4 rounded-2xl shadow-2xl pointer-events-auto cursor-default text-left"
+              className="absolute bottom-full mb-3 right-0 w-[390px] bg-[var(--surface)] border border-[var(--border)] p-4 rounded-2xl shadow-xl pointer-events-auto cursor-default text-left"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Top Navigation: Ultra-Clean Segmented Control */}
+              {/* Top Navigation: Segmented Control (Solid, no red, no glass) */}
               <div className="flex items-center justify-between gap-2 mb-4">
-                <div className="flex-1 bg-[var(--surface-raised)] p-1 rounded-xl flex items-center justify-between border border-[var(--border)]/40 relative">
+                <div className="flex-1 bg-[var(--surface-raised)] p-1 rounded-xl flex items-center justify-between border border-[var(--border)] relative">
                   {[
                     {
                       id: 'briefing',
                       label: 'Briefing',
                       icon: Bell,
                       hasDot: Boolean(imminentMeeting || concludedMeeting),
-                      dotColor: imminentMeeting ? 'bg-rose-500' : 'bg-emerald-400',
+                      dotColor: imminentMeeting ? 'bg-amber-400' : 'bg-emerald-400',
                     },
                     {
                       id: 'whisper',
@@ -489,7 +486,7 @@ Best regards,`;
                         }}
                         className={`relative flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer z-10 ${
                           isActive
-                            ? 'text-[var(--text-primary)] shadow-sm'
+                            ? 'text-[var(--text-primary)]'
                             : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                         }`}
                       >
@@ -497,10 +494,10 @@ Best regards,`;
                           <motion.div
                             layoutId="activeTabPill"
                             transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                            className="absolute inset-0 bg-[var(--surface)] rounded-lg border border-[var(--border)]/70 shadow-xs z-[-1]"
+                            className="absolute inset-0 bg-[var(--surface)] rounded-lg border border-[var(--border)] shadow-xs z-[-1]"
                           />
                         )}
-                        <Icon size={12} className={tab.hasDot && tab.id === 'briefing' ? 'animate-pulse text-rose-500' : ''} />
+                        <Icon size={12} className={tab.hasDot && tab.id === 'briefing' ? 'animate-pulse text-amber-400' : ''} />
                         <span className="truncate">{tab.label}</span>
                         {tab.hasDot && (
                           <span className={`w-1.5 h-1.5 rounded-full ${tab.dotColor} shrink-0`} />
@@ -523,13 +520,13 @@ Best regards,`;
               {/* ─── TAB 1: BRIEFING (PRE-FLIGHT, POST-MEETING DEBRIEF, OR SCHEDULE PREVIEW) ─── */}
               {activeTab === 'briefing' && (
                 <div className="flex flex-col gap-3">
-                  {/* Case 1: Imminent Meeting (≤ 10m away or ongoing) */}
+                  {/* Case 1: Imminent Meeting (≤ 10m away or ongoing) - Amber tone, zero red */}
                   {imminentMeeting ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
                               {imminentMeeting.isOngoing ? 'Happening Now' : `Starts in ${imminentMeeting.minutesUntilStart}m`}
                             </span>
                           </div>
@@ -546,8 +543,8 @@ Best regards,`;
                         </span>
                       </div>
 
-                      {/* 2-Minute Pre-Meeting Cheat Sheet Content */}
-                      <div className="bg-[var(--surface-raised)]/80 p-3 rounded-xl border border-[var(--border)]/60 flex flex-col gap-2">
+                      {/* Pre-Meeting Cheat Sheet (Solid surface, zero glass blur) */}
+                      <div className="bg-[var(--surface-raised)] p-3 rounded-xl border border-[var(--border)] flex flex-col gap-2">
                         <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--accent)]">
                           <span className="flex items-center gap-1.5">
                             <Target size={12} />
@@ -586,7 +583,7 @@ Best regards,`;
                         </ul>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/60">
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
                         <button
                           onClick={handleSnoozeMeeting}
                           className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
@@ -635,7 +632,7 @@ Best regards,`;
                     /* Case 2: Concluded Meeting (Debrief) */
                     <div className="flex flex-col gap-3">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                           Concluded {concludedMeeting.minutesSinceEnd}m ago
                         </span>
                         <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 leading-snug">
@@ -643,7 +640,7 @@ Best regards,`;
                         </h4>
                       </div>
 
-                      <div className="bg-[var(--surface-raised)]/80 p-3 rounded-xl border border-[var(--border)]/60 flex flex-col gap-2">
+                      <div className="bg-[var(--surface-raised)] p-3 rounded-xl border border-[var(--border)] flex flex-col gap-2">
                         <p className="text-xs text-[var(--text-primary)] leading-relaxed">
                           Great session! Send a follow-up while context is fresh to keep momentum high.
                         </p>
@@ -653,7 +650,7 @@ Best regards,`;
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/60">
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
                         <button
                           onClick={() => {
                             toggleEventCompleted(concludedMeeting.event.id);
@@ -675,10 +672,10 @@ Best regards,`;
                       </div>
                     </div>
                   ) : nextUpcomingMeeting ? (
-                    /* Case 3: Schedule Preview (Upcoming meeting later today) */
+                    /* Case 3: Schedule Preview */
                     <div className="flex flex-col gap-3">
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] bg-[var(--accent-dim)] px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] bg-[var(--accent-dim)] border border-[var(--accent)]/30 px-2 py-0.5 rounded-full">
                           Upcoming Today
                         </span>
                         <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 leading-snug">
@@ -693,7 +690,7 @@ Best regards,`;
                         </span>
                       </div>
 
-                      <div className="bg-[var(--surface-raised)]/60 p-2.5 rounded-xl border border-[var(--border)]/40 flex items-center justify-between text-xs text-[var(--text-muted)]">
+                      <div className="bg-[var(--surface-raised)] p-2.5 rounded-xl border border-[var(--border)] flex items-center justify-between text-xs text-[var(--text-muted)]">
                         <span>Ready to prep notes early?</span>
                         <button
                           onClick={() => {
@@ -708,7 +705,7 @@ Best regards,`;
                       </div>
                     </div>
                   ) : (
-                    /* Case 4: Free Calendar - Ready for Deep Work */
+                    /* Case 4: Free Calendar */
                     <div className="flex flex-col items-center text-center gap-2.5 py-4">
                       <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                         <CheckCircle2 size={20} />
@@ -743,7 +740,7 @@ Best regards,`;
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={`Ask ${currentPet.name} to find notes, decisions, or tasks...`}
-                      className="w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-8 text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]/60 transition-all"
+                      className="w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-8 text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-all"
                     />
                     {searchQuery && (
                       <button
@@ -767,7 +764,7 @@ Best regards,`;
                                 navigate(res.lectureId.startsWith('note_') ? '/notes' : `/lectures/${res.lectureId}`);
                               }
                             }}
-                            className="p-2.5 rounded-xl bg-[var(--surface-raised)]/70 hover:bg-[var(--surface-raised)] border border-[var(--border)]/40 hover:border-[var(--border)] cursor-pointer transition-all flex flex-col gap-1 group"
+                            className="p-2.5 rounded-xl bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)] cursor-pointer transition-all flex flex-col gap-1 group"
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-[11.5px] font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] truncate flex items-center gap-1.5">
@@ -802,7 +799,7 @@ Best regards,`;
                           <button
                             key={item.label}
                             onClick={() => setSearchQuery(item.query)}
-                            className="text-left text-[11px] font-medium bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)]/60 px-2.5 py-1.5 rounded-lg text-[var(--text-primary)] transition-colors cursor-pointer truncate"
+                            className="text-left text-[11px] font-medium bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)] px-2.5 py-1.5 rounded-lg text-[var(--text-primary)] transition-colors cursor-pointer truncate"
                           >
                             {item.label}
                           </button>
@@ -817,7 +814,7 @@ Best regards,`;
               {activeTab === 'focus' && (
                 <div className="flex flex-col items-center gap-3 py-1 text-center">
                   {/* Mode Selector */}
-                  <div className="bg-[var(--surface-raised)] p-0.5 rounded-lg flex items-center gap-1 border border-[var(--border)]/60">
+                  <div className="bg-[var(--surface-raised)] p-0.5 rounded-lg flex items-center gap-1 border border-[var(--border)]">
                     <button
                       onClick={() => setFocusMode('focus')}
                       className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
@@ -843,7 +840,6 @@ Best regards,`;
                   {/* Circular Timer Visual */}
                   <div className="relative flex items-center justify-center my-1">
                     <svg className="w-32 h-32 -rotate-90" viewBox="0 0 100 100">
-                      {/* Background track */}
                       <circle
                         cx="50"
                         cy="50"
@@ -851,7 +847,6 @@ Best regards,`;
                         className="stroke-[var(--surface-raised)] fill-none"
                         strokeWidth="6"
                       />
-                      {/* Animated Progress */}
                       <circle
                         cx="50"
                         cy="50"
@@ -885,7 +880,7 @@ Best regards,`;
                           onClick={() => startSession(mins, focusMode)}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
                             focusTotalDuration === mins * 60
-                              ? 'bg-[var(--accent-dim)] border-[var(--accent)]/40 text-[var(--accent)]'
+                              ? 'bg-[var(--accent-dim)] border-[var(--accent)] text-[var(--accent)]'
                               : 'bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text-primary)]'
                           }`}
                         >
@@ -896,7 +891,7 @@ Best regards,`;
                   )}
 
                   {/* Timer Controls */}
-                  <div className="flex items-center justify-center gap-2 pt-2 w-full border-t border-[var(--border)]/60">
+                  <div className="flex items-center justify-center gap-2 pt-2 w-full border-t border-[var(--border)]">
                     {isFocusRunning ? (
                       <button
                         onClick={pauseSession}
@@ -943,7 +938,7 @@ Best regards,`;
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           {currentTask.priority === 'urgent' ? (
-                            <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded-md uppercase">
+                            <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-md uppercase">
                               Urgent
                             </span>
                           ) : currentTask.priority === 'high' ? (
@@ -980,13 +975,13 @@ Best regards,`;
                         )}
                       </div>
 
-                      {/* Featured Task Card */}
-                      <div className="bg-[var(--surface-raised)]/70 p-3 rounded-xl border border-[var(--border)]/50 flex flex-col gap-2">
+                      {/* Featured Task Card (Solid surface, zero glass blur) */}
+                      <div className="bg-[var(--surface-raised)] p-3 rounded-xl border border-[var(--border)] flex flex-col gap-2">
                         <p className="text-sm text-[var(--text-primary)] leading-relaxed font-medium">
                           "{currentTask.task}"
                         </p>
 
-                        <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-1 border-t border-[var(--border)]/40">
+                        <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-1 border-t border-[var(--border)]">
                           <span className="truncate max-w-[190px]">
                             From: {currentTask.lectureTitle || 'Workspace Note'}
                           </span>
@@ -999,7 +994,7 @@ Best regards,`;
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[var(--border)]/60">
+                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[var(--border)]">
                         <button
                           onClick={(e) => handleScheduleFocusBlock(currentTask, e)}
                           className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--surface-hover)] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
@@ -1055,7 +1050,7 @@ Best regards,`;
           )}
         </AnimatePresence>
 
-        {/* Pet Avatar Button (Clean, zero notification badges/overlays) */}
+        {/* Pet Avatar Button (Solid hover tooltip, zero glass blur, zero red) */}
         <motion.button
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -1083,7 +1078,7 @@ Best regards,`;
                 initial={{ opacity: 0, x: 10, scale: 0.9 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 5, scale: 0.95 }}
-                className="absolute right-[calc(100%+12px)] bg-[var(--surface-raised)]/95 backdrop-blur-xl border border-[var(--border)]/60 px-3 py-1.5 rounded-xl whitespace-nowrap text-xs font-semibold tracking-wide text-[var(--text-primary)] shadow-xl pointer-events-none flex items-center gap-2"
+                className="absolute right-[calc(100%+12px)] bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-1.5 rounded-xl whitespace-nowrap text-xs font-semibold tracking-wide text-[var(--text-primary)] shadow-lg pointer-events-none flex items-center gap-2"
               >
                 {isFocusRunning ? (
                   <>
@@ -1092,7 +1087,7 @@ Best regards,`;
                   </>
                 ) : imminentMeeting ? (
                   <>
-                    <Bell size={12} className="text-rose-500 animate-pulse" />
+                    <Bell size={12} className="text-amber-400 animate-pulse" />
                     <span>Meeting starts soon: {imminentMeeting.event.title}</span>
                   </>
                 ) : concludedMeeting ? (
@@ -1123,5 +1118,6 @@ Best regards,`;
 export const GlobalAskAI: React.FC = () => {
   return <PetCompanionWidget />;
 };
+
 
 
