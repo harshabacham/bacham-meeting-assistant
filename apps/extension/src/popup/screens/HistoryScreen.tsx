@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '@/shared/hooks/useSession';
 import { useConnection } from '@/shared/hooks/useConnection';
-import { History, Calendar, Clock, ArrowRight, RefreshCw } from 'lucide-react';
+import { History, Calendar, Clock, ArrowRight, RefreshCw, ArrowLeft, Sparkles } from 'lucide-react';
 import type { LectureSummary } from '@/shared/types';
 import { motion } from 'framer-motion';
 
@@ -11,6 +11,7 @@ export function HistoryScreen() {
   const [history, setHistory] = useState<LectureSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedLecture, setSelectedLecture] = useState<LectureSummary | null>(null);
 
   const handleRefresh = async () => {
     if (isRefreshing) return;
@@ -40,6 +41,78 @@ export function HistoryScreen() {
       setLoading(false);
     }
   }, [connectionStatus, fetchHistory]);
+
+  if (selectedLecture) {
+    const date = new Date(selectedLecture.created_at);
+    const dur = Math.round(selectedLecture.duration_ms / 60000);
+    return (
+      <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white animate-fade-in overflow-hidden">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-2 gap-3 shrink-0">
+          <button
+            onClick={() => setSelectedLecture(null)}
+            className="p-1.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors cursor-pointer"
+            title="Back to history"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <span className="flex-1" />
+          <button
+            onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' }).catch(() => {})}
+            className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+            title="Open in Desktop App"
+          >
+            <Sparkles size={12} className="text-[#BAFF29]" />
+            <span>Desktop App</span>
+          </button>
+        </div>
+
+        {/* Title */}
+        <div className="px-5 pb-3 shrink-0">
+          <h1 className="text-[20px] font-bold text-white leading-tight tracking-tight">
+            {selectedLecture.title}
+          </h1>
+          <div className="flex items-center gap-2 mt-1.5 text-[11.5px] text-white/40 font-medium">
+            <span className="flex items-center gap-1">
+              <Calendar size={11} />
+              {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+            <span>·</span>
+            <span className="flex items-center gap-1">
+              <Clock size={11} />
+              {dur} min
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          <div>
+            <h2 className="text-[14px] font-bold text-white mb-2">Executive Summary</h2>
+            <ul className="space-y-2">
+              <li className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[#BAFF29] shrink-0" />
+                <span>Recorded meeting session with audio, screen captures, and live notes.</span>
+              </li>
+              <li className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
+                <span>Open the BACHAM desktop app for the full AI summary, action items, and mindmap.</span>
+              </li>
+            </ul>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' }).catch(() => {})}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[13px] font-extrabold transition-all active:scale-98 shadow-lg shadow-[#BAFF29]/20 mt-4 cursor-pointer"
+          >
+            <Sparkles size={14} className="text-[#0A0A0C]" />
+            View Full AI Summary in App
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full font-sans animate-fade-in p-5">
@@ -86,7 +159,7 @@ export function HistoryScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 20 }}
                 className="group p-4 rounded-xl border border-white/5 bg-black/20 hover:bg-black/40 backdrop-blur-md shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 relative overflow-hidden"
-                onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' })}
+                onClick={() => setSelectedLecture(lecture)}
               >
                 {/* Subtle highlight glow on hover */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />

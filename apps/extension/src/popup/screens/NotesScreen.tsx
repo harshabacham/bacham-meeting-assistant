@@ -183,7 +183,7 @@ export function NotesScreen() {
 
           {/* Open in app CTA */}
           <button
-            onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' })}
+            onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' }).catch(() => {})}
             className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[13px] font-extrabold transition-all active:scale-98 shadow-lg shadow-[#BAFF29]/20 cursor-pointer"
           >
             <Sparkles size={14} className="text-[#0A0A0C]" />

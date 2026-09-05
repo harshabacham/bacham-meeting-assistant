@@ -47,6 +47,209 @@ interface SavedNoteItem {
 }
 
 
+interface NoteDetailViewProps {
+  note: SavedNoteItem;
+  onClose: () => void;
+  onOpenApp?: (() => void) | undefined;
+}
+
+function NoteDetailView({ note, onClose, onOpenApp }: NoteDetailViewProps) {
+  const tabs = ['Edit', 'Summary', 'Transcript'];
+  const [activeDetailTab, setActiveDetailTab] = useState('Summary');
+  const [askQuery, setAskQuery] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleOpenInApp = () => {
+    if (onOpenApp) {
+      onOpenApp();
+    } else {
+      chrome.runtime.sendMessage({ type: 'OPEN_APP' }).catch(() => {});
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white animate-fade-in overflow-hidden">
+      {/* Top icon bar */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2 gap-3 shrink-0">
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors cursor-pointer"
+          title="Back to meetings"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <span className="flex-1" />
+        <button
+          onClick={handleOpenInApp}
+          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+          title="Open in Desktop App"
+        >
+          <Sparkles size={12} className="text-[#BAFF29]" />
+          <span>Desktop App</span>
+        </button>
+      </div>
+
+      {/* Title */}
+      <div className="px-5 pb-3 shrink-0">
+        <h1 className="text-[20px] font-bold text-white leading-tight tracking-tight">
+          {note.title}
+        </h1>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 px-4 pb-3 border-b border-white/8 shrink-0 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveDetailTab(tab)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeDetailTab === tab
+                ? 'bg-[#BAFF29]/15 text-[#BAFF29] border border-[#BAFF29]/30'
+                : 'text-white/40 hover:text-white/70'
+            }`}
+          >
+            {tab === 'Edit' && <Pencil size={11} />}
+            {tab === 'Summary' && <FileText size={11} />}
+            {tab}
+          </button>
+        ))}
+        <span className="flex-1" />
+        <span className="flex items-center gap-1 text-[11px] text-white/30 font-medium px-2 shrink-0">
+          <Calendar size={11} />
+          {note.date}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        {activeDetailTab === 'Summary' && (
+          <div className="space-y-5">
+            {/* Executive Summary */}
+            <div>
+              <h2 className="text-[14px] font-bold text-white mb-2">Executive Summary</h2>
+              <ul className="space-y-2">
+                {note.notes ? (
+                  note.notes.split('\n').filter(Boolean).map((line, i) => (
+                    <li key={i} className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[#BAFF29] shrink-0" />
+                      <span>{line}</span>
+                    </li>
+                  ))
+                ) : (
+                  <>
+                    <li className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[#BAFF29] shrink-0" />
+                      <span>Meeting notes and details recorded for this session.</span>
+                    </li>
+                    <li className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
+                      <span>Open the BACHAM desktop app for the full AI summary, action items, and knowledge graph.</span>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            {/* Session Details */}
+            <div>
+              <h2 className="text-[14px] font-bold text-white mb-2">Session Details</h2>
+              <ul className="space-y-2">
+                <li className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                  <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                  <span>Recorded on {note.date}{note.duration ? ` · Duration: ${note.duration}` : ''}.</span>
+                </li>
+                {note.snapshotCount != null && note.snapshotCount > 0 && (
+                  <li className="flex gap-2.5 text-[12.5px] text-white/70 leading-relaxed">
+                    <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
+                    <span>{note.snapshotCount} screenshot{note.snapshotCount !== 1 ? 's' : ''} were captured during this session.</span>
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            {/* Open in App CTA */}
+            <button
+              type="button"
+              onClick={handleOpenInApp}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[13px] font-extrabold transition-all active:scale-98 shadow-lg shadow-[#BAFF29]/20 mt-2 cursor-pointer"
+            >
+              <Sparkles size={14} className="text-[#0A0A0C]" />
+              Open Full Summary in App
+            </button>
+          </div>
+        )}
+
+        {activeDetailTab === 'Edit' && (
+          <div>
+            <p className="text-[12px] text-white/40 mb-3">Notes captured during session:</p>
+            <p className="text-[12.5px] text-white/70 leading-relaxed whitespace-pre-wrap">
+              {note.notes || 'No live notes were typed during this recording. You can view the full transcript in the desktop app.'}
+            </p>
+          </div>
+        )}
+
+        {activeDetailTab === 'Transcript' && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
+              <Mic size={20} className="text-[#BAFF29]" />
+            </div>
+            <p className="text-[13px] font-bold text-white/70 mb-1">Transcript in Desktop App</p>
+            <p className="text-[11px] text-white/35 max-w-[200px] mb-4">
+              Open the BACHAM desktop app to view the full meeting transcript and AI analysis.
+            </p>
+            <button
+              type="button"
+              onClick={handleOpenInApp}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-2"
+            >
+              <Sparkles size={13} className="text-[#BAFF29]" />
+              Open in Desktop App
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom bar */}
+      <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#141517]">
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="flex items-center gap-1.5 shrink-0 cursor-pointer"
+        >
+          <div className="flex items-end gap-px h-4">
+            {[2, 4, 3, 5, 2].map((h, i) => (
+              <span
+                key={i}
+                style={{ height: `${h * 2}px` }}
+                className={`w-0.5 rounded-full transition-all ${isPlaying ? 'bg-[#BAFF29] animate-pulse' : 'bg-white/25'}`}
+              />
+            ))}
+          </div>
+        </button>
+
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 text-[12px] font-semibold text-white/80 transition-all shrink-0 cursor-pointer"
+        >
+          {isPlaying ? (
+            <><span className="w-2 h-2 flex gap-0.5"><span className="w-0.5 h-2 bg-white/70 rounded" /><span className="w-0.5 h-2 bg-white/70 rounded" /></span> Pause</>
+          ) : (
+            <><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="0,0 10,5 0,10" /></svg> Audio</>
+          )}
+        </button>
+
+        <input
+          value={askQuery}
+          onChange={(e) => setAskQuery(e.target.value)}
+          placeholder="Ask about this meeting..."
+          className="flex-1 bg-transparent text-[12.5px] text-white/70 placeholder:text-white/25 outline-none min-w-0"
+        />
+
+        <Mic size={15} className="text-white/40 hover:text-[#BAFF29] cursor-pointer transition-colors shrink-0" />
+      </div>
+    </div>
+  );
+}
+
 export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording }: IdleScreenProps): React.ReactElement {
   const { captureConfig, updateConfig } = useCapture();
   const { fetchHistory, sessionState } = useSession();
@@ -230,193 +433,13 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
     }
   };
 
-  // Note Detail View — matches BACHAM theme (dark slate, tabbed, AI summary)
   if (selectedNote) {
-    const tabs = ['Edit', 'Summary', 'Transcript'];
-    const [activeDetailTab, setActiveDetailTab] = React.useState('Summary');
-    const [askQuery, setAskQuery] = React.useState('');
-    const [isPlaying, setIsPlaying] = React.useState(false);
-
     return (
-      <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white animate-fade-in overflow-hidden">
-        {/* Top icon bar — three-dot / share / copy */}
-        <div className="flex justify-end px-4 pt-4 pb-2 gap-3 shrink-0">
-          <button onClick={() => setSelectedNote(null)} className="p-1.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-            <ArrowLeft size={18} />
-          </button>
-          <span className="flex-1" />
-          <button className="p-1.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          </button>
-          <button className="p-1.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          </button>
-          <button className="p-1.5 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-          </button>
-        </div>
-
-        {/* Title */}
-        <div className="px-5 pb-3 shrink-0">
-          <h1 className="text-[22px] font-bold text-white leading-tight tracking-tight">
-            {selectedNote.title}
-          </h1>
-        </div>
-
-        {/* Tab bar */}
-        <div className="flex items-center gap-1 px-4 pb-3 border-b border-white/8 shrink-0 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveDetailTab(tab)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all ${
-                activeDetailTab === tab
-                  ? 'bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-            >
-              {tab === 'Edit' && <Pencil size={11} />}
-              {tab === 'Summary' && <FileText size={11} />}
-              {tab}
-            </button>
-          ))}
-          <span className="flex-1" />
-          <span className="flex items-center gap-1 text-[11px] text-white/30 font-medium px-2 shrink-0">
-            <Calendar size={11} />
-            {selectedNote.date}
-          </span>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          {activeDetailTab === 'Summary' && (
-            <div className="space-y-5">
-              {/* Executive Summary */}
-              <div>
-                <h2 className="text-[15px] font-bold text-white mb-2">Executive Summary</h2>
-                <ul className="space-y-2">
-                  {selectedNote.notes ? (
-                    selectedNote.notes.split('\n').filter(Boolean).map((line, i) => (
-                      <li key={i} className="flex gap-2.5 text-[13px] text-white/70 leading-relaxed">
-                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />
-                        <span>{line}</span>
-                      </li>
-                    ))
-                  ) : (
-                    <>
-                      <li className="flex gap-2.5 text-[13px] text-white/70 leading-relaxed">
-                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />
-                        <span>No live notes were recorded during this session.</span>
-                      </li>
-                      <li className="flex gap-2.5 text-[13px] text-white/70 leading-relaxed">
-                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
-                        <span>Open the BACHAM desktop app for the full AI-generated summary and transcript.</span>
-                      </li>
-                    </>
-                  )}
-                </ul>
-              </div>
-
-              {/* Session Details */}
-              <div>
-                <h2 className="text-[15px] font-bold text-white mb-2">Session Details</h2>
-                <ul className="space-y-2">
-                  <li className="flex gap-2.5 text-[13px] text-white/70 leading-relaxed">
-                    <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
-                    <span>Recorded on {selectedNote.date}{selectedNote.duration ? ` · Duration: ${selectedNote.duration}` : ''}.</span>
-                  </li>
-                  {selectedNote.snapshotCount != null && selectedNote.snapshotCount > 0 && (
-                    <li className="flex gap-2.5 text-[13px] text-white/70 leading-relaxed">
-                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
-                      <span>{selectedNote.snapshotCount} screenshot{selectedNote.snapshotCount !== 1 ? 's' : ''} were captured during this session.</span>
-                    </li>
-                  )}
-                </ul>
-              </div>
-
-              {/* General Observations */}
-              <div>
-                <h2 className="text-[15px] font-bold text-white mb-2">General Observations</h2>
-                <ul className="space-y-2">
-                  <li className="flex gap-2.5 text-[13px] text-white/70 leading-relaxed">
-                    <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" />
-                    <span>Full AI meeting summary, action items, and transcript are available in the desktop companion app.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Open in App CTA */}
-              <button
-                onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' })}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[13px] font-extrabold transition-all active:scale-98 shadow-lg shadow-[#BAFF29]/20 mt-2 cursor-pointer"
-              >
-                <Sparkles size={14} className="text-[#0A0A0C]" />
-                Open Full Summary in App
-              </button>
-            </div>
-          )}
-
-          {activeDetailTab === 'Edit' && (
-            <div>
-              <p className="text-[13px] text-white/40 mb-3">Notes captured during session:</p>
-              <p className="text-[13px] text-white/70 leading-relaxed whitespace-pre-wrap">
-                {selectedNote.notes || 'No notes were typed during this recording.'}
-              </p>
-            </div>
-          )}
-
-          {activeDetailTab === 'Transcript' && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-                <Mic size={20} className="text-[var(--accent)]" />
-              </div>
-              <p className="text-[13px] font-bold text-white/70 mb-1">Transcript in Desktop App</p>
-              <p className="text-[11px] text-white/35 max-w-[200px]">
-                Open the BACHAM desktop app to view the full meeting transcript and AI analysis.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Bottom bar */}
-        <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#141517]">
-          {/* Waveform / Play */}
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="flex items-center gap-1.5 shrink-0 cursor-pointer"
-          >
-            <div className="flex items-end gap-px h-4">
-              {[2, 4, 3, 5, 2].map((h, i) => (
-                <span
-                  key={i}
-                  style={{ height: `${h * 2}px` }}
-                  className={`w-0.5 rounded-full transition-all ${isPlaying ? 'bg-[#BAFF29] animate-pulse' : 'bg-white/25'}`}
-                />
-              ))}
-            </div>
-          </button>
-
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/8 hover:bg-white/15 border border-white/10 text-[12px] font-semibold text-white/80 transition-all shrink-0 cursor-pointer"
-          >
-            {isPlaying ? (
-              <><span className="w-2 h-2 flex gap-0.5"><span className="w-0.5 h-2 bg-white/70 rounded" /><span className="w-0.5 h-2 bg-white/70 rounded" /></span> Pause</>
-            ) : (
-              <><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="0,0 10,5 0,10" /></svg> Resume</>
-            )}
-          </button>
-
-          <input
-            value={askQuery}
-            onChange={(e) => setAskQuery(e.target.value)}
-            placeholder="Ask about this meeting..."
-            className="flex-1 bg-transparent text-[12.5px] text-white/70 placeholder:text-white/25 outline-none min-w-0"
-          />
-
-          <Mic size={15} className="text-white/40 hover:text-[var(--accent)] cursor-pointer transition-colors shrink-0" />
-        </div>
-      </div>
+      <NoteDetailView
+        note={selectedNote}
+        onClose={() => setSelectedNote(null)}
+        onOpenApp={onOpenApp}
+      />
     );
   }
 
