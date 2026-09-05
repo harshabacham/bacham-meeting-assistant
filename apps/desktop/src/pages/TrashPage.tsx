@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { MultiSelectBar } from '@/components/library/MultiSelectBar';
-import { Trash2, RotateCcw, BookOpen } from 'lucide-react';
+import { Trash2, RotateCcw, BookOpen, RefreshCw } from 'lucide-react';
 
 export function TrashPage() {
     const [trashedLectures, setTrashedLectures] = useState<any[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isEmptying, setIsEmptying] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [confirmEmpty, setConfirmEmpty] = useState(false);
     const { fetchLectures } = useLectureStore();
 
@@ -70,23 +71,43 @@ export function TrashPage() {
                     </div>
                 </div>
 
-                {trashedLectures.length > 0 && (
-                    <div className="flex items-center gap-3">
-                        <button className="btn btn-secondary" onClick={handleRestoreAll} style={{ fontSize: 12 }}>
-                            <RotateCcw size={13} />
-                            Restore all
-                        </button>
-                        <button
-                            className="btn btn-danger"
-                            onClick={handleEmptyTrash}
-                            disabled={isEmptying}
-                            style={{ fontSize: 12 }}
-                        >
-                            <Trash2 size={13} />
-                            {confirmEmpty ? '⚠ Click again to confirm' : 'Empty Trash'}
-                        </button>
-                    </div>
-                )}
+                <div className="flex items-center gap-3">
+                    <button
+                        className="btn btn-secondary"
+                        onClick={async () => {
+                            setIsRefreshing(true);
+                            try {
+                                await loadTrash();
+                            } finally {
+                                setTimeout(() => setIsRefreshing(false), 500);
+                            }
+                        }}
+                        disabled={isRefreshing}
+                        style={{ fontSize: 12 }}
+                        title="Refresh Trash"
+                    >
+                        <RefreshCw size={13} className={isRefreshing ? "animate-spin text-primary" : ""} />
+                        <span>Refresh</span>
+                    </button>
+
+                    {trashedLectures.length > 0 && (
+                        <>
+                            <button className="btn btn-secondary" onClick={handleRestoreAll} style={{ fontSize: 12 }}>
+                                <RotateCcw size={13} />
+                                Restore all
+                            </button>
+                            <button
+                                className="btn btn-danger"
+                                onClick={handleEmptyTrash}
+                                disabled={isEmptying}
+                                style={{ fontSize: 12 }}
+                            >
+                                <Trash2 size={13} />
+                                {confirmEmpty ? '⚠ Click again to confirm' : 'Empty Trash'}
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Content */}

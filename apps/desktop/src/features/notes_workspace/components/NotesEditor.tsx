@@ -411,6 +411,7 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const [transcriptSearch, setTranscriptSearch] = useState<string>('');
     const [transcriptCopied, setTranscriptCopied] = useState(false);
     const [summaryCopied, setSummaryCopied] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
         const storedTranscript = note.transcript || localStorage.getItem(`transcript_${note.id}`) || '';
@@ -597,6 +598,64 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
 
     const handleRemoveTag = (tagToRemove: string) => {
         onUpdate({ tags: note.tags.filter(t => t !== tagToRemove) });
+    };
+
+    const handleRefreshNote = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            if (note.isMeeting) {
+                const [t, s, dbNotes] = await Promise.all([
+                    TauriClient.getTranscript(note.id).catch(() => null),
+                    TauriClient.getSummary(note.id).catch(() => null),
+                    TauriClient.getNotes(note.id).catch(() => null),
+                ]);
+                if (t) {
+                    setRawTranscript(t);
+                    localStorage.setItem(`transcript_${note.id}`, t);
+                    onUpdate({ transcript: t });
+                }
+                if (s) {
+                    setAiSummary(s);
+                    localStorage.setItem(`summary_${note.id}`, s);
+                    onUpdate({ summary: s });
+                }
+                if (dbNotes && dbNotes.trim()) {
+                    onUpdate({ content: dbNotes });
+                    localStorage.setItem(`user_notes_draft_${note.id}`, dbNotes);
+                    if (editor) {
+                        editor.commands.setContent(dbNotes);
+                    }
+                }
+            } else {
+                const fetchedNotes = await TauriClient.getWorkspaceNotes().catch(() => []);
+                const freshNote = (fetchedNotes || []).find((n: any) => n.id === note.id);
+                if (freshNote) {
+                    const savedSummary = localStorage.getItem(`summary_${note.id}`) || freshNote.summary || undefined;
+                    const savedTranscript = localStorage.getItem(`transcript_${note.id}`) || freshNote.transcript || undefined;
+                    if (freshNote.content && editor) {
+                        editor.commands.setContent(freshNote.content);
+                    }
+                    if (savedSummary) {
+                        setAiSummary(savedSummary);
+                    }
+                    if (savedTranscript) {
+                        setRawTranscript(savedTranscript);
+                    }
+                    onUpdate({
+                        title: freshNote.title,
+                        content: freshNote.content,
+                        summary: savedSummary,
+                        transcript: savedTranscript,
+                        tags: freshNote.tags,
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Failed to refresh note:', err);
+        } finally {
+            setTimeout(() => setIsRefreshing(false), 500);
+        }
     };
 
     const handleCopyMarkdown = async () => {
@@ -897,6 +956,15 @@ Return only the polished transcript text:`;
                     <div className="h-4 w-px bg-[var(--border)] mx-0.5" />
 
                     <div className="flex items-center gap-1 text-[var(--text-muted)]">
+                        <button
+                            type="button"
+                            onClick={handleRefreshNote}
+                            disabled={isRefreshing}
+                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            title="Refresh note, transcript & summary"
+                        >
+                            <RefreshCw size={14} className={cn(isRefreshing && "animate-spin text-[var(--accent)]")} />
+                        </button>
                         <button
                             type="button"
                             onClick={handleCopyMarkdown}
@@ -1305,6 +1373,17 @@ Return only the polished transcript text:`;
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
+                                        onClick={handleRefreshNote}
+                                        disabled={isRefreshing}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
+                                        title="Reload transcript from database"
+                                    >
+                                        <RefreshCw size={13} className={cn(isRefreshing && "animate-spin text-[var(--accent)]")} />
+                                        <span>Refresh</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
                                         onClick={() => handleGenerateSummary()}
                                         disabled={isGeneratingSummary}
                                         className="px-3.5 py-1.5 bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
@@ -1344,7 +1423,20 @@ Return only the polished transcript text:`;
                                         <Download size={13} />
                                     </button>
                                 </div>
-                            ) : null}
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleRefreshNote}
+                                        disabled={isRefreshing}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer"
+                                        title="Reload transcript from database"
+                                    >
+                                        <RefreshCw size={13} className={cn(isRefreshing && "animate-spin text-[var(--accent)]")} />
+                                        <span>Refresh</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {note.isMeeting && note.videoPath ? (

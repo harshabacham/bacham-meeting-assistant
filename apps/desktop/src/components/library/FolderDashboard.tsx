@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { FolderDashboard as IFolderDashboard, Lecture } from '@/shared/types';
 import { Button, Card, EmptyState, Loader, cn } from '@/components';
-import { HardDrive, BrainCircuit, LayoutList, CheckCircle, PenTool, Sparkles, Folder as FolderIcon, Play, Plus } from 'lucide-react';
+import { HardDrive, BrainCircuit, LayoutList, CheckCircle, PenTool, Sparkles, Folder as FolderIcon, Play, Plus, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -20,6 +20,7 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
     const { getFolderDashboard } = useFolderStore();
     const [dashboard, setDashboard] = useState<IFolderDashboard | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isAddingLectures, setIsAddingLectures] = useState(false);
@@ -93,6 +94,26 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                                 {folder.semester && <span className="bg-surface px-2.5 py-1 rounded-md border border-border/50">{folder.semester}</span>}
                             </div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            disabled={isRefreshing}
+                            onClick={async () => {
+                                setIsRefreshing(true);
+                                try {
+                                    await refreshDashboard();
+                                    showToast("Folder refreshed", "success");
+                                } finally {
+                                    setTimeout(() => setIsRefreshing(false), 500);
+                                }
+                            }}
+                            className="gap-1.5 px-3 py-1.5 text-xs bg-surface hover:bg-surface-hover border-border/60 font-medium cursor-pointer"
+                            title="Refresh folder content"
+                        >
+                            <RefreshCw size={13} className={cn(isRefreshing && "animate-spin text-primary")} />
+                            <span>Refresh</span>
+                        </Button>
                     </div>
                 </div>
 

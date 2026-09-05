@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { 
   CheckSquare, Plus, Trash2, Copy, Check, 
-  FileText, Target, CheckCircle2, AlertCircle, Clock, Share2
+  FileText, Target, CheckCircle2, AlertCircle, Clock, Share2, RefreshCw
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -272,6 +272,20 @@ export const TasksPage: React.FC = () => {
 
             {/* Header Actions */}
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  await fetchTasks();
+                  showToast('Action items refreshed', 'success');
+                }}
+                disabled={loading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-accent)] text-xs font-medium transition-all shadow-xs cursor-pointer"
+                title="Refresh tasks & action items"
+              >
+                <RefreshCw size={13} className={loading ? "animate-spin text-primary" : ""} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setIsSyncModalOpen(true)}

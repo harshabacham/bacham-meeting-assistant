@@ -13,7 +13,7 @@ import { KnowledgeGraphView } from '@/components/library/KnowledgeGraphView';
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
     Trash2, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network,
-    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare
+    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare, RefreshCw
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { cn, Button } from '@/components';
@@ -53,6 +53,23 @@ export function LibraryPage() {
     const [isAddingToFolder, setIsAddingToFolder] = useState(false);
     const [batchMoveFolderDialogOpen, setBatchMoveFolderDialogOpen] = useState(false);
     const [isSelectMode, setIsSelectMode] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            await Promise.all([
+                fetchFolders(),
+                systemView === 'trash' ? fetchTrash() : fetchLectures(),
+            ]);
+            showToast('Meetings refreshed', 'success');
+        } catch (err: any) {
+            showToast(`Refresh failed: ${err?.message || err}`, 'error');
+        } finally {
+            setTimeout(() => setIsRefreshing(false), 500);
+        }
+    };
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -341,6 +358,18 @@ ${transcript || '*(No transcript recorded)*'}
                 </div>
 
                 <div className="flex items-center gap-2 ml-auto">
+                    {/* Refresh Button */}
+                    <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className="btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                        title="Refresh meetings and folders"
+                    >
+                        <RefreshCw size={13} className={cn("text-muted-foreground", isRefreshing && "animate-spin text-primary")} />
+                        <span className="hidden sm:inline">Refresh</span>
+                    </button>
+
                     {systemView === 'trash' && (
                         <button
                             onClick={async () => {

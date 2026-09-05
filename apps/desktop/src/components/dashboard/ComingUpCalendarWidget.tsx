@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, Folder, Search, Plus, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Folder, Search, Plus, Check, RefreshCw } from 'lucide-react';
 import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { useNavigate } from 'react-router-dom';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -9,6 +9,7 @@ export function ComingUpCalendarWidget() {
   const navigate = useNavigate();
   const [pageIndex, setPageIndex] = useState(0);
   const [folders, setFolders] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
   // Folder selector popover state
   const [openFolderEvtId, setOpenFolderEvtId] = useState<string | null>(null);
   const [folderSearch, setFolderSearch] = useState('');
@@ -60,13 +61,32 @@ export function ComingUpCalendarWidget() {
           Coming up
         </h2>
 
-        <div className="flex items-center gap-4 text-[var(--text-muted)]">
+        <div className="flex items-center gap-3 text-[var(--text-muted)]">
           <button 
             onClick={() => navigate('/tasks?view=calendar')} 
             className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
           >
             View all
           </button>
+
+          {isConnected && (
+            <button
+              onClick={async () => {
+                if (isSyncing) return;
+                setIsSyncing(true);
+                try {
+                  await syncNow();
+                } finally {
+                  setTimeout(() => setIsSyncing(false), 500);
+                }
+              }}
+              disabled={isSyncing}
+              className="p-1 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              title="Sync Calendar Events"
+            >
+              <RefreshCw size={13} className={isSyncing ? "animate-spin text-primary" : ""} />
+            </button>
+          )}
 
           {/* Pagination Controls */}
           <div className="flex items-center gap-1">

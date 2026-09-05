@@ -88,6 +88,19 @@ export function NotesDashboard({
     const [isViewingAll, setIsViewingAll] = useState(false);
     const [isAddingMeetings, setIsAddingMeetings] = useState(false);
     const [trashedLectures, setTrashedLectures] = useState<any[]>([]);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        if (!onRefreshWorkspace || isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            await Promise.resolve(onRefreshWorkspace());
+        } catch (e) {
+            console.error('Failed to refresh notes workspace', e);
+        } finally {
+            setTimeout(() => setIsRefreshing(false), 500);
+        }
+    };
 
     useEffect(() => {
         if (activeFolderId === 'system:trash') {
@@ -194,6 +207,18 @@ export function NotesDashboard({
                 </div>
                 {!isTrashView && (
                     <div className="flex items-center gap-2">
+                        {onRefreshWorkspace && (
+                            <button
+                                type="button"
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-accent)] text-xs font-medium transition-all cursor-pointer shadow-2xs"
+                                title="Refresh workspace notes"
+                            >
+                                <RefreshCw size={12} className={cn("text-muted-foreground", isRefreshing && "animate-spin text-primary")} />
+                                <span className="hidden sm:inline">Refresh</span>
+                            </button>
+                        )}
                         {activeFolderId && (
                             <button
                                 type="button"

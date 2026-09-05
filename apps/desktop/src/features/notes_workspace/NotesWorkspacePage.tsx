@@ -5,6 +5,7 @@ import { NotesDashboard } from './components/NotesDashboard';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useLearningContext } from '@/shared/hooks/useLearningContext';
 import { useLectureStore } from '@/shared/stores/lectureStore';
+import { useToast } from '@/components/ui/ToastProvider';
 
 export interface Note {
     id: string;
@@ -120,6 +121,17 @@ export function NotesWorkspacePage() {
             setNotes(uniqueNotes);
         }).catch(e => console.error('Failed to fetch unified workspace notes', e));
     }, []);
+
+    const { showToast } = useToast();
+
+    const handleManualRefresh = useCallback(async () => {
+        try {
+            await refreshWorkspaceData();
+            showToast('Notes & workspace refreshed', 'success');
+        } catch (err: any) {
+            showToast(`Refresh failed: ${err?.message || err}`, 'error');
+        }
+    }, [refreshWorkspaceData, showToast]);
 
     useEffect(() => {
         refreshWorkspaceData();
@@ -372,7 +384,7 @@ export function NotesWorkspacePage() {
                         onDeleteLecture={handleDeleteLecture}
                         onRestoreLecture={handleRestoreLecture}
                         onHardDeleteLecture={handleHardDeleteLecture}
-                        onRefreshWorkspace={refreshWorkspaceData}
+                        onRefreshWorkspace={handleManualRefresh}
                     />
                 )}
             </div>
