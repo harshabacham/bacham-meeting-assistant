@@ -7,8 +7,7 @@ export const PetsSettingsTab: React.FC = () => {
   const { 
     selectedPetId, setSelectedPetId, 
     petSize, setPetSize, 
-    isTuckedAway, toggleTuckedAway, 
-    hidePet, setHidePet 
+    isTuckedAway, toggleTuckedAway
   } = usePetStore();
 
   const currentPet = PET_DEFINITIONS.find(p => p.id === selectedPetId) || PET_DEFINITIONS[0];
@@ -53,7 +52,7 @@ export const PetsSettingsTab: React.FC = () => {
             {currentPet.description}
           </p>
           <p className="text-[11px] text-muted-foreground/80 pt-1">
-            Status: {hidePet ? 'Hidden globally' : isTuckedAway ? 'Tucked away at the screen corner' : 'Active and floating on desktop'}
+            Status: {isTuckedAway ? 'Tucked away at the screen corner' : 'Active and floating on desktop'}
           </p>
         </div>
       </div>
@@ -145,26 +144,6 @@ export const PetsSettingsTab: React.FC = () => {
             <span>68px (Default)</span>
             <span>100px (Large)</span>
           </div>
-        </div>
-
-        {/* Hide Globally Toggle */}
-        <div className="pt-4 border-t border-border flex items-center justify-between gap-4">
-          <div>
-            <h4 className="text-xs font-bold text-foreground">Hide Pet Globally</h4>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Temporarily remove the floating companion widget entirely from the application window.
-            </p>
-          </div>
-
-          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-            <input 
-              type="checkbox" 
-              className="sr-only peer" 
-              checked={hidePet}
-              onChange={(e) => setHidePet(e.target.checked)}
-            />
-            <div className="w-11 h-6 bg-surface-raised border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
-          </label>
         </div>
       </div>
     </div>
