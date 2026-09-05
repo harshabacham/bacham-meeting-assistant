@@ -288,54 +288,51 @@ export function RecordingScreen({
 
   return (
     <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white select-none relative overflow-hidden">
-      {/* 1. Top Navigation Bar: ← Back, Live Monospace Timer & Audio Guide */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 shrink-0 bg-[#0A0A0C]">
+      {/* 1. Top Navigation Bar: Minimal Ghost Back, Dynamic Island Timer Capsule & Audio Guide */}
+      <div className="flex items-center justify-between px-4 pt-3.5 pb-2 shrink-0 bg-[#0A0A0C]">
         <button
           type="button"
           onClick={onBack}
-          className="px-2.5 py-1.5 rounded-xl bg-[#141517] hover:bg-[#1A1C20] border border-white/[0.06] text-white/70 hover:text-white transition-all shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
+          className="h-7 px-2 -ml-1 rounded-lg hover:bg-white/[0.08] text-white/50 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
           title="Back to Notes (Recording continues)"
         >
-          <ArrowLeft size={15} />
-          <span className="text-[12px] font-semibold tracking-tight">Back</span>
+          <ArrowLeft size={14} />
+          <span className="text-[11.5px] font-semibold tracking-tight">Notes</span>
         </button>
 
-        {/* Monospace Status Pill */}
+        {/* Dynamic Island-style Status Capsule */}
         <div
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full shadow-xs border ${
+          className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full shadow-xs border transition-all ${
             isPaused
-              ? 'bg-amber-500/10 border-amber-500/25 text-amber-400'
-              : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
+              ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+              : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
           }`}
         >
           <span
-            className={`w-2 h-2 rounded-full ${
+            className={`w-1.5 h-1.5 rounded-full ${
               isPaused ? 'bg-amber-400' : 'bg-rose-500 animate-pulse'
             }`}
           />
-          <span className="text-[12px] font-extrabold font-mono tracking-wider">
+          <span className="text-[11px] font-bold font-mono tracking-wider">
             {isPaused ? `PAUSED ${formatTime(elapsed)}` : formatTime(elapsed)}
           </span>
         </div>
 
         {/* Audio & Mic Guide Icon */}
-        <div className="relative">
+        <div className="relative -mr-1">
           <button
             type="button"
             onClick={() => setShowAudioGuideModal(true)}
-            className="p-2 rounded-xl bg-[#141517] hover:bg-[#1A1C20] border border-white/[0.06] text-white/60 hover:text-white transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg hover:bg-white/[0.08] text-white/40 hover:text-white/80 transition-colors flex items-center justify-center cursor-pointer"
             title="Audio & Microphone Setup"
           >
-            <HelpCircle size={15} />
+            <HelpCircle size={14} />
             {micBlocked && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-[#141517] animate-pulse" />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400 ring-2 ring-[#0A0A0C] animate-pulse" />
             )}
           </button>
         </div>
       </div>
-
-      {/* Whisper-Thin Divider Line */}
-      <div className="h-[1px] w-full bg-white/[0.05]" />
 
       {/* 2. Microphone Blocked Banner (If applicable) */}
       <AnimatePresence>
@@ -344,23 +341,23 @@ export function RecordingScreen({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mx-4 mt-3 p-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-start justify-between gap-2.5 shrink-0 shadow-xs"
+            className="mx-4 mb-2 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-start justify-between gap-2 shrink-0 shadow-xs"
           >
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-bold text-amber-300">Microphone Blocked</span>
+                  <span className="text-[11.5px] font-bold text-amber-300">Microphone Muted</span>
                   <button
                     type="button"
                     onClick={() => setShowAudioGuideModal(true)}
-                    className="text-[11px] font-bold text-[#BAFF29] underline hover:text-white cursor-pointer"
+                    className="text-[10.5px] font-bold text-[#BAFF29] underline hover:text-white cursor-pointer"
                   >
-                    Instructions
+                    Fix
                   </button>
                 </div>
-                <p className="text-[11px] text-white/70 leading-tight">
-                  Your mic is muted by browser permissions. Tab/meeting audio is still capturing normally.
+                <p className="text-[10.5px] text-white/70 leading-tight">
+                  Tab audio is recording. Grant mic permissions to record your voice.
                 </p>
               </div>
             </div>
@@ -370,44 +367,44 @@ export function RecordingScreen({
               className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer shrink-0"
               title="Dismiss"
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 3. Main Scrollable Workspace */}
-      <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-24">
-        {/* Meeting Header & Mode Badge */}
-        <div className="space-y-1.5 pt-0.5">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#BAFF29]/10 border border-[#BAFF29]/20 text-[#BAFF29] text-[10.5px] font-bold tracking-wider uppercase">
-              {captureConfig.video === false ? <Volume2 size={11} /> : <Video size={11} />}
-              <span>{captureConfig.video === false ? 'Audio Only' : 'Video + Audio'}</span>
-            </span>
-            <span className="text-[11px] text-white/40 font-medium">
-              Started {new Date(startMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Meeting Title..."
-            spellCheck={false}
-            className="w-full text-[19px] font-extrabold text-white tracking-tight leading-tight outline-none border-b border-transparent focus:border-white/15 bg-transparent placeholder:text-white/20 pb-0.5 transition-all"
-          />
+      {/* 3. Streamlined Meeting Title & Mode Strip */}
+      <div className="px-4 pb-2.5 flex items-center justify-between gap-3 shrink-0">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => handleTitleChange(e.target.value)}
+          placeholder="Meeting title..."
+          spellCheck={false}
+          className="flex-1 text-[15px] font-bold text-white/90 placeholder:text-white/20 bg-transparent outline-none truncate hover:text-white transition-colors"
+        />
+        <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-semibold text-[#BAFF29] bg-[#BAFF29]/10 px-2 py-0.5 rounded-md border border-[#BAFF29]/20">
+          {captureConfig.video === false ? <Volume2 size={10} /> : <Video size={10} />}
+          <span>{captureConfig.video === false ? 'Audio' : 'Video'}</span>
         </div>
+      </div>
 
-        {/* Live Notes Card */}
-        <div className="rounded-2xl bg-[#141517] border border-white/[0.06] p-3.5 space-y-2 shadow-xs focus-within:border-[#BAFF29]/30 transition-all">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-white/40 text-[11px] font-bold uppercase tracking-wider">
-              <FileText size={12} className="text-[#BAFF29]" />
+      {/* 4. Expansive Hero Notes Canvas (Zero Dead Void Space) */}
+      <div className="flex-1 px-4 pb-16 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col rounded-2xl bg-[#121316]/90 border border-white/[0.06] p-3.5 shadow-xs focus-within:border-white/15 focus-within:bg-[#15161A] transition-all min-h-0">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.04] shrink-0">
+            <div className="flex items-center gap-1.5 text-white/40 text-[10.5px] font-bold uppercase tracking-wider">
+              <FileText size={11} className="text-[#BAFF29]" />
               <span>Live Notes</span>
             </div>
-            <span className="text-[10.5px] text-white/30 font-medium">Auto-saved</span>
+            <div className="flex items-center gap-2">
+              {snapshots.length > 0 && (
+                <span className="text-[10px] font-medium text-white/40">
+                  {snapshots.length} slide{snapshots.length > 1 ? 's' : ''}
+                </span>
+              )}
+              <span className="text-[10px] text-white/30 font-medium">Auto-saved</span>
+            </div>
           </div>
 
           <textarea
@@ -415,69 +412,45 @@ export function RecordingScreen({
             onChange={handleNoteChange}
             placeholder="Type key discussion points, decisions, or action items..."
             spellCheck={false}
-            rows={5}
-            className="w-full text-[13px] text-white/90 font-normal leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/25"
+            className="flex-1 w-full text-[13px] text-white/90 font-normal leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/20"
           />
-        </div>
 
-        {/* Visual Slides & Screenshots Section */}
-        {snapshots.length === 0 ? (
-          <div className="rounded-2xl bg-[#141517] border border-white/[0.06] p-3 flex items-center justify-between shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#1A1C20] border border-white/[0.05] flex items-center justify-center text-white/50">
-                <Camera size={15} />
-              </div>
-              <div>
-                <span className="text-[12px] font-bold text-white/80 block leading-tight">Visual Slides (0)</span>
-                <span className="text-[10.5px] text-white/40 leading-tight">Auto-snaps every 30s or snap manually</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleCaptureSnapshot}
-              className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-[#BAFF29] text-white/80 hover:text-[#0A0A0C] text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95"
-            >
-              <Plus size={12} strokeWidth={3} />
-              <span>Snap</span>
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-0.5">
-              <span className="text-[12px] font-bold text-white/70">
-                Captured Slides ({snapshots.length})
-              </span>
-              <button
-                type="button"
-                onClick={handleCaptureSnapshot}
-                className="text-[11px] font-bold text-[#BAFF29] hover:underline cursor-pointer flex items-center gap-1"
-              >
-                <Plus size={11} strokeWidth={3} />
-                <span>Snap another</span>
-              </button>
-            </div>
-
-            <div className="flex gap-2.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
-              {snapshots.map((snap) => (
-                <div
-                  key={snap.id}
-                  onClick={() => setSelectedSnapshot(snap)}
-                  className="w-36 h-24 rounded-xl overflow-hidden bg-[#1A1C20] border border-white/[0.06] shrink-0 relative group cursor-pointer shadow-md hover:border-[#BAFF29]/40 transition-all"
-                  title="Click to preview slide"
+          {/* Captured Slides Ribbon (Only appears if slides exist) */}
+          {snapshots.length > 0 && (
+            <div className="pt-2 border-t border-white/[0.04] shrink-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10.5px] font-semibold text-white/50">Captured Slides</span>
+                <button
+                  type="button"
+                  onClick={handleCaptureSnapshot}
+                  className="text-[10px] font-bold text-[#BAFF29] hover:underline cursor-pointer flex items-center gap-1"
                 >
-                  <img
-                    src={snap.url}
-                    alt="Slide"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                  <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-[#0A0A0C]/90 text-[#BAFF29] text-[9.5px] font-bold font-mono border border-white/10">
-                    {snap.time}
+                  <Plus size={10} strokeWidth={3} />
+                  <span>Snap</span>
+                </button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+                {snapshots.map((snap) => (
+                  <div
+                    key={snap.id}
+                    onClick={() => setSelectedSnapshot(snap)}
+                    className="w-20 h-14 rounded-lg overflow-hidden bg-[#1A1C20] border border-white/[0.08] shrink-0 relative group cursor-pointer shadow-xs hover:border-[#BAFF29]/50 transition-all"
+                    title="Click to preview slide"
+                  >
+                    <img
+                      src={snap.url}
+                      alt="Slide"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
+                    <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-[#0A0A0C]/90 text-[#BAFF29] text-[8.5px] font-bold font-mono border border-white/10">
+                      {snap.time}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Floating Toast Notification */}
@@ -487,38 +460,38 @@ export function RecordingScreen({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -5, scale: 0.95 }}
-            className="absolute top-16 left-1/2 -translate-x-1/2 bg-[#1A1C20]/95 backdrop-blur-md text-white text-[12px] font-bold px-3.5 py-1.5 rounded-full shadow-2xl flex items-center gap-2 z-40 whitespace-nowrap border border-[#BAFF29]/30"
+            className="absolute top-14 left-1/2 -translate-x-1/2 bg-[#1A1C20]/95 backdrop-blur-md text-white text-[11.5px] font-semibold px-3 py-1 rounded-full shadow-2xl flex items-center gap-1.5 z-40 whitespace-nowrap border border-[#BAFF29]/30"
           >
-            <Sparkles size={13} className="text-[#BAFF29]" />
+            <Sparkles size={12} className="text-[#BAFF29]" />
             <span>{showToast}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 4. Unified Floating Control Dock at Bottom */}
-      <div className="absolute bottom-4 left-4 right-4 z-30 pointer-events-none">
-        <div className="p-1.5 px-2 rounded-2xl bg-[#141517]/95 border border-white/[0.08] backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.7)] flex items-center justify-between gap-2 pointer-events-auto">
-          {/* Left: Snap Slide Button */}
+      {/* 5. Minimalist 36px Floating Control Dock (35% Smaller, Ergonomic) */}
+      <div className="absolute bottom-3.5 left-0 right-0 z-30 pointer-events-none flex justify-center px-4">
+        <div className="h-9 px-2 rounded-full bg-[#141517]/95 border border-white/[0.08] backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.6)] flex items-center gap-2 pointer-events-auto">
+          {/* Snap Slide Button: Compact & Refined */}
           <button
             type="button"
             onClick={handleCaptureSnapshot}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.06] text-white/80 hover:text-white text-[12px] font-semibold transition-all cursor-pointer active:scale-95"
+            className="h-6.5 px-2.5 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/[0.06] text-white/70 hover:text-white text-[11px] font-medium transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
             title="Capture current video frame"
           >
-            <Camera size={14} className="text-[#BAFF29]" />
-            <span>Snap Slide</span>
+            <Camera size={12} className="text-[#BAFF29]" />
+            <span>Snap</span>
           </button>
 
           {/* Center: Waveform + Pause/Resume Button */}
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/[0.03] border border-white/[0.04]">
-            <div className="flex items-center gap-0.5 h-3.5">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.04]">
+            <div className="flex items-center gap-0.5 h-2.5">
               {[0.1, 0.3, 0.15, 0.4, 0.2].map((d, i) => (
                 <span
                   key={i}
                   style={{
-                    width: '2px',
-                    height: isPaused ? '3px' : '12px',
-                    borderRadius: '2px',
+                    width: '1.5px',
+                    height: isPaused ? '2.5px' : '9px',
+                    borderRadius: '1px',
                     backgroundColor: isPaused ? 'rgba(255,255,255,0.25)' : '#BAFF29',
                     animation: isPaused ? 'none' : 'pulse 0.8s infinite',
                     animationDelay: `${d}s`,
@@ -529,26 +502,26 @@ export function RecordingScreen({
             <button
               type="button"
               onClick={handleTogglePause}
-              className="p-1 rounded-lg hover:bg-white/[0.1] text-white/75 hover:text-white transition-colors cursor-pointer"
+              className="w-5 h-5 rounded-full hover:bg-white/[0.1] text-white/70 hover:text-white transition-colors cursor-pointer flex items-center justify-center"
               title={isPaused ? 'Resume Recording' : 'Pause Recording'}
             >
               {isPaused ? (
-                <Play size={14} className="text-[#BAFF29] fill-current" />
+                <Play size={10} className="text-[#BAFF29] fill-current" />
               ) : (
-                <Pause size={14} className="fill-current" />
+                <Pause size={10} className="fill-current" />
               )}
             </button>
           </div>
 
-          {/* Right: Stop & Save (Finish) Button */}
+          {/* Right: Stop & Save (Finish) Button - Elegant Rose Capsule */}
           <button
             type="button"
             onClick={handleStopAndSave}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[12px] font-bold shadow-md shadow-rose-600/30 transition-all cursor-pointer active:scale-95"
+            className="h-6.5 px-3 rounded-full bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/25 hover:border-rose-500 text-[11px] font-semibold transition-all duration-200 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-xs"
             title="Finish & Save Note"
           >
-            <Square size={12} fill="currentColor" />
+            <Square size={9} fill="currentColor" />
             <span>Finish</span>
           </button>
         </div>
