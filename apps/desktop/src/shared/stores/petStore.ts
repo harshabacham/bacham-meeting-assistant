@@ -12,8 +12,8 @@ export interface PetDefinition {
 export const PET_DEFINITIONS: PetDefinition[] = [
   {
     id: 'codex',
-    name: 'Codex',
-    description: 'The original Codex companion.',
+    name: 'Nova',
+    description: 'The intelligent workspace companion.',
     color: '#A855F7',
   },
   {

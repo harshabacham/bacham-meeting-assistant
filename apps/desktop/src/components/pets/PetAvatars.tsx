@@ -23,7 +23,7 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
       style={{ width: size, height: size }}
       className={`relative select-none flex items-center justify-center ${className}`}
     >
-      {id === 'codex' && <CodexAvatar isHovered={isHovered} isThinking={isThinking} />}
+      {id === 'codex' && <NovaAvatar isHovered={isHovered} isThinking={isThinking} />}
       {id === 'dewey' && <DeweyAvatar isHovered={isHovered} isThinking={isThinking} />}
       {id === 'fireball' && <FireballAvatar isHovered={isHovered} isThinking={isThinking} />}
       {id === 'hoots' && <HootsAvatar isHovered={isHovered} isThinking={isThinking} />}
@@ -36,8 +36,8 @@ export const PetAvatar: React.FC<PetAvatarProps> = ({
   );
 };
 
-/* ─── 1. CODEX (Purple cloud robot with >_ badge) ─────────────────────────── */
-const CodexAvatar = ({ isHovered, isThinking }: { isHovered: boolean; isThinking: boolean }) => (
+/* ─── 1. NOVA (Purple cloud robot with >_ badge) ─────────────────────────── */
+const NovaAvatar = ({ isHovered, isThinking }: { isHovered: boolean; isThinking: boolean }) => (
   <motion.div
     animate={{ y: isHovered ? -3 : [0, -4, 0] }}
     transition={isHovered ? { duration: 0.2 } : { duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
