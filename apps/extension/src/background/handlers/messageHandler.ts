@@ -134,12 +134,45 @@ export function createMessageHandler(
 
       case 'OPEN_APP' as any: {
         messagingClient.connect();
+        const payload = (message as any).payload || {};
         messagingClient.send({
           version: NATIVE_MESSAGING_PROTOCOL_VERSION,
           type: 'OPEN_APP' as any,
-          payload: {},
+          payload,
           timestamp: Date.now(),
         });
+
+        try {
+          chrome.runtime.sendNativeMessage(
+            'com.bacham.companion',
+            {
+              version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+              type: 'OPEN_APP',
+              payload,
+              timestamp: Date.now(),
+            },
+            () => {
+              if (chrome.runtime.lastError) {
+                log.debug(MODULE, 'sendNativeMessage OPEN_APP', {
+                  err: chrome.runtime.lastError.message,
+                });
+              }
+            }
+          );
+        } catch (e) {
+          log.debug(MODULE, 'Native messaging error', { err: e });
+        }
+
+        fetch('http://127.0.0.1:1422/health', { signal: AbortSignal.timeout(500) })
+          .catch(() => {
+            const routeParam = payload.route ? `?route=${encodeURIComponent(payload.route)}` : '';
+            chrome.tabs.create({ url: `bacham://open${routeParam}`, active: false }, (newTab) => {
+              setTimeout(() => {
+                if (newTab?.id) chrome.tabs.remove(newTab.id).catch(() => {});
+              }, 1200);
+            });
+          });
+
         return { success: true };
       }
 

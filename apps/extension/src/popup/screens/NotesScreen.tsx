@@ -5,11 +5,9 @@ import {
   FileText,
   Calendar,
   Clock,
-  Sparkles,
   Plus,
   Trash2,
   Check,
-  ArrowLeft,
   ArrowRight,
   Mic,
   RefreshCw,
@@ -42,7 +40,6 @@ export function NotesScreen() {
   // ── History tab state ─────────────────────────────────────────────
   const [history, setHistory] = useState<LectureSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [selectedLecture, setSelectedLecture] = useState<LectureSummary | null>(null);
 
   const isRecording = sessionState === 'recording' || sessionState === 'paused';
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -115,102 +112,6 @@ export function NotesScreen() {
     setActions((prev) => prev.filter((a) => a.id !== id));
 
   const completedCount = actions.filter((a) => a.completed).length;
-
-  // ── Lecture detail view ───────────────────────────────────────────
-  if (selectedLecture) {
-    const date = new Date(selectedLecture.created_at);
-    const dur = Math.round(selectedLecture.duration_ms / 60000);
-    return (
-      <div className="flex flex-col h-full bg-[#111111] text-white font-sans">
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/8 shrink-0">
-          <button
-            onClick={() => setSelectedLecture(null)}
-            className="p-1.5 rounded-full hover:bg-white/10 text-white/60 transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex items-center gap-1.5 text-[11px] text-white/40 font-medium">
-            <Calendar size={12} />
-            <span>{date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-            <span className="mx-1">·</span>
-            <Clock size={12} />
-            <span>{dur} min</span>
-          </div>
-          <div className="w-8" />
-        </div>
-
-        {/* Title */}
-        <div className="px-5 pt-5 pb-3 shrink-0">
-          <h1 className="text-[22px] font-bold text-white leading-tight tracking-tight">
-            {selectedLecture.title}
-          </h1>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-1 px-5 pb-3 border-b border-white/8 shrink-0">
-          {(['Summary', 'Notes'] as const).map((tab) => (
-            <button
-              key={tab}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all ${
-                tab === 'Summary'
-                  ? 'bg-white/10 text-white border border-white/15'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-            >
-              {tab === 'Summary' && <FileText size={12} />}
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {/* Executive Summary section */}
-          <div>
-            <h2 className="text-[14px] font-bold text-white mb-2">Executive Summary</h2>
-            <ul className="space-y-1.5">
-              <li className="flex gap-2 text-[12.5px] text-white/70 leading-relaxed">
-                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
-                <span>Meeting notes and transcript are available in the desktop app.</span>
-              </li>
-              <li className="flex gap-2 text-[12.5px] text-white/70 leading-relaxed">
-                <span className="mt-1 w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
-                <span>Duration: {dur} minute{dur !== 1 ? 's' : ''}. Open the BACHAM app for the full AI summary.</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Open in app CTA */}
-          <button
-            onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' }).catch(() => {})}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[13px] font-extrabold transition-all active:scale-98 shadow-lg shadow-[#BAFF29]/20 cursor-pointer"
-          >
-            <Sparkles size={14} className="text-[#0A0A0C]" />
-            View Full AI Summary in App
-          </button>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#141517]">
-          <div className="flex items-center gap-1.5 text-white/30">
-            <span className="w-4 h-3 flex items-end gap-px">
-              {[3, 5, 4, 6, 3].map((h, i) => (
-                <span key={i} style={{ height: `${h * 2}px` }} className="w-0.5 bg-white/30 rounded-full" />
-              ))}
-            </span>
-          </div>
-          <input
-            value={askText}
-            onChange={(e) => setAskText(e.target.value)}
-            placeholder="Ask about this meeting..."
-            className="flex-1 bg-transparent text-[12.5px] text-white/70 placeholder:text-white/25 outline-none"
-          />
-          <Mic size={16} className="text-white/40 hover:text-[var(--accent)] cursor-pointer" />
-        </div>
-      </div>
-    );
-  }
 
   // ── Main view ─────────────────────────────────────────────────────
   return (
@@ -437,7 +338,10 @@ export function NotesScreen() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 24 }}
-                        onClick={() => setSelectedLecture(lecture)}
+                        onClick={() => {
+                          const route = lecture.id ? `/lectures/${lecture.id}` : '/lectures';
+                          chrome.runtime.sendMessage({ type: 'OPEN_APP', payload: { route } }).catch(() => {});
+                        }}
                         className="group flex items-center gap-3 p-3.5 rounded-xl border border-white/8 bg-[#141517] hover:bg-[#1A1C20] hover:border-[var(--border-accent)] cursor-pointer transition-all"
                       >
                         {/* Date badge */}

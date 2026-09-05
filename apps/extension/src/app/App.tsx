@@ -16,16 +16,13 @@ import { SidebarLayout } from '@/popup/components/SidebarLayout';
 
 import { getExtensionVersion } from '@/infrastructure/browser/runtime';
 
-/** Open BACHAM desktop app via native host wake message and trampoline fallback. */
-function openDesktopApp(): void {
+/** Open BACHAM desktop app via native host / websocket wake message. */
+function openDesktopApp(route?: string): void {
   try {
-    chrome.runtime.sendMessage({ type: 'OPEN_APP' });
+    chrome.runtime.sendMessage({ type: 'OPEN_APP', payload: route ? { route } : {} }).catch(() => {});
   } catch (e) {
     console.error('Failed to send OPEN_APP message:', e);
   }
-  try {
-    chrome.tabs.create({ url: 'http://localhost:3000/open', active: true });
-  } catch {}
 }
 
 function AppInner(): React.ReactElement {
