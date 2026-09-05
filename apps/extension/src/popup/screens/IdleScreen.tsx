@@ -20,8 +20,10 @@ import {
   Sparkles,
   Calendar,
   HelpCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { MicrophoneGuideModal } from '../components/MicrophoneGuideModal';
+import { offlineMediaVault } from '@/infrastructure/storage/offlineMediaVault';
 
 
 
@@ -41,6 +43,7 @@ interface SavedNoteItem {
   notes?: string;
   snapshotCount?: number;
   snapshots?: Array<{ url: string; time: string }>;
+  synced?: boolean;
 }
 
 
@@ -90,6 +93,55 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
 
   // Real Saved Notes (Starts empty, loads from local storage / desktop history)
   const [savedNotes, setSavedNotes] = useState<SavedNoteItem[]>([]);
+
+  // Desktop companion & offline sync status
+  const [offlinePendingCount, setOfflinePendingCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isDesktopConnected, setIsDesktopConnected] = useState<boolean>(false);
+
+  const checkDesktopStatus = React.useCallback(async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 800);
+      const res = await fetch('http://127.0.0.1:1422/health', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      setIsDesktopConnected(res.ok);
+    } catch {
+      setIsDesktopConnected(false);
+    }
+
+    try {
+      const count = await offlineMediaVault.getPendingCount();
+      setOfflinePendingCount(count);
+    } catch {
+      setOfflinePendingCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void checkDesktopStatus();
+    const interval = setInterval(checkDesktopStatus, 5000);
+    return () => clearInterval(interval);
+  }, [checkDesktopStatus]);
+
+  const handleTriggerSync = async () => {
+    setIsSyncing(true);
+    try {
+      await new Promise<void>((resolve) => {
+        chrome.runtime.sendMessage({ type: 'TRIGGER_RECONCILIATION' }, () => {
+          resolve();
+        });
+      });
+      await checkDesktopStatus();
+      chrome.storage.local.get(['bacham_saved_notes'], (res) => {
+        if (res.bacham_saved_notes && Array.isArray(res.bacham_saved_notes)) {
+          setSavedNotes(res.bacham_saved_notes);
+        }
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Load saved notes from storage & desktop companion app
   useEffect(() => {
@@ -346,14 +398,28 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
   // BACHAM REC Note Home View
   return (
     <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white select-none overflow-hidden">
-      {/* 1. Header: REC Note */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-3">
-        <h1 className="text-[24px] font-extrabold text-white tracking-tight flex items-center gap-2">
+      {/* 1. Header: REC Note + Companion Status Pill */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-2">
+        <h1 className="text-[23px] font-extrabold text-white tracking-tight flex items-center gap-2">
           <span>REC Note</span>
           <span className="w-2 h-2 rounded-full bg-[#BAFF29] shadow-[0_0_8px_rgba(186,255,41,0.6)]" />
         </h1>
-        <div className="relative">
-          {/* Top right icon */}
+        
+        {/* Desktop Companion Connection Pill */}
+        <div
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+            isDesktopConnected
+              ? 'bg-[#BAFF29]/10 text-[#BAFF29] border-[#BAFF29]/20'
+              : 'bg-white/[0.04] text-white/50 border-white/[0.06]'
+          }`}
+          title={isDesktopConnected ? 'Desktop companion app is running' : 'Desktop app closed · recordings saved in offline vault'}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              isDesktopConnected ? 'bg-[#BAFF29] shadow-[0_0_6px_#BAFF29]' : 'bg-white/40'
+            }`}
+          />
+          <span>{isDesktopConnected ? 'App Connected' : 'Offline Vault'}</span>
         </div>
       </div>
 
@@ -477,6 +543,40 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
           </motion.button>
         )}
 
+        {/* Offline Vault Pending Sync Banner */}
+        {offlinePendingCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-2xl bg-[#141517] border border-[#BAFF29]/30 flex items-center justify-between shadow-md"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="p-2 rounded-xl bg-[#BAFF29]/15 text-[#BAFF29] shrink-0">
+                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+              </div>
+              <div className="truncate">
+                <p className="text-[12.5px] font-bold text-white leading-tight truncate">
+                  {offlinePendingCount} recording{offlinePendingCount > 1 ? 's' : ''} in Offline Vault
+                </p>
+                <p className="text-[11px] text-white/50 truncate">
+                  {isDesktopConnected ? 'Desktop online · Ready to sync' : 'Launch desktop app to auto-sync'}
+                </p>
+              </div>
+            </div>
+
+            {isDesktopConnected && (
+              <button
+                type="button"
+                onClick={handleTriggerSync}
+                disabled={isSyncing}
+                className="px-3 py-1.5 rounded-xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[11.5px] font-extrabold shrink-0 transition-all active:scale-95 disabled:opacity-50 cursor-pointer shadow-xs"
+              >
+                {isSyncing ? 'Syncing...' : 'Sync Now'}
+              </button>
+            )}
+          </motion.div>
+        )}
+
         {/* Thin, Subtle Divider */}
         <div className="h-[1px] w-full bg-white/[0.05] my-2" />
 
@@ -547,11 +647,18 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                   </h3>
                   <div className="flex items-center justify-between mt-3 text-[12px] text-white/40 font-medium">
                     <span>{note.date}</span>
-                    {note.duration && (
-                      <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/60 font-semibold text-[10.5px]">
-                        {note.duration}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {note.synced === false && (
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-md">
+                          Offline Vault
+                        </span>
+                      )}
+                      {note.duration && (
+                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/60 font-semibold text-[10.5px]">
+                          {note.duration}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))

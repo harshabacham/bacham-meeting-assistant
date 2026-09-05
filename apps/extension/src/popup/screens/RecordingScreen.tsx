@@ -268,13 +268,19 @@ export function RecordingScreen({
       snapshotCount: snapshots.length,
     };
 
-    chrome.storage.local.get(['bacham_saved_notes'], (res) => {
-      const existing = res.bacham_saved_notes || [];
-      chrome.storage.local
-        .set({
-          bacham_saved_notes: [noteEntry, ...existing.filter((n: any) => n.id !== session.id)],
-        })
-        .catch((err: any) => console.warn('[BACHAM] Failed to save note to storage:', err));
+    await new Promise<void>((resolve) => {
+      chrome.storage.local.get(['bacham_saved_notes'], (res) => {
+        const existing = res.bacham_saved_notes || [];
+        chrome.storage.local
+          .set({
+            bacham_saved_notes: [noteEntry, ...existing.filter((n: any) => n.id !== session.id)],
+          })
+          .then(() => resolve())
+          .catch((err: any) => {
+            console.warn('[BACHAM] Failed to save note to storage:', err);
+            resolve();
+          });
+      });
     });
 
     await onStop();

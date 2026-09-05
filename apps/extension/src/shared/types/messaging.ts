@@ -85,6 +85,8 @@ export enum MessageType {
   PREWARM_OFFSCREEN = 'PREWARM_OFFSCREEN',
   GET_HISTORY = 'GET_HISTORY',
   HISTORY_DATA = 'HISTORY_DATA',
+  /** Internal: popup or alarm requests sync reconciliation of offline recordings */
+  TRIGGER_RECONCILIATION = 'TRIGGER_RECONCILIATION',
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +257,8 @@ export interface BackgroundState {
   readonly permissionStatus: PermissionStatus;
   readonly connectionStatus: ConnectionStatus;
   readonly pendingQueueSize: number;
+  readonly hasPendingOfflineSync?: boolean;
+  readonly pendingOfflineCount?: number;
 }
 
 /** A typed internal message sent between popup and background. */

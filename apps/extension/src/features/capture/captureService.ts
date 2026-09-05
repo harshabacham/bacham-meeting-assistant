@@ -7,6 +7,7 @@ import {
   VIDEO_MIME_TYPE,
 } from '@/shared/constants/capture';
 import { NATIVE_MESSAGING_PROTOCOL_VERSION } from '@/shared/constants/app';
+import { offlineMediaVault } from '@/infrastructure/storage/offlineMediaVault';
 
 /**
  * Capture Service
@@ -131,8 +132,8 @@ export function createCaptureService(
     }
   }
 
-  async function uploadBlob(blob: Blob, type: 'video' | 'transcript'): Promise<void> {
-    if (blob.size === 0) return;
+  async function uploadBlob(blob: Blob, type: 'video' | 'transcript'): Promise<boolean> {
+    if (blob.size === 0) return true;
     try {
       log.info(MODULE, `Uploading ${type} blob via HTTP...`, { size: blob.size, mimeType: blob.type });
       const res = await fetch(`http://127.0.0.1:1422/upload?sessionId=${currentSessionId}&type=${type}`, {
@@ -143,8 +144,10 @@ export function createCaptureService(
         throw new Error(`Upload failed with status: ${res.status}`);
       }
       log.info(MODULE, `Successfully uploaded ${type} blob`);
+      return true;
     } catch (err: any) {
-      log.warn(MODULE, `HTTP upload of ${type} blob skipped or failed (native streaming active)`, { err: err.message });
+      log.warn(MODULE, `HTTP upload of ${type} blob failed (desktop app offline or unreachable)`, { err: err.message });
+      return false;
     }
   }
 
@@ -558,20 +561,81 @@ export function createCaptureService(
 
     console.log(`[BACHAM:stopCapture] Buffers after stop: videoChunks=${videoChunkBuffer.length} (${videoChunkBufferBytes} bytes), transcriptChunks=${transcriptChunkBuffer.length}`);
 
+    let videoUploaded = false;
+    let transcriptUploaded = false;
+    let finalVideoBlob: Blob | undefined;
+    let finalTranscriptBlob: Blob | undefined;
+
     if (videoChunkBuffer.length > 0) {
-      const blob = new Blob(videoChunkBuffer, { type: videoRecorder?.mimeType || 'video/webm' });
-      await uploadBlob(blob, 'video');
+      finalVideoBlob = new Blob(videoChunkBuffer, { type: videoRecorder?.mimeType || 'video/webm' });
+      videoUploaded = await uploadBlob(finalVideoBlob, 'video');
     } else {
       log.warn(MODULE, 'No video chunks captured to upload');
+      videoUploaded = true;
     }
     
     if (transcriptChunkBuffer.length > 0) {
-      const blob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder?.mimeType || 'audio/webm' });
-      await uploadBlob(blob, 'transcript');
-    } else if (videoChunkBuffer.length > 0) {
+      finalTranscriptBlob = new Blob(transcriptChunkBuffer, { type: transcriptRecorder?.mimeType || 'audio/webm' });
+      transcriptUploaded = await uploadBlob(finalTranscriptBlob, 'transcript');
+    } else if (finalVideoBlob) {
       // The video WebM file contains the audio track — upload for Gemini transcription
-      const blob = new Blob(videoChunkBuffer, { type: videoRecorder?.mimeType || 'video/webm' });
-      await uploadBlob(blob, 'transcript');
+      finalTranscriptBlob = finalVideoBlob;
+      transcriptUploaded = await uploadBlob(finalTranscriptBlob, 'transcript');
+    } else {
+      transcriptUploaded = true;
+    }
+
+    // If desktop application was closed or unreachable, buffer Blobs and metadata into IndexedDB Offline Vault
+    const isDesktopOffline = (!videoUploaded || !transcriptUploaded) && Boolean(currentSessionId && (finalVideoBlob || finalTranscriptBlob));
+    if (isDesktopOffline && currentSessionId) {
+      log.info(MODULE, 'Desktop app is offline/unreachable during stopCapture. Preserving recording in Offline Media Vault (IndexedDB)!', {
+        sessionId: currentSessionId,
+        videoBytes: finalVideoBlob?.size,
+        transcriptBytes: finalTranscriptBlob?.size,
+      });
+
+      try {
+        const stored = await chrome.storage.local.get(['currentSession', 'bacham_saved_notes']);
+        const currSession = stored.currentSession;
+        const savedNotes = stored.bacham_saved_notes || [];
+        const matchingNote = Array.isArray(savedNotes)
+          ? savedNotes.find((n: any) => n.id === currentSessionId)
+          : null;
+
+        const startedAt = currSession?.startedAt || new Date().toISOString();
+        const endedAt = new Date().toISOString();
+        const durationMs = Date.now() - new Date(startedAt).getTime() - (currSession?.pausedDurationMs || 0);
+
+        await offlineMediaVault.saveRecording({
+          sessionId: currentSessionId,
+          title: matchingNote?.title || currSession?.tabTitle || 'Meeting Note',
+          tabUrl: currSession?.tabUrl || '',
+          courseLabel: currSession?.courseLabel,
+          startedAt,
+          endedAt,
+          durationMs: Math.max(0, durationMs),
+          notes: matchingNote?.notes || '',
+          videoBlob: finalVideoBlob,
+          transcriptBlob: finalTranscriptBlob,
+          snapshotCount: matchingNote?.snapshotCount || 0,
+          synced: false,
+          createdAt: Date.now(),
+        });
+
+        // Mark note as unsynced in local storage and indicate pending sync
+        if (Array.isArray(savedNotes) && matchingNote) {
+          const updatedNotes = savedNotes.map((n: any) =>
+            n.id === currentSessionId ? { ...n, synced: false } : n
+          );
+          await chrome.storage.local.set({ bacham_saved_notes: updatedNotes, hasPendingOfflineSync: true });
+        } else {
+          await chrome.storage.local.set({ hasPendingOfflineSync: true });
+        }
+
+        log.info(MODULE, 'Successfully persisted offline recording into IndexedDB vault with zero data loss');
+      } catch (vaultErr: any) {
+        log.error(MODULE, 'Failed to save recording to Offline Media Vault', { error: vaultErr?.message || vaultErr });
+      }
     }
 
     for (const track of mediaStream.getTracks()) {

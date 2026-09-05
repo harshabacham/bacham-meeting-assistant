@@ -16,6 +16,8 @@ import type { SessionService } from '@/features/session/sessionService';
 import type { PermissionService } from '@/features/permissions/permissionService';
 import type { MetadataService } from '@/features/metadata/metadataService';
 import type { NativeMessagingClient } from '@/infrastructure/communication/nativeMessagingClient';
+import type { ReconciliationService } from '@/features/sync/reconciliationService';
+import { offlineMediaVault } from '@/infrastructure/storage/offlineMediaVault';
 import type { Logger } from '@/infrastructure/logger/logger';
 import * as browserTabs from '@/infrastructure/browser/tabs';
 import * as browserAction from '@/infrastructure/browser/action';
@@ -45,6 +47,7 @@ export function createMessageHandler(
   metadataService: MetadataService,
   messagingClient: NativeMessagingClient,
   screenshotService: import('@/features/capture/screenshotService').ScreenshotService,
+  reconciliationService: ReconciliationService,
   log: Logger,
 ): MessageHandler {
   const MODULE = 'MessageHandler';
@@ -78,6 +81,7 @@ export function createMessageHandler(
     ]);
 
     const permissionStatus = await permissionService.getStatus();
+    const pendingOfflineCount = await offlineMediaVault.getPendingCount();
 
     return {
       session: stored.currentSession,
@@ -93,6 +97,8 @@ export function createMessageHandler(
       permissionStatus,
       connectionStatus: stored.connectionStatus,
       pendingQueueSize: stored.pendingQueueSize,
+      hasPendingOfflineSync: pendingOfflineCount > 0,
+      pendingOfflineCount,
     };
   }
 
@@ -101,6 +107,11 @@ export function createMessageHandler(
       case MessageType.GET_STATE: {
         const state = await buildState();
         return { success: true, data: state };
+      }
+
+      case MessageType.TRIGGER_RECONCILIATION: {
+        const result = await reconciliationService.reconcile();
+        return { success: true, data: result };
       }
 
       case MessageType.REQUEST_PERMISSIONS: {

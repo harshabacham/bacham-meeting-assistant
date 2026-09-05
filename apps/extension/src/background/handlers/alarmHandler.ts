@@ -1,6 +1,7 @@
 import type { StorageService } from '@/infrastructure/storage/storageService';
 import type { ScreenshotService } from '@/features/capture/screenshotService';
 import type { NativeMessagingClient } from '@/infrastructure/communication/nativeMessagingClient';
+import type { ReconciliationService } from '@/features/sync/reconciliationService';
 import type { Logger } from '@/infrastructure/logger/logger';
 import { HEARTBEAT_ALARM_NAME } from '@/shared/constants/app';
 
@@ -19,6 +20,7 @@ export function createAlarmHandler(
   _storage: StorageService,
   _screenshotService: ScreenshotService,
   messagingClient: NativeMessagingClient,
+  reconciliationService: ReconciliationService,
   log: Logger,
 ): AlarmHandler {
   const MODULE = 'AlarmHandler';
@@ -29,10 +31,15 @@ export function createAlarmHandler(
     switch (alarm.name) {
       case HEARTBEAT_ALARM_NAME: {
         messagingClient.onHeartbeatAlarm();
+        // Opportunistically reconcile any offline recordings when heartbeat fires
+        void reconciliationService.reconcile();
         break;
       }
 
-
+      case 'bacham.reconciliation': {
+        void reconciliationService.reconcile();
+        break;
+      }
 
       default:
         log.warn(MODULE, 'Unknown alarm fired', { name: alarm.name });

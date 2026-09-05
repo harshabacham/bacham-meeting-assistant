@@ -35,6 +35,12 @@ export interface StorageSchema {
 
   /** Number of messages in the local outbound queue. */
   pendingQueueSize: number;
+
+  /** Whether offline recordings are pending sync to the desktop app. */
+  hasPendingOfflineSync?: boolean;
+
+  /** Count of pending offline recordings. */
+  pendingOfflineCount?: number;
 }
 
 /**
@@ -53,4 +59,6 @@ export const DEFAULT_STORAGE: StorageSchema = {
   activeStreamId: null,
   connectionStatus: 'disconnected',
   pendingQueueSize: 0,
+  hasPendingOfflineSync: false,
+  pendingOfflineCount: 0,
 };

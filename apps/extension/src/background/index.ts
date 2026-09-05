@@ -20,6 +20,7 @@ import { createPermissionService } from '@/features/permissions/permissionServic
 import { createSessionService } from '@/features/session/sessionService';
 import { createScreenshotService } from '@/features/capture/screenshotService';
 import { createMetadataService } from '@/features/metadata/metadataService';
+import { createReconciliationService } from '@/features/sync/reconciliationService';
 import { createLifecycleHandler } from './handlers/lifecycleHandler';
 import { createAlarmHandler } from './handlers/alarmHandler';
 import { createMessageHandler } from './handlers/messageHandler';
@@ -37,6 +38,7 @@ const permissionService = createPermissionService(logger);
 const sessionService = createSessionService(storage, logger);
 const metadataService = createMetadataService(messagingClient, logger);
 const screenshotService = createScreenshotService(messagingClient, sessionService, metadataService, logger);
+const reconciliationService = createReconciliationService(messagingClient, logger);
 
 const lifecycleHandler = createLifecycleHandler(
   storage,
@@ -49,6 +51,7 @@ const alarmHandler = createAlarmHandler(
   storage,
   screenshotService,
   messagingClient,
+  reconciliationService,
   logger,
 );
 
@@ -59,6 +62,7 @@ const messageHandler = createMessageHandler(
   metadataService,
   messagingClient,
   screenshotService,
+  reconciliationService,
   logger,
 );
 
@@ -149,6 +153,15 @@ void lifecycleHandler.rehydrate();
 
 // Attempt to connect to Desktop App on every wake
 messagingClient.connect();
+
+// Automatically trigger reconciliation whenever the Desktop App connects
+messagingClient.onConnect?.(() => {
+  logger.info(MODULE, 'Desktop App connected — running reconciliation for offline recordings');
+  void reconciliationService.reconcile();
+});
+
+// Also attempt reconciliation on wake in case desktop is already online
+void reconciliationService.reconcile();
 
 messagingClient.onMessage((msg) => {
   if (msg.type === 'OPEN_RECORD_POPUP') {

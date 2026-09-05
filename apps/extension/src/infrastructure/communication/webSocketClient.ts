@@ -18,6 +18,7 @@ export interface NativeMessagingClient {
   disconnect(): void;
   send<T>(message: NativeMessage<T>): void;
   onMessage(handler: InboundHandler): () => void;
+  onConnect?(handler: () => void): () => void;
   readonly status: ConnectionStatus;
   flushQueue(): void;
   onHeartbeatAlarm(): void;
@@ -34,6 +35,7 @@ export function createWebSocketClient(log: Logger): NativeMessagingClient {
 
   const queue = createMessageQueue(MESSAGE_QUEUE_MAX_CAPACITY, log);
   const handlers: Set<InboundHandler> = new Set();
+  const connectHandlers: Set<() => void> = new Set();
 
   function setStatus(next: ConnectionStatus): void {
     if (_status === next) return;
@@ -77,6 +79,13 @@ export function createWebSocketClient(log: Logger): NativeMessagingClient {
       setStatus('connected');
       reconnectAttempts = 0;
       flushQueue();
+      for (const h of connectHandlers) {
+        try {
+          h();
+        } catch (err) {
+          log.error(MODULE, 'Connect handler threw', { err });
+        }
+      }
     };
 
     ws.onmessage = handleMessage;
@@ -166,6 +175,17 @@ export function createWebSocketClient(log: Logger): NativeMessagingClient {
     onMessage: (handler: InboundHandler) => {
       handlers.add(handler);
       return () => handlers.delete(handler);
+    },
+    onConnect: (handler: () => void) => {
+      connectHandlers.add(handler);
+      if (_status === 'connected') {
+        try {
+          handler();
+        } catch (err) {
+          log.error(MODULE, 'Connect handler threw on immediate call', { err });
+        }
+      }
+      return () => connectHandlers.delete(handler);
     },
     get status() { return _status; },
     flushQueue,

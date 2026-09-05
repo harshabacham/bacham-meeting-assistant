@@ -45,6 +45,8 @@ export interface NativeMessagingClient {
   send<T>(message: NativeMessage<T>): void;
   /** Register a handler for inbound messages from the Desktop App. */
   onMessage(handler: InboundHandler): () => void;
+  /** Register a handler triggered when connection opens. */
+  onConnect?(handler: () => void): () => void;
   /** Current connection status. */
   readonly status: ConnectionStatus;
   /** Flush the pending queue — call after reconnection is confirmed. */
