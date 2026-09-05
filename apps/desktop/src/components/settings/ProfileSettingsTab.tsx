@@ -2,7 +2,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/shared/stores/authStore';
 import { useLectureStore } from '@/shared/stores/lectureStore';
-import { useModeStore } from '@/shared/stores/modeStore';
 import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import { useToast } from '@/components/ui/ToastProvider';
 import { ProfileSetup } from '@/components/ui/profile-setup';
@@ -10,14 +9,13 @@ import { auth } from '@/infrastructure/firebase/config';
 import { updateProfile } from 'firebase/auth';
 import { 
   User, Shield, LogOut, CheckCircle2, 
-  Calendar, CheckSquare, Clock, GraduationCap, Briefcase
+  Calendar, CheckSquare, Clock
 } from 'lucide-react';
 
 export const ProfileSettingsTab: React.FC = () => {
   const { t } = useTranslation();
   const { user, setUser, signOut } = useAuthStore();
   const { lectures } = useLectureStore();
-  const { appMode } = useModeStore();
   const { showConfirm } = useConfirmStore();
   const { showToast } = useToast();
 
@@ -66,20 +64,6 @@ export const ProfileSettingsTab: React.FC = () => {
               <h3 className="text-sm font-bold text-foreground">Personal Identity</h3>
               <p className="text-xs text-muted-foreground">Customize how you appear across notes, team shares, and transcripts</p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-raised border border-border text-xs font-semibold text-foreground">
-            {appMode === 'student' ? (
-              <>
-                <GraduationCap size={14} className="text-indigo-500" />
-                <span>Student Mode</span>
-              </>
-            ) : (
-              <>
-                <Briefcase size={14} className="text-emerald-500" />
-                <span>Professional Mode</span>
-              </>
-            )}
           </div>
         </div>
 
