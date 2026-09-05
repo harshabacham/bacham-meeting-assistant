@@ -412,7 +412,7 @@ export function RecordingScreen({
       </AnimatePresence>
 
       {/* 3. Main Canvas: Clean Sider-style Document Layout */}
-      <div className="flex-1 px-6 pt-3 pb-24 flex flex-col overflow-y-auto">
+      <div className="flex-1 px-6 pt-3 pb-24 flex flex-col overflow-y-auto slim-scrollbar">
         {/* Document Title */}
         <input
           type="text"
@@ -429,7 +429,7 @@ export function RecordingScreen({
           onChange={handleNoteChange}
           placeholder="Enter key information, and BACHAM will help you organize it."
           spellCheck={false}
-          className="flex-1 w-full text-[14px] text-white/80 font-normal leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/30 selection:bg-[#BAFF29]/25"
+          className="flex-1 w-full text-[14px] text-white/80 font-normal leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/30 selection:bg-[#BAFF29]/25 slim-scrollbar"
         />
 
         {/* Captured Slides Ribbon (if slides exist) */}
@@ -487,13 +487,13 @@ export function RecordingScreen({
           className="w-11 h-11 rounded-full bg-[#1A1C20]/95 hover:bg-[#22252A] border border-white/10 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center justify-center text-white/75 hover:text-white hover:border-[#BAFF29]/40 active:scale-95 transition-all pointer-events-auto cursor-pointer"
           title="Snap Slide"
         >
-          <Camera size={17} />
+          <Camera size={18} />
         </button>
 
         {/* Main Recording Capsule */}
-        <div className="h-11 px-4 rounded-full bg-[#1A1C20]/95 border border-white/10 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center gap-3.5 pointer-events-auto">
+        <div className="h-11 px-3.5 rounded-full bg-[#1A1C20]/95 border border-white/10 backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.5)] flex items-center gap-3 pointer-events-auto">
           {/* Waveform Bars + Micro Monospace Timer */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pl-0.5">
             <div className="flex items-center gap-0.5 h-3">
               {[0.1, 0.3, 0.15, 0.4, 0.2].map((d, i) => (
                 <span
@@ -516,30 +516,35 @@ export function RecordingScreen({
 
           <div className="w-[1px] h-3.5 bg-white/10" />
 
-          {/* Pause / Resume Button */}
-          <button
-            type="button"
-            onClick={handleTogglePause}
-            className="p-1 rounded-full text-white/75 hover:text-white transition-colors cursor-pointer flex items-center justify-center active:scale-95"
-            title={isPaused ? 'Resume' : 'Pause'}
-          >
-            {isPaused ? (
-              <Play size={15} className="text-[#BAFF29] fill-current" />
-            ) : (
-              <Pause size={15} className="fill-current" />
-            )}
-          </button>
+          {/* Controls: Pause + Stop Buttons with balanced hit targets */}
+          <div className="flex items-center gap-0.5">
+            {/* Pause / Resume Button */}
+            <button
+              type="button"
+              onClick={handleTogglePause}
+              className="w-7 h-7 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer flex items-center justify-center active:scale-90"
+              title={isPaused ? 'Resume' : 'Pause'}
+            >
+              {isPaused ? (
+                <Play size={14} className="text-[#BAFF29] fill-current" />
+              ) : (
+                <Pause size={14} className="fill-current" />
+              )}
+            </button>
 
-          {/* Stop / Finish Button: Sider-style rounded square */}
-          <button
-            type="button"
-            onClick={handleStopAndSave}
-            disabled={isLoading}
-            className="w-4.5 h-4.5 rounded-[4px] bg-rose-500 hover:bg-rose-400 active:scale-90 transition-all cursor-pointer flex items-center justify-center shadow-xs"
-            title="Finish & Save"
-          >
-            <Square size={8} fill="currentColor" className="text-white" />
-          </button>
+            {/* Stop / Finish Button: Sider rounded square */}
+            <button
+              type="button"
+              onClick={handleStopAndSave}
+              disabled={isLoading}
+              className="w-7 h-7 rounded-full hover:bg-white/10 active:scale-90 transition-all cursor-pointer flex items-center justify-center"
+              title="Finish & Save Note"
+            >
+              <div className="w-4 h-4 rounded-[4px] bg-rose-500 hover:bg-rose-400 active:scale-95 transition-all shadow-xs flex items-center justify-center">
+                <Square size={8} fill="currentColor" className="text-white" />
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
