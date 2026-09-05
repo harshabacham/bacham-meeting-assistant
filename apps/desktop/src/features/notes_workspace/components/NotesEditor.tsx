@@ -846,8 +846,8 @@ Return only the polished transcript text:`;
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
             {/* ── Top Navigation Bar (Matches Dashboard Header Bar Aesthetic) ────── */}
-            <div data-tauri-drag-region="false" className="w-full h-14 shrink-0 flex items-center justify-between px-2 sticky top-0 bg-[var(--bg)] z-[100] border-b border-[var(--border)] pointer-events-auto select-none">
-                <div data-tauri-drag-region="false" className="flex-1 flex items-center justify-start gap-2 pl-12">
+            <div data-tauri-drag-region="false" className="w-full h-14 shrink-0 flex items-center justify-between px-2 sm:px-3 sticky top-0 bg-[var(--bg)] z-[100] border-b border-[var(--border)] pointer-events-auto select-none gap-2">
+                <div data-tauri-drag-region="false" className="flex items-center justify-start gap-2 pl-10 sm:pl-12 shrink-0 min-w-0">
                     <button
                         data-tauri-drag-region="false"
                         type="button"
@@ -855,31 +855,32 @@ Return only the polished transcript text:`;
                             if (onBack) onBack();
                             else navigate('/');
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                        className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] shrink-0"
                         title="Back to Notes"
                     >
-                        <ArrowLeft size={13} />
-                        <span>Notes</span>
+                        <ArrowLeft size={13} className="shrink-0" />
+                        <span className="hidden sm:inline">Notes</span>
                     </button>
                 </div>
 
-                {/* ── 3-WAY TOP MODE SWITCHER: Summary | Notes | Transcript ──────────────── */}
-                <div data-tauri-drag-region="false" className="flex-none flex items-center p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-1">
+                {/* ── 3-WAY TOP MODE SWITCHER: Summary | Notes | Transcript | Chat ──────────────── */}
+                <div data-tauri-drag-region="false" className="flex-none flex items-center p-0.5 sm:p-1 rounded-lg bg-[var(--surface)] border border-[var(--border)] shadow-xs pointer-events-auto gap-0.5 sm:gap-1">
                     {/* 1. Summary Button */}
                     <button
                         data-tauri-drag-region="false"
                         type="button"
                         onClick={() => setViewMode('summary')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'summary'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
+                        title="AI Summary"
                     >
-                        <Sparkles size={12} className={viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70"} />
-                        <span>Summary</span>
-                        {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
+                        <Sparkles size={12} className={cn("shrink-0", viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn(viewMode === 'summary' ? "inline" : "hidden xl:inline")}>Summary</span>
+                        {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />}
                     </button>
 
                     {/* 2. Notes Button */}
@@ -888,14 +889,15 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('notes')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'notes'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
+                        title="Editor Notes"
                     >
-                        <FileText size={12} className={viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70"} />
-                        <span>Notes</span>
+                        <FileText size={12} className={cn("shrink-0", viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn(viewMode === 'notes' ? "inline" : "hidden xl:inline")}>Notes</span>
                     </button>
 
                     {/* 3. Transcript Button */}
@@ -904,15 +906,16 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('transcript')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'transcript'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
+                        title="Verbatim Transcript"
                     >
-                        <Mic size={12} className={viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70"} />
-                        <span>Transcript</span>
-                        {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />}
+                        <Mic size={12} className={cn("shrink-0", viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn(viewMode === 'transcript' ? "inline" : "hidden xl:inline")}>Transcript</span>
+                        {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />}
                     </button>
 
                     {/* 4. Chat Button */}
@@ -921,19 +924,20 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('chat')}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'chat'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
+                        title="AI Chat"
                     >
-                        <Sparkles size={12} className={viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70"} />
-                        <span>Chat</span>
+                        <Sparkles size={12} className={cn("shrink-0", viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn(viewMode === 'chat' ? "inline" : "hidden xl:inline")}>Chat</span>
                     </button>
                 </div>
 
                 {/* Right Action Controls */}
-                <div data-tauri-drag-region="false" className="flex-1 flex items-center justify-end gap-2 pr-20">
+                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-16 sm:pr-20 min-w-0 shrink-0">
                     {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
                         data-tauri-drag-region="false"
@@ -946,21 +950,21 @@ Return only the polished transcript text:`;
                                 alert(`Failed to start recording: ${e}\n\nPlease make sure the BACHAM browser extension is installed and active.`);
                             }
                         }}
-                        className="px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)]"
+                        className="px-2 sm:px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] shrink-0"
                         title="Record Meeting in Browser Extension"
                     >
-                        <Mic size={13} />
-                        <span>Record</span>
+                        <Mic size={13} className="shrink-0" />
+                        <span className="hidden sm:inline">Record</span>
                     </button>
 
-                    <div className="h-4 w-px bg-[var(--border)] mx-0.5" />
+                    <div className="h-4 w-px bg-[var(--border)] mx-0.5 shrink-0" />
 
-                    <div className="flex items-center gap-1 text-[var(--text-muted)]">
+                    <div className="flex items-center gap-0.5 sm:gap-1 text-[var(--text-muted)] shrink-0">
                         <button
                             type="button"
                             onClick={handleRefreshNote}
                             disabled={isRefreshing}
-                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            className="hidden md:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Refresh note, transcript & summary"
                         >
                             <RefreshCw size={14} className={cn(isRefreshing && "animate-spin text-[var(--accent)]")} />
@@ -968,7 +972,7 @@ Return only the polished transcript text:`;
                         <button
                             type="button"
                             onClick={handleCopyMarkdown}
-                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            className="hidden md:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Copy note markdown"
                         >
                             {copied ? <Check size={14} className="text-[var(--accent)]" /> : <Copy size={14} />}
@@ -976,7 +980,7 @@ Return only the polished transcript text:`;
                         <button
                             type="button"
                             onClick={() => setIsExportPdfOpen(true)}
-                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            className="hidden lg:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Export as PDF"
                         >
                             <Download size={14} />
@@ -984,7 +988,7 @@ Return only the polished transcript text:`;
                         <button
                             type="button"
                             onClick={() => setIsExportPushOpen(true)}
-                            className="p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer"
+                            className="hidden lg:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Push to Integrations (Slack, Notion, Local Folder, Email)"
                         >
                             <Share2 size={14} />
@@ -1004,6 +1008,28 @@ Return only the polished transcript text:`;
                             </button>
                             {moreMenuOpen && (
                                 <div className="absolute top-9 right-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1.5 w-48">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMoreMenuOpen(false);
+                                            handleRefreshNote();
+                                        }}
+                                        className="md:hidden w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                                    >
+                                        <RefreshCw size={13} className={cn(isRefreshing && "animate-spin text-[var(--accent)]")} />
+                                        <span>Refresh Note</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMoreMenuOpen(false);
+                                            handleCopyMarkdown();
+                                        }}
+                                        className="md:hidden w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors text-left"
+                                    >
+                                        <Copy size={13} />
+                                        <span>Copy Markdown</span>
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => {
