@@ -10,6 +10,7 @@ import {
   Trash2,
   Check,
   ArrowLeft,
+  ArrowRight,
   Mic,
   RefreshCw,
 } from 'lucide-react';
@@ -427,7 +428,7 @@ export function NotesScreen() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {history.map((lecture, i) => {
+                  {history.slice(0, 3).map((lecture, i) => {
                     const date = new Date(lecture.created_at);
                     const dur = Math.round(lecture.duration_ms / 60000);
                     return (
@@ -465,6 +466,16 @@ export function NotesScreen() {
                       </motion.div>
                     );
                   })}
+                  {history.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' }).catch(() => {})}
+                      className="w-full py-2.5 px-3 mt-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/10 text-[12px] font-semibold text-white/50 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>View All in Desktop App ({history.length})</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>

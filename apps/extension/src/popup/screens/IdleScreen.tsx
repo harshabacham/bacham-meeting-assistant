@@ -12,9 +12,9 @@ import {
   ChevronDown,
   Video,
   Volume2,
-  Sliders,
   X,
   ArrowLeft,
+  ArrowRight,
   Pencil,
   FileText,
   Sparkles,
@@ -47,7 +47,7 @@ interface SavedNoteItem {
 }
 
 
-export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScreenProps): React.ReactElement {
+export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording }: IdleScreenProps): React.ReactElement {
   const { captureConfig, updateConfig } = useCapture();
   const { fetchHistory, sessionState } = useSession();
 
@@ -627,12 +627,6 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
             >
               <Search size={16} />
             </button>
-            <button 
-              className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
-              title="Filter"
-            >
-              <Sliders size={16} />
-            </button>
           </div>
         </div>
 
@@ -666,36 +660,49 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
               </span>
             </div>
           ) : (
-            savedNotes
-              .filter((n) => !searchQuery || n.title.toLowerCase().includes(searchQuery.toLowerCase()))
-              .map((note) => (
-                <motion.div
-                  key={note.id}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setSelectedNote(note)}
-                  className="p-4 rounded-2xl border border-white/[0.05] bg-[#141517] hover:border-[#BAFF29]/30 hover:bg-[#1A1C20] transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
-                >
-                  <h3 className="text-[14.5px] font-bold text-white leading-tight">
-                    {note.title}
-                  </h3>
-                  <div className="flex items-center justify-between mt-3 text-[12px] text-white/40 font-medium">
-                    <span>{note.date}</span>
-                    <div className="flex items-center gap-1.5">
-                      {note.synced === false && (
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-md">
-                          Offline Vault
-                        </span>
-                      )}
-                      {note.duration && (
-                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/60 font-semibold text-[10.5px]">
-                          {note.duration}
-                        </span>
-                      )}
+            <>
+              {savedNotes
+                .filter((n) => !searchQuery || n.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                .slice(0, searchQuery ? undefined : 3)
+                .map((note) => (
+                  <motion.div
+                    key={note.id}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={() => setSelectedNote(note)}
+                    className="p-4 rounded-2xl border border-white/[0.05] bg-[#141517] hover:border-[#BAFF29]/30 hover:bg-[#1A1C20] transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
+                  >
+                    <h3 className="text-[14.5px] font-bold text-white leading-tight">
+                      {note.title}
+                    </h3>
+                    <div className="flex items-center justify-between mt-3 text-[12px] text-white/40 font-medium">
+                      <span>{note.date}</span>
+                      <div className="flex items-center gap-1.5">
+                        {note.synced === false && (
+                          <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.5 rounded-md">
+                            Offline Vault
+                          </span>
+                        )}
+                        {note.duration && (
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-white/60 font-semibold text-[10.5px]">
+                            {note.duration}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                ))}
+              {savedNotes.length > 3 && !searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onOpenApp?.()}
+                  className="w-full py-2.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-white/10 text-[12px] font-semibold text-white/50 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>View All in Desktop App ({savedNotes.length})</span>
+                  <ArrowRight size={13} />
+                </button>
+              )}
+            </>
           )}
         </div>
 
