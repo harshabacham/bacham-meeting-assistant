@@ -8,14 +8,13 @@ import { useAuthStore } from "@/shared/stores/authStore";
 import { useLearningContext } from "@/shared/hooks/useLearningContext";
 import { ArrowIcon } from "@/components/ui/skiper-ui/skiper99";
 import { Folder } from "@/components/ui/Folder";
-import { Clock, ChevronRight, Bookmark, Zap, BookOpen, CheckSquare, RefreshCw } from "lucide-react";
+import { Clock, ChevronRight, Bookmark, Zap, BookOpen, CheckSquare } from "lucide-react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import { ComingUpCalendarWidget } from "@/components/dashboard/ComingUpCalendarWidget";
 import { useGlobalTasks } from "@/shared/hooks/useGlobalTasks";
 import { useTranslation } from "react-i18next";
 import { ErrorBoundary } from "@/shared/contexts/ErrorBoundary";
-import { useToast } from "@/components/ui/ToastProvider";
 
 /**
  * DESIGN NOTES — read before touching this file
@@ -132,9 +131,6 @@ export function DashboardPage() {
     strongTopics: any[];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { showToast } = useToast();
-
   const loadDashboardData = async () => {
     await Promise.all([
       fetchLectures(),
@@ -145,19 +141,6 @@ export function DashboardPage() {
       TauriClient.getLearningAnalytics().then(setAnalytics).catch(console.error),
       TauriClient.getSpacedRepetitionQueue().catch(console.error),
     ]);
-  };
-
-  const handleRefresh = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      await loadDashboardData();
-      showToast('Dashboard refreshed', 'success');
-    } catch (err: any) {
-      showToast(`Refresh failed: ${err?.message || err}`, 'error');
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 500);
-    }
   };
 
   useEffect(() => {
@@ -247,16 +230,6 @@ export function DashboardPage() {
                   {t('dashboard.subtitle')} - {getTimeOfDay()}, {firstName}.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-accent)] text-xs font-medium transition-all shadow-xs cursor-pointer"
-                title="Refresh dashboard metrics & schedule"
-              >
-                <RefreshCw size={13} className={isRefreshing ? "animate-spin text-primary" : ""} />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
             </div>
             <div className="flex items-center gap-5 mt-1 flex-wrap">
               {!!summary?.totalLectures && <Stat value={summary.totalLectures} label={t('dashboard.stats.lectures', { count: summary.totalLectures })} />}
