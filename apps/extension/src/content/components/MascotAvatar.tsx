@@ -43,7 +43,7 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
               ? 'radial-gradient(circle, rgba(239,68,68,0.8) 0%, transparent 70%)'
               : mood === 'listening'
               ? 'radial-gradient(circle, rgba(16,185,129,0.8) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(99,102,241,0.8) 0%, transparent 70%)',
+              : 'radial-gradient(circle, rgba(186,255,41,0.6) 0%, transparent 70%)',
         }}
       />
 
@@ -66,7 +66,7 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
               ? '#ef4444'
               : mood === 'listening'
               ? '#10b981'
-              : '#6366f1'
+              : '#BAFF29'
           }
           animate={{
             scale: [1, 1.3, 1],

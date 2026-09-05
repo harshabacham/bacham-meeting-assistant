@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,52 +6,69 @@
 
 @layer base {
   :root {
-    /* ── Sider.ai Clean White & Purple Palette ── */
-    --bg:            #FFFFFF;
-    --bg-elevated:   #F8FAFC;
-    --surface:       #F1F5F9;
-    --surface-hover: #E2E8F0;
-    --surface-2:     #FFFFFF;
-    --surface-3:     #F8FAFC;
+    color-scheme: dark;
 
-    /* ── Crisp Typography ── */
-    --text-primary:   #0F172A;
-    --text-secondary: #64748B;
-    --text-muted:     #94A3B8;
-    --text-tertiary:  #CBD5E1;
+    /* ── BACHAM Signature Dark Slate & Lime Palette ── */
+    --color-black:     #0A0A0C;
+    --color-dark-gray: #141517;
+    --color-white:     #F8F9FA;
+    --color-lime:      #BAFF29;
 
-    /* ── Sider.ai Signature Violet/Purple ── */
-    --accent:         #7C3AED;
-    --accent-hover:   #6D28D9;
-    --accent-dim:     rgba(124, 58, 237, 0.12);
-    --accent-text:    #FFFFFF;
-    --accent-glow:    0 4px 14px rgba(124, 58, 237, 0.35);
+    /* ── Semantic Backgrounds & Surfaces ── */
+    --bg:              #0A0A0C;
+    --bg-elevated:     #141517;
+    --surface:         #141517;
+    --surface-raised:  #1A1C20;
+    --surface-hover:   rgba(255, 255, 255, 0.05);
+    --surface-2:       #141517;
+    --surface-3:       #1A1C20;
+    --surface-4:       #22252A;
+
+    /* ── Crisp High-Contrast Typography ── */
+    --text-primary:    #F8F9FA;
+    --text-secondary:  rgba(248, 249, 250, 0.7);
+    --text-muted:      rgba(248, 249, 250, 0.5);
+    --text-tertiary:   rgba(248, 249, 250, 0.3);
+
+    /* ── BACHAM Signature Electric Lime ── */
+    --accent:          #BAFF29;
+    --accent-hover:    #a3e622;
+    --accent-dim:      rgba(186, 255, 41, 0.12);
+    --accent-glow:     0 0 20px rgba(186, 255, 41, 0.25);
+    --accent-text:     #0A0A0C;
 
     /* ── Semantic Colors ── */
-    --success:        #10B981;
-    --success-dim:    rgba(16, 185, 129, 0.15);
-    --destructive:    #EF4444;
-    --destructive-dim: rgba(239, 68, 68, 0.15);
-    --warning:        #F59E0B;
-    --recording:      #EF4444;
+    --success:         #5EFF9F;
+    --success-dim:     rgba(94, 255, 159, 0.15);
+    --destructive:     #FF5E5E;
+    --destructive-dim: rgba(255, 94, 94, 0.15);
+    --warning:         #FFC15E;
+    --warning-dim:     rgba(255, 193, 94, 0.15);
+    --recording:       #FF5E5E;
 
-    /* ── Clean Light Borders ── */
-    --border:         #E2E8F0;
-    --border-strong:  #CBD5E1;
-    --border-accent:  #7C3AED;
-    --separator:      #F1F5F9;
+    /* ── Glass & Dark Borders ── */
+    --border:          rgba(255, 255, 255, 0.08);
+    --border-strong:   rgba(255, 255, 255, 0.15);
+    --border-accent:   rgba(186, 255, 41, 0.35);
+    --separator:       rgba(255, 255, 255, 0.08);
 
-    /* ── Rounded Playful Radii ── */
+    /* ── Glass Material ── */
+    --glass-bg:        rgba(20, 21, 23, 0.75);
+    --glass-border:    rgba(255, 255, 255, 0.08);
+    --glass-blur:      24px;
+
+    /* ── Rounded Radii ── */
     --radius-xs: 6px;
     --radius-sm: 8px;
     --radius:    14px;
     --radius-lg: 18px;
     --radius-xl: 24px;
 
-    /* ── Soft Clean Shadows ── */
-    --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.05);
-    --shadow:     0 4px 16px -2px rgba(0, 0, 0, 0.08);
-    --shadow-lg:  0 12px 32px -4px rgba(0, 0, 0, 0.12);
+    /* ── Shadows ── */
+    --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow:     0 4px 16px -2px rgba(0, 0, 0, 0.5);
+    --shadow-lg:  0 12px 32px -4px rgba(0, 0, 0, 0.6);
+    --shadow-lime: 0 0 20px rgba(186, 255, 41, 0.2);
   }
 
   body {
@@ -64,7 +81,7 @@
   }
 }
 
-/* Custom scrollbars */
+/* Custom sleek dark scrollbars */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -72,20 +89,20 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.3);
 }
 
-/* Custom Purple Switch Toggle */
+/* Custom Lime Switch Toggle */
 .toggle-switch {
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background-color: #E2E8F0;
-  border: 1px solid #CBD5E1;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   position: relative;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -95,9 +112,9 @@
 }
 
 .toggle-switch[data-state="checked"] {
-  background-color: #7C3AED;
-  border-color: #7C3AED;
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.35);
+  background-color: #BAFF29;
+  border-color: #BAFF29;
+  box-shadow: 0 0 12px rgba(186, 255, 41, 0.45);
 }
 
 .toggle-switch-thumb {
@@ -105,12 +122,13 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background-color: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
   transform: translateX(0);
 }
 
 .toggle-switch[data-state="checked"] .toggle-switch-thumb {
+  background-color: #0A0A0C;
   transform: translateX(16px);
 }

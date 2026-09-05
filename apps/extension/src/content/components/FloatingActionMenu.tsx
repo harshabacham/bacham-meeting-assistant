@@ -89,10 +89,10 @@ export const FloatingActionMenu: React.FC = () => {
               bottom: '96px',
               right: '24px',
               zIndex: 9999998,
-              background: 'rgba(15, 23, 42, 0.92)',
+              background: 'rgba(10, 10, 12, 0.94)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(99, 102, 241, 0.4)',
+              border: '1px solid rgba(186, 255, 41, 0.4)',
               borderRadius: '16px',
               padding: '12px 18px',
               color: '#fff',
@@ -101,17 +101,17 @@ export const FloatingActionMenu: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.3)',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(186, 255, 41, 0.2)',
               fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
             }}
           >
-            <Sparkles size={16} color="#818cf8" />
+            <Sparkles size={16} color="#BAFF29" />
             <span>{toastMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Sider.ai-Style Floating Edge Dock Trigger */}
+      {/* Floating Edge Dock Trigger */}
       {!isSidebarOpen && (
         <motion.div
           onMouseEnter={() => setIsHovered(true)}
@@ -142,13 +142,13 @@ export const FloatingActionMenu: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  background: 'rgba(15, 23, 42, 0.85)',
+                  background: 'rgba(10, 10, 12, 0.9)',
                   backdropFilter: 'blur(20px)',
                   WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '20px',
                   padding: '6px 8px',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                 }}
               >
                 {/* 1. Catch Me Up */}
@@ -161,17 +161,17 @@ export const FloatingActionMenu: React.FC = () => {
                     gap: '4px',
                     padding: '6px 10px',
                     borderRadius: '12px',
-                    background: 'rgba(99, 102, 241, 0.2)',
-                    border: '1px solid rgba(99, 102, 241, 0.4)',
-                    color: '#a5b4fc',
+                    background: 'rgba(186, 255, 41, 0.12)',
+                    border: '1px solid rgba(186, 255, 41, 0.35)',
+                    color: '#BAFF29',
                     fontSize: '11px',
                     fontWeight: 700,
                     cursor: 'pointer',
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease',
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(99, 102, 241, 0.35)')}
-                  onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)')}
+                  onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(186, 255, 41, 0.25)')}
+                  onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(186, 255, 41, 0.12)')}
                 >
                   <Zap size={13} />
                   <span>Catch Me Up</span>
@@ -214,11 +214,11 @@ export const FloatingActionMenu: React.FC = () => {
               width: '60px',
               height: '60px',
               borderRadius: '24px',
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98))',
-              border: isRecording ? '2px solid #ef4444' : '1.5px solid rgba(255, 255, 255, 0.2)',
+              background: 'linear-gradient(135deg, rgba(20, 21, 23, 0.95), rgba(10, 10, 12, 0.98))',
+              border: isRecording ? '2px solid #ef4444' : '1.5px solid rgba(186, 255, 41, 0.35)',
               boxShadow: isRecording
                 ? '0 10px 30px rgba(239, 68, 68, 0.4), 0 0 15px rgba(239, 68, 68, 0.3)'
-                : '0 12px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.3)',
+                : '0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(186, 255, 41, 0.25)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',

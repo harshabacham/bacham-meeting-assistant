@@ -154,15 +154,15 @@ export function NotesScreen() {
           {/* Open in app CTA */}
           <button
             onClick={() => chrome.runtime.sendMessage({ type: 'OPEN_APP' })}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-violet-600 hover:bg-violet-500 text-white text-[13px] font-bold transition-all active:scale-98 shadow-lg shadow-violet-500/20"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[13px] font-extrabold transition-all active:scale-98 shadow-lg shadow-[#BAFF29]/20 cursor-pointer"
           >
-            <Sparkles size={14} />
+            <Sparkles size={14} className="text-[#0A0A0C]" />
             View Full AI Summary in App
           </button>
         </div>
 
         {/* Bottom bar */}
-        <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3">
+        <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#141517]">
           <div className="flex items-center gap-1.5 text-white/30">
             <span className="w-4 h-3 flex items-end gap-px">
               {[3, 5, 4, 6, 3].map((h, i) => (
@@ -174,9 +174,9 @@ export function NotesScreen() {
             value={askText}
             onChange={(e) => setAskText(e.target.value)}
             placeholder="Ask about this meeting..."
-            className="flex-1 bg-transparent text-[12.5px] text-white/60 placeholder:text-white/25 outline-none"
+            className="flex-1 bg-transparent text-[12.5px] text-white/70 placeholder:text-white/25 outline-none"
           />
-          <Mic size={16} className="text-white/30" />
+          <Mic size={16} className="text-white/40 hover:text-[var(--accent)] cursor-pointer" />
         </div>
       </div>
     );
@@ -184,7 +184,7 @@ export function NotesScreen() {
 
   // ── Main view ─────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full bg-[#111111] text-white font-sans">
+    <div className="flex flex-col h-full bg-[#0A0A0C] text-white font-sans">
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
@@ -213,10 +213,10 @@ export function NotesScreen() {
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all cursor-pointer ${
               activeTab === id
-                ? 'bg-white/10 text-white border border-white/15'
-                : 'text-white/40 hover:text-white/60'
+                ? 'bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--border-accent)]'
+                : 'text-white/40 hover:text-white/70'
             }`}
           >
             <Icon size={12} />
@@ -242,7 +242,7 @@ export function NotesScreen() {
                 <div className="mb-3 flex items-center gap-3">
                   <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-violet-500 to-emerald-400 rounded-full"
+                      className="h-full bg-gradient-to-r from-[#BAFF29] to-emerald-400 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${(completedCount / actions.length) * 100}%` }}
                       transition={{ duration: 0.4 }}
@@ -261,11 +261,11 @@ export function NotesScreen() {
                     <button
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize transition-all ${
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold capitalize transition-all cursor-pointer ${
                         selectedTag === tag
-                          ? tag === 'action' ? 'bg-violet-600 text-white'
-                          : tag === 'decision' ? 'bg-emerald-600 text-white'
-                          : 'bg-amber-600 text-white'
+                          ? tag === 'action' ? 'bg-[#BAFF29] text-[#0A0A0C]'
+                          : tag === 'decision' ? 'bg-emerald-500 text-[#0A0A0C]'
+                          : 'bg-amber-400 text-[#0A0A0C]'
                           : 'bg-white/5 text-white/40 border border-white/10'
                       }`}
                     >
@@ -280,13 +280,13 @@ export function NotesScreen() {
                     onChange={(e) => setNewText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addAction()}
                     placeholder="Add a task, decision, or idea..."
-                    className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[12px] text-white placeholder:text-white/25 outline-none focus:border-violet-500/50 transition-colors"
+                    className="flex-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[12px] text-white placeholder:text-white/25 outline-none focus:border-[#BAFF29] transition-colors"
                   />
                   <button
                     onClick={addAction}
-                    className="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-[12px] flex items-center justify-center shadow-md active:scale-95 transition-all"
+                    className="px-3 py-2 rounded-xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] font-black text-[12px] flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer"
                   >
-                    <Plus size={14} />
+                    <Plus size={14} strokeWidth={3} />
                   </button>
                 </div>
               </div>
@@ -318,10 +318,10 @@ export function NotesScreen() {
                       >
                         <button
                           onClick={() => toggleAction(item.id)}
-                          className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all border-2 ${
+                          className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all border-2 cursor-pointer ${
                             item.completed
-                              ? 'bg-emerald-500 border-emerald-500 text-white'
-                              : 'border-white/20 bg-transparent hover:border-violet-400'
+                              ? 'bg-emerald-500 border-emerald-500 text-[#0A0A0C]'
+                              : 'border-white/20 bg-transparent hover:border-[#BAFF29]'
                           }`}
                         >
                           {item.completed && <Check size={10} strokeWidth={3} />}
@@ -335,14 +335,14 @@ export function NotesScreen() {
                           <span className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 inline-block ${
                             item.tag === 'decision' ? 'text-emerald-400'
                             : item.tag === 'idea' ? 'text-amber-400'
-                            : 'text-violet-400'
+                            : 'text-[#BAFF29]'
                           }`}>
                             {item.tag}
                           </span>
                         </div>
                         <button
                           onClick={() => deleteAction(item.id)}
-                          className="p-1 text-white/20 hover:text-rose-400 transition-colors"
+                          className="p-1 text-white/20 hover:text-rose-400 transition-colors cursor-pointer"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -363,7 +363,7 @@ export function NotesScreen() {
             >
               {historyLoading ? (
                 <div className="flex justify-center py-16">
-                  <div className="w-5 h-5 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-[#BAFF29]/30 border-t-[#BAFF29] rounded-full animate-spin" />
                 </div>
               ) : connectionStatus !== 'connected' ? (
                 <div className="flex flex-col items-center justify-center text-center py-16 px-4">
@@ -397,7 +397,7 @@ export function NotesScreen() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 24 }}
                         onClick={() => setSelectedLecture(lecture)}
-                        className="group flex items-center gap-3 p-3.5 rounded-xl border border-white/8 bg-white/4 hover:bg-white/8 hover:border-violet-500/30 cursor-pointer transition-all"
+                        className="group flex items-center gap-3 p-3.5 rounded-xl border border-white/8 bg-[#141517] hover:bg-[#1A1C20] hover:border-[var(--border-accent)] cursor-pointer transition-all"
                       >
                         {/* Date badge */}
                         <div className="w-10 h-10 rounded-xl bg-white/6 border border-white/10 flex flex-col items-center justify-center shrink-0">
@@ -419,8 +419,8 @@ export function NotesScreen() {
                           </div>
                         </div>
 
-                        <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 group-hover:bg-violet-500/20 group-hover:border-violet-500/40 flex items-center justify-center transition-all shrink-0">
-                          <FileText size={11} className="text-white/30 group-hover:text-violet-400 transition-colors" />
+                        <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 group-hover:bg-[#BAFF29]/15 group-hover:border-[#BAFF29]/30 flex items-center justify-center transition-all shrink-0">
+                          <FileText size={11} className="text-white/30 group-hover:text-[#BAFF29] transition-colors" />
                         </div>
                       </motion.div>
                     );
@@ -433,13 +433,13 @@ export function NotesScreen() {
       </div>
 
       {/* Bottom Ask bar */}
-      <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#111111]">
+      <div className="shrink-0 border-t border-white/8 px-4 py-3 flex items-center gap-3 bg-[#141517]">
         <div className="flex items-end gap-px h-4">
           {[3, 5, 4, 6, 3].map((h, i) => (
             <span
               key={i}
               style={{ height: `${h * 2}px` }}
-              className={`w-0.5 rounded-full transition-all ${isRecording ? 'bg-rose-400 animate-pulse' : 'bg-white/20'}`}
+              className={`w-0.5 rounded-full transition-all ${isRecording ? 'bg-[#BAFF29] animate-pulse' : 'bg-white/20'}`}
             />
           ))}
         </div>
@@ -449,7 +449,7 @@ export function NotesScreen() {
           placeholder={isRecording ? 'Ask about your meeting...' : 'Search notes or ask AI...'}
           className="flex-1 bg-transparent text-[12.5px] text-white/60 placeholder:text-white/25 outline-none"
         />
-        <Mic size={15} className="text-white/30 hover:text-white/60 cursor-pointer transition-colors" />
+        <Mic size={15} className="text-white/30 hover:text-[var(--accent)] cursor-pointer transition-colors" />
       </div>
     </div>
   );

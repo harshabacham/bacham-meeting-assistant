@@ -180,35 +180,35 @@ export function RecordingScreen({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white font-sans text-slate-900 select-none relative overflow-hidden">
-      {/* 1. Top Navigation Bar: ← Back & ☰ Menu with red dot */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0 border-b border-slate-100/80">
+    <div className="flex flex-col h-full bg-[#0A0A0C] font-sans text-white select-none relative overflow-hidden">
+      {/* 1. Top Navigation Bar: ← Back & Live Duration */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0 border-b border-white/8 bg-[#141517]/80 backdrop-blur-md">
         <button
           onClick={onBack ? onBack : handleStopAndSave}
           title="Back to Notes"
-          className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-800 transition-colors cursor-pointer"
+          className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
         >
           <ArrowLeft size={20} />
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-200">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/30">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[11px] font-extrabold text-rose-600 font-mono">
+            <span className="text-[11px] font-extrabold text-rose-400 font-mono tracking-wider">
               {formatTime(elapsed)}
             </span>
           </div>
 
           <div className="relative">
-            <button className="p-2 -mr-2 rounded-full hover:bg-slate-100 text-slate-800">
+            <button className="p-2 -mr-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white cursor-pointer transition-colors">
               <Menu size={20} strokeWidth={2.5} />
             </button>
-            <span className="absolute top-1.5 right-0 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+            <span className="absolute top-1.5 right-0 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[#0A0A0C]" />
           </div>
         </div>
       </div>
 
-      {/* Main Note & Screenshot Body (Screenshot 2 layout) */}
+      {/* Main Note & Screenshot Body */}
       <div className="flex-1 px-5 overflow-y-auto pb-28 pt-4 space-y-4">
         {/* Editable Title */}
         <input
@@ -216,7 +216,7 @@ export function RecordingScreen({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Note Title..."
-          className="w-full text-[24px] font-extrabold text-slate-900 tracking-tight leading-tight outline-none border-none bg-transparent placeholder:text-slate-300"
+          className="w-full text-[24px] font-extrabold text-white tracking-tight leading-tight outline-none border-none bg-transparent placeholder:text-white/20"
         />
 
         {/* Subtitle / Live Note Textarea */}
@@ -225,16 +225,16 @@ export function RecordingScreen({
           onChange={handleNoteChange}
           placeholder="Type notes here... Click the camera below to attach screenshots 📷"
           rows={4}
-          className="w-full text-[14px] text-slate-600 font-medium leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-slate-300"
+          className="w-full text-[14px] text-white/75 font-medium leading-relaxed outline-none border-none bg-transparent resize-none placeholder:text-white/20"
         />
 
         {/* Visual Media & Real Screenshot Deck */}
         <div className="space-y-3 pt-1">
           {snapshots.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-slate-200 text-center text-slate-400 bg-slate-50/50">
-              <Camera size={22} className="text-slate-300 mb-1.5" />
-              <span className="text-[12px] font-bold text-slate-600">No screenshots yet</span>
-              <span className="text-[11px] text-slate-400 mt-0.5">
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-white/10 text-center text-white/40 bg-[#141517]/50">
+              <Camera size={22} className="text-white/30 mb-1.5" />
+              <span className="text-[12px] font-bold text-white/70">No screenshots yet</span>
+              <span className="text-[11px] text-white/40 mt-0.5">
                 Tap the camera button at the bottom to snap meeting slides
               </span>
             </div>
@@ -244,14 +244,14 @@ export function RecordingScreen({
                 key={snap.id}
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="relative rounded-2xl overflow-hidden bg-[#0f172a] border border-slate-200 shadow-sm"
+                className="relative rounded-2xl overflow-hidden bg-[#141517] border border-white/10 shadow-lg"
               >
                 <img
                   src={snap.url}
                   alt="Meeting Frame"
                   className="w-full h-44 object-cover"
                 />
-                <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-[#1e293b]/90 backdrop-blur-md text-white text-[11px] font-bold font-mono shadow-sm">
+                <div className="absolute bottom-2.5 right-2.5 px-2.5 py-0.5 rounded-md bg-[#0A0A0C]/90 backdrop-blur-md text-[#BAFF29] text-[11px] font-bold font-mono shadow-sm border border-white/10">
                   {snap.time}
                 </div>
               </motion.div>
@@ -267,30 +267,30 @@ export function RecordingScreen({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[12px] font-bold px-4 py-2 rounded-full shadow-xl flex items-center gap-2 z-40 whitespace-nowrap"
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-[#1A1C20] text-white text-[12px] font-bold px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 z-40 whitespace-nowrap border border-[var(--border-accent)]"
           >
-            <Sparkles size={13} className="text-purple-400" />
+            <Sparkles size={13} className="text-[#BAFF29]" />
             <span>{showToast}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 4. Floating Bottom Control Dock (Exact Sider.ai Layout in Screenshot 2) */}
+      {/* 4. Floating Bottom Control Dock */}
       <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between z-30 pointer-events-none">
         
         {/* Left: [ 📷 Capture Screenshot ] Pill */}
         <div className="flex flex-col items-center gap-1.5 pointer-events-auto">
           <button
             onClick={handleCaptureSnapshot}
-            className="w-12 h-12 rounded-full bg-white hover:bg-slate-50 border border-slate-200 shadow-xl flex items-center justify-center text-slate-800 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-12 h-12 rounded-full bg-[#1A1C20] hover:bg-[#22252A] border border-white/15 shadow-2xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title="Capture Screenshot"
           >
-            <Camera size={20} className="text-slate-700" />
+            <Camera size={20} className="text-white/80" />
           </button>
         </div>
 
         {/* Right: [ ılı. (wave)  || (Pause)  ⏹ (Stop) ] Pill Dock */}
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-white border border-slate-200 shadow-xl pointer-events-auto">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-[#1A1C20]/95 border border-white/15 backdrop-blur-xl shadow-2xl pointer-events-auto">
           {/* Animated Waveform */}
           <div className="flex items-center gap-0.5 h-4 px-1">
             {[0.1, 0.3, 0.15, 0.4, 0.2].map((d, i) => (
@@ -300,7 +300,7 @@ export function RecordingScreen({
                   width: '2.5px',
                   height: isPaused ? '4px' : '14px',
                   borderRadius: '2px',
-                  backgroundColor: isPaused ? '#cbd5e1' : '#7c3aed',
+                  backgroundColor: isPaused ? 'rgba(255,255,255,0.25)' : '#BAFF29',
                   animation: isPaused ? 'none' : 'pulse 0.8s infinite',
                   animationDelay: `${d}s`,
                 }}
@@ -311,7 +311,7 @@ export function RecordingScreen({
           {/* Pause / Resume Button */}
           <button
             onClick={handleTogglePause}
-            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
             title={isPaused ? 'Resume' : 'Pause'}
           >
             {isPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
@@ -321,7 +321,7 @@ export function RecordingScreen({
           <button
             onClick={handleStopAndSave}
             disabled={isLoading}
-            className="p-1.5 rounded-full hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-rose-500/15 text-rose-500 transition-colors cursor-pointer"
             title="Stop & Save"
           >
             <Square size={16} fill="currentColor" />

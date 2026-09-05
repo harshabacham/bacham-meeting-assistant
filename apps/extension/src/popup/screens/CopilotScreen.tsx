@@ -105,19 +105,19 @@ export function CopilotScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full font-sans animate-fade-in p-4">
+    <div className="flex flex-col h-full font-sans animate-fade-in p-4 bg-[#0A0A0C] text-white">
       {/* Top Mascot Hero Card */}
-      <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-transparent border border-indigo-500/20 mb-3 flex items-center justify-between shadow-lg backdrop-blur-md">
+      <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1A1C20] via-[#141517] to-[#0A0A0C] border border-white/10 mb-3 flex items-center justify-between shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-3">
           <MascotAvatar mood={mascotMood} size={46} />
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-[15px] font-extrabold text-[var(--text-primary)]">Bacham Copilot</h2>
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-indigo-500 text-white shadow-sm">
+              <h2 className="text-[15px] font-extrabold text-white">Bacham Copilot</h2>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-[#BAFF29] text-[#0A0A0C] shadow-xs">
                 AI 1.5
               </span>
             </div>
-            <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">
+            <p className="text-[11px] text-white/50 font-medium mt-0.5">
               {isRecording ? '🟢 Actively listening to meeting' : '💤 Ready to assist on next session'}
             </p>
           </div>
@@ -125,7 +125,7 @@ export function CopilotScreen() {
         <button
           onClick={() => handleSend('Give me a full recap of this meeting so far.')}
           title="Instant Recap"
-          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-indigo-400 border border-white/10 transition-all"
+          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#BAFF29] border border-white/10 transition-all cursor-pointer"
         >
           <RefreshCw size={14} className={isThinking ? 'animate-spin' : ''} />
         </button>
@@ -133,8 +133,8 @@ export function CopilotScreen() {
 
       {/* Quick Prompts Chips */}
       <div className="mb-3">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5 flex items-center gap-1">
-          <Sparkles size={11} className="text-indigo-400" />
+        <div className="text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1.5 flex items-center gap-1">
+          <Sparkles size={11} className="text-[#BAFF29]" />
           <span>Quick Actions</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
@@ -142,10 +142,10 @@ export function CopilotScreen() {
             <button
               key={idx}
               onClick={() => handleSend(chip.prompt)}
-              className="p-2 rounded-xl bg-[var(--surface-hover)] border border-[var(--separator)] hover:border-indigo-500/40 hover:bg-indigo-500/10 text-left text-[11px] font-semibold text-[var(--text-primary)] flex items-center justify-between transition-all"
+              className="p-2 rounded-xl bg-[#141517] border border-white/8 hover:border-[#BAFF29]/40 hover:bg-[#BAFF29]/10 text-left text-[11px] font-semibold text-white flex items-center justify-between transition-all cursor-pointer"
             >
               <span>{chip.label}</span>
-              <Zap size={11} className="text-indigo-400 shrink-0" />
+              <Zap size={11} className="text-[#BAFF29] shrink-0" />
             </button>
           ))}
         </div>
@@ -163,42 +163,42 @@ export function CopilotScreen() {
             <div
               className={`max-w-[88%] p-3 rounded-2xl text-[12.5px] leading-relaxed shadow-sm ${
                 msg.sender === 'user'
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-br-none'
-                  : 'bg-[var(--surface-2)] border border-[var(--separator)] text-[var(--text-primary)] rounded-bl-none'
+                  ? 'bg-[#BAFF29] text-[#0A0A0C] font-semibold rounded-br-none shadow-md shadow-[#BAFF29]/10'
+                  : 'bg-[#141517] border border-white/10 text-white/90 rounded-bl-none'
               }`}
             >
               {msg.text}
             </div>
-            <span className="text-[9.5px] text-[var(--text-tertiary)] mt-1 px-1">
+            <span className="text-[9.5px] text-white/35 mt-1 px-1">
               {msg.time}
             </span>
           </motion.div>
         ))}
 
         {isThinking && (
-          <div className="flex items-center gap-2 p-3 rounded-2xl bg-[var(--surface-2)] border border-[var(--separator)] w-fit">
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-            <span className="text-[11px] text-indigo-400 font-semibold">Bacham Copilot is synthesizing...</span>
+          <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#141517] border border-white/10 w-fit">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#BAFF29] animate-pulse" />
+            <span className="text-[11px] text-[#BAFF29] font-semibold">Bacham Copilot is synthesizing...</span>
           </div>
         )}
       </div>
 
       {/* Input Bar */}
-      <div className="flex items-center gap-2 p-2 rounded-2xl bg-[var(--surface-2)] border border-[var(--separator)] shadow-lg shrink-0">
+      <div className="flex items-center gap-2 p-2 rounded-2xl bg-[#141517] border border-white/10 shadow-xl shrink-0">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder={session ? "Ask about what's being said... 💭" : "Ask anything... 💭"}
-          className="flex-1 bg-transparent border-none outline-none text-[12px] text-[var(--text-primary)] px-2"
+          className="flex-1 bg-transparent border-none outline-none text-[12px] text-white placeholder:text-white/30 px-2"
         />
         <button
           onClick={() => handleSend()}
           disabled={!input.trim() || isThinking}
           className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
             input.trim()
-              ? 'bg-indigo-600 text-white shadow-md hover:scale-105 active:scale-95'
+              ? 'bg-[#BAFF29] text-[#0A0A0C] font-bold shadow-md shadow-[#BAFF29]/20 hover:scale-105 active:scale-95 cursor-pointer'
               : 'bg-white/5 text-white/30 cursor-not-allowed'
           }`}
         >

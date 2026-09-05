@@ -295,16 +295,16 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
             right: '12px',
             width: '420px',
             height: 'calc(100vh - 24px)',
-            background: 'rgba(15, 23, 42, 0.88)',
+            background: 'rgba(10, 10, 12, 0.95)',
             backdropFilter: 'blur(28px)',
             WebkitBackdropFilter: 'blur(28px)',
             borderRadius: '24px',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) inset',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
             zIndex: 9999999,
             display: 'flex',
             flexDirection: 'column',
-            color: '#f8fafc',
+            color: '#F8F9FA',
             fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             overflow: 'hidden',
           }}
@@ -313,8 +313,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
           <div
             style={{
               padding: '16px 20px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-              background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'linear-gradient(180deg, rgba(20, 21, 23, 0.8) 0%, rgba(10, 10, 12, 0.6) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -325,18 +325,18 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
               <MascotAvatar mood={mascotMood} size={42} />
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '-0.02em', color: '#F8F9FA' }}>
                     Bacham Copilot
                   </span>
                   <span
                     style={{
                       fontSize: '10px',
-                      fontWeight: 700,
-                      padding: '2px 6px',
+                      fontWeight: 800,
+                      padding: '2px 7px',
                       borderRadius: '6px',
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                      color: '#fff',
-                      boxShadow: '0 2px 6px rgba(99, 102, 241, 0.3)',
+                      background: '#BAFF29',
+                      color: '#0A0A0C',
+                      boxShadow: '0 2px 8px rgba(186, 255, 41, 0.35)',
                     }}
                   >
                     AI 1.5
@@ -390,14 +390,14 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          {/* Sider.ai-Style Tab Navigation Pills */}
+          {/* Tab Navigation Pills */}
           <div
             style={{
               display: 'flex',
               padding: '10px 14px',
               gap: '6px',
-              background: 'rgba(15, 23, 42, 0.6)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(20, 21, 23, 0.7)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
             }}
           >
             {[
@@ -426,10 +426,10 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                     gap: '6px',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     background: isActive
-                      ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2))'
+                      ? 'rgba(186, 255, 41, 0.14)'
                       : 'transparent',
-                    color: isActive ? '#a5b4fc' : 'rgba(255, 255, 255, 0.6)',
-                    boxShadow: isActive ? '0 2px 8px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(99, 102, 241, 0.4) inset' : 'none',
+                    color: isActive ? '#BAFF29' : 'rgba(248, 249, 250, 0.6)',
+                    boxShadow: isActive ? '0 2px 8px rgba(186, 255, 41, 0.15), 0 0 0 1px rgba(186, 255, 41, 0.35) inset' : 'none',
                   }}
                 >
                   <Icon size={14} />
@@ -440,8 +440,9 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                         fontSize: '10px',
                         padding: '1px 5px',
                         borderRadius: '10px',
-                        background: isActive ? '#6366f1' : 'rgba(255, 255, 255, 0.15)',
-                        color: '#fff',
+                        background: isActive ? '#BAFF29' : 'rgba(255, 255, 255, 0.15)',
+                        color: isActive ? '#0A0A0C' : '#fff',
+                        fontWeight: 800,
                       }}
                     >
                       {tab.badge}
@@ -484,8 +485,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                           transition: 'all 0.15s ease',
                         }}
                         onMouseOver={(e) => {
-                          e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
-                          e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                          e.currentTarget.style.background = 'rgba(186, 255, 41, 0.12)';
+                          e.currentTarget.style.borderColor = 'rgba(186, 255, 41, 0.4)';
                         }}
                         onMouseOut={(e) => {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
@@ -493,7 +494,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                         }}
                       >
                         <span>{qp.label}</span>
-                        <Zap size={12} style={{ color: '#818cf8', opacity: 0.8 }} />
+                        <Zap size={12} style={{ color: '#BAFF29', opacity: 0.9 }} />
                       </button>
                     ))}
                   </div>
@@ -519,13 +520,14 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                           borderRadius: msg.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                           background:
                             msg.sender === 'user'
-                              ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
-                              : 'rgba(30, 41, 59, 0.7)',
-                          border: msg.sender === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                          color: '#fff',
+                              ? '#BAFF29'
+                              : 'rgba(26, 28, 32, 0.85)',
+                          border: msg.sender === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                          color: msg.sender === 'user' ? '#0A0A0C' : '#F8F9FA',
+                          fontWeight: msg.sender === 'user' ? 600 : 400,
                           fontSize: '13px',
                           lineHeight: 1.5,
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                          boxShadow: msg.sender === 'user' ? '0 4px 14px rgba(186, 255, 41, 0.25)' : '0 4px 12px rgba(0, 0, 0, 0.25)',
                         }}
                       >
                         {msg.text}
@@ -537,9 +539,9 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                   ))}
 
                   {isThinking && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '16px', background: 'rgba(30, 41, 59, 0.5)', width: 'fit-content' }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#818cf8', animation: 'pulse 1s infinite' }} />
-                      <span style={{ fontSize: '12px', color: '#a5b4fc', fontWeight: 600 }}>Bacham AI is thinking...</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '16px', background: 'rgba(20, 21, 23, 0.8)', border: '1px solid rgba(186, 255, 41, 0.2)', width: 'fit-content' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#BAFF29', animation: 'pulse 1s infinite' }} />
+                      <span style={{ fontSize: '12px', color: '#BAFF29', fontWeight: 700 }}>Bacham AI is thinking...</span>
                     </div>
                   )}
                 </div>
@@ -552,9 +554,9 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                     gap: '8px',
                     padding: '8px 12px',
                     borderRadius: '16px',
-                    background: 'rgba(30, 41, 59, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+                    background: 'rgba(20, 21, 23, 0.9)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
                   }}
                 >
                   <input
@@ -579,15 +581,15 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                       width: '32px',
                       height: '32px',
                       borderRadius: '10px',
-                      background: chatInput.trim() ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255, 255, 255, 0.1)',
-                      color: '#fff',
+                      background: chatInput.trim() ? '#BAFF29' : 'rgba(255, 255, 255, 0.1)',
+                      color: chatInput.trim() ? '#0A0A0C' : 'rgba(255, 255, 255, 0.4)',
                       border: 'none',
                       cursor: chatInput.trim() ? 'pointer' : 'not-allowed',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       transition: 'all 0.15s ease',
-                      boxShadow: chatInput.trim() ? '0 4px 12px rgba(99, 102, 241, 0.4)' : 'none',
+                      boxShadow: chatInput.trim() ? '0 4px 12px rgba(186, 255, 41, 0.35)' : 'none',
                     }}
                   >
                     <Send size={14} />
@@ -604,8 +606,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                   style={{
                     padding: '14px 16px',
                     borderRadius: '16px',
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08))',
-                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    background: 'rgba(20, 21, 23, 0.8)',
+                    border: '1px solid rgba(186, 255, 41, 0.25)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
@@ -613,17 +615,17 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Sparkles size={14} style={{ color: '#818cf8' }} />
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff' }}>Meeting Action Progress</span>
+                      <Sparkles size={14} style={{ color: '#BAFF29' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#F8F9FA' }}>Meeting Action Progress</span>
                     </div>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#BAFF29' }}>
                       {completedCount}/{actions.length} Done ({progressPercent}%)
                     </span>
                   </div>
                   {/* Progress Line */}
-                  <div style={{ width: '100%', height: '6px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.1)', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '6px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
                     <motion.div
-                      style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #6366f1, #34d399)' }}
+                      style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #BAFF29, #10b981)' }}
                       initial={{ width: 0 }}
                       animate={{ width: `${progressPercent}%` }}
                       transition={{ duration: 0.5 }}
@@ -643,18 +645,18 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                           borderRadius: '8px',
                           border: 'none',
                           fontSize: '10px',
-                          fontWeight: 700,
+                          fontWeight: 800,
                           cursor: 'pointer',
                           textTransform: 'capitalize',
                           background:
                             newActionTag === tag
                               ? tag === 'action'
-                                ? '#6366f1'
+                                ? '#BAFF29'
                                 : tag === 'decision'
                                 ? '#10b981'
                                 : '#f59e0b'
                               : 'rgba(255, 255, 255, 0.08)',
-                          color: '#fff',
+                          color: newActionTag === tag && tag === 'action' ? '#0A0A0C' : '#fff',
                         }}
                       >
                         {tag === 'action' ? '🎯 Action' : tag === 'decision' ? '⚖️ Decision' : '💡 Idea'}
@@ -672,8 +674,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                         flex: 1,
                         padding: '8px 12px',
                         borderRadius: '12px',
-                        background: 'rgba(30, 41, 59, 0.6)',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        background: 'rgba(20, 21, 23, 0.7)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         color: '#fff',
                         fontSize: '12px',
                         outline: 'none',
@@ -684,10 +686,10 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                       style={{
                         padding: '8px 12px',
                         borderRadius: '12px',
-                        background: '#6366f1',
+                        background: '#BAFF29',
                         border: 'none',
-                        color: '#fff',
-                        fontWeight: 700,
+                        color: '#0A0A0C',
+                        fontWeight: 800,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -710,7 +712,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                       style={{
                         padding: '12px 14px',
                         borderRadius: '14px',
-                        background: item.completed ? 'rgba(30, 41, 59, 0.3)' : 'rgba(30, 41, 59, 0.7)',
+                        background: item.completed ? 'rgba(20, 21, 23, 0.4)' : 'rgba(20, 21, 23, 0.8)',
                         border: '1px solid rgba(255, 255, 255, 0.08)',
                         display: 'flex',
                         alignItems: 'center',
@@ -729,14 +731,14 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                             height: '18px',
                             borderRadius: '6px',
                             border: item.completed ? 'none' : '2px solid rgba(255, 255, 255, 0.3)',
-                            background: item.completed ? '#10b981' : 'transparent',
+                            background: item.completed ? '#BAFF29' : 'transparent',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          {item.completed && <Check size={12} color="#fff" strokeWidth={3} />}
+                          {item.completed && <Check size={12} color="#0A0A0C" strokeWidth={3} />}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           <span
@@ -758,7 +760,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                                   ? '#34d399'
                                   : item.tag === 'idea'
                                   ? '#fbbf24'
-                                  : '#818cf8',
+                                  : '#BAFF29',
                               fontWeight: 700,
                               textTransform: 'uppercase',
                               marginTop: '2px',
@@ -804,9 +806,9 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                     style={{
                       padding: '4px 10px',
                       borderRadius: '8px',
-                      background: 'rgba(99, 102, 241, 0.2)',
-                      border: '1px solid rgba(99, 102, 241, 0.4)',
-                      color: '#a5b4fc',
+                      background: 'rgba(186, 255, 41, 0.12)',
+                      border: '1px solid rgba(186, 255, 41, 0.35)',
+                      color: '#BAFF29',
                       fontSize: '11px',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -887,8 +889,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                     gap: '8px',
                     padding: '8px 12px',
                     borderRadius: '12px',
-                    background: 'rgba(30, 41, 59, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'rgba(20, 21, 23, 0.8)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
                   }}
                 >
                   <Search size={14} color="rgba(255, 255, 255, 0.4)" />
@@ -911,7 +913,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                         style={{
                           padding: '10px 12px',
                           borderRadius: '12px',
-                          background: 'rgba(30, 41, 59, 0.4)',
+                          background: 'rgba(20, 21, 23, 0.6)',
                           border: '1px solid rgba(255, 255, 255, 0.06)',
                           display: 'flex',
                           flexDirection: 'column',
@@ -919,7 +921,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: item.speaker === 'You' ? '#818cf8' : '#38bdf8' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: item.speaker === 'You' ? '#BAFF29' : '#38bdf8' }}>
                             {item.speaker}
                           </span>
                           <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)' }}>{item.time}</span>
@@ -939,8 +941,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
             <div
               style={{
                 padding: '12px 16px',
-                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(15, 23, 42, 0.95)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'rgba(10, 10, 12, 0.98)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -959,7 +961,7 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                 <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff' }}>
                   {isPaused ? 'PAUSED' : 'RECORDING'}
                 </span>
-                <span style={{ fontSize: '12px', color: '#a5b4fc', fontWeight: 700, marginLeft: '4px' }}>
+                <span style={{ fontSize: '12px', color: '#BAFF29', fontWeight: 800, marginLeft: '4px' }}>
                   {formatTimer(recordingSeconds)}
                 </span>
               </div>
@@ -970,8 +972,8 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
                   style={{
                     padding: '6px 10px',
                     borderRadius: '8px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: '#fff',
                     cursor: 'pointer',
                     display: 'flex',
