@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Sparkles, CheckCircle2, ChevronRight, ChevronLeft, Check, X, 
   Calendar, Clock, Video, CalendarPlus, Bell, FileText, Search,
-  Play, Pause, RotateCcw, Copy, CheckSquare, Target
+  Play, Pause, RotateCcw, Copy, CheckSquare, Target, ArrowRight,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePetStore, PET_DEFINITIONS } from '@/shared/stores/petStore';
@@ -11,6 +12,7 @@ import {
   useCalendarStore, 
   findImminentMeeting, 
   findRecentlyConcludedMeeting, 
+  parseEventDateTime,
   CalendarEvent 
 } from '@/shared/stores/calendarStore';
 import { useGlobalTasks, GlobalActionItem } from '@/shared/hooks/useGlobalTasks';
@@ -22,17 +24,16 @@ import { useNavigate } from 'react-router-dom';
 
 interface SearchResultItem {
   id: string;
-  type: 'note' | 'task' | 'transcript';
+  type: 'note' | 'task';
   title: string;
   snippet: string;
   lectureId?: string;
-  timestamp?: string;
 }
 
 export const PetCompanionWidget: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [showBubble, setShowBubble] = useState(false);
-  const [activeTab, setActiveTab] = useState<'briefing' | 'search' | 'focus' | 'tasks'>('tasks');
+  const [activeTab, setActiveTab] = useState<'briefing' | 'whisper' | 'focus' | 'tasks'>('briefing');
   const [taskIndex, setTaskIndex] = useState(0);
   const [isMarking, setIsMarking] = useState(false);
   const [copiedDraft, setCopiedDraft] = useState(false);
@@ -46,7 +47,6 @@ export const PetCompanionWidget: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const bubbleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const dragConstraintsRef = useRef(null);
 
@@ -68,14 +68,14 @@ export const PetCompanionWidget: React.FC = () => {
     setMode: setFocusMode
   } = useFocusStore();
 
-  // Ensure lectures are fetched for search & cheat sheet
+  // Ensure lectures are loaded for search & cheat sheet
   useEffect(() => {
     if (lectures.length === 0) {
       fetchLectures().catch(console.error);
     }
   }, [fetchLectures, lectures.length]);
 
-  // Focus Timer 1s interval tick
+  // Focus Timer 1-second interval
   useEffect(() => {
     if (!isFocusRunning) return;
     const timer = setInterval(() => {
@@ -84,11 +84,11 @@ export const PetCompanionWidget: React.FC = () => {
     return () => clearInterval(timer);
   }, [isFocusRunning, focusTick]);
 
-  // Handle focus session completion
+  // Focus completion notification
   useEffect(() => {
     if (focusTimeLeft === 0 && !isFocusRunning) {
       if (focusMode === 'focus') {
-        showToast('Focus session complete! Time for a 5m break 🎉', 'success');
+        showToast('Focus session complete! Time for a refreshing break 🎉', 'success');
       } else {
         showToast('Break finished! Ready for deep work?', 'info');
       }
@@ -126,7 +126,7 @@ export const PetCompanionWidget: React.FC = () => {
   // Monitor imminent and concluded meetings every 20s
   useEffect(() => {
     const checkMeetings = () => {
-      // 1. Check imminent meetings
+      // 1. Imminent check
       const imminent = findImminentMeeting(events, 10);
       if (imminent) {
         if (snoozedMeetingId === imminent.event.id && snoozeUntil && Date.now() < snoozeUntil) {
@@ -138,7 +138,7 @@ export const PetCompanionWidget: React.FC = () => {
         setImminentMeeting(null);
       }
 
-      // 2. Check recently concluded meetings
+      // 2. Concluded check
       const concluded = findRecentlyConcludedMeeting(events, 30);
       setConcludedMeeting(concluded);
     };
@@ -148,18 +148,33 @@ export const PetCompanionWidget: React.FC = () => {
     return () => clearInterval(interval);
   }, [events, snoozedMeetingId, snoozeUntil]);
 
+  // Find next upcoming meeting on calendar (for non-empty Briefing tab)
+  const nextUpcomingMeeting = useMemo(() => {
+    const now = new Date();
+    const upcoming = events
+      .filter(e => !e.isCompleted)
+      .map(e => {
+        const parsed = parseEventDateTime(e);
+        return { event: e, parsed };
+      })
+      .filter(item => item.parsed && item.parsed.start.getTime() > now.getTime())
+      .sort((a, b) => a.parsed!.start.getTime() - b.parsed!.start.getTime());
+
+    return upcoming[0] || null;
+  }, [events]);
+
   // Find prior related note for the pre-meeting cheat sheet
+  const activeMeetingForBriefing = imminentMeeting?.event || nextUpcomingMeeting?.event;
   const relatedPriorNote = useMemo(() => {
-    if (!imminentMeeting) return null;
-    const title = imminentMeeting.event.title.toLowerCase();
+    if (!activeMeetingForBriefing) return null;
+    const title = activeMeetingForBriefing.title.toLowerCase();
     const words = title.split(/\s+/).filter(w => w.length > 3);
 
     return lectures.find(l => {
       const lTitle = (l.title || '').toLowerCase();
-      // Match if lecture title shares significant keywords
       return words.some(w => lTitle.includes(w));
     }) || null;
-  }, [imminentMeeting, lectures]);
+  }, [activeMeetingForBriefing, lectures]);
 
   // Quick Whisper Search Execution
   const searchResults = useMemo<SearchResultItem[]>(() => {
@@ -212,7 +227,7 @@ export const PetCompanionWidget: React.FC = () => {
     return results.slice(0, 5);
   }, [searchQuery, tasks, lectures]);
 
-  // Adjust current task index if list shrinks
+  // Adjust task index when count shrinks
   useEffect(() => {
     if (taskIndex >= pendingTasks.length && pendingTasks.length > 0) {
       setTaskIndex(pendingTasks.length - 1);
@@ -236,43 +251,33 @@ export const PetCompanionWidget: React.FC = () => {
     });
   };
 
-  // Close bubble on outside click
+  // Close bubble on outside click (No annoying auto-dismiss timers!)
   useEffect(() => {
     if (!showBubble) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (bubbleRef.current && !bubbleRef.current.contains(e.target as Node)) {
         setShowBubble(false);
-        if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showBubble]);
 
-  const triggerBubble = () => {
-    if (concludedMeeting || imminentMeeting) {
-      setActiveTab('briefing');
-    } else if (isFocusRunning) {
-      setActiveTab('focus');
-    } else {
-      setActiveTab('tasks');
-    }
-    setShowBubble(true);
-
-    if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
-    // Keep open longer if user is searching or in focus mode
-    const duration = 25000;
-    bubbleTimeoutRef.current = setTimeout(() => {
-      setShowBubble(false);
-    }, duration);
-  };
-
-  const handlePetClick = () => {
+  const toggleBubble = () => {
     if (showBubble) {
       setShowBubble(false);
-      if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
     } else {
-      triggerBubble();
+      // Auto-route to the most pertinent tab
+      if (imminentMeeting || concludedMeeting) {
+        setActiveTab('briefing');
+      } else if (isFocusRunning) {
+        setActiveTab('focus');
+      } else if (pendingTasks.length > 0) {
+        setActiveTab('tasks');
+      } else {
+        setActiveTab('briefing');
+      }
+      setShowBubble(true);
     }
   };
 
@@ -350,16 +355,14 @@ export const PetCompanionWidget: React.FC = () => {
     setSnoozedMeetingId(imminentMeeting.event.id);
     setSnoozeUntil(Date.now() + 5 * 60 * 1000);
     setImminentMeeting(null);
-    setShowBubble(false);
     showToast('Meeting alert snoozed for 5 minutes', 'info');
   };
 
-  // Copy Follow-up Email Draft (Feature 3: Post-Meeting Debrief)
   const handleCopyFollowupDraft = async (event: CalendarEvent) => {
     const matchingTasks = tasks.filter(t => t.lectureId === event.lectureId || t.status === 'todo').slice(0, 3);
     const actionItemsList = matchingTasks.length > 0 
       ? matchingTasks.map(t => `- [ ] ${t.task}`).join('\n')
-      : '- [ ] Send meeting recap and finalized notes\n- [ ] Follow up on next milestones';
+      : '- [ ] Send meeting recap and finalized notes\n- [ ] Follow up on next milestone';
 
     const draft = `Subject: Follow-up & Next Steps: ${event.title}
 
@@ -384,12 +387,16 @@ Best regards,`;
     showToast('Follow-up draft copied to clipboard!', 'success');
   };
 
-  // Format seconds to mm:ss
   const formatTimerSeconds = (totalSec: number) => {
     const m = Math.floor(totalSec / 60);
     const s = totalSec % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  // Focus ring calculation
+  const focusProgress = focusTotalDuration > 0 
+    ? ((focusTotalDuration - focusTimeLeft) / focusTotalDuration) * 100 
+    : 0;
 
   if (isTuckedAway || hidePet) return null;
 
@@ -406,7 +413,7 @@ Best regards,`;
         onDragEnd={handleDragEnd}
         className="absolute bottom-6 right-6 flex items-end justify-end pointer-events-auto"
       >
-        {/* Floating Focus Timer Capsule alongside the pet button (when running or in session) */}
+        {/* Docked Focus Timer Capsule (Visible beside pet when focus is active or paused) */}
         {(isFocusRunning || (focusTimeLeft > 0 && focusTimeLeft < focusTotalDuration)) && (
           <motion.button
             initial={{ opacity: 0, scale: 0.9, x: 10 }}
@@ -417,7 +424,7 @@ Best regards,`;
               setActiveTab('focus');
               setShowBubble(true);
             }}
-            className="mr-3 mb-2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-raised)]/95 border border-[var(--border)] text-xs font-mono font-semibold text-[var(--text-primary)] shadow-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-all"
+            className="mr-3 mb-2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-raised)]/95 backdrop-blur-md border border-[var(--border)] text-xs font-mono font-semibold text-[var(--text-primary)] shadow-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-all"
             title="Open Focus Companion"
           >
             <span className={`w-2 h-2 rounded-full ${isFocusRunning ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
@@ -428,99 +435,105 @@ Best regards,`;
           </motion.button>
         )}
 
+        {/* Main Companion Popup Bubble */}
         <AnimatePresence>
           {showBubble && (
             <motion.div
               ref={bubbleRef}
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              initial={{ opacity: 0, y: 12, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              className="absolute bottom-full mb-3 right-2 w-[370px] bg-[var(--surface)] border border-[var(--border)] p-4 rounded-2xl shadow-xl pointer-events-auto cursor-default relative text-left"
+              transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+              className="absolute bottom-full mb-3 right-0 w-[390px] bg-[var(--surface)]/98 backdrop-blur-2xl border border-[var(--border)] p-4 rounded-2xl shadow-2xl pointer-events-auto cursor-default text-left"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Header Tab Bar */}
-              <div className="flex items-center justify-between mb-3 border-b border-[var(--border)]/60 pb-2">
-                <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar pr-1">
-                  {(imminentMeeting || concludedMeeting) && (
-                    <button
-                      onClick={() => setActiveTab('briefing')}
-                      className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                        activeTab === 'briefing'
-                          ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
-                          : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                      }`}
-                    >
-                      <Bell size={11} className={imminentMeeting ? 'animate-pulse' : ''} />
-                      {imminentMeeting ? 'Cheat Sheet' : 'Debrief'}
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => setActiveTab('tasks')}
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                      activeTab === 'tasks'
-                        ? 'bg-[var(--surface-raised)] text-[var(--accent)] border border-[var(--border)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    <Sparkles size={11} />
-                    Tasks ({pendingTasks.length})
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setActiveTab('search');
-                      setTimeout(() => searchInputRef.current?.focus(), 50);
-                    }}
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                      activeTab === 'search'
-                        ? 'bg-[var(--surface-raised)] text-[var(--accent)] border border-[var(--border)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    <Search size={11} />
-                    Whisper
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('focus')}
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                      activeTab === 'focus'
-                        ? 'bg-[var(--surface-raised)] text-emerald-400 border border-[var(--border)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                    }`}
-                  >
-                    <Clock size={11} />
-                    Focus
-                  </button>
+              {/* Top Navigation: Ultra-Clean Segmented Control */}
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <div className="flex-1 bg-[var(--surface-raised)] p-1 rounded-xl flex items-center justify-between border border-[var(--border)]/40 relative">
+                  {[
+                    {
+                      id: 'briefing',
+                      label: 'Briefing',
+                      icon: Bell,
+                      hasDot: Boolean(imminentMeeting || concludedMeeting),
+                      dotColor: imminentMeeting ? 'bg-rose-500' : 'bg-emerald-400',
+                    },
+                    {
+                      id: 'whisper',
+                      label: 'Whisper',
+                      icon: Search,
+                    },
+                    {
+                      id: 'focus',
+                      label: 'Focus',
+                      icon: Clock,
+                      hasDot: isFocusRunning,
+                      dotColor: 'bg-emerald-400',
+                    },
+                    {
+                      id: 'tasks',
+                      label: `Tasks (${pendingTasks.length})`,
+                      icon: CheckSquare,
+                    },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id as any);
+                          if (tab.id === 'whisper') {
+                            setTimeout(() => searchInputRef.current?.focus(), 50);
+                          }
+                        }}
+                        className={`relative flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer z-10 ${
+                          isActive
+                            ? 'text-[var(--text-primary)] shadow-sm'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeTabPill"
+                            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                            className="absolute inset-0 bg-[var(--surface)] rounded-lg border border-[var(--border)]/70 shadow-xs z-[-1]"
+                          />
+                        )}
+                        <Icon size={12} className={tab.hasDot && tab.id === 'briefing' ? 'animate-pulse text-rose-500' : ''} />
+                        <span className="truncate">{tab.label}</span>
+                        {tab.hasDot && (
+                          <span className={`w-1.5 h-1.5 rounded-full ${tab.dotColor} shrink-0`} />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowBubble(false);
-                    if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
-                  }}
-                  className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer shrink-0 ml-1"
+                  onClick={() => setShowBubble(false)}
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer shrink-0"
                   title="Close"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              {/* ─── TAB 1: BRIEFING (PRE-MEETING CHEAT SHEET & POST-MEETING DEBRIEF) ─── */}
+              {/* ─── TAB 1: BRIEFING (PRE-FLIGHT, POST-MEETING DEBRIEF, OR SCHEDULE PREVIEW) ─── */}
               {activeTab === 'briefing' && (
-                <div>
-                  {/* Feature 1: Pre-Meeting 2-Minute Cheat Sheet */}
-                  {imminentMeeting && (
+                <div className="flex flex-col gap-3">
+                  {/* Case 1: Imminent Meeting (≤ 10m away or ongoing) */}
+                  {imminentMeeting ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
-                            {imminentMeeting.isOngoing ? 'Happening Now' : `Starts in ${imminentMeeting.minutesUntilStart}m`}
-                          </span>
-                          <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 line-clamp-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                              {imminentMeeting.isOngoing ? 'Happening Now' : `Starts in ${imminentMeeting.minutesUntilStart}m`}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 leading-snug">
                             {imminentMeeting.event.title}
                           </h4>
                         </div>
@@ -534,14 +547,14 @@ Best regards,`;
                       </div>
 
                       {/* 2-Minute Pre-Meeting Cheat Sheet Content */}
-                      <div className="bg-[var(--surface-raised)]/70 p-2.5 rounded-xl border border-[var(--border)]/50 flex flex-col gap-2">
+                      <div className="bg-[var(--surface-raised)]/80 p-3 rounded-xl border border-[var(--border)]/60 flex flex-col gap-2">
                         <div className="flex items-center justify-between text-[11px] font-semibold text-[var(--accent)]">
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1.5">
                             <Target size={12} />
                             Pre-Flight Briefing
                           </span>
                           {relatedPriorNote && (
-                            <span className="text-[10px] text-[var(--text-muted)] font-normal">
+                            <span className="text-[10px] text-[var(--text-muted)] font-normal truncate max-w-[150px]">
                               Matched from "{relatedPriorNote.title}"
                             </span>
                           )}
@@ -558,7 +571,7 @@ Best regards,`;
                           ) : (
                             <li className="flex items-start gap-1.5 text-[11.5px] leading-relaxed">
                               <span className="text-[var(--accent)] font-bold">•</span>
-                              <span>Review project goals & target deliverables for this session.</span>
+                              <span>Review core discussion objectives & priority deliverables.</span>
                             </li>
                           )}
 
@@ -566,18 +579,17 @@ Best regards,`;
                             <span className="text-amber-400 font-bold">•</span>
                             <span>
                               {pendingTasks.length > 0 
-                                ? `${pendingTasks.length} open action item${pendingTasks.length > 1 ? 's' : ''} ready to review.`
-                                : 'No blocking pending action items detected.'}
+                                ? `${pendingTasks.length} pending action item${pendingTasks.length > 1 ? 's' : ''} ready to review.`
+                                : 'All prior action items are cleared.'}
                             </span>
                           </li>
                         </ul>
                       </div>
 
-                      {/* Actions for Pre-Meeting */}
                       <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/60">
                         <button
                           onClick={handleSnoozeMeeting}
-                          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] px-2 py-1.5 rounded-lg transition-colors cursor-pointer"
+                          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
                         >
                           Snooze 5m
                         </button>
@@ -619,29 +631,25 @@ Best regards,`;
                         </div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Feature 3: Post-Meeting Debrief */}
-                  {concludedMeeting && !imminentMeeting && (
+                  ) : concludedMeeting ? (
+                    /* Case 2: Concluded Meeting (Debrief) */
                     <div className="flex flex-col gap-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
-                            Meeting Concluded {concludedMeeting.minutesSinceEnd}m ago
-                          </span>
-                          <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 line-clamp-1">
-                            {concludedMeeting.event.title}
-                          </h4>
-                        </div>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                          Concluded {concludedMeeting.minutesSinceEnd}m ago
+                        </span>
+                        <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 leading-snug">
+                          {concludedMeeting.event.title}
+                        </h4>
                       </div>
 
-                      <div className="bg-[var(--surface-raised)]/70 p-2.5 rounded-xl border border-[var(--border)]/50 flex flex-col gap-2">
+                      <div className="bg-[var(--surface-raised)]/80 p-3 rounded-xl border border-[var(--border)]/60 flex flex-col gap-2">
                         <p className="text-xs text-[var(--text-primary)] leading-relaxed">
-                          Great session! Follow up while context is fresh to keep momentum high.
+                          Great session! Send a follow-up while context is fresh to keep momentum high.
                         </p>
                         <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
                           <CheckCircle2 size={12} className="text-emerald-400" />
-                          <span>Action items ready to share</span>
+                          <span>Key action items organized and ready</span>
                         </div>
                       </div>
 
@@ -652,7 +660,7 @@ Best regards,`;
                             setConcludedMeeting(null);
                             showToast('Marked meeting as completed on calendar', 'success');
                           }}
-                          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-emerald-400 hover:bg-[var(--surface-hover)] px-2 py-1.5 rounded-lg transition-colors cursor-pointer"
+                          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-emerald-400 hover:bg-[var(--surface-hover)] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
                         >
                           Mark Done
                         </button>
@@ -666,34 +674,87 @@ Best regards,`;
                         </button>
                       </div>
                     </div>
+                  ) : nextUpcomingMeeting ? (
+                    /* Case 3: Schedule Preview (Upcoming meeting later today) */
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] bg-[var(--accent-dim)] px-2 py-0.5 rounded-full">
+                          Upcoming Today
+                        </span>
+                        <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-1.5 leading-snug">
+                          {nextUpcomingMeeting.event.title}
+                        </h4>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                        <Clock size={12} className="shrink-0" />
+                        <span>
+                          {nextUpcomingMeeting.event.timeRange || nextUpcomingMeeting.event.startTime || 'Later today'}
+                        </span>
+                      </div>
+
+                      <div className="bg-[var(--surface-raised)]/60 p-2.5 rounded-xl border border-[var(--border)]/40 flex items-center justify-between text-xs text-[var(--text-muted)]">
+                        <span>Ready to prep notes early?</span>
+                        <button
+                          onClick={() => {
+                            setShowBubble(false);
+                            navigate('/tasks?view=calendar');
+                          }}
+                          className="text-[11px] font-semibold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          View Schedule
+                          <ArrowRight size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Case 4: Free Calendar - Ready for Deep Work */
+                    <div className="flex flex-col items-center text-center gap-2.5 py-4">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <CheckCircle2 size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-[var(--text-primary)]">Schedule is Clear</h4>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">No upcoming meetings today — ideal for focused deep work.</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveTab('focus');
+                          startSession(25, 'focus');
+                        }}
+                        className="mt-1 text-xs font-semibold bg-[var(--accent)] hover:brightness-110 text-white px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Play size={11} />
+                        Start 25m Focus Block
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
 
-              {/* ─── TAB 2: QUICK WHISPER SEARCH (FEATURE 2) ─── */}
-              {activeTab === 'search' && (
+              {/* ─── TAB 2: QUICK WHISPER SEARCH ─── */}
+              {activeTab === 'whisper' && (
                 <div className="flex flex-col gap-3">
                   <div className="relative">
-                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                     <input
                       ref={searchInputRef}
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={`Ask ${currentPet.name} anything about notes...`}
-                      className="w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-7 text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]/60 transition-all"
+                      placeholder={`Ask ${currentPet.name} to find notes, decisions, or tasks...`}
+                      className="w-full bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl py-2 pl-8 pr-8 text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)]/60 transition-all"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] p-0.5"
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] p-0.5 cursor-pointer"
                       >
                         <X size={12} />
                       </button>
                     )}
                   </div>
 
-                  {/* Search Results */}
                   {searchQuery ? (
                     <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                       {searchResults.length > 0 ? (
@@ -706,14 +767,14 @@ Best regards,`;
                                 navigate(res.lectureId.startsWith('note_') ? '/notes' : `/lectures/${res.lectureId}`);
                               }
                             }}
-                            className="p-2.5 rounded-xl bg-[var(--surface-raised)]/60 hover:bg-[var(--surface-raised)] border border-[var(--border)]/40 hover:border-[var(--border)] cursor-pointer transition-all flex flex-col gap-1 group"
+                            className="p-2.5 rounded-xl bg-[var(--surface-raised)]/70 hover:bg-[var(--surface-raised)] border border-[var(--border)]/40 hover:border-[var(--border)] cursor-pointer transition-all flex flex-col gap-1 group"
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-[11.5px] font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] truncate flex items-center gap-1.5">
-                                {res.type === 'task' ? <CheckSquare size={11} /> : <FileText size={11} />}
+                                {res.type === 'task' ? <CheckSquare size={11} className="text-[var(--accent)]" /> : <FileText size={11} className="text-sky-400" />}
                                 {res.title}
                               </span>
-                              <ChevronRight size={12} className="text-[var(--text-muted)] group-hover:translate-x-0.5 transition-transform" />
+                              <ExternalLink size={11} className="text-[var(--text-muted)] group-hover:text-[var(--text-primary)]" />
                             </div>
                             <p className="text-[11px] text-[var(--text-muted)] line-clamp-2 leading-relaxed">
                               {res.snippet}
@@ -722,29 +783,28 @@ Best regards,`;
                         ))
                       ) : (
                         <div className="py-6 text-center text-xs text-[var(--text-muted)]">
-                          No notes or action items found matching "{searchQuery}"
+                          No results found matching "{searchQuery}".
                         </div>
                       )}
                     </div>
                   ) : (
-                    /* Suggested Query Chips */
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                        Suggested Inquiries
+                    <div className="flex flex-col gap-2 pt-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                        Suggested Topics
                       </span>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="grid grid-cols-2 gap-1.5">
                         {[
-                          'Urgent Tasks',
-                          'Recent Decisions',
-                          'Action Items',
-                          'Today Summary'
-                        ].map((chip) => (
+                          { label: '⚡ Urgent Tasks', query: 'urgent' },
+                          { label: '📌 Key Decisions', query: 'decisions' },
+                          { label: '📋 Action Items', query: 'action' },
+                          { label: '🎯 Deliverables', query: 'deliverables' },
+                        ].map((item) => (
                           <button
-                            key={chip}
-                            onClick={() => setSearchQuery(chip)}
-                            className="text-[11px] font-medium bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)]/60 px-2.5 py-1 rounded-lg text-[var(--text-primary)] transition-colors cursor-pointer"
+                            key={item.label}
+                            onClick={() => setSearchQuery(item.query)}
+                            className="text-left text-[11px] font-medium bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)]/60 px-2.5 py-1.5 rounded-lg text-[var(--text-primary)] transition-colors cursor-pointer truncate"
                           >
-                            {chip}
+                            {item.label}
                           </button>
                         ))}
                       </div>
@@ -753,16 +813,16 @@ Best regards,`;
                 </div>
               )}
 
-              {/* ─── TAB 3: FOCUS MODE & POMODORO (FEATURE 5) ─── */}
+              {/* ─── TAB 3: FOCUS COMPANION (WITH CIRCULAR PROGRESS RING) ─── */}
               {activeTab === 'focus' && (
                 <div className="flex flex-col items-center gap-3 py-1 text-center">
-                  {/* Mode & Preset Pills */}
-                  <div className="flex items-center gap-1.5">
+                  {/* Mode Selector */}
+                  <div className="bg-[var(--surface-raised)] p-0.5 rounded-lg flex items-center gap-1 border border-[var(--border)]/60">
                     <button
                       onClick={() => setFocusMode('focus')}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                         focusMode === 'focus'
-                          ? 'bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--accent)]/30'
+                          ? 'bg-[var(--surface)] text-[var(--accent)] shadow-xs'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
@@ -770,34 +830,64 @@ Best regards,`;
                     </button>
                     <button
                       onClick={() => setFocusMode('break')}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                         focusMode === 'break'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          ? 'bg-[var(--surface)] text-emerald-400 shadow-xs'
                           : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                       }`}
                     >
-                      Break
+                      Break (5m)
                     </button>
                   </div>
 
-                  {/* Big Monospace Timer Display */}
-                  <div className="flex flex-col items-center my-1">
-                    <span className="text-4xl font-bold font-mono tracking-tight text-[var(--text-primary)]">
-                      {formatTimerSeconds(focusTimeLeft)}
-                    </span>
-                    <span className="text-[11px] text-[var(--text-muted)] mt-1">
-                      {isFocusRunning ? `${currentPet.name} is focusing alongside you 🎧` : 'Ready to start session'}
-                    </span>
+                  {/* Circular Timer Visual */}
+                  <div className="relative flex items-center justify-center my-1">
+                    <svg className="w-32 h-32 -rotate-90" viewBox="0 0 100 100">
+                      {/* Background track */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        className="stroke-[var(--surface-raised)] fill-none"
+                        strokeWidth="6"
+                      />
+                      {/* Animated Progress */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        className={`fill-none transition-all duration-500 ${
+                          focusMode === 'focus' ? 'stroke-[var(--accent)]' : 'stroke-emerald-400'
+                        }`}
+                        strokeWidth="6"
+                        strokeDasharray={2 * Math.PI * 42}
+                        strokeDashoffset={(2 * Math.PI * 42) * (1 - focusProgress / 100)}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+
+                    <div className="absolute flex flex-col items-center">
+                      <span className="text-2xl font-bold font-mono tracking-tight text-[var(--text-primary)]">
+                        {formatTimerSeconds(focusTimeLeft)}
+                      </span>
+                      <span className="text-[10px] text-[var(--text-muted)] font-medium mt-0.5">
+                        {isFocusRunning ? (focusMode === 'focus' ? 'Focusing 🎧' : 'Resting ☕') : 'Ready'}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Preset Duration Buttons (when not running) */}
+                  {/* Preset Buttons */}
                   {!isFocusRunning && (
                     <div className="flex items-center gap-1.5">
                       {[15, 25, 45].map((mins) => (
                         <button
                           key={mins}
                           onClick={() => startSession(mins, focusMode)}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] transition-colors cursor-pointer"
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                            focusTotalDuration === mins * 60
+                              ? 'bg-[var(--accent-dim)] border-[var(--accent)]/40 text-[var(--accent)]'
+                              : 'bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border-[var(--border)] text-[var(--text-primary)]'
+                          }`}
                         >
                           {mins}m
                         </button>
@@ -810,7 +900,7 @@ Best regards,`;
                     {isFocusRunning ? (
                       <button
                         onClick={pauseSession}
-                        className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors cursor-pointer flex items-center gap-1.5"
                       >
                         <Pause size={12} />
                         Pause
@@ -818,10 +908,10 @@ Best regards,`;
                     ) : (
                       <button
                         onClick={() => {
-                          if (focusTimeLeft > 0) resumeSession();
+                          if (focusTimeLeft > 0 && focusTimeLeft < focusTotalDuration) resumeSession();
                           else startSession(25, focusMode);
                         }}
-                        className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent)] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                        className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[var(--accent)] hover:brightness-110 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
                       >
                         <Play size={12} />
                         {focusTimeLeft > 0 && focusTimeLeft < focusTotalDuration ? 'Resume' : 'Start Focus'}
@@ -838,16 +928,16 @@ Best regards,`;
                   </div>
 
                   {completedSessions > 0 && (
-                    <div className="text-[10.5px] text-[var(--text-muted)] font-mono">
+                    <div className="text-[10px] text-[var(--text-muted)] font-mono">
                       Completed sessions today: {completedSessions} 🎯
                     </div>
                   )}
                 </div>
               )}
 
-              {/* ─── TAB 4: ACTION ITEMS CAROUSEL ─── */}
+              {/* ─── TAB 4: ACTION ITEMS ─── */}
               {activeTab === 'tasks' && (
-                <div>
+                <div className="flex flex-col gap-3">
                   {currentTask ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center justify-between">
@@ -871,17 +961,17 @@ Best regards,`;
                         </div>
 
                         {pendingTasks.length > 1 && (
-                          <div className="flex items-center gap-0.5">
+                          <div className="flex items-center gap-1">
                             <button
                               onClick={() => setTaskIndex((prev) => (prev > 0 ? prev - 1 : pendingTasks.length - 1))}
-                              className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                              className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
                               title="Previous Task"
                             >
                               <ChevronLeft size={13} />
                             </button>
                             <button
                               onClick={() => setTaskIndex((prev) => (prev < pendingTasks.length - 1 ? prev + 1 : 0))}
-                              className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                              className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
                               title="Next Task"
                             >
                               <ChevronRight size={13} />
@@ -890,26 +980,30 @@ Best regards,`;
                         )}
                       </div>
 
-                      <p className="text-sm text-[var(--text-primary)] leading-relaxed font-medium">
-                        "{currentTask.task}"
-                      </p>
+                      {/* Featured Task Card */}
+                      <div className="bg-[var(--surface-raised)]/70 p-3 rounded-xl border border-[var(--border)]/50 flex flex-col gap-2">
+                        <p className="text-sm text-[var(--text-primary)] leading-relaxed font-medium">
+                          "{currentTask.task}"
+                        </p>
 
-                      <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
-                        <span className="truncate max-w-[170px]">
-                          From: {currentTask.lectureTitle || 'Workspace Note'}
-                        </span>
-                        {currentTask.timestamp && (
-                          <span className="font-mono text-[10.5px] text-[var(--accent)] bg-[var(--accent-dim)] px-1.5 py-0.5 rounded">
-                            ⏱ {currentTask.timestamp}
+                        <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-1 border-t border-[var(--border)]/40">
+                          <span className="truncate max-w-[190px]">
+                            From: {currentTask.lectureTitle || 'Workspace Note'}
                           </span>
-                        )}
+                          {currentTask.timestamp && (
+                            <span className="font-mono text-[10px] text-[var(--accent)] bg-[var(--accent-dim)] px-1.5 py-0.5 rounded">
+                              ⏱ {currentTask.timestamp}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-[var(--border)]/60">
+                      {/* Actions */}
+                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[var(--border)]/60">
                         <button
                           onClick={(e) => handleScheduleFocusBlock(currentTask, e)}
-                          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--surface-hover)] px-2 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                          title="Block 30m on Calendar"
+                          className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--surface-hover)] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                          title="Block 30m Focus Time on Calendar"
                         >
                           <CalendarPlus size={12} />
                           Block Time
@@ -936,7 +1030,7 @@ Best regards,`;
                           <button
                             onClick={(e) => handleMarkAsDone(currentTask, e)}
                             disabled={isMarking}
-                            className="text-[11px] font-semibold bg-[var(--accent)] hover:brightness-110 text-white px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                            className="text-[11px] font-semibold bg-[var(--accent)] hover:brightness-110 text-white px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 disabled:opacity-50 shadow-sm"
                           >
                             {isMarking ? 'Done...' : 'Mark Done'}
                             <Check size={11} strokeWidth={3} />
@@ -945,13 +1039,13 @@ Best regards,`;
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 py-2 pr-6">
-                      <div className="w-9 h-9 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center text-emerald-400 shrink-0">
-                        <CheckCircle2 size={18} />
+                    <div className="flex flex-col items-center text-center gap-2 py-6">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <CheckCircle2 size={20} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-[var(--text-primary)]">All caught up!</p>
-                        <p className="text-xs text-[var(--text-muted)]">No pending action items in your workspace.</p>
+                        <h4 className="text-sm font-semibold text-[var(--text-primary)]">All Tasks Completed</h4>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">No pending action items found in your workspace.</p>
                       </div>
                     </div>
                   )}
@@ -961,11 +1055,11 @@ Best regards,`;
           )}
         </AnimatePresence>
 
-        {/* Pet Avatar Button (Zero notification badges/icons overlay) */}
+        {/* Pet Avatar Button (Clean, zero notification badges/overlays) */}
         <motion.button
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          onClick={handlePetClick}
+          onClick={toggleBubble}
           style={{ width: petSize, height: petSize }}
           className="relative flex items-center justify-center cursor-pointer focus:outline-none bg-transparent border-none p-0 outline-none shadow-none group pointer-events-auto"
           whileHover={{ y: -4, scale: 1.05 }}
@@ -1029,4 +1123,5 @@ Best regards,`;
 export const GlobalAskAI: React.FC = () => {
   return <PetCompanionWidget />;
 };
+
 
