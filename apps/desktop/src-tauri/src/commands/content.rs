@@ -63,7 +63,21 @@ pub async fn transcript_append(lecture_id: String, text: String, state: State<'_
 pub async fn notes_get(lecture_id: String, state: State<'_, DbState>) -> AppResult<Option<String>> {
     let row = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
         .fetch_optional(&state.pool).await?;
-    Ok(row.map(|r| r.content))
+    if let Some(r) = row {
+        if !r.content.trim().is_empty() {
+            return Ok(Some(r.content));
+        }
+    }
+
+    // Check lecture_artifacts for 'live_scratchpad'
+    let artifact = sqlx::query!(
+        "SELECT content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'live_scratchpad' LIMIT 1",
+        lecture_id
+    )
+    .fetch_optional(&state.pool)
+    .await?;
+
+    Ok(artifact.map(|a| a.content_json))
 }
 
 /// Update notes and snapshot a version (debounce is handled on the frontend).

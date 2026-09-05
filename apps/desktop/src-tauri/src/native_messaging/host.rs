@@ -586,37 +586,110 @@ impl NativeHost {
         }
 
         if msg.r#type == MessageType::AppendLiveNote {
+            let session_id_opt = msg.session_id.clone();
             if let Some(text) = msg.payload.get("text").and_then(|t| t.as_str()) {
-                let app_clone = app.clone();
+                let pool = app.state::<crate::database::DbState>().pool.clone();
                 let text_clone = text.to_string();
-                let _ = app_clone.emit("live_note", serde_json::json!({ "text": text_clone }));
+                let app_clone = app.clone();
+
+                tauri::async_runtime::spawn(async move {
+                    let session_id_clone = match session_id_opt {
+                        Some(ref s) if !s.trim().is_empty() => s.clone(),
+                        _ => {
+                            let latest = sqlx::query!("SELECT id FROM lectures ORDER BY created_at DESC LIMIT 1")
+                                .fetch_optional(&pool)
+                                .await
+                                .unwrap_or(None);
+                            latest.and_then(|l| l.id).unwrap_or_else(|| "live_active_session".to_string())
+                        }
+                    };
+
+                    let task_item_html = format!(
+                        "<li data-type=\"taskItem\" data-checked=\"false\"><label><input type=\"checkbox\"><span></span></label><div><p>{}</p></div></li>",
+                        text_clone
+                    );
+
+                    let existing = sqlx::query!("SELECT id, content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", session_id_clone)
+                        .fetch_optional(&pool).await.unwrap_or(None);
+
+                    if let Some(row) = existing {
+                        let existing_content = row.content;
+                        let new_content = if existing_content.trim().is_empty() {
+                            format!("<ul data-type=\"taskList\">{}</ul>", task_item_html)
+                        } else if existing_content.contains("</ul>") {
+                            existing_content.replacen("</ul>", &format!("{}</ul>", task_item_html), 1)
+                        } else {
+                            format!("{}<ul data-type=\"taskList\">{}</ul>", existing_content, task_item_html)
+                        };
+
+                        let _ = sqlx::query!("UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", new_content, row.id)
+                            .execute(&pool).await;
+                    } else {
+                        let id = uuid::Uuid::new_v4().to_string();
+                        let new_content = format!("<ul data-type=\"taskList\">{}</ul>", task_item_html);
+                        let _ = sqlx::query!("INSERT INTO notes (id, lecture_id, content) VALUES (?, ?, ?)", id, session_id_clone, new_content)
+                            .execute(&pool).await;
+                    }
+
+                    let _ = app_clone.emit("live_note", serde_json::json!({
+                        "text": text_clone,
+                        "lectureId": session_id_clone
+                    }));
+                });
             }
             return;
         }
 
         if msg.r#type == MessageType::LiveNote {
-            if let Some(session_id) = &msg.session_id {
-                if let Some(text) = msg.payload.get("text").and_then(|t| t.as_str()) {
-                    let pool = app.state::<crate::database::DbState>().pool.clone();
-                    let session_id_clone = session_id.clone();
-                    let text_clone = text.to_string();
-                    let app_clone = app.clone();
-                    
-                    tauri::async_runtime::spawn(async move {
-                        let existing = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ?", session_id_clone)
-                            .fetch_optional(&pool).await.unwrap_or(None);
-                            
-                        if let Some(row) = existing {
-                            let _ = sqlx::query!("UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", text_clone, row.id)
-                                .execute(&pool).await;
-                        } else {
-                            let id = uuid::Uuid::new_v4().to_string();
-                            let _ = sqlx::query!("INSERT INTO notes (id, lecture_id, content) VALUES (?, ?, ?)", id, session_id_clone, text_clone)
-                                .execute(&pool).await;
+            let session_id_opt = msg.session_id.clone();
+            if let Some(text) = msg.payload.get("text").and_then(|t| t.as_str()) {
+                let pool = app.state::<crate::database::DbState>().pool.clone();
+                let text_clone = text.to_string();
+                let app_clone = app.clone();
+
+                tauri::async_runtime::spawn(async move {
+                    let session_id_clone = match session_id_opt {
+                        Some(ref s) if !s.trim().is_empty() => s.clone(),
+                        _ => {
+                            let latest = sqlx::query!("SELECT id FROM lectures ORDER BY created_at DESC LIMIT 1")
+                                .fetch_optional(&pool)
+                                .await
+                                .unwrap_or(None);
+                            latest.and_then(|l| l.id).unwrap_or_else(|| "live_active_session".to_string())
                         }
-                        let _ = app_clone.emit("live_note", serde_json::json!({ "text": text_clone }));
-                    });
-                }
+                    };
+
+                    let formatted_content = if text_clone.starts_with('<') {
+                        text_clone.clone()
+                    } else {
+                        let paragraphs: Vec<String> = text_clone
+                            .split('\n')
+                            .filter(|line| !line.trim().is_empty())
+                            .map(|line| format!("<p>{}</p>", line))
+                            .collect();
+                        if paragraphs.is_empty() {
+                            format!("<p>{}</p>", text_clone)
+                        } else {
+                            paragraphs.join("")
+                        }
+                    };
+
+                    let existing = sqlx::query!("SELECT id FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", session_id_clone)
+                        .fetch_optional(&pool).await.unwrap_or(None);
+
+                    if let Some(row) = existing {
+                        let _ = sqlx::query!("UPDATE notes SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", formatted_content, row.id)
+                            .execute(&pool).await;
+                    } else {
+                        let id = uuid::Uuid::new_v4().to_string();
+                        let _ = sqlx::query!("INSERT INTO notes (id, lecture_id, content) VALUES (?, ?, ?)", id, session_id_clone, formatted_content)
+                            .execute(&pool).await;
+                    }
+                    let _ = app_clone.emit("live_note", serde_json::json!({
+                        "text": text_clone,
+                        "lectureId": session_id_clone
+                    }));
+                });
             }
             return;
         }

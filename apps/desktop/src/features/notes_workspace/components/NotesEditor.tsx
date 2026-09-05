@@ -436,6 +436,16 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                     }
                 }).catch(console.error);
             }
+            // Always fetch saved notes from database for meetings if note content is not yet in editor
+            TauriClient.getNotes(note.id).then(dbNotes => {
+                if (dbNotes && dbNotes.trim()) {
+                    onUpdate({ content: dbNotes });
+                    localStorage.setItem(`user_notes_draft_${note.id}`, dbNotes);
+                    if (editor && (!editor.getText().trim() || editor.getHTML() === '<p></p>')) {
+                        editor.commands.setContent(dbNotes);
+                    }
+                }
+            }).catch(console.error);
         }
     }, [note.id, note.isMeeting, note.transcript, note.summary]);
 
@@ -481,10 +491,26 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     }, [note.id, note.isMeeting]);
 
     useEffect(() => {
-        if (!editor || note.id === noteIdRef.current) return;
-        noteIdRef.current = note.id;
-        editor.commands.setContent(note.content || '');
-    }, [note.id, editor]);
+        if (!editor) return;
+        if (note.id !== noteIdRef.current) {
+            noteIdRef.current = note.id;
+            if (note.content) {
+                editor.commands.setContent(note.content);
+            } else if (note.isMeeting) {
+                TauriClient.getNotes(note.id).then(dbNotes => {
+                    if (dbNotes && dbNotes.trim()) {
+                        editor.commands.setContent(dbNotes);
+                        onUpdate({ content: dbNotes });
+                        localStorage.setItem(`user_notes_draft_${note.id}`, dbNotes);
+                    } else {
+                        editor.commands.setContent('');
+                    }
+                }).catch(() => editor.commands.setContent(''));
+            } else {
+                editor.commands.setContent('');
+            }
+        }
+    }, [note.id, note.content, note.isMeeting, editor, onUpdate]);
 
     // Handle Floating Selection Menu Position
     useEffect(() => {
@@ -516,8 +542,9 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     // Listen for live notes from the extension
     useEffect(() => {
         if (!editor) return;
-        const unlistenPromise = listen<{ text: string }>('live_note', (event) => {
+        const unlistenPromise = listen<{ text: string; lectureId?: string }>('live_note', (event) => {
             if (event.payload?.text) {
+                if (event.payload.lectureId && event.payload.lectureId !== note.id) return;
                 editor.commands.focus('end');
                 editor.commands.insertContent(`
                     <ul data-type="taskList">
@@ -527,13 +554,19 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
                         </li>
                     </ul>
                 `);
+                // Persist new note content immediately so it's not lost
+                setTimeout(() => {
+                    const html = editor.getHTML();
+                    onUpdate({ content: html });
+                    localStorage.setItem(`user_notes_draft_${note.id}`, html);
+                }, 50);
             }
         });
 
         return () => {
             unlistenPromise.then(unlisten => unlisten());
         };
-    }, [editor]);
+    }, [editor, note.id, onUpdate]);
 
     // Close popups on click outside
     useEffect(() => {

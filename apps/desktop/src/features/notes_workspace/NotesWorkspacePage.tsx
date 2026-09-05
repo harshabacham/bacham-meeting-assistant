@@ -218,6 +218,7 @@ export function NotesWorkspacePage() {
                 if (currentNote) {
                     if (currentNote.isMeeting) {
                         await TauriClient.updateNotes(id, currentNote.content);
+                        localStorage.setItem(`user_notes_draft_${id}`, currentNote.content);
                         if (patch.title) {
                             await TauriClient.updateLecture({ id, title: currentNote.title });
                         }

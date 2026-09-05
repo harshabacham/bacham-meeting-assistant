@@ -656,6 +656,35 @@ export function createMessageHandler(
         return { success: true };
       }
 
+      case MessageType.LIVE_NOTE: {
+        const payload = message.payload as { text: string };
+        const activeSession = await sessionService.loadSession();
+        const nativeMsg: NativeMessage<any> = {
+          version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+          type: MessageType.LIVE_NOTE,
+          payload: { text: payload.text },
+          sessionId: (message as any).sessionId ?? activeSession?.id,
+          timestamp: Date.now(),
+        };
+        messagingClient.send(nativeMsg);
+        return { success: true };
+      }
+
+      case MessageType.APPEND_LIVE_NOTE:
+      case 'APPEND_LIVE_NOTE' as any: {
+        const payload = message.payload as { text: string };
+        const activeSession = await sessionService.loadSession();
+        const nativeMsg: NativeMessage<any> = {
+          version: NATIVE_MESSAGING_PROTOCOL_VERSION,
+          type: MessageType.APPEND_LIVE_NOTE,
+          payload: { text: payload.text },
+          sessionId: (message as any).sessionId ?? activeSession?.id,
+          timestamp: Date.now(),
+        };
+        messagingClient.send(nativeMsg);
+        return { success: true };
+      }
+
       default:
         log.warn(MODULE, 'Unknown message type', { type: message.type });
         return { success: false, error: `Unknown message type: ${String(message.type)}` };

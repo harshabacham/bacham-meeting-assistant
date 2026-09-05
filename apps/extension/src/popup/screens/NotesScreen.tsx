@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useSession } from '@/shared/hooks/useSession';
 import { useConnection } from '@/shared/hooks/useConnection';
-import type { LectureSummary } from '@/shared/types';
+import { type LectureSummary, MessageType } from '@/shared/types';
 
 interface ActionItem {
   id: string;
@@ -74,7 +74,13 @@ export function NotesScreen() {
 
   const addAction = () => {
     if (!newText.trim()) return;
-    setActions((prev) => [...prev, { id: String(Date.now()), text: newText.trim(), completed: false, tag: selectedTag }]);
+    const itemText = newText.trim();
+    setActions((prev) => [...prev, { id: String(Date.now()), text: itemText, completed: false, tag: selectedTag }]);
+    chrome.runtime.sendMessage({
+      type: MessageType.APPEND_LIVE_NOTE,
+      payload: { text: `[${selectedTag.toUpperCase()}] ${itemText}` },
+      sessionId: session?.id,
+    }).catch(() => {});
     setNewText('');
   };
 

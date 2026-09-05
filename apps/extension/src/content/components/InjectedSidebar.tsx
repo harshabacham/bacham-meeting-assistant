@@ -248,13 +248,11 @@ export const InjectedSidebar: React.FC<InjectedSidebarProps> = ({ isOpen, onClos
       },
     ]);
     
-    if (sessionId) {
-      chrome.runtime.sendMessage({
-        type: 'APPEND_LIVE_NOTE',
-        payload: { text: `[${newActionTag.toUpperCase()}] ${newNoteText}` },
-        sessionId,
-      }).catch(() => {});
-    }
+    chrome.runtime.sendMessage({
+      type: 'APPEND_LIVE_NOTE',
+      payload: { text: `[${newActionTag.toUpperCase()}] ${newNoteText}` },
+      sessionId: sessionId || undefined,
+    }).catch(() => {});
 
     setNewActionText('');
     setMascotMood('success');
