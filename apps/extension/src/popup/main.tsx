@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from '@/app/App';
 import { OnboardingScreen } from '@/popup/screens/OnboardingScreen';
+import { MicPermissionTab } from '@/popup/screens/MicPermissionTab';
 import '@/styles/globals.css';
 
 function Root() {
+  const isMicFlow = typeof window !== 'undefined' && window.location.search.includes('flow=mic_permission');
+  if (isMicFlow) {
+    return <MicPermissionTab />;
+  }
+
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
   useEffect(() => {

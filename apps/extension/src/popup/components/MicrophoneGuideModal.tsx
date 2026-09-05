@@ -41,10 +41,30 @@ export function MicrophoneGuideModal({
     }
   }, [onPermissionGranted]);
 
-  // Direct trigger for Chrome's native microphone prompt
+  // Listen for permission status events from the permission tab or background
+  useEffect(() => {
+    const listener = (msg: any) => {
+      if (msg?.type === 'MIC_PERMISSION_STATUS') {
+        if (msg.payload?.granted) {
+          setPermissionState('granted');
+          onPermissionGranted?.();
+          setTimeout(() => {
+            onClose();
+          }, 800);
+        } else {
+          setPermissionState('denied');
+        }
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
+  }, [onClose, onPermissionGranted]);
+
+  // Trigger Chrome's native microphone prompt
   const handleRequestPermission = async () => {
     try {
       setIsRequesting(true);
+      // 1. Try getUserMedia directly (succeeds instantly if already granted)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setPermissionState('granted');
       onPermissionGranted?.();
@@ -52,10 +72,13 @@ export function MicrophoneGuideModal({
       setIsRequesting(false);
       setTimeout(() => {
         onClose();
-      }, 1000);
+      }, 800);
     } catch {
-      setPermissionState('denied');
       setIsRequesting(false);
+      // 2. Chrome intentionally suppresses permission popups inside side panels!
+      // Opening an extension tab triggers Chrome's native prompt at the address bar:
+      const permUrl = chrome.runtime.getURL('src/popup/index.html?flow=mic_permission');
+      chrome.tabs.create({ url: permUrl, active: true });
     }
   };
 
