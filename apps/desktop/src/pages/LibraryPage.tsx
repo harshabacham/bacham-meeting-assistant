@@ -9,10 +9,9 @@ import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import { MultiSelectBar } from '@/components/library/MultiSelectBar';
 import { FolderDashboard } from '@/components/library/FolderDashboard';
 import { LecturePropertiesPanel } from '@/components/library/LecturePropertiesPanel';
-import { KnowledgeGraphView } from '@/components/library/KnowledgeGraphView';
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
-    Trash2, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput, Network,
+    Trash2, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput,
     Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare, RefreshCw
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
@@ -20,7 +19,7 @@ import { cn, Button } from '@/components';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AddLecturesDialog } from '@/components/library/AddLecturesDialog';
 
-type ViewMode = 'grid' | 'list' | 'graph';
+type ViewMode = 'grid' | 'list';
 type SortMode = 'recent' | 'title' | 'duration';
 
 import { QuickLookPreview } from '@/components/QuickLookPreview';
@@ -42,7 +41,7 @@ export function LibraryPage() {
     });
     const currentView = searchParams.get('view');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
-    const [sortMode, setSortMode] = useState<SortMode>('recent');
+    const [sortMode] = useState<SortMode>('recent');
     const [query, setQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
@@ -450,12 +449,6 @@ ${transcript || '*(No transcript recorded)*'}
                         >
                             <List size={14} />
                         </button>
-                        <button
-                            onClick={() => setViewMode('graph')}
-                            className={cn("px-3 py-1.5 transition-colors", viewMode === 'graph' ? "bg-primary/10 text-primary" : "bg-transparent text-muted-foreground")}
-                        >
-                            <Network size={14} />
-                        </button>
                     </div>
 
                     {/* Add Meetings Button when in a folder */}
@@ -518,9 +511,7 @@ ${transcript || '*(No transcript recorded)*'}
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto min-h-0 bg-[var(--bg)] p-4 sm:p-6" onClick={() => setSelectedIds(new Set())}>
-                {viewMode === 'graph' ? (
-                    <KnowledgeGraphView />
-                ) : filtered.length === 0 ? (
+                {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 px-4">
                         <motion.div
                             initial={{ opacity: 0, y: 15 }}
