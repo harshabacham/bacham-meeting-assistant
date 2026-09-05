@@ -443,10 +443,20 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onReturnToRecording && onReturnToRecording()}
-            className="w-full py-3.5 px-6 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[15px] flex items-center justify-center gap-2 shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+            className="w-full py-3 px-4 rounded-2xl bg-rose-600/90 hover:bg-rose-500 border border-rose-500/40 text-white font-bold text-[14px] flex items-center justify-between shadow-lg shadow-rose-600/25 transition-all cursor-pointer group"
           >
-            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            <span>Return to Active Recording</span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+              <div className="text-left">
+                <span className="text-[13px] font-bold block leading-tight">
+                  {sessionState === 'paused' ? 'Recording Paused' : 'Live Recording Active'}
+                </span>
+                <span className="text-[11px] text-white/70 font-normal">Click to open live note & slides</span>
+              </div>
+            </div>
+            <span className="text-[11.5px] bg-white/20 px-2.5 py-1 rounded-xl text-white font-bold tracking-tight shrink-0 group-hover:bg-white/30 transition-colors">
+              Return →
+            </span>
           </motion.button>
         ) : (
           <motion.button
