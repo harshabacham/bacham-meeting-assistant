@@ -2,15 +2,16 @@ import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Settings, BrainCircuit, Sparkles, PlugZap, Database, Loader2 } from 'lucide-react';
+import { User, Settings, BrainCircuit, Sparkles, PlugZap, Database, Loader2, MessageSquareHeart } from 'lucide-react';
 import { ProfileSettingsTab } from '@/components/settings/ProfileSettingsTab';
 import { GeneralSettingsTab } from '@/components/settings/GeneralSettingsTab';
 import { AISettingsTab } from '@/components/settings/AISettingsTab';
 import { PetsSettingsTab } from '@/components/settings/PetsSettingsTab';
 import { IntegrationsHub } from '@/components/integrations/IntegrationsHub';
 import { StorageSettingsTab } from '@/components/settings/StorageSettingsTab';
+import { FeedbackSettingsTab } from '@/components/settings/FeedbackSettingsTab';
 
-export type SettingsTabType = 'profile' | 'general' | 'ai' | 'pets' | 'integrations' | 'storage';
+export type SettingsTabType = 'profile' | 'general' | 'ai' | 'pets' | 'integrations' | 'storage' | 'feedback';
 
 interface TabItem {
   id: SettingsTabType;
@@ -25,6 +26,7 @@ const SETTINGS_TABS: TabItem[] = [
   { id: 'pets', label: 'Pets', icon: Sparkles },
   { id: 'integrations', label: 'Integrations', icon: PlugZap },
   { id: 'storage', label: 'Storage', icon: Database },
+  { id: 'feedback', label: 'Feedback & Support', icon: MessageSquareHeart },
 ];
 
 export function SettingsPage() {
@@ -93,6 +95,7 @@ export function SettingsPage() {
               {activeTab === 'pets' && <PetsSettingsTab />}
               {activeTab === 'integrations' && <IntegrationsHub />}
               {activeTab === 'storage' && <StorageSettingsTab />}
+              {activeTab === 'feedback' && <FeedbackSettingsTab />}
             </motion.div>
           </AnimatePresence>
         </div>

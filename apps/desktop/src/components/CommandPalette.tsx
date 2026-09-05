@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    Search as SearchIcon, FileText, BrainCircuit, Play, BookOpen, Clock, Command, Terminal, Tags, Sparkles, History
+    Search as SearchIcon, FileText, BrainCircuit, Play, BookOpen, Clock, Command, Terminal, Tags, Sparkles, History,
+    MessageSquareHeart
 } from 'lucide-react';
 import { useSearchStore } from '@/features/search/searchStore';
 import { UniversalSearchResult, TauriClient } from '@/infrastructure/tauri-client';
 import { SmoothInput } from '@/components/ui/skiper-ui/skiper106';
+import { useFeedbackStore } from '@/shared/stores/feedbackStore';
 
 const ENTITY_FILTERS = [
     { label: 'All', value: undefined },
@@ -24,6 +26,7 @@ export function CommandPalette() {
     } = useSearchStore();
     
     const navigate = useNavigate();
+    const { openModal: openFeedbackModal } = useFeedbackStore();
 
     // RAG AI State
     const [aiMode, setAiMode] = useState(false);
@@ -110,6 +113,15 @@ export function CommandPalette() {
                 case 'cmd_gen_quiz':
                     // Hand off to study workspace
                     navigate('/study');
+                    break;
+                case 'cmd_feedback':
+                    openFeedbackModal('general');
+                    break;
+                case 'cmd_bug':
+                    openFeedbackModal('bug');
+                    break;
+                case 'cmd_suggestion':
+                    openFeedbackModal('suggestion');
                     break;
             }
         } else if (result.parentLectureId) {
@@ -236,6 +248,19 @@ export function CommandPalette() {
                                 <div className="py-8 text-center text-muted-foreground">
                                     <Command size={32} className="mx-auto mb-3 opacity-20" />
                                     <p>Type to search your library, transcripts, and visual concepts (e.g. diagrams)</p>
+                                    <div className="mt-4 flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                close();
+                                                openFeedbackModal();
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-surface-raised hover:bg-surface-hover text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
+                                        >
+                                            <MessageSquareHeart size={13} className="text-primary" />
+                                            <span>Share Feedback or Report Bug (v1.0.0)</span>
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

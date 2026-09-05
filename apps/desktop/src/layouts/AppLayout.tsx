@@ -8,7 +8,8 @@ import { UserAvatar } from '@/components/ui/UserAvatar';
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
-    Library, BrainCircuit, Edit3, Bookmark, Archive, ChevronDown, CheckSquare, Sparkles, Plus, PlugZap
+    Library, BrainCircuit, Edit3, Bookmark, Archive, ChevronDown, CheckSquare, Sparkles, Plus, PlugZap,
+    MessageSquareHeart
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
@@ -25,6 +26,8 @@ import { GoogleCalendarSyncModal } from '@/components/dashboard/GoogleCalendarSy
 import { GlobalAskAI } from '@/components/dashboard/GlobalAskAI';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { AutoRecordWatcher } from '@/components/AutoRecordWatcher';
+import { useFeedbackStore } from '@/shared/stores/feedbackStore';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 const STUDENT_NAV_ITEMS = [
     { path: '/', label: 'Home', icon: Home },
@@ -69,6 +72,7 @@ export function AppLayout() {
     const { createFolder } = useFolderStore();
     const activeSettingsTab = searchParams.get('tab') || 'profile';
     const { appMode } = useModeStore();
+    const { openModal: openFeedbackModal } = useFeedbackStore();
     
     const MAIN_NAV_ITEMS = appMode === 'student' ? STUDENT_NAV_ITEMS : PRO_NAV_ITEMS;
 
@@ -388,9 +392,23 @@ export function AppLayout() {
                             </AnimatePresence>
                         </div>
 
-                        {/* Footer — profile */}
+                        {/* Footer — feedback & profile */}
                         {!isSettingsRoute && (
-                            <div className="px-2 pb-3 pt-2 shrink-0 border-t border-border/40">
+                            <div className="px-2 pb-3 pt-2 shrink-0 border-t border-border/40 space-y-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => openFeedbackModal()}
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-transparent hover:border-border/50 cursor-pointer"
+                                    title="Share feedback or report an issue"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <MessageSquareHeart size={14} className="text-primary" />
+                                        <span>Give Feedback</span>
+                                    </div>
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                        v1.0.0
+                                    </span>
+                                </button>
                                 <ProfileDropdown className="w-full" />
                             </div>
                         )}
@@ -421,6 +439,7 @@ export function AppLayout() {
             <GlobalQuickLookModal />
             <GoogleCalendarSyncModal />
             <GlobalAskAI />
+            <FeedbackModal />
 
             {/* Global Styles for FolderTree override */}
             <style>{`
