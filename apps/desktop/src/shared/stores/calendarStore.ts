@@ -486,3 +486,94 @@ export const useCalendarStore = create<CalendarState>()(
     }
   )
 );
+
+/**
+ * Parse an event's dateStr and startTime/endTime into valid JavaScript Date objects.
+ */
+export function parseEventDateTime(event: CalendarEvent): { start: Date; end: Date } | null {
+  try {
+    if (!event.dateStr) return null;
+
+    const dateOnly = event.dateStr.includes('T') ? event.dateStr.split('T')[0] : event.dateStr;
+    const parts = dateOnly.split('-');
+    if (parts.length < 3) return null;
+
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+
+    const startDate = new Date(year, month, day);
+    let endDate = new Date(year, month, day);
+
+    if (event.startTime) {
+      const match = event.startTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const mins = parseInt(match[2], 10);
+        const ampm = match[3].toUpperCase();
+        if (ampm === 'PM' && hours < 12) hours += 12;
+        if (ampm === 'AM' && hours === 12) hours = 0;
+        startDate.setHours(hours, mins, 0, 0);
+      }
+    }
+
+    if (event.endTime) {
+      const match = event.endTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const mins = parseInt(match[2], 10);
+        const ampm = match[3].toUpperCase();
+        if (ampm === 'PM' && hours < 12) hours += 12;
+        if (ampm === 'AM' && hours === 12) hours = 0;
+        endDate.setHours(hours, mins, 0, 0);
+      }
+    } else {
+      endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
+    }
+
+    return { start: startDate, end: endDate };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Finds any meeting that is currently starting soon (e.g. within threshold minutes) or in progress.
+ */
+export function findImminentMeeting(
+  events: CalendarEvent[],
+  minutesThreshold = 10
+): { event: CalendarEvent; minutesUntilStart: number; isOngoing: boolean } | null {
+  const now = new Date();
+
+  for (const event of events) {
+    if (event.isCompleted) continue;
+    const parsed = parseEventDateTime(event);
+    if (!parsed) continue;
+
+    // Check if event is today
+    if (
+      parsed.start.getFullYear() !== now.getFullYear() ||
+      parsed.start.getMonth() !== now.getMonth() ||
+      parsed.start.getDate() !== now.getDate()
+    ) {
+      continue;
+    }
+
+    const diffMs = parsed.start.getTime() - now.getTime();
+    const minutesUntilStart = Math.round(diffMs / 60000);
+
+    // If meeting is ongoing (started and hasn't ended yet)
+    if (now >= parsed.start && now <= parsed.end) {
+      return { event, minutesUntilStart: 0, isOngoing: true };
+    }
+
+    // If meeting starts within threshold (e.g. 0 to 10 min)
+    if (minutesUntilStart >= 0 && minutesUntilStart <= minutesThreshold) {
+      return { event, minutesUntilStart, isOngoing: false };
+    }
+  }
+
+  return null;
+}
+

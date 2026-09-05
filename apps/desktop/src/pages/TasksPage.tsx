@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { 
   CheckSquare, Plus, Trash2, Copy, Check, 
-  FileText, Target, CheckCircle2, AlertCircle, Clock, Share2, RefreshCw
+  FileText, Target, CheckCircle2, AlertCircle, Clock, Share2, RefreshCw,
+  CalendarPlus
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/ToastProvider';
 import { FullCalendarView } from '@/components/calendar/FullCalendarView';
 import { SyncTasksModal } from '@/components/tasks/SyncTasksModal';
+import { useCalendarStore } from '@/shared/stores/calendarStore';
 
 export interface GlobalActionItem {
   id: string;
@@ -240,6 +242,49 @@ export const TasksPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const addCalendarEvent = useCalendarStore(s => s.addEvent);
+
+  const handleScheduleTask = async (task: GlobalActionItem) => {
+    try {
+      const now = new Date();
+      const start = new Date(now.getTime() + 15 * 60000);
+      const end = new Date(start.getTime() + 30 * 60000);
+
+      const formatTime = (d: Date) => {
+        let h = d.getHours();
+        const m = d.getMinutes().toString().padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        return `${h}:${m} ${ampm}`;
+      };
+
+      const dateStr = start.toISOString().split('T')[0];
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      await addCalendarEvent({
+        title: `Focus: ${task.task}`,
+        description: `Dedicated focus block for action item${task.lectureTitle ? ` from "${task.lectureTitle}"` : ''}`,
+        dateStr,
+        dayNum: start.getDate(),
+        monthStr: monthNames[start.getMonth()],
+        dayOfWeek: dayNames[start.getDay()],
+        startTime: formatTime(start),
+        endTime: formatTime(end),
+        timeRange: `${formatTime(start)} – ${formatTime(end)}`,
+        type: 'bacham',
+        color: '#6366f1',
+        lectureId: task.lectureId,
+      });
+
+      showToast('Scheduled 30m focus block on calendar!', 'success');
+    } catch (err) {
+      console.error('Failed to schedule focus time', err);
+      showToast('Could not schedule calendar block', 'error');
+    }
+  };
 
   const sortedTasks = useMemo(() => {
     return [...filteredTasks].sort((a, b) => b.createdAt - a.createdAt);
@@ -481,6 +526,7 @@ export const TasksPage: React.FC = () => {
                               task={task} 
                               onToggle={() => toggleStatus(task)} 
                               onDelete={() => handleDeleteTask(task.id)}
+                              onSchedule={handleScheduleTask}
                               onClick={() => task.lectureId && navigate(task.lectureId.startsWith('note_') ? '/notes' : `/lectures/${task.lectureId}`)} 
                             />
                           </motion.div>
@@ -512,11 +558,13 @@ const TaskRow = ({
   task, 
   onToggle, 
   onDelete, 
+  onSchedule,
   onClick 
 }: { 
   task: GlobalActionItem; 
   onToggle: () => void; 
   onDelete: () => void;
+  onSchedule: (task: GlobalActionItem) => void;
   onClick: () => void;
 }) => {
   const isDone = task.status === 'done';
@@ -594,13 +642,25 @@ const TaskRow = ({
       </div>
 
       {/* Actions (Hidden until hover) */}
-      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        {!isDone && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSchedule(task);
+            }}
+            className="text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--surface-hover)] transition-colors p-1.5 rounded-md"
+            title="Block 30m Focus Time on Calendar"
+          >
+            <CalendarPlus size={13} />
+          </button>
+        )}
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="text-[var(--text-muted)] hover:text-[#FF5E5E] transition-colors p-1"
+          className="text-[var(--text-muted)] hover:text-[#FF5E5E] hover:bg-[var(--surface-hover)] transition-colors p-1.5 rounded-md"
           title="Delete task"
         >
           <Trash2 size={13} />
