@@ -475,19 +475,6 @@ export const PetCompanionWidget: React.FC<{ isThinking?: boolean }> = ({ isThink
             <PetAvatar id={selectedPetId} size={petSize} isHovered={isHovered} isThinking={isThinking} />
           </div>
 
-          {imminentMeeting && (
-            <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-white shadow-md">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <Bell size={9} className="relative z-10" />
-            </div>
-          )}
-
-          {!imminentMeeting && pendingTasks.length > 0 && (
-            <div className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-[var(--accent)] text-white text-[9px] font-bold shadow-md">
-              {pendingTasks.length > 9 ? '9+' : pendingTasks.length}
-            </div>
-          )}
-
           <AnimatePresence>
             {isHovered && !showBubble && (
               <motion.div
