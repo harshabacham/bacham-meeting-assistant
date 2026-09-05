@@ -497,7 +497,7 @@ Best regards,`;
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[var(--border)]">
+                      <div className="flex items-center justify-between gap-1.5 pt-1.5">
                         <button
                           onClick={handleSnoozeMeeting}
                           className="text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] px-2 py-1 rounded-lg transition-colors cursor-pointer"
@@ -555,7 +555,7 @@ Best regards,`;
                         "{concludedMeeting.event.title}" wrapped up. Send a quick follow-up while context is fresh.
                       </p>
 
-                      <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-[var(--border)]">
+                      <div className="flex items-center justify-between gap-1.5 pt-1.5">
                         <button
                           onClick={() => {
                             toggleEventCompleted(concludedMeeting.event.id);
@@ -592,7 +592,7 @@ Best regards,`;
                         {nextUpcomingMeeting.event.title}
                       </h4>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-[var(--border)]">
+                      <div className="flex items-center justify-between pt-1.5">
                         <span className="text-[11px] text-[var(--text-muted)]">
                           Ready to prepare meeting notes?
                         </span>
@@ -657,7 +657,7 @@ Best regards,`;
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)] text-[10.5px]">
+                        <div className="flex items-center justify-between gap-2 pt-1.5 text-[10.5px]">
                           <span className="text-[var(--text-muted)] truncate max-w-[140px]">
                             {t.lectureTitle || 'Workspace Note'}
                           </span>
@@ -815,7 +815,7 @@ Best regards,`;
               )}
 
               {/* ─── BOTTOM INTEGRATED COMMAND / WHISPER BAR ─── */}
-              <div className="pt-2.5 border-t border-[var(--border)] relative">
+              <div className="pt-2 relative">
                 <div className="relative flex items-center">
                   <Search size={12} className="absolute left-2.5 text-[var(--text-muted)] pointer-events-none" />
                   <input
