@@ -155,8 +155,6 @@ export function AppLayout() {
             </div>
             {/* Global Ambient Background Effects */}
             <div className="absolute inset-0 bg-gradient-to-br from-transparent to-surface-raised/50 z-[-1] pointer-events-none" />
-            <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-[-1]" />
-            <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none z-[-1]" />
             
             {/* Subtle Grain Texture */}
             <div 

@@ -41,7 +41,7 @@ const CodexAvatar = ({ isHovered, isThinking }: { isHovered: boolean; isThinking
   <motion.div
     animate={{ y: isHovered ? -3 : [0, -4, 0] }}
     transition={isHovered ? { duration: 0.2 } : { duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-    className="w-full h-full relative flex flex-col items-center justify-center drop-shadow-[0_8px_16px_rgba(168,85,247,0.35)]"
+    className="w-full h-full relative flex flex-col items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
       {/* Cloud-like puffy ears */}
@@ -87,7 +87,7 @@ const DeweyAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolean }
   <motion.div
     animate={{ scale: isHovered ? [1, 1.05, 1] : [1, 0.97, 1] }}
     transition={isHovered ? { duration: 0.3 } : { duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(56,189,248,0.35)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Water Drop Body */}
@@ -118,7 +118,7 @@ const FireballAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolea
   <motion.div
     animate={{ y: isHovered ? -3 : [0, -3, 0] }}
     transition={isHovered ? { duration: 0.2 } : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(249,115,22,0.4)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Outer Flame */}
@@ -146,7 +146,7 @@ const HootsAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolean }
   <motion.div
     animate={{ rotate: isHovered ? [0, -5, 5, 0] : 0 }}
     transition={{ duration: 0.4 }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(251,146,60,0.35)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Ear Tufts */}
@@ -183,7 +183,7 @@ const RockyAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolean }
   <motion.div
     animate={{ y: isHovered ? -2 : 0 }}
     transition={{ duration: 0.2 }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_6px_12px_rgba(163,230,53,0.3)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Tiny Sprout Top */}
@@ -212,7 +212,7 @@ const SeedyAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolean }
   <motion.div
     animate={{ rotate: isHovered ? [-3, 3, -3] : 0 }}
     transition={{ duration: 1, repeat: Infinity }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(74,222,128,0.35)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Big Plant Stem & Leaves */}
@@ -244,7 +244,7 @@ const StackyAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolean 
   <motion.div
     animate={{ y: isHovered ? -2 : 0 }}
     transition={{ duration: 0.2 }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(192,132,252,0.35)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Top Unit */}
@@ -273,7 +273,7 @@ const BsodAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: boolean })
   <motion.div
     animate={{ rotate: isHovered ? [0, -4, 4, 0] : 0 }}
     transition={{ duration: 0.3 }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(96,165,250,0.4)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Monitor Outer Shell */}
@@ -297,7 +297,7 @@ const NullSignalAvatar = ({ isHovered }: { isHovered: boolean; isThinking?: bool
   <motion.div
     animate={{ y: isHovered ? -3 : [0, -3, 0] }}
     transition={isHovered ? { duration: 0.2 } : { duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-    className="w-full h-full relative flex items-center justify-center drop-shadow-[0_8px_16px_rgba(244,63,94,0.4)]"
+    className="w-full h-full relative flex items-center justify-center"
   >
     <svg viewBox="0 0 100 100" className="w-full h-full">
       {/* Antenna */}

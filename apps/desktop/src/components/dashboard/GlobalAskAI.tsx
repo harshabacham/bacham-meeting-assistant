@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Sparkles, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import { Sparkles, CheckCircle2, ChevronRight, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePetStore, PET_DEFINITIONS } from '@/shared/stores/petStore';
 import { PetAvatar } from '@/components/pets/PetAvatars';
@@ -26,6 +26,7 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
 
   const [isMarking, setIsMarking] = useState(false);
   const bubbleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
   
   // Need access to store to update it locally and trigger refetch
   const { lectures, fetchLectures } = useLectureStore();
@@ -48,6 +49,19 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
     });
   };
 
+  // Close bubble on outside click
+  useEffect(() => {
+    if (!showBubble) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bubbleRef.current && !bubbleRef.current.contains(e.target as Node)) {
+        setShowBubble(false);
+        if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showBubble]);
+
   const triggerBubble = () => {
     if (pendingTasks.length > 0) {
       // Pick the most recent task (since tasks are now sorted by recency)
@@ -58,11 +72,11 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
     
     setShowBubble(true);
     
-    // Auto-hide after 15 seconds
+    // Auto-hide after 5s if all caught up, 10s if active task
     if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
     bubbleTimeoutRef.current = setTimeout(() => {
       setShowBubble(false);
-    }, 15000);
+    }, pendingTasks.length > 0 ? 10000 : 5000);
   };
 
   const handleMarkAsDone = async (e: React.MouseEvent) => {
@@ -133,14 +147,29 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
       <AnimatePresence>
         {showBubble && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.9, filter: 'blur(5px)' }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 10, scale: 0.9, filter: 'blur(5px)' }}
-            className="absolute bottom-full mb-4 right-2 w-[340px] bg-[var(--surface)]/95 backdrop-blur-xl border border-[var(--border)] p-5 rounded-3xl rounded-br-sm shadow-[0_20px_60px_rgba(0,0,0,0.3)] pointer-events-auto cursor-default"
+            ref={bubbleRef}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            className="absolute bottom-full mb-3 right-2 w-[340px] bg-[var(--surface)] border border-[var(--border)] p-5 rounded-2xl shadow-xl pointer-events-auto cursor-default relative"
             onPointerDown={(e) => e.stopPropagation()}
           >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowBubble(false);
+                if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
+              }}
+              className="absolute top-3 right-3 p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+              title="Close"
+            >
+              <X size={14} />
+            </button>
+
             {activeTask ? (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 pr-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-xs font-semibold text-[var(--accent)]">
                             <Sparkles size={13} />
@@ -177,9 +206,9 @@ const PetCompanionWidget = ({ pendingTasks, isThinking }: { pendingTasks: Pendin
                     </div>
                 </div>
             ) : (
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                        <CheckCircle2 size={20} />
+                <div className="flex items-center gap-3 pr-6">
+                    <div className="w-9 h-9 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center text-emerald-400 shrink-0">
+                        <CheckCircle2 size={18} />
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-[var(--text-primary)]">All caught up!</p>
