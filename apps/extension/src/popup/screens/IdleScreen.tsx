@@ -364,7 +364,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
         <div className="flex items-center gap-2 relative z-30">
           
           {/* Segmented Mode Selector: Video + Audio vs Only Audio */}
-          <div className="flex-1 flex items-center p-1 rounded-xl bg-[#141517] border border-white/10 shadow-xs">
+          <div className="flex-1 flex items-center p-1 rounded-xl bg-[#141517] border border-white/[0.06] shadow-xs">
             <button
               type="button"
               onClick={() => void updateConfig({ ...captureConfig, video: true, captureMode: 'tab' })}
@@ -395,7 +395,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
           </div>
 
           {/* Microphone Split Toggle & Setup Instructions */}
-          <div className="relative flex items-center rounded-xl border border-white/10 bg-[#141517] overflow-hidden shadow-xs">
+          <div className="relative flex items-center rounded-xl border border-white/[0.06] bg-[#141517] overflow-hidden shadow-xs">
             <button
               type="button"
               onClick={async () => {
@@ -421,7 +421,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
               type="button"
               onClick={() => setMicGuideModalOpen(true)}
               title="Microphone & Audio Setup Instructions"
-              className="px-2 py-2.5 hover:bg-white/5 border-l border-white/8 text-white/40 hover:text-[#BAFF29] transition-colors cursor-pointer"
+              className="px-2 py-2.5 hover:bg-white/5 border-l border-white/[0.05] text-white/40 hover:text-[#BAFF29] transition-colors cursor-pointer"
             >
               <HelpCircle size={13} />
             </button>
@@ -430,7 +430,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
           {/* Settings / Sliders Button */}
           <button
             onClick={() => setSettingsModalOpen(!settingsModalOpen)}
-            className="p-2.5 rounded-xl border border-white/10 bg-[#141517] hover:bg-[#1A1C20] text-white/70 hover:text-white transition-colors shadow-xs cursor-pointer"
+            className="p-2.5 rounded-xl border border-white/[0.06] bg-[#141517] hover:bg-[#1A1C20] text-white/70 hover:text-white transition-colors shadow-xs cursor-pointer"
             title="Recording Options"
           >
             <SlidersHorizontal size={16} />
@@ -467,8 +467,8 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
           </motion.button>
         )}
 
-        {/* Divider */}
-        <div className="border-t border-white/8 my-2" />
+        {/* Thin, Subtle Divider */}
+        <div className="h-[1px] w-full bg-white/[0.05] my-2" />
 
         {/* 4. My Notes Section Header */}
         <div className="flex items-center justify-between pt-1">
@@ -506,7 +506,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                 placeholder="Search notes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#141517] border border-white/10 text-[12.5px] text-white placeholder:text-white/30 outline-none focus:border-[#BAFF29] transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#141517] border border-white/[0.06] text-[12.5px] text-white placeholder:text-white/30 outline-none focus:border-[#BAFF29] transition-all"
               />
             </motion.div>
           )}
@@ -515,7 +515,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
         {/* 5. Clean Rounded Notes Cards List */}
         <div className="space-y-3 pb-6">
           {savedNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed border-white/10 text-center bg-[#141517]/50">
+            <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed border-white/[0.05] text-center bg-[#141517]/50">
               <span className="text-[13px] font-bold text-white/70">No notes recorded yet</span>
               <span className="text-[11.5px] text-white/40 mt-1 max-w-[200px]">
                 Click "+ New REC Note" above to capture your first meeting!
@@ -530,7 +530,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={() => setSelectedNote(note)}
-                  className="p-4 rounded-2xl border border-white/8 bg-[#141517] hover:border-[var(--border-accent)] hover:bg-[#1A1C20] transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
+                  className="p-4 rounded-2xl border border-white/[0.05] bg-[#141517] hover:border-[#BAFF29]/30 hover:bg-[#1A1C20] transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
                 >
                   <h3 className="text-[14.5px] font-bold text-white leading-tight">
                     {note.title}
@@ -563,7 +563,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="bg-[#141517] rounded-t-3xl p-5 border-t border-white/10 shadow-2xl space-y-4 text-white"
+              className="bg-[#141517] rounded-t-3xl p-5 border-t border-white/[0.07] shadow-2xl space-y-4 text-white"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-[16px] font-bold text-white">Recording Options</h3>
@@ -576,7 +576,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
               </div>
 
               {/* Snapshot Interval */}
-              <div className="flex items-center justify-between py-2 border-b border-white/8">
+              <div className="flex items-center justify-between py-2 border-b border-white/[0.05]">
                 <div>
                   <span className="text-[13px] font-bold text-white block">Auto Snapshots</span>
                   <span className="text-[11px] text-white/40">Capture visual slides for notes</span>
@@ -591,14 +591,14 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                       const sec = Math.max(5, Number(e.target.value));
                       void updateConfig({ ...captureConfig, screenshotIntervalMs: sec * 1000 });
                     }}
-                    className="w-14 px-2 py-1 bg-[#1A1C20] border border-white/10 rounded-lg text-[12px] font-bold text-center text-white outline-none focus:border-[#BAFF29]"
+                    className="w-14 px-2 py-1 bg-[#1A1C20] border border-white/[0.07] rounded-lg text-[12px] font-bold text-center text-white outline-none focus:border-[#BAFF29]"
                   />
                   <span className="text-[12px] text-white/50 font-medium">sec</span>
                 </div>
               </div>
 
               {/* Resolution */}
-              <div className="flex items-center justify-between py-2 border-b border-white/8">
+              <div className="flex items-center justify-between py-2 border-b border-white/[0.05]">
                 <div>
                   <span className="text-[13px] font-bold text-white block">Resolution</span>
                   <span className="text-[11px] text-white/40">Capture video quality</span>
@@ -607,7 +607,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                   <select
                     value={captureConfig.resolution || 'auto'}
                     onChange={(e) => void updateConfig({ ...captureConfig, resolution: e.target.value as any })}
-                    className="px-2.5 py-1.5 bg-[#1A1C20] border border-white/15 rounded-lg text-[12px] font-bold text-white outline-none focus:border-[#BAFF29] cursor-pointer"
+                    className="px-2.5 py-1.5 bg-[#1A1C20] border border-white/[0.08] rounded-lg text-[12px] font-bold text-white outline-none focus:border-[#BAFF29] cursor-pointer"
                   >
                     <option value="auto" className="bg-[#141517] text-white">Auto (Balanced)</option>
                     <option value="720p" className="bg-[#141517] text-white">720p (Battery Saver)</option>
@@ -619,14 +619,14 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
               </div>
 
               {/* Audio Setup Instructions Button */}
-              <div className="pt-2 border-t border-white/8">
+              <div className="pt-2 border-t border-white/[0.05]">
                 <button
                   type="button"
                   onClick={() => {
                     setSettingsModalOpen(false);
                     setMicGuideModalOpen(true);
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1A1C20] border border-white/10 hover:border-[#BAFF29]/40 hover:bg-[#1A1C20]/80 transition-all text-left cursor-pointer group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1A1C20] border border-white/[0.06] hover:border-[#BAFF29]/40 hover:bg-[#1A1C20]/80 transition-all text-left cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-[#BAFF29]/15 flex items-center justify-center text-[#BAFF29]">

@@ -98,7 +98,7 @@ export function MicrophoneGuideModal({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 280 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#141517] rounded-t-3xl p-5 border-t border-white/10 shadow-2xl space-y-3.5 text-white"
+            className="bg-[#141517] rounded-t-3xl p-5 border-t border-white/[0.07] shadow-2xl space-y-3.5 text-white"
           >
             {/* 1. Header */}
             <div className="flex items-center justify-between">
@@ -154,7 +154,7 @@ export function MicrophoneGuideModal({
             {/* 3. Three Clean, Simple Steps (Matching Sample) */}
             <div className="space-y-2">
               {/* Step 1: If popup */}
-              <div className="p-3 rounded-xl bg-[#1A1C20] border border-white/5 flex items-start gap-3">
+              <div className="p-3 rounded-xl bg-[#1A1C20] border border-white/[0.05] flex items-start gap-3">
                 <span className="w-5 h-5 rounded-full bg-white/10 text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                   1
                 </span>
@@ -173,7 +173,7 @@ export function MicrophoneGuideModal({
                 className={`p-3 rounded-xl bg-[#1A1C20] border transition-all flex items-start gap-3 ${
                   permissionState === 'denied'
                     ? 'border-red-500/40 bg-red-500/5'
-                    : 'border-white/5'
+                    : 'border-white/[0.05]'
                 }`}
               >
                 <div className="w-5 h-5 rounded-full bg-white/10 text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
@@ -199,7 +199,7 @@ export function MicrophoneGuideModal({
               </div>
 
               {/* Step 3: Missing Icon */}
-              <div className="p-3 rounded-xl bg-[#1A1C20] border border-white/5 flex items-start gap-3">
+              <div className="p-3 rounded-xl bg-[#1A1C20] border border-white/[0.05] flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full bg-white/10 text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                   <RotateCw size={12} className="text-white/80" />
                 </div>
@@ -215,7 +215,7 @@ export function MicrophoneGuideModal({
             </div>
 
             {/* 4. Google Meet / Zoom Participants Note */}
-            <div className="p-2.5 rounded-xl bg-[#0A0A0C] border border-white/5 text-[11px] text-white/50 flex items-center gap-2 leading-tight">
+            <div className="p-2.5 rounded-xl bg-[#0A0A0C] border border-white/[0.05] text-[11px] text-white/50 flex items-center gap-2 leading-tight">
               <span className="text-[#BAFF29] shrink-0 font-bold">💡</span>
               <span>
                 <strong>Meeting participants:</strong> Check <span className="text-[#BAFF29]">&ldquo;Also share tab audio&rdquo;</span> in Chrome&rsquo;s screen sharing window.
