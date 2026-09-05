@@ -577,3 +577,39 @@ export function findImminentMeeting(
   return null;
 }
 
+/**
+ * Finds any meeting that has concluded recently (e.g. within minutesWindow) and is not yet marked completed.
+ */
+export function findRecentlyConcludedMeeting(
+  events: CalendarEvent[],
+  minutesWindow = 30
+): { event: CalendarEvent; minutesSinceEnd: number } | null {
+  const now = new Date();
+
+  for (const event of events) {
+    if (event.isCompleted) continue;
+    const parsed = parseEventDateTime(event);
+    if (!parsed) continue;
+
+    // Check if event is today
+    if (
+      parsed.start.getFullYear() !== now.getFullYear() ||
+      parsed.start.getMonth() !== now.getMonth() ||
+      parsed.start.getDate() !== now.getDate()
+    ) {
+      continue;
+    }
+
+    const diffMs = now.getTime() - parsed.end.getTime();
+    const minutesSinceEnd = Math.round(diffMs / 60000);
+
+    // If meeting ended within window (0 to minutesWindow minutes ago)
+    if (minutesSinceEnd >= 0 && minutesSinceEnd <= minutesWindow) {
+      return { event, minutesSinceEnd };
+    }
+  }
+
+  return null;
+}
+
+
