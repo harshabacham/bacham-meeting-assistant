@@ -203,6 +203,7 @@ export function createMessageHandler(
           audio: intent.captureAudio && (captureResult.hasAudio ?? false),
           video: intent.captureVideo,
           captureMode: intent.captureMode ?? 'tab',
+          ...(intent.resolution ? { resolution: intent.resolution } : {}),
           ...(intent.includeMicrophone !== undefined ? { includeMicrophone: intent.includeMicrophone } : {}),
           ...(intent.screenshotIntervalMs !== undefined
             ? { screenshotIntervalMs: intent.screenshotIntervalMs }
@@ -217,6 +218,7 @@ export function createMessageHandler(
           ...(session.courseLabel !== undefined ? { courseLabel: session.courseLabel } : {}),
           captureAudio: intent.captureAudio,
           captureVideo: intent.captureVideo,
+          ...(intent.resolution ? { resolution: intent.resolution } : {}),
           ...(intent.screenshotIntervalMs !== undefined
             ? { screenshotIntervalMs: intent.screenshotIntervalMs }
             : {}),

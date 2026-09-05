@@ -134,6 +134,7 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
       captureMode: isVideoMode ? 'screen' : 'audio',
       streamId: '',
       streamHasAudio: captureConfig.audio ?? true,
+      ...(captureConfig.resolution ? { resolution: captureConfig.resolution } : {}),
       ...(captureConfig.screenshotIntervalMs !== undefined && isVideoMode
         ? { screenshotIntervalMs: captureConfig.screenshotIntervalMs }
         : {}),
@@ -613,11 +614,13 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                   <select
                     value={captureConfig.resolution || 'auto'}
                     onChange={(e) => void updateConfig({ ...captureConfig, resolution: e.target.value as any })}
-                    className="px-2 py-1.5 bg-[#1A1C20] border border-white/10 rounded-lg text-[12px] font-bold text-white outline-none focus:border-[#BAFF29]"
+                    className="px-2.5 py-1.5 bg-[#1A1C20] border border-white/15 rounded-lg text-[12px] font-bold text-white outline-none focus:border-[#BAFF29] cursor-pointer"
                   >
-                    <option value="auto">Auto</option>
-                    <option value="720p">720p</option>
-                    <option value="1080p">1080p</option>
+                    <option value="auto" className="bg-[#141517] text-white">Auto (Balanced)</option>
+                    <option value="720p" className="bg-[#141517] text-white">720p (Battery Saver)</option>
+                    <option value="1080p" className="bg-[#141517] text-white">1080p (Full HD)</option>
+                    <option value="1440p" className="bg-[#141517] text-white">1440p (2K Quad HD)</option>
+                    <option value="4k" className="bg-[#141517] text-[#BAFF29]">4K / Native (1:1 Pixel-Perfect) ⚡</option>
                   </select>
                 </div>
               </div>

@@ -120,6 +120,7 @@ export interface SessionStartPayload {
   readonly captureAudio: boolean;
   readonly captureVideo: boolean;
   readonly screenshotIntervalMs?: number;
+  readonly resolution?: string;
 }
 
 /** Payload for SESSION_STOP. */
