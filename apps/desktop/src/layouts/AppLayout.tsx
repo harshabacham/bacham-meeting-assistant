@@ -127,6 +127,12 @@ export function AppLayout() {
 
     const isActive = (path: string) => {
         if (path === '/') return location.pathname === '/';
+        if (path === '/notes') {
+            return location.pathname.startsWith('/notes') && !searchParams.get('folderId') && !selectedFolderId;
+        }
+        if (path === '/lectures') {
+            return location.pathname.startsWith('/lectures') && !searchParams.get('view') && !selectedFolderId;
+        }
         return location.pathname.startsWith(path);
     };
 
@@ -263,7 +269,10 @@ export function AppLayout() {
                                                     key={item.path}
                                                     to={item.path}
                                                     className="block rounded-lg outline-none"
-                                                    onClick={() => { if (item.path === '/lectures') { setSystemView('all'); setSelectedFolderId(null); } }}
+                                                    onClick={() => {
+                                                        setSystemView('all');
+                                                        setSelectedFolderId(null);
+                                                    }}
                                                 >
                                                     <div className={cn(
                                                         'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors',

@@ -42,19 +42,21 @@ export function NotesWorkspacePage() {
     const storeFolderId = useLectureStore(state => state.selectedFolderId);
     const setStoreFolderId = useLectureStore(state => state.setSelectedFolderId);
 
-    const activeFolderId = paramFolderId !== null ? (paramFolderId || null) : storeFolderId;
+    // URL parameter folderId is the single source of truth for active folder in Notes workspace
+    const activeFolderId = paramFolderId || null;
 
     useEffect(() => {
-        if (paramFolderId && paramFolderId !== storeFolderId) {
-            setStoreFolderId(paramFolderId);
-        } else if (!paramFolderId && storeFolderId) {
-            setSearchParams(prev => {
-                const next = new URLSearchParams(prev);
-                next.set('folderId', storeFolderId);
-                return next;
-            }, { replace: true });
+        if (paramFolderId) {
+            if (paramFolderId !== storeFolderId) {
+                setStoreFolderId(paramFolderId);
+            }
+        } else {
+            // Main notes page (no folderId in URL): clear storeFolderId
+            if (storeFolderId !== null) {
+                setStoreFolderId(null);
+            }
         }
-    }, [paramFolderId, storeFolderId, setStoreFolderId, setSearchParams]);
+    }, [paramFolderId, storeFolderId, setStoreFolderId]);
 
     const handleSelectFolder = useCallback((folderId: string | null) => {
         setStoreFolderId(folderId);
