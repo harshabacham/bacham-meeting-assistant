@@ -143,39 +143,64 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
     }
   };
 
-  // Load saved notes from storage & desktop companion app
-  useEffect(() => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadNotesAndHistory = React.useCallback(async () => {
     // 1. Load locally saved notes
-    chrome.storage.local.get(['bacham_saved_notes'], (res) => {
-      if (res.bacham_saved_notes && Array.isArray(res.bacham_saved_notes)) {
-        setSavedNotes(res.bacham_saved_notes);
-      }
+    await new Promise<void>((resolve) => {
+      chrome.storage.local.get(['bacham_saved_notes'], (res) => {
+        if (res.bacham_saved_notes && Array.isArray(res.bacham_saved_notes)) {
+          setSavedNotes(res.bacham_saved_notes);
+        }
+        resolve();
+      });
     });
 
     // 2. Fetch history from desktop app
-    fetchHistory?.().then((data) => {
-      if (data?.lectures && data.lectures.length > 0) {
-        const mapped: SavedNoteItem[] = data.lectures.map((l: LectureSummary) => {
-          const createdAt = l.created_at ? new Date(l.created_at) : new Date();
-          const durationSeconds = Math.floor((l.duration_ms || 0) / 1000);
-          return {
-            id: l.id,
-            title: l.title || 'Untitled Meeting',
-            date: createdAt.toLocaleDateString([], { month: '2-digit', day: '2-digit' }) + ', ' +
-                  createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            timestamp: createdAt.getTime(),
-            duration: durationSeconds > 0
-              ? `${Math.floor(durationSeconds / 60)}:${String(durationSeconds % 60).padStart(2, '0')}`
-              : '00:00',
-          };
-        });
-        setSavedNotes((prev) => {
-          const ids = new Set(prev.map(p => p.id));
-          return [...prev, ...mapped.filter(m => !ids.has(m.id))];
-        });
+    if (fetchHistory) {
+      try {
+        const data = await fetchHistory();
+        if (data?.lectures && data.lectures.length > 0) {
+          const mapped: SavedNoteItem[] = data.lectures.map((l: LectureSummary) => {
+            const createdAt = l.created_at ? new Date(l.created_at) : new Date();
+            const durationSeconds = Math.floor((l.duration_ms || 0) / 1000);
+            return {
+              id: l.id,
+              title: l.title || 'Untitled Meeting',
+              date: createdAt.toLocaleDateString([], { month: '2-digit', day: '2-digit' }) + ', ' +
+                    createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              timestamp: createdAt.getTime(),
+              duration: durationSeconds > 0
+                ? `${Math.floor(durationSeconds / 60)}:${String(durationSeconds % 60).padStart(2, '0')}`
+                : '00:00',
+            };
+          });
+          setSavedNotes((prev) => {
+            const ids = new Set(prev.map(p => p.id));
+            return [...prev, ...mapped.filter(m => !ids.has(m.id))];
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch history:', err);
       }
-    });
+    }
   }, [fetchHistory]);
+
+  const handleRefreshNotes = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await checkDesktopStatus();
+      await loadNotesAndHistory();
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  // Load saved notes from storage & desktop companion app
+  useEffect(() => {
+    void loadNotesAndHistory();
+  }, [loadNotesAndHistory]);
 
   const isVideoMode = captureConfig.video !== false && captureConfig.captureMode !== 'audio';
   const isMicEnabled = !!captureConfig.includeMicrophone;
@@ -585,7 +610,16 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
           <h2 className="text-[17px] font-bold text-white tracking-tight">
             My Notes
           </h2>
-          <div className="flex items-center gap-2 text-white/40">
+          <div className="flex items-center gap-1.5 text-white/40">
+            <button
+              type="button"
+              onClick={handleRefreshNotes}
+              disabled={isRefreshing}
+              className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+              title="Refresh notes & meetings"
+            >
+              <RefreshCw size={15} className={isRefreshing ? 'animate-spin text-[#BAFF29]' : ''} />
+            </button>
             <button
               onClick={() => setShowSearchInput(!showSearchInput)}
               className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition-colors cursor-pointer"

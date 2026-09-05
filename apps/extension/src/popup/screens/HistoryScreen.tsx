@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '@/shared/hooks/useSession';
 import { useConnection } from '@/shared/hooks/useConnection';
-import { History, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { History, Calendar, Clock, ArrowRight, RefreshCw } from 'lucide-react';
 import type { LectureSummary } from '@/shared/types';
 import { motion } from 'framer-motion';
 
@@ -10,6 +10,22 @@ export function HistoryScreen() {
   const { fetchHistory } = useSession();
   const [history, setHistory] = useState<LectureSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (connectionStatus === 'connected') {
+        const data = await fetchHistory();
+        if (data) {
+          setHistory(data.lectures);
+        }
+      }
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
   useEffect(() => {
     if (connectionStatus === 'connected') {
@@ -30,8 +46,19 @@ export function HistoryScreen() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[20px] font-bold text-[var(--text-primary)] tracking-tight">Meeting History</h1>
-        <div className="p-2 rounded-xl bg-[var(--surface-hover)] border border-[var(--separator)] text-[var(--text-secondary)]">
-          <History size={16} strokeWidth={2} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-2 rounded-xl bg-[var(--surface-hover)] hover:bg-white/10 border border-[var(--separator)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+            title="Refresh history"
+          >
+            <RefreshCw size={15} className={isRefreshing ? 'animate-spin text-[var(--accent)]' : ''} />
+          </button>
+          <div className="p-2 rounded-xl bg-[var(--surface-hover)] border border-[var(--separator)] text-[var(--text-secondary)]">
+            <History size={16} strokeWidth={2} />
+          </div>
         </div>
       </div>
 

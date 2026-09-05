@@ -11,6 +11,7 @@ import {
   Check,
   ArrowLeft,
   Mic,
+  RefreshCw,
 } from 'lucide-react';
 import { useSession } from '@/shared/hooks/useSession';
 import { useConnection } from '@/shared/hooks/useConnection';
@@ -43,6 +44,28 @@ export function NotesScreen() {
   const [selectedLecture, setSelectedLecture] = useState<LectureSummary | null>(null);
 
   const isRecording = sessionState === 'recording' || sessionState === 'paused';
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (session?.id) {
+        const saved = localStorage.getItem(`bacham_actions_${session.id}`);
+        if (saved) {
+          try { setActions(JSON.parse(saved)); } catch {}
+        }
+      }
+      if (fetchHistory && connectionStatus === 'connected') {
+        const data = await fetchHistory();
+        if (data?.lectures) {
+          setHistory(data.lectures);
+        }
+      }
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
   // Load stored notes/actions
   useEffect(() => {
@@ -202,12 +225,23 @@ export function NotesScreen() {
             {isRecording ? '🔴 Recording in progress' : 'Your meetings & tasks'}
           </p>
         </div>
-        {isRecording && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-rose-400">LIVE</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white border border-white/10 transition-colors cursor-pointer"
+            title="Refresh notes & history"
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-[#BAFF29]' : ''} />
+          </button>
+          {isRecording && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-rose-400">LIVE</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tab bar */}
