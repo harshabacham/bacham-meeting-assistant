@@ -19,6 +19,10 @@ import {
   FileText,
   Sparkles,
   Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
+  Radio,
 } from 'lucide-react';
 
 
@@ -49,8 +53,78 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
   // Dropdown states
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [micGuideModalOpen, setMicGuideModalOpen] = useState(false);
+  const [micPermissionState, setMicPermissionState] = useState<'unknown' | 'granted' | 'denied' | 'prompt'>('unknown');
+  const [micTesting, setMicTesting] = useState(false);
+  const [micVolumeLevel, setMicVolumeLevel] = useState(0);
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchInput, setShowSearchInput] = useState(false);
+
+  // Check microphone permission on mount
+  useEffect(() => {
+    const checkMic = async () => {
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          const res = await navigator.permissions.query({ name: 'microphone' as any });
+          setMicPermissionState(res.state as any);
+          res.onchange = () => {
+            setMicPermissionState(res.state as any);
+          };
+        }
+      } catch {
+        // Query for microphone not supported in some contexts
+      }
+    };
+    void checkMic();
+  }, []);
+
+  // Interactive Live Microphone Tester
+  const handleTestMic = async () => {
+    setMicTesting(true);
+    setMicVolumeLevel(10);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicPermissionState('granted');
+
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let active = true;
+
+      const pollMeter = () => {
+        if (!active) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        setMicVolumeLevel(Math.min(100, Math.max(10, Math.round((avg / 64) * 100))));
+        requestAnimationFrame(pollMeter);
+      };
+      pollMeter();
+
+      setTimeout(() => {
+        active = false;
+        stream.getTracks().forEach((t) => t.stop());
+        audioCtx.close().catch(() => {});
+        setMicTesting(false);
+        setMicVolumeLevel(0);
+      }, 4000);
+    } catch (err) {
+      console.warn('Microphone test denied/error:', err);
+      setMicPermissionState('denied');
+      setMicTesting(false);
+      setMicVolumeLevel(0);
+      setShowTroubleshooting(true);
+    }
+  };
 
   // Selected saved note to view details
   const [selectedNote, setSelectedNote] = useState<SavedNoteItem | null>(null);
@@ -416,21 +490,34 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
             </AnimatePresence>
           </div>
 
-          {/* Microphone Toggle Button */}
-          <div className="relative">
+          {/* Microphone Split Toggle & Setup Instructions */}
+          <div className="relative flex items-center rounded-xl border border-white/10 bg-[#141517] overflow-hidden shadow-xs">
             <button
               onClick={() => {
-                void updateConfig({ ...captureConfig, includeMicrophone: !isMicEnabled });
+                const nextState = !isMicEnabled;
+                void updateConfig({ ...captureConfig, includeMicrophone: nextState });
+                if (nextState && micPermissionState !== 'granted') {
+                  setMicGuideModalOpen(true);
+                }
               }}
-              title={isMicEnabled ? 'Microphone On' : 'Microphone Muted'}
-              className={`flex items-center gap-1 px-2.5 py-2.5 rounded-xl border transition-all text-[13px] font-semibold shadow-xs cursor-pointer ${
+              title={isMicEnabled ? 'Microphone Active (Click to Mute)' : 'Microphone Muted (Click to Turn On)'}
+              className={`flex items-center gap-1.5 px-3 py-2.5 transition-all text-[13px] font-semibold cursor-pointer ${
                 isMicEnabled
-                  ? 'border-[var(--border-accent)] bg-[var(--accent-dim)] text-[var(--accent)]'
-                  : 'border-white/10 bg-[#141517] text-white/40 hover:bg-[#1A1C20]'
+                  ? 'bg-[#BAFF29]/15 text-[#BAFF29]'
+                  : 'text-white/40 hover:text-white/70 hover:bg-[#1A1C20]'
               }`}
             >
               {isMicEnabled ? <Mic size={16} /> : <MicOff size={16} />}
-              <ChevronDown size={12} className="text-white/40" />
+              {isMicEnabled && micPermissionState === 'denied' && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Microphone blocked by Chrome" />
+              )}
+            </button>
+            <button
+              onClick={() => setMicGuideModalOpen(true)}
+              title="Microphone & Audio Setup Instructions"
+              className="px-2 py-2.5 hover:bg-white/5 border-l border-white/8 text-white/40 hover:text-[#BAFF29] transition-colors cursor-pointer"
+            >
+              <HelpCircle size={13} />
             </button>
           </div>
 
@@ -625,11 +712,212 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
                 </div>
               </div>
 
+              {/* Audio Setup Instructions Button */}
+              <div className="pt-2 border-t border-white/8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsModalOpen(false);
+                    setMicGuideModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1A1C20] border border-white/10 hover:border-[#BAFF29]/40 hover:bg-[#1A1C20]/80 transition-all text-left cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#BAFF29]/15 flex items-center justify-center text-[#BAFF29]">
+                      <HelpCircle size={16} />
+                    </div>
+                    <div>
+                      <span className="text-[13px] font-bold text-white block group-hover:text-[#BAFF29] transition-colors">
+                        Microphone & Audio Guide
+                      </span>
+                      <span className="text-[11px] text-white/50">
+                        How to capture both your voice and meeting audio
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronDown size={14} className="text-white/40 -rotate-90 group-hover:text-white transition-colors" />
+                </button>
+              </div>
+
               {/* Status */}
               <div className="flex items-center justify-between text-[12px] text-white/50 pt-1">
                 <span>Transport</span>
                 <span className="font-bold text-[#BAFF29]">100% Local (127.0.0.1)</span>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Microphone & Audio Setup Modal (Slide-up Sheet) */}
+      <AnimatePresence>
+        {micGuideModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/75 backdrop-blur-md z-50 flex flex-col justify-end"
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-[#141517] rounded-t-3xl p-5 border-t border-white/10 shadow-2xl space-y-4 text-white max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#BAFF29]/15 flex items-center justify-center text-[#BAFF29]">
+                    <Mic size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-[15px] font-bold text-white leading-tight">Microphone & Audio Setup</h3>
+                    <p className="text-[11px] text-white/50">Ensure both your voice and meeting audio are recorded</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMicGuideModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Status Badge & Live Test Card */}
+              <div className="p-3.5 rounded-2xl bg-[#1A1C20] border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-white/70">Chrome Mic Permission</span>
+                  {micPermissionState === 'granted' ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
+                      <CheckCircle2 size={12} />
+                      Allowed & Ready
+                    </span>
+                  ) : micPermissionState === 'denied' ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-[11px] font-bold">
+                      <AlertTriangle size={12} />
+                      Blocked by Chrome
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-bold">
+                      <Radio size={12} />
+                      Permission Needed
+                    </span>
+                  )}
+                </div>
+
+                {/* Test Mic Button & Live Wave Meter */}
+                <div className="space-y-2">
+                  <button
+                    onClick={handleTestMic}
+                    disabled={micTesting}
+                    className={`w-full py-2.5 px-3 rounded-xl font-bold text-[12px] flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      micTesting
+                        ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-[0_0_16px_rgba(186,255,41,0.35)]'
+                        : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
+                    }`}
+                  >
+                    <Mic size={14} className={micTesting ? 'animate-bounce' : ''} />
+                    <span>{micTesting ? 'Listening... Speak Now!' : 'Test / Allow Microphone'}</span>
+                  </button>
+
+                  {micTesting && (
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-[10px] text-white/50 font-semibold">
+                        <span>Live Voice Input</span>
+                        <span className="text-[#BAFF29] font-bold">{micVolumeLevel}%</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-[#BAFF29] to-emerald-400 rounded-full"
+                          style={{ width: `${micVolumeLevel}%` }}
+                          transition={{ duration: 0.05 }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* The 2 Essential Audio Rules */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider block">
+                  How Both Audio Sides Work
+                </span>
+
+                {/* Rule 1: Your Voice */}
+                <div className="p-3 rounded-xl bg-[#1A1C20]/60 border border-white/8 flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#BAFF29]/15 text-[#BAFF29] flex items-center justify-center shrink-0 mt-0.5">
+                    <Mic size={14} />
+                  </div>
+                  <div>
+                    <h4 className="text-[12.5px] font-bold text-white">1. Your Voice (Microphone)</h4>
+                    <p className="text-[11.5px] text-white/60 mt-0.5 leading-relaxed">
+                      Captured from your physical mic. Ensure the Microphone toggle is <strong>ON</strong> and permission is allowed.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Rule 2: Meeting Audio */}
+                <div className="p-3 rounded-xl bg-[#1A1C20]/60 border border-white/8 flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Volume2 size={14} />
+                  </div>
+                  <div>
+                    <h4 className="text-[12.5px] font-bold text-white">2. Other People's Voices (Zoom, Meet, Teams)</h4>
+                    <p className="text-[11.5px] text-white/60 mt-0.5 leading-relaxed">
+                      Captured from the screen or browser tab. <strong>When Chrome opens the screen sharing window, you MUST check the box:</strong>
+                    </p>
+                    <div className="mt-1.5 px-2.5 py-1 rounded-md bg-black/50 border border-white/10 text-[11px] font-mono text-[#BAFF29] font-bold inline-block">
+                      ☑ Also share tab audio / Share system audio
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Troubleshooting Accordion */}
+              <div className="pt-1 border-t border-white/8">
+                <button
+                  type="button"
+                  onClick={() => setShowTroubleshooting(!showTroubleshooting)}
+                  className="w-full flex items-center justify-between text-[12px] font-bold text-white/60 hover:text-white transition-colors py-1 cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <HelpCircle size={13} />
+                    How to fix "Microphone Blocked" in Chrome & Windows
+                  </span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${showTroubleshooting ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showTroubleshooting && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden mt-2 p-3 rounded-xl bg-black/40 border border-white/5 text-[11.5px] text-white/70 space-y-2 leading-relaxed"
+                    >
+                      <p>
+                        <strong>1. Chrome Address Bar:</strong> Click the <strong>Tune / Lock</strong> icon on the left of your URL bar, and set <strong>Microphone</strong> to <strong>Allow</strong>.
+                      </p>
+                      <p>
+                        <strong>2. Chrome Settings:</strong> Go to <code className="px-1 py-0.5 bg-white/10 rounded text-[#BAFF29]">chrome://settings/content/microphone</code> and ensure Bacham is not blocked.
+                      </p>
+                      <p>
+                        <strong>3. Windows Settings:</strong> Open <strong>Windows Settings → Privacy & security → Microphone</strong>, and verify that <strong>"Let desktop apps access your microphone"</strong> is toggled <strong>ON</strong>.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Done / Close CTA */}
+              <button
+                type="button"
+                onClick={() => setMicGuideModalOpen(false)}
+                className="w-full py-2.5 rounded-xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] font-bold text-[13px] shadow-[0_2px_12px_rgba(186,255,41,0.25)] transition-all cursor-pointer"
+              >
+                Got It, Let's Record
+              </button>
             </motion.div>
           </motion.div>
         )}

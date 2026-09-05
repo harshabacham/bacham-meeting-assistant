@@ -332,8 +332,16 @@ export function createCaptureService(
           },
         });
         log.info(MODULE, 'Microphone stream acquired for mixing');
+        chrome.runtime.sendMessage({
+          type: 'MIC_PERMISSION_STATUS',
+          payload: { granted: true }
+        }).catch(() => {});
       } catch (err: any) {
         log.warn(MODULE, 'Microphone permission denied or unavailable, continuing with display audio', { err });
+        chrome.runtime.sendMessage({
+          type: 'MIC_PERMISSION_STATUS',
+          payload: { granted: false, error: err?.message || 'Permission denied' }
+        }).catch(() => {});
       }
     }
 
