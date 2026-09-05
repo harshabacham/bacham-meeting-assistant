@@ -4,13 +4,9 @@ import { useState, useEffect } from 'react';
 
 export function Titlebar() {
     const [isMaximized, setIsMaximized] = useState(false);
-    const [isMac, setIsMac] = useState(false);
     const appWindow = getCurrentWindow();
 
     useEffect(() => {
-        // Simple check for macOS to position buttons (optional, but good practice)
-        setIsMac(navigator.userAgent.includes('Mac'));
-        
         const updateMaximized = async () => {
             const max = await appWindow.isMaximized();
             setIsMaximized(max);

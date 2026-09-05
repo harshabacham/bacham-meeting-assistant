@@ -12,7 +12,6 @@ import { Clock, ChevronRight, Bookmark, Zap, BookOpen, CheckSquare } from "lucid
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import { ComingUpCalendarWidget } from "@/components/dashboard/ComingUpCalendarWidget";
-import { GlobalAskAI } from "@/components/dashboard/GlobalAskAI";
 import { useGlobalTasks } from "@/shared/hooks/useGlobalTasks";
 import { useTranslation } from "react-i18next";
 import { ErrorBoundary } from "@/shared/contexts/ErrorBoundary";

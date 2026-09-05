@@ -71,7 +71,6 @@ export const LoginPage = () => {
 
     try {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
       const redirectUri = "http://127.0.0.1:1422/auth/callback";
       const scope = encodeURIComponent("openid email profile");
       const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;

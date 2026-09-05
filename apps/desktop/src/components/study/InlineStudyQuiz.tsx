@@ -76,7 +76,7 @@ const MOCK_FLASHCARDS: Flashcard[] = [
 
 type QuizState = 'idle' | 'generating' | 'active_quiz' | 'active_flashcards' | 'finished';
 
-export const InlineStudyQuiz: React.FC<Props> = ({ lectureId }) => {
+export const InlineStudyQuiz: React.FC<Props> = ({ lectureId: _lectureId }) => {
   const [quizState, setQuizState] = useState<QuizState>('idle');
   const [studyMode, setStudyMode] = useState<'quiz' | 'flashcards'>('quiz');
   

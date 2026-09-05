@@ -19,7 +19,6 @@ import {
     MoreHorizontal, Bookmark, Trash2, VideoOff, Share2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { LiveTranscriptPanel } from './LiveTranscriptPanel';
 import { TauriClient, Screenshot } from '@/infrastructure/tauri-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -381,8 +380,6 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [tagInput, setTagInput] = useState('');
     const [folderMenuOpen, setFolderMenuOpen] = useState(false);
-    const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
-    const [isStreaming, setIsStreaming] = useState(true);
     const [copied, setCopied] = useState(false);
     const [dateMenuOpen, setDateMenuOpen] = useState(false);
     const [selectionMenu, setSelectionMenu] = useState<{ x: number; y: number } | null>(null);
@@ -636,16 +633,6 @@ Structure your response with:
         }
     };
 
-    const handleProcessTranscript = (transcript: string) => {
-        setIsTranscriptOpen(false);
-        setRawTranscript(transcript);
-        localStorage.setItem(`transcript_${note.id}`, transcript);
-        onUpdate({ transcript });
-
-        // Trigger AI summary generation immediately
-        handleGenerateSummary(transcript);
-    };
-
     const handleCopyTranscript = async () => {
         if (!rawTranscript) return;
         try {
@@ -857,12 +844,7 @@ Return only the polished transcript text:`;
                                 alert(`Failed to start recording: ${e}\n\nPlease make sure the BACHAM browser extension is installed and active.`);
                             }
                         }}
-                        className={cn(
-                            "px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
-                            isTranscriptOpen
-                                ? "bg-[var(--destructive)] hover:opacity-90 text-white shadow-[0_0_12px_rgba(239,68,68,0.4)] animate-pulse"
-                                : "bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)]"
-                        )}
+                        className="px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)]"
                         title="Record Meeting in Browser Extension"
                     >
                         <Mic size={13} />
