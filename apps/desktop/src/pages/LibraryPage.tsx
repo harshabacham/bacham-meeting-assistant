@@ -363,11 +363,10 @@ ${transcript || '*(No transcript recorded)*'}
                         type="button"
                         onClick={handleRefresh}
                         disabled={isRefreshing}
-                        className="btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                        className="btn p-2 transition-colors border select-none bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
                         title="Refresh meetings and folders"
                     >
-                        <RefreshCw size={13} className={cn("text-muted-foreground", isRefreshing && "animate-spin text-primary")} />
-                        <span className="hidden sm:inline">Refresh</span>
+                        <RefreshCw size={14} className={cn("text-muted-foreground", isRefreshing && "animate-spin text-primary")} />
                     </button>
 
                     {systemView === 'trash' && (
@@ -390,11 +389,10 @@ ${transcript || '*(No transcript recorded)*'}
                             <button
                                 type="button"
                                 onClick={() => setIsSelectMode(true)}
-                                className="btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground"
+                                className="btn p-2 transition-colors border select-none bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground"
                                 title="Select meetings"
                             >
-                                <CheckSquare size={13} className="text-muted-foreground" />
-                                <span className="hidden sm:inline">Select</span>
+                                <CheckSquare size={14} className="text-muted-foreground" />
                             </button>
                         ) : (
                             <div className="flex items-center gap-1.5">
@@ -408,7 +406,7 @@ ${transcript || '*(No transcript recorded)*'}
                                         }
                                     }}
                                     className={cn(
-                                        'btn px-2.5 py-1.5 text-xs font-medium gap-1.5 transition-colors border select-none',
+                                        'btn p-2 transition-colors border select-none',
                                         selectedIds.size > 0 
                                             ? 'bg-primary/10 border-primary/30 text-primary hover:bg-primary/15' 
                                             : 'bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground'
@@ -416,15 +414,12 @@ ${transcript || '*(No transcript recorded)*'}
                                     title={selectedIds.size === filtered.length ? "Deselect all" : "Select all visible"}
                                 >
                                     {selectedIds.size === filtered.length ? (
-                                        <CheckSquare size={13} className="text-primary" />
+                                        <CheckSquare size={14} className="text-primary" />
                                     ) : selectedIds.size > 0 ? (
-                                        <MinusSquare size={13} className="text-primary" />
+                                        <MinusSquare size={14} className="text-primary" />
                                     ) : (
-                                        <Square size={13} className="text-muted-foreground" />
+                                        <Square size={14} className="text-muted-foreground" />
                                     )}
-                                    <span className="hidden sm:inline">
-                                        {selectedIds.size === filtered.length ? 'Deselect all' : selectedIds.size > 0 ? `${selectedIds.size} Selected` : 'Select all'}
-                                    </span>
                                 </button>
                                 <button
                                     type="button"
@@ -432,26 +427,14 @@ ${transcript || '*(No transcript recorded)*'}
                                         setIsSelectMode(false);
                                         setSelectedIds(new Set());
                                     }}
-                                    className="btn px-2 py-1.5 text-xs font-medium gap-1 transition-colors border bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground select-none"
+                                    className="btn p-2 transition-colors border bg-surface hover:bg-surface-hover border-border/80 text-muted-foreground hover:text-foreground select-none"
                                     title="Cancel selection"
                                 >
-                                    <X size={13} />
-                                    <span className="hidden sm:inline">Done</span>
+                                    <X size={14} />
                                 </button>
                             </div>
                         )
                     )}
-                    
-                    {/* Sort */}
-                    <select
-                        className="input-field text-xs py-1.5 pl-3 pr-7 w-auto"
-                        value={sortMode}
-                        onChange={e => setSortMode(e.target.value as SortMode)}
-                    >
-                        <option value="recent">Recent</option>
-                        <option value="title">Title</option>
-                        <option value="duration">Duration</option>
-                    </select>
 
                     {/* View mode */}
                     <div className="flex rounded-lg overflow-hidden border border-border">
