@@ -355,9 +355,19 @@ export function AppLayout() {
                                                     )}
                                                     <FolderSidebar
                                                         systemView={systemView}
-                                                        setSystemView={(view) => { setSystemView(view); setSelectedFolderId(null); navigate('/notes'); }}
+                                                        setSystemView={(view) => {
+                                                            setSystemView(view);
+                                                            setSelectedFolderId(null);
+                                                            const target = location.pathname.startsWith('/lectures') ? '/lectures' : '/notes';
+                                                            navigate(target);
+                                                        }}
                                                         selectedFolderId={selectedFolderId}
-                                                        onSelectFolder={(id) => { setSystemView('all'); setSelectedFolderId(id); navigate('/notes'); }}
+                                                        onSelectFolder={(id) => {
+                                                            setSystemView('all');
+                                                            setSelectedFolderId(id);
+                                                            const target = location.pathname.startsWith('/lectures') ? '/lectures' : '/notes';
+                                                            navigate(`${target}?folderId=${encodeURIComponent(id)}`);
+                                                        }}
                                                     />
                                                 </div>
                                             )}

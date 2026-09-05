@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { FolderDashboard as IFolderDashboard, Lecture } from '@/shared/types';
 import { Button, Card, EmptyState, Loader, cn } from '@/components';
-import { HardDrive, BrainCircuit, LayoutList, CheckCircle, PenTool, Sparkles, Folder as FolderIcon, Play, Plus, RefreshCw } from 'lucide-react';
+import { LayoutList, PenTool, Folder as FolderIcon, Play, Plus, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TauriClient } from '@/infrastructure/tauri-client';
 import { useToast } from '@/components/ui/ToastProvider';
 import { FolderSettingsDialog } from './FolderSettingsDialog';
 import { AddLecturesDialog } from './AddLecturesDialog';
@@ -118,59 +117,27 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                 </div>
 
                 {/* Quick Actions Row */}
-                <div className="flex flex-wrap items-center gap-3 mb-12 pb-8 border-b border-border/40">
+                <div className="flex flex-wrap items-center gap-3 mb-8 pb-6 border-b border-border/40">
                     <Button 
                         variant="outline" 
-                        className="gap-2 font-medium bg-surface hover:bg-surface-hover border-border/60"
-                        onClick={async () => {
-                            try {
-                                await TauriClient.runStudyAction("summary", { folder: folder.id });
-                                showToast("Study Guide generation started in background.", 'success'); 
-                            } catch(err: any) { showToast("Error: " + err.message, 'error'); }
-                        }}
+                        className="gap-2 font-medium bg-surface hover:bg-surface-hover border-border/60 text-xs"
+                        onClick={() => setIsAddingLectures(true)}
                     >
-                        <BrainCircuit size={14} className="text-primary" /> Generate Study Guide
+                        <Plus size={14} className="text-primary" /> Add Meetings
                     </Button>
                     <Button 
                         variant="outline" 
-                        className="gap-2 font-medium bg-surface hover:bg-surface-hover border-border/60"
-                        onClick={async () => {
-                            try {
-                                await TauriClient.runStudyAction("flashcards", { folder: folder.id });
-                                showToast("Flashcards generation started in background.", 'success'); 
-                            } catch(err: any) { showToast("Error: " + err.message, 'error'); }
-                        }}
+                        className="gap-2 font-medium bg-surface hover:bg-surface-hover border-border/60 text-xs"
+                        onClick={() => navigate(`/notes?folderId=${encodeURIComponent(folder.id)}`)}
                     >
-                        <Sparkles size={14} className="text-accent" /> Generate Flashcards
+                        <PenTool size={14} className="text-primary" /> New Note in Folder
                     </Button>
                     <Button 
-                        variant="outline" 
-                        className="gap-2 font-medium bg-surface hover:bg-surface-hover border-border/60"
-                        onClick={async () => {
-                            try {
-                                await TauriClient.runStudyAction("quiz", { folder: folder.id });
-                                showToast("Quiz generation started in background.", 'success'); 
-                            } catch(err: any) { showToast("Error: " + err.message, 'error'); }
-                        }}
+                        variant="ghost" 
+                        className="gap-2 font-medium text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setIsEditing(true)}
                     >
-                        <CheckCircle size={14} className="text-destructive" /> Generate Quiz
-                    </Button>
-                    <div className="w-px h-6 bg-border/60 mx-1"></div>
-                    <Button 
-                        variant="default" 
-                        className="gap-2 font-medium"
-                        onClick={async () => {
-                            try {
-                                const { documentDir } = await import('@tauri-apps/api/path');
-                                const docsDir = await documentDir();
-                                const safeName = folder.name.replace(/[^a-z0-9]/gi, '_').slice(0, 60);
-                                const dest = `${docsDir}\\BACHAM\\Data\\exports\\${safeName}_CramSheet.html`;
-                                await TauriClient.exportFolderCramSheet(folder.id, dest);
-                                showToast(`Cram Sheet Exported!\nSaved to:\n${dest}`, 'success');
-                            } catch(err: any) { showToast("Export Error: " + err.message, 'error'); }
-                        }}
-                    >
-                        <HardDrive size={14} className="text-white" /> Export Cram Sheet
+                        Folder Settings
                     </Button>
                 </div>
 
@@ -240,18 +207,18 @@ export function FolderDashboard({ folderId, onBack, onViewAll }: Props) {
                                 <PenTool size={18} className="text-primary/80" /> 
                                 Folder Notes
                             </h2>
-                            <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => navigate('/notes')}>New Note</Button>
+                            <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => navigate(`/notes?folderId=${encodeURIComponent(folder.id)}`)}>New Note</Button>
                         </div>
                         
                         {uniqueNotes.length === 0 ? (
                             <div className="p-8 border border-dashed border-border/60 rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-surface/30">
                                 <PenTool className="mb-3 opacity-40" size={28} />
-                                <p className="text-sm">Create study plans or scratchpad notes for this folder.</p>
+                                <p className="text-sm">Create notes or action plans for this folder.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {uniqueNotes.map((note: any) => (
-                                    <div key={note.id} onClick={() => navigate('/notes')}>
+                                    <div key={note.id} onClick={() => navigate(`/notes?folderId=${encodeURIComponent(folder.id)}&noteId=${encodeURIComponent(note.id)}`)}>
                                         <Card className="p-4 flex flex-col hover:border-primary/40 cursor-pointer transition-colors bg-surface/50 border-border/40 shadow-sm">
                                         <div className="flex items-start justify-between mb-2">
                                             <div className="p-2 bg-primary/10 text-primary rounded-md">

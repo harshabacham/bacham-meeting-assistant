@@ -38,18 +38,34 @@ export function NotesWorkspacePage() {
     const [folders, setFolders] = useState<any[]>([]);
     const [lectures, setLectures] = useState<any[]>([]);
     const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
-    const [localFolderId, setLocalFolderId] = useState<string | null>(null);
-
+    const paramFolderId = searchParams.get('folderId');
     const storeFolderId = useLectureStore(state => state.selectedFolderId);
     const setStoreFolderId = useLectureStore(state => state.setSelectedFolderId);
 
-    const activeFolderId = localFolderId !== null ? localFolderId : storeFolderId;
+    const activeFolderId = paramFolderId !== null ? (paramFolderId || null) : storeFolderId;
+
+    useEffect(() => {
+        if (paramFolderId && paramFolderId !== storeFolderId) {
+            setStoreFolderId(paramFolderId);
+        } else if (!paramFolderId && storeFolderId) {
+            setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                next.set('folderId', storeFolderId);
+                return next;
+            }, { replace: true });
+        }
+    }, [paramFolderId, storeFolderId, setStoreFolderId, setSearchParams]);
 
     const handleSelectFolder = useCallback((folderId: string | null) => {
-        setLocalFolderId(folderId);
         setStoreFolderId(folderId);
         setActiveNoteId(null);
-    }, [setStoreFolderId]);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (folderId) next.set('folderId', folderId);
+            else next.delete('folderId');
+            return next;
+        }, { replace: true });
+    }, [setStoreFolderId, setSearchParams]);
 
     const notesRef = useRef<Note[]>(notes);
     useEffect(() => { notesRef.current = notes; }, [notes]);
@@ -77,8 +93,8 @@ export function NotesWorkspacePage() {
             setLectures(fetchedLectures || []);
 
             const regularNotes: Note[] = (fetchedNotes || []).map((n: any) => {
-                const folderTag = n.tags?.find((t: string) => t.startsWith('folder:'));
-                const folderId = folderTag ? folderTag.replace('folder:', '') : null;
+                const folderTag = n.tags?.find((t: string) => typeof t === 'string' && t.startsWith('folder:'));
+                const folderId = n.folderId || (n as any).folder_id || (folderTag ? folderTag.replace('folder:', '') : null);
                 const savedSummary = localStorage.getItem(`summary_${n.id}`) || n.summary || undefined;
                 const savedTranscript = localStorage.getItem(`transcript_${n.id}`) || n.transcript || undefined;
                 return {
@@ -93,6 +109,7 @@ export function NotesWorkspacePage() {
             // Convert lectures to Meeting Notes so they connect seamlessly across the app
             const meetingNotes: Note[] = (fetchedLectures || []).map((lec: any) => {
                 const savedDraft = localStorage.getItem(`user_notes_draft_${lec.id}`) || '';
+                const lecFolderId = lec.folderId || (lec as any).folder_id || null;
                 return {
                     id: lec.id,
                     title: lec.title || 'Untitled Meeting',
@@ -102,7 +119,7 @@ export function NotesWorkspacePage() {
                     createdAt: new Date(lec.createdAt || Date.now()).getTime(),
                     isPinned: false,
                     tags: ['meeting', ...(lec.courseLabel ? [lec.courseLabel] : [])],
-                    folderId: lec.folderId || null,
+                    folderId: lecFolderId,
                     isMeeting: true,
                     meetingDurationMs: lec.durationMs,
                     transcript: lec.transcript || undefined,
@@ -187,10 +204,19 @@ export function NotesWorkspacePage() {
         }
     }, [eventTitle, eventTime, eventDate, eventFolderId, activeFolderId, notes]);
 
-    // Filter lectures by active folder
+    // Filter notes and lectures by active folder
+    const displayNotes = useMemo(() => {
+        if (!activeFolderId) return notes;
+        return notes.filter(n => {
+            if (n.folderId === activeFolderId) return true;
+            if (n.tags && n.tags.some((t: string) => typeof t === 'string' && (t === `folder:${activeFolderId}` || t.toLowerCase() === `folder:${activeFolderId.toLowerCase()}`))) return true;
+            return false;
+        });
+    }, [notes, activeFolderId]);
+
     const displayLectures = useMemo(() => {
         if (!activeFolderId) return lectures;
-        return lectures.filter(l => l.folderId === activeFolderId);
+        return lectures.filter(l => (l.folderId || (l as any).folder_id) === activeFolderId);
     }, [lectures, activeFolderId]);
 
     // ── CRUD handlers ────────────────────────────────────────────────────────
@@ -370,7 +396,7 @@ export function NotesWorkspacePage() {
                     />
                 ) : (
                     <NotesDashboard
-                        notes={activeFolderId ? notes.filter(n => n.folderId === activeFolderId) : notes}
+                        notes={displayNotes}
                         folders={folders}
                         activeFolderId={activeFolderId}
                         onSelectFolder={handleSelectFolder}

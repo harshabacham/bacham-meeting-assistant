@@ -86,6 +86,13 @@ export function LibraryPage() {
     }, [fetchFolders]);
 
     useEffect(() => {
+        const paramFolderId = searchParams.get('folderId');
+        if (paramFolderId && paramFolderId !== selectedFolderId) {
+            setSelectedFolderId(paramFolderId);
+        }
+    }, [searchParams, selectedFolderId, setSelectedFolderId]);
+
+    useEffect(() => {
         setShowFolderDashboard(true);
     }, [selectedFolderId]);
 
@@ -108,9 +115,10 @@ export function LibraryPage() {
     const sourceLectures = systemView === 'trash' ? trash : lectures;
     const filtered = sourceLectures
         .filter(l => {
+            const lFolderId = l.folderId || (l as any).folder_id || null;
             if (systemView === 'all') {
                 if (l.isArchived) return false;
-                if (selectedFolderId && l.folderId !== selectedFolderId) return false;
+                if (selectedFolderId && lFolderId !== selectedFolderId) return false;
             } else if (systemView === 'archive') {
                 if (!l.isArchived) return false;
             }

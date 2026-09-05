@@ -149,6 +149,17 @@ export function NotesDashboard({
             result = result.filter(n => !n.tags?.includes('system:trash'));
         }
 
+        // Strictly isolate by active folder
+        if (activeFolderId && !isTrashView) {
+            result = result.filter(n => {
+                const matchesFolderId = n.folderId === activeFolderId;
+                const matchesFolderTag = n.tags && n.tags.some(t => 
+                    typeof t === 'string' && (t === `folder:${activeFolderId}` || t.toLowerCase() === `folder:${activeFolderId.toLowerCase()}`)
+                );
+                return matchesFolderId || matchesFolderTag;
+            });
+        }
+
         if (filterMode === 'todos') {
             result = result.filter(n => {
                 const c = n.content.toLowerCase();
@@ -332,7 +343,7 @@ export function NotesDashboard({
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
                                                         <div className="shrink-0 p-1.5 rounded-lg bg-[var(--surface-hover)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
-                                                            <FileText size={14} />
+                                                            {note.isMeeting ? <Video size={14} className="text-primary" /> : <FileText size={14} />}
                                                         </div>
                                                         <div className="flex flex-col min-w-0 flex-1">
                                                             {editingNoteId === note.id ? (
@@ -364,10 +375,19 @@ export function NotesDashboard({
                                                                 </div>
                                                             ) : (
                                                                 <>
-                                                                    <span className="text-[13px] font-medium text-[var(--text-primary)] truncate">
-                                                                        {note.title || 'Untitled Note'}
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[13px] font-medium text-[var(--text-primary)] truncate">
+                                                                            {note.title || (note.isMeeting ? 'Untitled Meeting' : 'Untitled Note')}
+                                                                        </span>
+                                                                        {note.isMeeting && (
+                                                                            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.2 rounded shrink-0">
+                                                                                Meeting
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="text-[11px] text-[var(--text-muted)]">
+                                                                        {note.isMeeting ? (note.meetingDurationMs ? `${Math.round(note.meetingDurationMs / 60000)} min` : 'Meeting Note') : 'Note'}
                                                                     </span>
-                                                                    <span className="text-[11px] text-[var(--text-muted)]">Me</span>
                                                                 </>
                                                             )}
                                                         </div>

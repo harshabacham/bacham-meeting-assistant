@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useFolderStore } from '@/shared/stores/folderStore';
 import { useLectureStore } from '@/shared/stores/lectureStore';
 import { useCollectionStore } from '@/shared/stores/collectionStore';
-import { Folder as FolderIcon, ChevronRight, MoreVertical, Trash2, Edit2, Settings, Lock, Hash, BrainCircuit, Sparkles, FolderPlus, FileText } from 'lucide-react';
+import { Folder as FolderIcon, ChevronRight, MoreVertical, Trash2, Edit2, Settings, Lock, Hash, FolderPlus, FileText } from 'lucide-react';
 import { cn, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components';
 import { useToast } from '@/components/ui/ToastProvider';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -377,24 +377,6 @@ function FolderNode({
                         >
                             <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-foreground flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setIsRenaming(true); }}>
                                 <Edit2 size={12} /> Rename
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-primary flex items-center gap-2" onClick={async (e) => { 
-                                e.stopPropagation(); 
-                                try {
-                                    await TauriClient.runStudyAction("summary", { folder: folder.id });
-                                    showToast("Study Guide generation started in background.", 'success'); 
-                                } catch(err: any) { showToast("Error: " + err.message, 'error'); }
-                            }}>
-                                <BrainCircuit size={12} /> Study Guide
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-accent flex items-center gap-2" onClick={async (e) => { 
-                                e.stopPropagation(); 
-                                try {
-                                    await TauriClient.runStudyAction("cheatSheet", { folder: folder.id });
-                                    showToast("Cheat Sheet generation started in background.", 'success'); 
-                                } catch(err: any) { showToast("Error: " + err.message, 'error'); }
-                            }}>
-                                <Sparkles size={12} /> Cheat Sheet
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-foreground flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setIsCreatingSubfolder(true); setIsExpanded(true); }}>
