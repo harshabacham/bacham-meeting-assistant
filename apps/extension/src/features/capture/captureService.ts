@@ -264,11 +264,17 @@ export function createCaptureService(
           videoFallbackConstraints = { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 } };
         }
 
+        const needVideo = Boolean(config.video || config.screenshotIntervalMs);
         acquiredStream = await navigator.mediaDevices.getDisplayMedia({
-          video: (config.video || !!config.screenshotIntervalMs) ? videoFallbackConstraints : false,
-          audio: config.audio,
+          // Chromium getDisplayMedia requires video to be true or constraint dictionary; passing false throws TypeError
+          video: needVideo ? videoFallbackConstraints : true,
+          audio: config.audio ?? true,
         });
-        log.info(MODULE, 'Acquired stream via getDisplayMedia', { tracks: acquiredStream.getTracks().length });
+        if (!needVideo) {
+          // If in Audio Only mode, immediately stop video tracks so only audio is recorded
+          acquiredStream.getVideoTracks().forEach(track => track.stop());
+        }
+        log.info(MODULE, 'Acquired stream via getDisplayMedia', { tracks: acquiredStream.getTracks().length, needVideo });
       } catch (err: any) {
         log.error(MODULE, 'Both getUserMedia and getDisplayMedia failed', { err: err?.message || String(err) });
         throw new Error(`Capture error: ${err?.message || err?.name || 'Failed to acquire media stream'}`);

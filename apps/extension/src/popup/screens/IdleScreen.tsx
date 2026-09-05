@@ -129,15 +129,6 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
   const isMicEnabled = !!captureConfig.includeMicrophone;
 
 
-  const handleToggleVideo = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (isVideoMode) {
-      void updateConfig({ ...captureConfig, video: false, captureMode: 'audio' });
-    } else {
-      void updateConfig({ ...captureConfig, video: true, captureMode: 'tab' });
-    }
-  };
-
   const handleStartCapture = async () => {
     // Bypass chrome.desktopCapture.chooseDesktopMedia to avoid the double popup.
     // By passing an empty streamId, the offscreen document will fallback to getDisplayMedia
@@ -372,34 +363,34 @@ export function IdleScreen({ onStart, isLoading, onReturnToRecording }: IdleScre
         {/* 2. Top Capture Config Bar: Video/Audio Switch + Mic Toggle */}
         <div className="flex items-center gap-2 relative z-30">
           
-          {/* Video / Audio Mode Toggle Card */}
-          <div className="flex-1 flex items-center justify-between px-3 py-2 rounded-xl border border-white/10 bg-[#141517] hover:bg-[#1A1C20] transition-all text-white text-[13px] font-semibold shadow-xs">
-            {/* Clickable Label: Toggles mode */}
+          {/* Segmented Mode Selector: Video vs Audio Only */}
+          <div className="flex-1 flex items-center p-1 rounded-xl bg-[#141517] border border-white/10 shadow-xs">
             <button
               type="button"
-              onClick={handleToggleVideo}
-              className="flex items-center gap-2 flex-1 cursor-pointer select-none text-left py-1"
-              title={isVideoMode ? 'Click to switch to Audio Only' : 'Click to enable Video + Audio'}
+              onClick={() => void updateConfig({ ...captureConfig, video: true, captureMode: 'tab' })}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+                isVideoMode
+                  ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-sm'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
+              title="Record Video & Audio (Screen capture)"
             >
-              {isVideoMode ? (
-                <Video size={16} className="text-[#BAFF29] shrink-0" />
-              ) : (
-                <Volume2 size={16} className="text-white/60 shrink-0" />
-              )}
-              <span className="truncate">{isVideoMode ? 'Video + Audio' : 'Audio Only'}</span>
+              <Video size={14} className="shrink-0" />
+              <span className="truncate">Video</span>
             </button>
 
-            {/* Dedicated Lime Switch Toggle Button */}
             <button
               type="button"
-              role="switch"
-              aria-checked={isVideoMode}
-              onClick={handleToggleVideo}
-              className="toggle-switch shrink-0 cursor-pointer ml-2"
-              data-state={isVideoMode ? 'checked' : 'unchecked'}
-              title={isVideoMode ? 'Video is ON (Click to turn off)' : 'Video is OFF (Click to turn on)'}
+              onClick={() => void updateConfig({ ...captureConfig, video: false, captureMode: 'audio' })}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+                !isVideoMode
+                  ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-sm'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
+              title="Record Audio Only (No screen capture)"
             >
-              <span className="toggle-switch-thumb pointer-events-none" />
+              <Volume2 size={14} className="shrink-0" />
+              <span className="truncate">Audio Only</span>
             </button>
           </div>
 
