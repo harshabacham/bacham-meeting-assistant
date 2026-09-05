@@ -397,100 +397,76 @@ Best regards,`;
               className="absolute bottom-full mb-3 right-0 w-[380px] max-w-[92vw] bg-[var(--surface-raised)] border border-[var(--border)] p-4 rounded-2xl shadow-2xl pointer-events-auto cursor-default text-left select-none"
               onPointerDown={(e) => e.stopPropagation()}
             >
-              {/* Header: Persona Identity & Controls */}
-              <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative">
-                    <PetAvatar 
-                      id={selectedPetId} 
-                      size={28} 
-                      isHovered={false} 
-                      isThinking={isFocusRunning} 
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="text-xs font-semibold text-[var(--text-primary)] leading-none">
-                        {currentPet.name}
-                      </h3>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--surface)] px-1.5 py-0.5 rounded border border-[var(--border)]">
-                        Copilot
+              {/* Top Navigation Bar with Inline Close (Replaces redundant top pet header) */}
+              <div className="flex items-center gap-1.5 mb-3">
+                <div className="flex-1 grid grid-cols-3 gap-1 bg-[var(--surface)] p-1 rounded-xl border border-[var(--border)]">
+                  <button
+                    onClick={() => {
+                      setActiveTab('agenda');
+                      setWhisperQuery('');
+                    }}
+                    className={`py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeTab === 'agenda' && !whisperQuery
+                        ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Calendar size={12} className={imminentMeeting ? 'text-amber-400' : ''} />
+                    <span>Agenda</span>
+                    {imminentMeeting && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('tasks');
+                      setWhisperQuery('');
+                    }}
+                    className={`py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeTab === 'tasks' && !whisperQuery
+                        ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <CheckSquare size={12} />
+                    <span>Tasks</span>
+                    {pendingTasks.length > 0 && (
+                      <span className="text-[10px] font-mono text-[var(--text-muted)]">
+                        ({pendingTasks.length})
                       </span>
-                    </div>
-                    <p className="text-[10.5px] text-[var(--text-muted)] mt-0.5 truncate max-w-[200px]">
-                      {currentPet.description}
-                    </p>
-                  </div>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('focus');
+                      setWhisperQuery('');
+                    }}
+                    className={`py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeTab === 'focus' && !whisperQuery
+                        ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Clock size={12} className={isFocusRunning ? 'text-emerald-400' : ''} />
+                    <span>Focus</span>
+                    {isFocusRunning && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    )}
+                  </button>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setIsExpanded(false)}
-                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer shrink-0"
                   title="Close Assistant"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              {/* Navigation Segmented Bar (Agenda, Tasks, Focus) */}
-              <div className="grid grid-cols-3 gap-1 bg-[var(--surface)] p-1 rounded-xl my-3 border border-[var(--border)]">
-                <button
-                  onClick={() => {
-                    setActiveTab('agenda');
-                    setWhisperQuery('');
-                  }}
-                  className={`py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeTab === 'agenda' && !whisperQuery
-                      ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <Calendar size={12} className={imminentMeeting ? 'text-amber-400' : ''} />
-                  <span>Agenda</span>
-                  {imminentMeeting && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('tasks');
-                    setWhisperQuery('');
-                  }}
-                  className={`py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeTab === 'tasks' && !whisperQuery
-                      ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <CheckSquare size={12} />
-                  <span>Tasks</span>
-                  {pendingTasks.length > 0 && (
-                    <span className="text-[10px] font-mono text-[var(--text-muted)]">
-                      ({pendingTasks.length})
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('focus');
-                    setWhisperQuery('');
-                  }}
-                  className={`py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeTab === 'focus' && !whisperQuery
-                      ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <Clock size={12} className={isFocusRunning ? 'text-emerald-400' : ''} />
-                  <span>Focus</span>
-                  {isFocusRunning && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  )}
-                </button>
-              </div>
 
               {/* ─── TAB 1: AGENDA (MEETING BRIEFING & PRE-FLIGHT) ─── */}
               {!whisperQuery && activeTab === 'agenda' && (
