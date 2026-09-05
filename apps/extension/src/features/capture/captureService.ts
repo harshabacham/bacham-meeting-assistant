@@ -146,7 +146,8 @@ export function createCaptureService(
       log.info(MODULE, `Successfully uploaded ${type} blob`);
       return true;
     } catch (err: any) {
-      log.warn(MODULE, `HTTP upload of ${type} blob failed (desktop app offline or unreachable)`, { err: err.message });
+      const errMsg = err?.message || err?.name || String(err);
+      log.warn(MODULE, `HTTP upload of ${type} blob skipped or failed (desktop app offline or unreachable): ${errMsg}`);
       return false;
     }
   }
@@ -331,7 +332,7 @@ export function createCaptureService(
     // 1. Setup Audio (Display Audio + Microphone Mixing via Web Audio API)
     let mixedAudioStream: MediaStream | null = null;
 
-    if (config.includeMicrophone || config.audio) {
+    if (config.includeMicrophone) {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -346,10 +347,11 @@ export function createCaptureService(
           payload: { granted: true }
         }).catch(() => {});
       } catch (err: any) {
-        log.warn(MODULE, 'Microphone permission denied or unavailable, continuing with display audio', { err });
+        const errMsg = err?.message || err?.name || String(err);
+        log.warn(MODULE, `Microphone permission denied or unavailable (${errMsg}), continuing with display audio`);
         chrome.runtime.sendMessage({
           type: 'MIC_PERMISSION_STATUS',
-          payload: { granted: false, error: err?.message || 'Permission denied' }
+          payload: { granted: false, error: errMsg }
         }).catch(() => {});
       }
     }
@@ -407,7 +409,11 @@ export function createCaptureService(
       }
       const combinedStream = new MediaStream(recordingTracks);
 
-      videoRecorder = new MediaRecorder(combinedStream, { mimeType, bitsPerSecond });
+      videoRecorder = new MediaRecorder(combinedStream, {
+        mimeType,
+        videoBitsPerSecond: bitsPerSecond,
+        audioBitsPerSecond: 128_000,
+      });
       videoRecorder.ondataavailable = (event) => {
         if (event.data.size === 0) return;
         videoChunkBuffer.push(event.data);
@@ -474,12 +480,11 @@ export function createCaptureService(
           recognition.onerror = (event: any) => {
             const permanentErrors = ['not-allowed', 'audio-capture', 'service-not-allowed'];
             if (permanentErrors.includes(event.error)) {
-              // Permanent error — stop trying, don't restart
-              log.warn(MODULE, `SpeechRecognition permanently failed (${event.error}) — microphone likely not available in offscreen context`);
+              // Offscreen document does not permit Web Speech API — companion app handles AI transcription
+              log.debug(MODULE, `Offscreen SpeechRecognition unavailable (${event.error}) — using companion AI transcription pipeline`);
               (window as any).__bacham_speech_stopped = true;
             } else {
-              // Transient error (no-speech, network) — allow onend to restart
-              log.warn(MODULE, 'SpeechRecognition transient error', { error: event.error });
+              log.debug(MODULE, 'SpeechRecognition transient event', { error: event.error });
             }
           };
           
@@ -634,7 +639,8 @@ export function createCaptureService(
 
         log.info(MODULE, 'Successfully persisted offline recording into IndexedDB vault with zero data loss');
       } catch (vaultErr: any) {
-        log.error(MODULE, 'Failed to save recording to Offline Media Vault', { error: vaultErr?.message || vaultErr });
+        const errMsg = vaultErr?.message || vaultErr?.name || String(vaultErr);
+        log.error(MODULE, `Failed to save recording to Offline Media Vault: ${errMsg}`);
       }
     }
 

@@ -145,14 +145,17 @@ export function createMessageHandler(
 
       case MessageType.PRE_WARM_OFFSCREEN: {
         try {
-          await chrome.offscreen.createDocument({
-            url: 'src/offscreen/offscreen.html',
-            reasons: [chrome.offscreen.Reason.USER_MEDIA, chrome.offscreen.Reason.DISPLAY_MEDIA],
-            justification: 'Recording lecture audio and video',
-          });
+          const hasDoc = chrome.offscreen.hasDocument ? await chrome.offscreen.hasDocument() : false;
+          if (!hasDoc) {
+            await chrome.offscreen.createDocument({
+              url: 'src/offscreen/offscreen.html',
+              reasons: [chrome.offscreen.Reason.USER_MEDIA, chrome.offscreen.Reason.DISPLAY_MEDIA],
+              justification: 'Recording lecture audio and video',
+            });
+          }
         } catch (err: any) {
           if (!err.message?.includes('Only a single offscreen document may be created')) {
-            log.error(MODULE, 'Failed to pre-warm offscreen document', { err });
+            log.error(MODULE, 'Failed to pre-warm offscreen document', { err: err?.message || err });
           }
         }
         return { success: true };
@@ -184,14 +187,17 @@ export function createMessageHandler(
 
         // Fallback: Ensure offscreen document exists before sending message.
         try {
-          await chrome.offscreen.createDocument({
-            url: 'src/offscreen/offscreen.html',
-            reasons: [chrome.offscreen.Reason.USER_MEDIA, chrome.offscreen.Reason.DISPLAY_MEDIA],
-            justification: 'Recording lecture audio and video',
-          });
+          const hasDoc = chrome.offscreen.hasDocument ? await chrome.offscreen.hasDocument() : false;
+          if (!hasDoc) {
+            await chrome.offscreen.createDocument({
+              url: 'src/offscreen/offscreen.html',
+              reasons: [chrome.offscreen.Reason.USER_MEDIA, chrome.offscreen.Reason.DISPLAY_MEDIA],
+              justification: 'Recording lecture audio and video',
+            });
+          }
         } catch (err: any) {
           if (!err.message?.includes('Only a single offscreen document may be created')) {
-            log.error(MODULE, 'Failed to create offscreen document', { err });
+            log.error(MODULE, 'Failed to create offscreen document', { err: err?.message || err });
           }
         }
 

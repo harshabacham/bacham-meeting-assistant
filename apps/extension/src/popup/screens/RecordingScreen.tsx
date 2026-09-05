@@ -188,8 +188,8 @@ export function RecordingScreen({
             },
             ...prev,
           ];
-          // Persist recent snapshots (limit to 10 to keep storage quota safe)
-          chrome.storage.local.set({ [`note_snapshots_${session.id}`]: updated.slice(0, 10) });
+          // Persist recent snapshots safely (limit to 5 to keep storage footprint minimal)
+          chrome.storage.local.set({ [`note_snapshots_${session.id}`]: updated.slice(0, 5) }).catch(() => {});
           return updated;
         });
         triggerToast('📸 Slide captured!');
@@ -226,7 +226,7 @@ export function RecordingScreen({
             },
             ...prev,
           ];
-          chrome.storage.local.set({ [`note_snapshots_${session.id}`]: updated.slice(0, 10) });
+          chrome.storage.local.set({ [`note_snapshots_${session.id}`]: updated.slice(0, 5) }).catch(() => {});
           return updated;
         });
         triggerToast('✅ Slide captured!');

@@ -78,14 +78,12 @@ export const offlineMediaVault = {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readonly');
       const store = tx.objectStore(STORE_NAME);
-      const index = store.index('synced');
-      // Look for recordings where synced === 0 or synced === false
-      // IndexedDB IDBKeyRange supports boolean or number keys
-      const req = index.getAll(IDBKeyRange.only(false));
+      const req = store.getAll();
 
       req.onsuccess = () => {
         const results: OfflineRecordingData[] = req.result || [];
-        resolve(results.sort((a, b) => b.createdAt - a.createdAt));
+        const pending = results.filter((r) => !r.synced);
+        resolve(pending.sort((a, b) => b.createdAt - a.createdAt));
       };
       req.onerror = () => reject(req.error);
       tx.oncomplete = () => db.close();

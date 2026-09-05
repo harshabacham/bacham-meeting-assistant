@@ -63,6 +63,7 @@ export default defineManifest({
 
   permissions: [
     'storage',
+    'unlimitedStorage',
     'desktopCapture',
     'tabCapture',
     'activeTab',
