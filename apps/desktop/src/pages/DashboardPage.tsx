@@ -132,7 +132,6 @@ export function DashboardPage() {
     strongTopics: any[];
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { showToast } = useToast();
 
@@ -140,10 +139,7 @@ export function DashboardPage() {
     await Promise.all([
       fetchLectures(),
       fetchFolders(),
-      TauriClient.getDashboardSummary().then(setSummary).catch(err => {
-        console.error(err);
-        setSummaryError("Failed to load dashboard summary. Showing fallback content.");
-      }),
+      TauriClient.getDashboardSummary().then(setSummary).catch(console.error),
       TauriClient.getDueFlashcards().then(setDueCards).catch(console.error),
       TauriClient.getDailyLearningPlan().catch(console.error),
       TauriClient.getLearningAnalytics().then(setAnalytics).catch(console.error),
@@ -241,12 +237,6 @@ export function DashboardPage() {
         <div className="flex-1 flex flex-col gap-9 min-w-0">
           {/* ── Greeting ─────────────────────────────────────────────── */}
           <motion.div {...fadeUp} className="flex flex-col gap-2 pb-7 border-b border-[var(--border)]">
-            {summaryError && (
-              <div className="mb-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                {summaryError}
-              </div>
-            )}
             <div className="flex items-start justify-between gap-4">
               <div>
                 <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</Eyebrow>
