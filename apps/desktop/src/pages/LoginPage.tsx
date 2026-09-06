@@ -243,14 +243,17 @@ export const LoginPage = () => {
           <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
         </video>
 
+        {/* Cinematic Subtle Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-black/35 pointer-events-none select-none" />
+
         {/* Top Window Controls */}
         <div className="absolute top-0 left-0 right-0 h-11 z-50 flex items-center justify-between px-5 pointer-events-auto">
           <div data-tauri-drag-region className="flex-1 h-full flex items-center gap-2">
             <div className="flex items-center gap-2 select-none opacity-85 hover:opacity-100 transition-opacity">
-              <div className="h-5 w-5 rounded-lg bg-black/40 dark:bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-[11px] font-bold">
+              <div className="h-5 w-5 rounded-lg bg-[#BAFF29]/15 border border-[#BAFF29]/30 backdrop-blur-md flex items-center justify-center text-[#BAFF29] text-[11px] font-bold">
                 B
               </div>
-              <span className="text-xs font-semibold text-white tracking-wide drop-shadow-sm">
+              <span className="text-xs font-semibold text-white/90 tracking-wide drop-shadow-sm">
                 Bacham
               </span>
             </div>
@@ -281,12 +284,12 @@ export const LoginPage = () => {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="relative z-10 w-full max-w-md overflow-hidden rounded-[28px] border border-white/40 dark:border-white/15 bg-white/75 dark:bg-zinc-950/70 backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] p-2"
+          className="relative z-10 w-full max-w-md overflow-hidden rounded-[28px] border border-white/[0.12] bg-[#0A0A0C]/65 backdrop-blur-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] p-3 text-white"
         >
           <ProfileSetup 
             onComplete={handleProfileComplete} 
             defaultUsername={user?.displayName || email.split('@')[0] || name || ''} 
-            className="bg-transparent border-none text-zinc-900 dark:text-zinc-100" 
+            className="bg-transparent border-none text-white" 
           />
         </motion.div>
       </div>
@@ -294,7 +297,7 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-black/10 dark:selection:bg-white/20 overflow-y-auto">
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-[#BAFF29]/30 selection:text-white overflow-y-auto">
       {/* Background Video */}
       <video
         autoPlay
@@ -307,14 +310,17 @@ export const LoginPage = () => {
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
       </video>
 
+      {/* Cinematic Ambient Atmosphere (Vignette to harmonize with video) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/35 pointer-events-none select-none" />
+
       {/* Draggable Titlebar Region & Window Controls */}
       <div className="absolute top-0 left-0 right-0 h-11 z-50 flex items-center justify-between px-5 pointer-events-auto">
         <div data-tauri-drag-region className="flex-1 h-full flex items-center gap-2">
           <div className="flex items-center gap-2 select-none opacity-85 hover:opacity-100 transition-opacity">
-            <div className="h-5 w-5 rounded-lg bg-black/40 dark:bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-[11px] font-bold">
+            <div className="h-5 w-5 rounded-lg bg-[#BAFF29]/15 border border-[#BAFF29]/30 backdrop-blur-md flex items-center justify-center text-[#BAFF29] text-[11px] font-bold">
               B
             </div>
-            <span className="text-xs font-semibold text-white tracking-wide drop-shadow-sm">
+            <span className="text-xs font-semibold text-white/90 tracking-wide drop-shadow-sm">
               Bacham
             </span>
           </div>
@@ -341,24 +347,24 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      {/* Spatial Glassmorphism Authentication Card */}
+      {/* Atmospheric Obsidian Glass Authentication Card */}
       <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[28px] border border-white/40 dark:border-white/15 bg-white/75 dark:bg-zinc-950/70 backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.4)_inset] p-6 sm:p-8 text-zinc-900 dark:text-zinc-100 my-auto"
+        className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[28px] border border-white/[0.12] bg-[#0A0A0C]/55 backdrop-blur-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] p-6 sm:p-8 text-white my-auto"
       >
-        {/* Specular top rim highlight */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
+        {/* Specular top-rim highlight reflection */}
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
         
-        {/* Soft corner ambient glows */}
-        <div className="absolute -top-16 -right-16 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+        {/* Subtle Nature & Sun Glint Ambient Glows */}
+        <div className="absolute -top-20 -right-20 w-44 h-44 bg-[#BAFF29]/[0.08] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-44 h-44 bg-emerald-600/[0.08] rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          {/* Brand Icon */}
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900/5 dark:bg-white/10 border border-black/5 dark:border-white/10 backdrop-blur-md shadow-inner">
-            <Sparkles className="h-5 w-5 text-zinc-800 dark:text-zinc-200" />
+          {/* Brand Icon with Signature Lime Glow */}
+          <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#BAFF29]/10 border border-[#BAFF29]/25 backdrop-blur-md shadow-[0_0_25px_rgba(186,255,41,0.18)]">
+            <Sparkles className="h-6 w-6 text-[#BAFF29]" />
           </div>
 
           {/* Header Title */}
@@ -371,15 +377,15 @@ export const LoginPage = () => {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
               >
-                <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-white drop-shadow-sm">
                   {isForgotPassword 
                     ? 'Reset Password' 
                     : (isLogin ? 'Welcome Back' : 'Create Account')}
                 </h1>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                <p className="mt-1.5 text-xs text-white/60 font-medium">
                   {isForgotPassword 
                     ? 'Enter your email to receive recovery instructions' 
-                    : (isLogin ? 'Sign in to access your workspace' : 'Start organizing your meetings with AI')}
+                    : (isLogin ? 'Sign in to access your workspace' : 'Start capturing meeting notes with AI')}
                 </p>
               </motion.div>
             </AnimatePresence>
@@ -387,19 +393,19 @@ export const LoginPage = () => {
 
           {/* Segmented Switcher (Sign In vs Sign Up) */}
           {!isForgotPassword && (
-            <div className="relative flex p-1 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/10 backdrop-blur-md mb-5">
+            <div className="relative flex p-1 rounded-2xl bg-white/[0.05] border border-white/[0.08] backdrop-blur-md mb-5">
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setError(''); setSuccessMsg(''); }}
                 className={cn(
                   "relative flex-1 py-2 text-xs font-semibold rounded-xl transition-colors duration-200 z-10 flex items-center justify-center gap-1.5 cursor-pointer",
-                  isLogin ? "text-zinc-950 dark:text-white" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  isLogin ? "text-white" : "text-white/45 hover:text-white/75"
                 )}
               >
                 {isLogin && (
                   <motion.div
                     layoutId="activeAuthTab"
-                    className="absolute inset-0 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-black/5 dark:border-white/10 -z-10"
+                    className="absolute inset-0 rounded-xl bg-white/[0.12] shadow-sm border border-white/15 -z-10"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -411,13 +417,13 @@ export const LoginPage = () => {
                 onClick={() => { setIsLogin(false); setError(''); setSuccessMsg(''); }}
                 className={cn(
                   "relative flex-1 py-2 text-xs font-semibold rounded-xl transition-colors duration-200 z-10 flex items-center justify-center gap-1.5 cursor-pointer",
-                  !isLogin ? "text-zinc-950 dark:text-white" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                  !isLogin ? "text-white" : "text-white/45 hover:text-white/75"
                 )}
               >
                 {!isLogin && (
                   <motion.div
                     layoutId="activeAuthTab"
-                    className="absolute inset-0 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-black/5 dark:border-white/10 -z-10"
+                    className="absolute inset-0 rounded-xl bg-white/[0.12] shadow-sm border border-white/15 -z-10"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -435,9 +441,9 @@ export const LoginPage = () => {
                 initial={{ opacity: 0, height: 0, y: -6 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -6 }}
-                className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 dark:bg-red-950/40 p-3 text-xs text-red-600 dark:text-red-400 backdrop-blur-md overflow-hidden"
+                className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/15 p-3 text-xs text-red-300 backdrop-blur-md overflow-hidden"
               >
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
                 <span className="leading-relaxed font-medium">{error}</span>
               </motion.div>
             )}
@@ -447,9 +453,9 @@ export const LoginPage = () => {
                 initial={{ opacity: 0, height: 0, y: -6 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -6 }}
-                className="mb-4 flex items-start gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 dark:bg-emerald-950/40 p-3 text-xs text-emerald-600 dark:text-emerald-400 backdrop-blur-md overflow-hidden"
+                className="mb-4 flex items-start gap-2.5 rounded-xl border border-[#BAFF29]/30 bg-[#BAFF29]/15 p-3 text-xs text-[#BAFF29] backdrop-blur-md overflow-hidden"
               >
-                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-[#BAFF29]" />
                 <span className="leading-relaxed font-medium">{successMsg}</span>
               </motion.div>
             )}
@@ -459,16 +465,16 @@ export const LoginPage = () => {
           {isForgotPassword ? (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                <label className="text-xs font-semibold text-white/70">
                   Email Address
                 </label>
-                <div className="relative flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm transition-all focus-within:border-black/30 dark:focus-within:border-white/30 focus-within:ring-2 focus-within:ring-black/5 dark:focus-within:ring-white/10 focus-within:bg-white/80 dark:focus-within:bg-black/60">
-                  <Mail className="absolute left-3.5 h-4 w-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                <div className="relative flex items-center rounded-xl border border-white/10 bg-black/40 backdrop-blur-sm transition-all focus-within:border-[#BAFF29]/60 focus-within:ring-2 focus-within:ring-[#BAFF29]/20 focus-within:bg-black/60">
+                  <Mail className="absolute left-3.5 h-4 w-4 text-white/40 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none font-medium"
+                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white placeholder:text-white/30 outline-none font-medium"
                     placeholder="you@example.com"
                     required
                   />
@@ -480,11 +486,11 @@ export const LoginPage = () => {
                 disabled={loading}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-zinc-950 dark:bg-white py-2.5 text-xs sm:text-sm font-semibold text-white dark:text-zinc-950 shadow-md shadow-black/10 hover:bg-zinc-800 dark:hover:bg-zinc-100 disabled:opacity-50 transition-all cursor-pointer"
+                className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-[#BAFF29] hover:bg-[#aef51a] py-2.5 text-xs sm:text-sm font-bold text-[#0A0A0C] shadow-[0_0_25px_rgba(186,255,41,0.25)] disabled:opacity-50 transition-all cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-[#0A0A0C]" />
                     <span>Sending email...</span>
                   </>
                 ) : (
@@ -495,7 +501,7 @@ export const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => { setIsForgotPassword(false); setError(''); setSuccessMsg(''); }}
-                className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-white/50 hover:text-white transition-colors cursor-pointer"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back to Sign In
@@ -512,16 +518,16 @@ export const LoginPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-1.5"
                 >
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  <label className="text-xs font-semibold text-white/70">
                     Full Name
                   </label>
-                  <div className="relative flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm transition-all focus-within:border-black/30 dark:focus-within:border-white/30 focus-within:ring-2 focus-within:ring-black/5 dark:focus-within:ring-white/10 focus-within:bg-white/80 dark:focus-within:bg-black/60">
-                    <User className="absolute left-3.5 h-4 w-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                  <div className="relative flex items-center rounded-xl border border-white/10 bg-black/40 backdrop-blur-sm transition-all focus-within:border-[#BAFF29]/60 focus-within:ring-2 focus-within:ring-[#BAFF29]/20 focus-within:bg-black/60">
+                    <User className="absolute left-3.5 h-4 w-4 text-white/40 pointer-events-none" />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none font-medium"
+                      className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white placeholder:text-white/30 outline-none font-medium"
                       placeholder="Alex Rivera"
                       required
                     />
@@ -531,16 +537,16 @@ export const LoginPage = () => {
 
               {/* Email Address */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                <label className="text-xs font-semibold text-white/70">
                   Email Address
                 </label>
-                <div className="relative flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm transition-all focus-within:border-black/30 dark:focus-within:border-white/30 focus-within:ring-2 focus-within:ring-black/5 dark:focus-within:ring-white/10 focus-within:bg-white/80 dark:focus-within:bg-black/60">
-                  <Mail className="absolute left-3.5 h-4 w-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                <div className="relative flex items-center rounded-xl border border-white/10 bg-black/40 backdrop-blur-sm transition-all focus-within:border-[#BAFF29]/60 focus-within:ring-2 focus-within:ring-[#BAFF29]/20 focus-within:bg-black/60">
+                  <Mail className="absolute left-3.5 h-4 w-4 text-white/40 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none font-medium"
+                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white placeholder:text-white/30 outline-none font-medium"
                     placeholder="you@example.com"
                     required
                   />
@@ -550,33 +556,33 @@ export const LoginPage = () => {
               {/* Password */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  <label className="text-xs font-semibold text-white/70">
                     Password
                   </label>
                   {isLogin && (
                     <button
                       type="button"
                       onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMsg(''); }}
-                      className="text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors cursor-pointer"
+                      className="text-[11px] font-semibold text-[#BAFF29]/80 hover:text-[#BAFF29] transition-colors cursor-pointer"
                     >
                       Forgot password?
                     </button>
                   )}
                 </div>
-                <div className="relative flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm transition-all focus-within:border-black/30 dark:focus-within:border-white/30 focus-within:ring-2 focus-within:ring-black/5 dark:focus-within:ring-white/10 focus-within:bg-white/80 dark:focus-within:bg-black/60">
-                  <Lock className="absolute left-3.5 h-4 w-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                <div className="relative flex items-center rounded-xl border border-white/10 bg-black/40 backdrop-blur-sm transition-all focus-within:border-[#BAFF29]/60 focus-within:ring-2 focus-within:ring-[#BAFF29]/20 focus-within:bg-black/60">
+                  <Lock className="absolute left-3.5 h-4 w-4 text-white/40 pointer-events-none" />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-10 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none font-medium"
+                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-10 text-xs sm:text-sm text-white placeholder:text-white/30 outline-none font-medium"
                     placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 cursor-pointer"
+                    className="absolute right-3 text-white/40 hover:text-white/80 transition-colors p-1 cursor-pointer"
                     title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -592,23 +598,23 @@ export const LoginPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-1.5"
                 >
-                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  <label className="text-xs font-semibold text-white/70">
                     Confirm Password
                   </label>
-                  <div className="relative flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] backdrop-blur-sm transition-all focus-within:border-black/30 dark:focus-within:border-white/30 focus-within:ring-2 focus-within:ring-black/5 dark:focus-within:ring-white/10 focus-within:bg-white/80 dark:focus-within:bg-black/60">
-                    <ShieldCheck className="absolute left-3.5 h-4 w-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                  <div className="relative flex items-center rounded-xl border border-white/10 bg-black/40 backdrop-blur-sm transition-all focus-within:border-[#BAFF29]/60 focus-within:ring-2 focus-within:ring-[#BAFF29]/20 focus-within:bg-black/60">
+                    <ShieldCheck className="absolute left-3.5 h-4 w-4 text-white/40 pointer-events-none" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-10 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none font-medium"
+                      className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-10 text-xs sm:text-sm text-white placeholder:text-white/30 outline-none font-medium"
                       placeholder="••••••••"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 cursor-pointer"
+                      className="absolute right-3 text-white/40 hover:text-white/80 transition-colors p-1 cursor-pointer"
                       title={showConfirmPassword ? "Hide password" : "Show password"}
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -617,22 +623,22 @@ export const LoginPage = () => {
                 </motion.div>
               )}
 
-              {/* Submit Button */}
+              {/* Primary Action Button */}
               <motion.button
                 type="submit"
                 disabled={loading}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-zinc-950 dark:bg-white py-2.5 text-xs sm:text-sm font-semibold text-white dark:text-zinc-950 shadow-md shadow-black/10 hover:bg-zinc-800 dark:hover:bg-zinc-100 disabled:opacity-50 transition-all cursor-pointer"
+                className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#BAFF29] hover:bg-[#aef51a] py-2.5 text-xs sm:text-sm font-bold text-[#0A0A0C] shadow-[0_0_25px_rgba(186,255,41,0.25)] hover:shadow-[0_0_32px_rgba(186,255,41,0.35)] disabled:opacity-50 transition-all cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-[#0A0A0C]" />
                     <span>Please wait...</span>
                   </>
                 ) : (
                   <>
-                    {isLogin ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                    {isLogin ? <LogIn className="h-4 w-4 text-[#0A0A0C]" /> : <UserPlus className="h-4 w-4 text-[#0A0A0C]" />}
                     <span>{isLogin ? 'Sign In to Workspace' : 'Create Account'}</span>
                   </>
                 )}
@@ -645,10 +651,10 @@ export const LoginPage = () => {
             <>
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-black/10 dark:border-white/10" />
+                  <div className="w-full border-t border-white/10" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-3 bg-white/70 dark:bg-zinc-900/80 backdrop-blur-md rounded-full text-zinc-400 dark:text-zinc-500 font-medium uppercase tracking-wider text-[10px]">
+                  <span className="px-3 bg-[#0A0A0C]/80 backdrop-blur-md rounded-full text-white/40 font-medium uppercase tracking-wider text-[10px]">
                     or continue with
                   </span>
                 </div>
@@ -661,13 +667,13 @@ export const LoginPage = () => {
                   onClick={handleGuestLogin}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex w-full items-center justify-between rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.09] py-2.5 px-4 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-all shadow-sm backdrop-blur-sm cursor-pointer"
+                  className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 py-2.5 px-4 text-xs font-semibold text-white/90 transition-all shadow-sm backdrop-blur-sm cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <Sparkles className="h-4 w-4 text-[#BAFF29]" />
                     <span>Continue as Local User</span>
                   </div>
-                  <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <span className="text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md bg-[#BAFF29]/15 text-[#BAFF29] border border-[#BAFF29]/30">
                     Instant
                   </span>
                 </motion.button>
@@ -679,9 +685,9 @@ export const LoginPage = () => {
                   disabled={loading}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.09] py-2.5 px-4 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-all shadow-sm backdrop-blur-sm disabled:opacity-50 cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 py-2.5 px-4 text-xs font-semibold text-white/90 transition-all shadow-sm backdrop-blur-sm disabled:opacity-50 cursor-pointer"
                 >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -692,12 +698,12 @@ export const LoginPage = () => {
               </div>
 
               {/* Bottom toggle between sign in and sign up */}
-              <div className="mt-5 text-center text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+              <div className="mt-5 text-center text-xs text-white/50 font-medium">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <button
                   type="button"
                   onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }}
-                  className="font-semibold text-zinc-900 dark:text-white hover:underline transition-colors ml-1 cursor-pointer"
+                  className="font-semibold text-[#BAFF29] hover:text-[#d4ff68] transition-colors ml-1 cursor-pointer underline-offset-4 hover:underline"
                 >
                   {isLogin ? 'Sign up' : 'Sign in'}
                 </button>
