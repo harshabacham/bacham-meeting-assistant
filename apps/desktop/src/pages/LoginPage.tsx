@@ -204,7 +204,7 @@ export const LoginPage = () => {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
-          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/20 bg-black/40 backdrop-blur-xl shadow-2xl p-5 text-white"
+          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/30 bg-white/[0.18] backdrop-blur-2xl shadow-2xl p-5 text-white"
         >
           <ProfileSetup 
             onComplete={handleProfileComplete} 
@@ -260,7 +260,7 @@ export const LoginPage = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="relative z-10 w-full max-w-[340px] rounded-2xl border border-white/20 bg-black/40 backdrop-blur-xl p-6 text-white shadow-2xl my-auto"
+        className="relative z-10 w-full max-w-[340px] rounded-2xl border border-white/30 bg-white/[0.18] backdrop-blur-2xl p-6 text-white shadow-2xl my-auto"
       >
         {/* Title */}
         <div className="text-center mb-5">
@@ -340,7 +340,7 @@ export const LoginPage = () => {
             <div className="w-full border-t border-white/15" />
           </div>
           <div className="relative flex justify-center text-[10px]">
-            <span className="px-2 bg-black/40 text-white/40 font-medium uppercase tracking-wider rounded">
+            <span className="px-2 bg-white/10 text-white/60 font-medium uppercase tracking-wider rounded">
               or continue with
             </span>
           </div>
