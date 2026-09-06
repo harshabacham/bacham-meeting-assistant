@@ -270,12 +270,12 @@ export const LoginPage = () => {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
-          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/80 bg-white/90 backdrop-blur-xl shadow-xl p-4 text-neutral-900"
+          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/20 bg-white/[0.10] backdrop-blur-2xl shadow-2xl p-4 text-white"
         >
           <ProfileSetup 
             onComplete={handleProfileComplete} 
             defaultUsername={user?.displayName || email.split('@')[0] || name || ''} 
-            className="bg-transparent border-none text-neutral-900" 
+            className="bg-transparent border-none text-white" 
           />
         </motion.div>
       </div>
@@ -283,8 +283,8 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-neutral-900/10 overflow-y-auto">
-      {/* Background Video */}
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-white/20 selection:text-white overflow-y-auto">
+      {/* Background Video (Clean, 100% visible) */}
       <video
         autoPlay
         loop
@@ -321,20 +321,23 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      {/* Compact, Refined Frosted Glass Card */}
+      {/* Ultra-Transparent Ethereal Frosted Glass Card */}
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/80 bg-white/85 backdrop-blur-xl shadow-[0_16px_40px_-10px_rgba(0,0,0,0.14),0_0_0_1px_rgba(255,255,255,0.9)_inset] p-5 text-neutral-900 my-auto"
+        className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/20 bg-white/[0.08] backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.15)_inset] p-5 text-white my-auto"
       >
+        {/* Subtle Specular Top Rim Reflection */}
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+
         <div className="relative z-10">
           {/* Header Title */}
           <div className="text-center mb-4">
-            <h1 className="text-xl font-bold tracking-tight text-neutral-900">
+            <h1 className="text-xl font-bold tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
               {isForgotPassword ? 'Reset Password' : (isLogin ? 'Welcome Back' : 'Create Account')}
             </h1>
-            <p className="mt-1 text-xs text-neutral-500 font-medium">
+            <p className="mt-1 text-xs text-white/70 font-medium">
               {isForgotPassword 
                 ? 'Enter your email to recover access.' 
                 : (isLogin ? 'Sign in to access your workspace.' : 'Sign up to get started.')}
@@ -343,19 +346,19 @@ export const LoginPage = () => {
 
           {/* Segmented Switcher (Sign In vs Sign Up) */}
           {!isForgotPassword && (
-            <div className="relative flex p-0.5 rounded-lg bg-neutral-200/60 border border-neutral-300/40 mb-4">
+            <div className="relative flex p-0.5 rounded-lg bg-white/[0.08] border border-white/15 backdrop-blur-md mb-4">
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setError(''); setSuccessMsg(''); }}
                 className={cn(
                   "relative flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 z-10 flex items-center justify-center cursor-pointer",
-                  isLogin ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800"
+                  isLogin ? "text-white" : "text-white/60 hover:text-white"
                 )}
               >
                 {isLogin && (
                   <motion.div
-                    layoutId="compactAuthTabPill"
-                    className="absolute inset-0 rounded-md bg-white shadow-xs border border-black/[0.04] -z-10"
+                    layoutId="glassAuthTabPill"
+                    className="absolute inset-0 rounded-md bg-white/20 shadow-xs border border-white/25 -z-10"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -366,13 +369,13 @@ export const LoginPage = () => {
                 onClick={() => { setIsLogin(false); setError(''); setSuccessMsg(''); }}
                 className={cn(
                   "relative flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 z-10 flex items-center justify-center cursor-pointer",
-                  !isLogin ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800"
+                  !isLogin ? "text-white" : "text-white/60 hover:text-white"
                 )}
               >
                 {!isLogin && (
                   <motion.div
-                    layoutId="compactAuthTabPill"
-                    className="absolute inset-0 rounded-md bg-white shadow-xs border border-black/[0.04] -z-10"
+                    layoutId="glassAuthTabPill"
+                    className="absolute inset-0 rounded-md bg-white/20 shadow-xs border border-white/25 -z-10"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -389,9 +392,9 @@ export const LoginPage = () => {
                 initial={{ opacity: 0, height: 0, y: -4 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -4 }}
-                className="mb-3.5 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-[11px] text-red-700 overflow-hidden"
+                className="mb-3.5 flex items-start gap-2 rounded-lg border border-red-400/30 bg-red-950/40 p-2.5 text-[11px] text-red-200 backdrop-blur-md overflow-hidden"
               >
-                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-600" />
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-400" />
                 <span className="leading-snug font-medium">{error}</span>
               </motion.div>
             )}
@@ -401,9 +404,9 @@ export const LoginPage = () => {
                 initial={{ opacity: 0, height: 0, y: -4 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -4 }}
-                className="mb-3.5 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-[11px] text-emerald-800 overflow-hidden"
+                className="mb-3.5 flex items-start gap-2 rounded-lg border border-emerald-400/30 bg-emerald-950/40 p-2.5 text-[11px] text-emerald-200 backdrop-blur-md overflow-hidden"
               >
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-600" />
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-400" />
                 <span className="leading-snug font-medium">{successMsg}</span>
               </motion.div>
             )}
@@ -413,16 +416,16 @@ export const LoginPage = () => {
           {isForgotPassword ? (
             <form onSubmit={handleForgotPassword} className="space-y-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-600">
+                <label className="text-[11px] font-semibold text-white/80">
                   Email Address
                 </label>
-                <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
-                  <Mail className="absolute left-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+                <div className="relative flex items-center rounded-lg border border-white/20 bg-white/[0.06] backdrop-blur-md transition-all focus-within:border-white/50 focus-within:ring-2 focus-within:ring-white/20 focus-within:bg-white/[0.10]">
+                  <Mail className="absolute left-2.5 h-3.5 w-3.5 text-white/50 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                    className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-white placeholder:text-white/40 outline-none font-medium"
                     placeholder="you@example.com"
                     required
                   />
@@ -432,11 +435,11 @@ export const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 py-2 text-xs font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50 shadow-xs cursor-pointer"
+                className="w-full mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-white hover:bg-white/90 py-2 text-xs font-semibold text-neutral-950 transition-all active:scale-[0.98] disabled:opacity-50 shadow-xs cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-950" />
                     <span>Sending...</span>
                   </>
                 ) : (
@@ -447,7 +450,7 @@ export const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => { setIsForgotPassword(false); setError(''); setSuccessMsg(''); }}
-                className="w-full flex items-center justify-center gap-1 py-0.5 text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1 py-0.5 text-[11px] font-medium text-white/60 hover:text-white transition-colors cursor-pointer"
               >
                 <ArrowLeft className="h-3 w-3" />
                 Back to Sign In
@@ -464,16 +467,16 @@ export const LoginPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-1"
                 >
-                  <label className="text-[11px] font-semibold text-neutral-600">
+                  <label className="text-[11px] font-semibold text-white/80">
                     Full Name
                   </label>
-                  <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
-                    <User className="absolute left-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+                  <div className="relative flex items-center rounded-lg border border-white/20 bg-white/[0.06] backdrop-blur-md transition-all focus-within:border-white/50 focus-within:ring-2 focus-within:ring-white/20 focus-within:bg-white/[0.10]">
+                    <User className="absolute left-2.5 h-3.5 w-3.5 text-white/50 pointer-events-none" />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                      className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-white placeholder:text-white/40 outline-none font-medium"
                       placeholder="Alex Rivera"
                       required
                     />
@@ -483,16 +486,16 @@ export const LoginPage = () => {
 
               {/* Email Address */}
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-600">
+                <label className="text-[11px] font-semibold text-white/80">
                   Email Address
                 </label>
-                <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
-                  <Mail className="absolute left-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+                <div className="relative flex items-center rounded-lg border border-white/20 bg-white/[0.06] backdrop-blur-md transition-all focus-within:border-white/50 focus-within:ring-2 focus-within:ring-white/20 focus-within:bg-white/[0.10]">
+                  <Mail className="absolute left-2.5 h-3.5 w-3.5 text-white/50 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                    className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-white placeholder:text-white/40 outline-none font-medium"
                     placeholder="you@example.com"
                     required
                   />
@@ -502,32 +505,32 @@ export const LoginPage = () => {
               {/* Password */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-semibold text-neutral-600">
+                  <label className="text-[11px] font-semibold text-white/80">
                     Password
                   </label>
                   {isLogin && (
                     <button
                       type="button"
                       onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMsg(''); }}
-                      className="text-[10px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                      className="text-[10px] font-medium text-white/70 hover:text-white transition-colors cursor-pointer"
                     >
                       Forgot?
                     </button>
                   )}
                 </div>
-                <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                <div className="relative flex items-center rounded-lg border border-white/20 bg-white/[0.06] backdrop-blur-md transition-all focus-within:border-white/50 focus-within:ring-2 focus-within:ring-white/20 focus-within:bg-white/[0.10]">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-lg bg-transparent py-2 pl-3 pr-8 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                    className="w-full rounded-lg bg-transparent py-2 pl-3 pr-8 text-xs text-white placeholder:text-white/40 outline-none font-medium"
                     placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 text-neutral-400 hover:text-neutral-700 transition-colors p-1 cursor-pointer"
+                    className="absolute right-2 text-white/50 hover:text-white transition-colors p-1 cursor-pointer"
                     title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -543,22 +546,22 @@ export const LoginPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-1"
                 >
-                  <label className="text-[11px] font-semibold text-neutral-600">
+                  <label className="text-[11px] font-semibold text-white/80">
                     Confirm Password
                   </label>
-                  <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                  <div className="relative flex items-center rounded-lg border border-white/20 bg-white/[0.06] backdrop-blur-md transition-all focus-within:border-white/50 focus-within:ring-2 focus-within:ring-white/20 focus-within:bg-white/[0.10]">
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-lg bg-transparent py-2 pl-3 pr-8 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                      className="w-full rounded-lg bg-transparent py-2 pl-3 pr-8 text-xs text-white placeholder:text-white/40 outline-none font-medium"
                       placeholder="••••••••"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-2 text-neutral-400 hover:text-neutral-700 transition-colors p-1 cursor-pointer"
+                      className="absolute right-2 text-white/50 hover:text-white transition-colors p-1 cursor-pointer"
                       title={showConfirmPassword ? "Hide password" : "Show password"}
                     >
                       {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -571,16 +574,16 @@ export const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-1.5 flex items-center justify-center gap-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 py-2.5 text-xs font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50 shadow-xs cursor-pointer"
+                className="w-full mt-1.5 flex items-center justify-center gap-1.5 rounded-lg bg-white hover:bg-white/90 py-2.5 text-xs font-semibold text-neutral-950 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-950" />
                     <span>Please wait...</span>
                   </>
                 ) : (
                   <>
-                    {isLogin ? <LogIn className="h-3.5 w-3.5 text-white" /> : <UserPlus className="h-3.5 w-3.5 text-white" />}
+                    {isLogin ? <LogIn className="h-3.5 w-3.5 text-neutral-950" /> : <UserPlus className="h-3.5 w-3.5 text-neutral-950" />}
                     <span>{isLogin ? 'Sign In' : 'Sign Up'}</span>
                   </>
                 )}
@@ -593,10 +596,10 @@ export const LoginPage = () => {
             <>
               <div className="relative my-3.5">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-neutral-200" />
+                  <div className="w-full border-t border-white/15" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-white/95 rounded-full text-neutral-400 font-semibold uppercase tracking-wider text-[10px]">
+                  <span className="px-2 bg-black/20 backdrop-blur-md rounded-full text-white/50 font-semibold uppercase tracking-wider text-[10px]">
                     or continue with
                   </span>
                 </div>
@@ -607,9 +610,9 @@ export const LoginPage = () => {
                 <button
                   type="button"
                   onClick={handleGuestLogin}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 py-2 text-xs font-semibold text-neutral-800 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/[0.08] hover:bg-white/[0.14] py-2 text-xs font-semibold text-white transition-all active:scale-[0.98] backdrop-blur-md shadow-xs cursor-pointer"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300" />
                   <span>Continue as Local User</span>
                 </button>
 
@@ -618,7 +621,7 @@ export const LoginPage = () => {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 py-2 text-xs font-semibold text-neutral-800 transition-all active:scale-[0.98] shadow-xs disabled:opacity-50 cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/[0.08] hover:bg-white/[0.14] py-2 text-xs font-semibold text-white transition-all active:scale-[0.98] backdrop-blur-md shadow-xs disabled:opacity-50 cursor-pointer"
                 >
                   <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -631,12 +634,12 @@ export const LoginPage = () => {
               </div>
 
               {/* Bottom toggle between sign in and sign up */}
-              <div className="mt-4 text-center text-xs text-neutral-500">
+              <div className="mt-4 text-center text-xs text-white/70">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <button
                   type="button"
                   onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }}
-                  className="font-bold text-neutral-900 hover:underline transition-colors ml-0.5 cursor-pointer"
+                  className="font-bold text-white hover:underline transition-colors ml-0.5 cursor-pointer"
                 >
                   {isLogin ? 'Sign up' : 'Sign in'}
                 </button>
