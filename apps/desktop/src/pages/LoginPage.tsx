@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TauriClient } from '@/infrastructure/tauri-client';
-import { cn } from '@/shared/utils/cn';
 import { ProfileSetup } from '../components/ui/profile-setup';
 
 export const LoginPage = () => {
@@ -343,46 +342,6 @@ export const LoginPage = () => {
                 : (isLogin ? 'Sign in to access your workspace.' : 'Sign up to get started.')}
             </p>
           </div>
-
-          {/* Segmented Switcher (Sign In vs Sign Up) */}
-          {!isForgotPassword && (
-            <div className="relative flex p-0.5 rounded-lg bg-white/[0.08] border border-white/15 backdrop-blur-md mb-4">
-              <button
-                type="button"
-                onClick={() => { setIsLogin(true); setError(''); setSuccessMsg(''); }}
-                className={cn(
-                  "relative flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 z-10 flex items-center justify-center cursor-pointer",
-                  isLogin ? "text-white" : "text-white/60 hover:text-white"
-                )}
-              >
-                {isLogin && (
-                  <motion.div
-                    layoutId="glassAuthTabPill"
-                    className="absolute inset-0 rounded-md bg-white/20 shadow-xs border border-white/25 -z-10"
-                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                  />
-                )}
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIsLogin(false); setError(''); setSuccessMsg(''); }}
-                className={cn(
-                  "relative flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 z-10 flex items-center justify-center cursor-pointer",
-                  !isLogin ? "text-white" : "text-white/60 hover:text-white"
-                )}
-              >
-                {!isLogin && (
-                  <motion.div
-                    layoutId="glassAuthTabPill"
-                    className="absolute inset-0 rounded-md bg-white/20 shadow-xs border border-white/25 -z-10"
-                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
-                  />
-                )}
-                Sign Up
-              </button>
-            </div>
-          )}
 
           {/* Feedback Banners */}
           <AnimatePresence mode="wait">
