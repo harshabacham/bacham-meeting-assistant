@@ -134,7 +134,7 @@ export const LoginPage = () => {
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, email.trim());
-      setSuccessMsg('Password recovery link sent! Please check your inbox.');
+      setSuccessMsg('Recovery link sent! Please check your inbox.');
     } catch (err: any) {
       setError(err.message?.replace('Firebase:', '').trim() || 'Failed to send reset email.');
     } finally {
@@ -242,25 +242,25 @@ export const LoginPage = () => {
         </video>
 
         {/* Top Window Controls */}
-        <div className="absolute top-0 left-0 right-0 h-11 z-50 flex items-center justify-between px-5 pointer-events-auto">
+        <div className="absolute top-0 left-0 right-0 h-10 z-50 flex items-center justify-between px-4 pointer-events-auto">
           <div data-tauri-drag-region className="flex-1 h-full" />
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => TauriClient.minimize()}
-              className="w-3 h-3 rounded-full bg-[#FFC15E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="w-2.5 h-2.5 rounded-full bg-[#FFC15E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
               title="Minimize"
             />
             <button
               type="button"
               onClick={() => TauriClient.maximize()}
-              className="w-3 h-3 rounded-full bg-[#5EFF9F] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="w-2.5 h-2.5 rounded-full bg-[#5EFF9F] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
               title="Maximize"
             />
             <button
               type="button"
               onClick={() => TauriClient.close()}
-              className="w-3 h-3 rounded-full bg-[#FF5E5E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="w-2.5 h-2.5 rounded-full bg-[#FF5E5E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
               title="Close"
             />
           </div>
@@ -269,8 +269,8 @@ export const LoginPage = () => {
         <motion.div 
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="relative z-10 w-full max-w-md overflow-hidden rounded-[28px] border border-white/80 bg-white/90 backdrop-blur-xl shadow-2xl p-4 text-neutral-900"
+          transition={{ duration: 0.3 }}
+          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/80 bg-white/90 backdrop-blur-xl shadow-xl p-4 text-neutral-900"
         >
           <ProfileSetup 
             onComplete={handleProfileComplete} 
@@ -297,65 +297,65 @@ export const LoginPage = () => {
       </video>
 
       {/* Draggable Titlebar Region & Window Controls */}
-      <div className="absolute top-0 left-0 right-0 h-11 z-50 flex items-center justify-between px-5 pointer-events-auto">
+      <div className="absolute top-0 left-0 right-0 h-10 z-50 flex items-center justify-between px-4 pointer-events-auto">
         <div data-tauri-drag-region className="flex-1 h-full" />
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => TauriClient.minimize()}
-            className="w-3 h-3 rounded-full bg-[#FFC15E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="w-2.5 h-2.5 rounded-full bg-[#FFC15E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
             title="Minimize"
           />
           <button
             type="button"
             onClick={() => TauriClient.maximize()}
-            className="w-3 h-3 rounded-full bg-[#5EFF9F] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="w-2.5 h-2.5 rounded-full bg-[#5EFF9F] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
             title="Maximize"
           />
           <button
             type="button"
             onClick={() => TauriClient.close()}
-            className="w-3 h-3 rounded-full bg-[#FF5E5E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="w-2.5 h-2.5 rounded-full bg-[#FF5E5E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
             title="Close"
           />
         </div>
       </div>
 
-      {/* Elegant Pure Frosted Glass Card */}
+      {/* Compact, Refined Frosted Glass Card */}
       <motion.div
-        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full max-w-[420px] overflow-hidden rounded-[28px] border border-white/80 bg-white/85 backdrop-blur-xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.9)_inset] p-7 sm:p-8 text-neutral-900 my-auto"
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/80 bg-white/85 backdrop-blur-xl shadow-[0_16px_40px_-10px_rgba(0,0,0,0.14),0_0_0_1px_rgba(255,255,255,0.9)_inset] p-5 text-neutral-900 my-auto"
       >
         <div className="relative z-10">
           {/* Header Title */}
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+          <div className="text-center mb-4">
+            <h1 className="text-xl font-bold tracking-tight text-neutral-900">
               {isForgotPassword ? 'Reset Password' : (isLogin ? 'Welcome Back' : 'Create Account')}
             </h1>
-            <p className="mt-2 text-sm text-neutral-500 font-medium">
+            <p className="mt-1 text-xs text-neutral-500 font-medium">
               {isForgotPassword 
-                ? 'Enter your email to receive recovery instructions.' 
-                : (isLogin ? 'Sign in to access your workspace.' : 'Sign up to get started with your notes.')}
+                ? 'Enter your email to recover access.' 
+                : (isLogin ? 'Sign in to access your workspace.' : 'Sign up to get started.')}
             </p>
           </div>
 
           {/* Segmented Switcher (Sign In vs Sign Up) */}
           {!isForgotPassword && (
-            <div className="relative flex p-1 rounded-xl bg-neutral-200/50 border border-neutral-300/40 mb-6">
+            <div className="relative flex p-0.5 rounded-lg bg-neutral-200/60 border border-neutral-300/40 mb-4">
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setError(''); setSuccessMsg(''); }}
                 className={cn(
-                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-colors duration-200 z-10 flex items-center justify-center gap-1.5 cursor-pointer",
+                  "relative flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 z-10 flex items-center justify-center cursor-pointer",
                   isLogin ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800"
                 )}
               >
                 {isLogin && (
                   <motion.div
-                    layoutId="authTabActivePill"
-                    className="absolute inset-0 rounded-lg bg-white shadow-xs border border-black/[0.04] -z-10"
+                    layoutId="compactAuthTabPill"
+                    className="absolute inset-0 rounded-md bg-white shadow-xs border border-black/[0.04] -z-10"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -365,14 +365,14 @@ export const LoginPage = () => {
                 type="button"
                 onClick={() => { setIsLogin(false); setError(''); setSuccessMsg(''); }}
                 className={cn(
-                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-colors duration-200 z-10 flex items-center justify-center gap-1.5 cursor-pointer",
+                  "relative flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors duration-200 z-10 flex items-center justify-center cursor-pointer",
                   !isLogin ? "text-neutral-900" : "text-neutral-500 hover:text-neutral-800"
                 )}
               >
                 {!isLogin && (
                   <motion.div
-                    layoutId="authTabActivePill"
-                    className="absolute inset-0 rounded-lg bg-white shadow-xs border border-black/[0.04] -z-10"
+                    layoutId="compactAuthTabPill"
+                    className="absolute inset-0 rounded-md bg-white shadow-xs border border-black/[0.04] -z-10"
                     transition={{ type: "spring", stiffness: 450, damping: 32 }}
                   />
                 )}
@@ -386,43 +386,43 @@ export const LoginPage = () => {
             {error && (
               <motion.div
                 key="error-banner"
-                initial={{ opacity: 0, height: 0, y: -6 }}
+                initial={{ opacity: 0, height: 0, y: -4 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -6 }}
-                className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 overflow-hidden"
+                exit={{ opacity: 0, height: 0, y: -4 }}
+                className="mb-3.5 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5 text-[11px] text-red-700 overflow-hidden"
               >
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-600" />
-                <span className="leading-relaxed font-medium">{error}</span>
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-600" />
+                <span className="leading-snug font-medium">{error}</span>
               </motion.div>
             )}
             {successMsg && (
               <motion.div
                 key="success-banner"
-                initial={{ opacity: 0, height: 0, y: -6 }}
+                initial={{ opacity: 0, height: 0, y: -4 }}
                 animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -6 }}
-                className="mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 overflow-hidden"
+                exit={{ opacity: 0, height: 0, y: -4 }}
+                className="mb-3.5 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-[11px] text-emerald-800 overflow-hidden"
               >
-                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-600" />
-                <span className="leading-relaxed font-medium">{successMsg}</span>
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5 text-emerald-600" />
+                <span className="leading-snug font-medium">{successMsg}</span>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Forgot Password View */}
           {isForgotPassword ? (
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-neutral-700">
+            <form onSubmit={handleForgotPassword} className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-600">
                   Email Address
                 </label>
-                <div className="relative flex items-center rounded-xl border border-neutral-300/80 bg-white/90 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
-                  <Mail className="absolute left-3.5 h-4 w-4 text-neutral-400 pointer-events-none" />
+                <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                  <Mail className="absolute left-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                    className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
                     placeholder="you@example.com"
                     required
                   />
@@ -432,12 +432,12 @@ export const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 py-3 text-sm font-bold text-white transition-all hover:opacity-95 active:scale-[0.98] disabled:opacity-50 shadow-sm cursor-pointer"
+                className="w-full mt-1 flex items-center justify-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 py-2 text-xs font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50 shadow-xs cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    <span>Sending email...</span>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                    <span>Sending...</span>
                   </>
                 ) : (
                   <span>Send Recovery Link</span>
@@ -447,33 +447,33 @@ export const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => { setIsForgotPassword(false); setError(''); setSuccessMsg(''); }}
-                className="w-full flex items-center justify-center gap-1.5 py-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1 py-0.5 text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
               >
-                <ArrowLeft className="h-3.5 w-3.5" />
+                <ArrowLeft className="h-3 w-3" />
                 Back to Sign In
               </button>
             </form>
           ) : (
             /* Main Form (Sign In / Sign Up) */
-            <form onSubmit={handleEmailAuth} className="space-y-4">
+            <form onSubmit={handleEmailAuth} className="space-y-2.5">
               {/* Full Name field on Sign Up */}
               {!isLogin && (
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-1.5"
+                  className="space-y-1"
                 >
-                  <label className="text-xs font-bold text-neutral-700">
+                  <label className="text-[11px] font-semibold text-neutral-600">
                     Full Name
                   </label>
-                  <div className="relative flex items-center rounded-xl border border-neutral-300/80 bg-white/90 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
-                    <User className="absolute left-3.5 h-4 w-4 text-neutral-400 pointer-events-none" />
+                  <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                    <User className="absolute left-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                      className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
                       placeholder="Alex Rivera"
                       required
                     />
@@ -482,17 +482,17 @@ export const LoginPage = () => {
               )}
 
               {/* Email Address */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-neutral-700">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-neutral-600">
                   Email Address
                 </label>
-                <div className="relative flex items-center rounded-xl border border-neutral-300/80 bg-white/90 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
-                  <Mail className="absolute left-3.5 h-4 w-4 text-neutral-400 pointer-events-none" />
+                <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                  <Mail className="absolute left-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl bg-transparent py-2.5 pl-10 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                    className="w-full rounded-lg bg-transparent py-2 pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
                     placeholder="you@example.com"
                     required
                   />
@@ -500,37 +500,37 @@ export const LoginPage = () => {
               </div>
 
               {/* Password */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-neutral-700">
+                  <label className="text-[11px] font-semibold text-neutral-600">
                     Password
                   </label>
                   {isLogin && (
                     <button
                       type="button"
                       onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMsg(''); }}
-                      className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+                      className="text-[10px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
                     >
                       Forgot?
                     </button>
                   )}
                 </div>
-                <div className="relative flex items-center rounded-xl border border-neutral-300/80 bg-white/90 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl bg-transparent py-2.5 pl-4 pr-10 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                    className="w-full rounded-lg bg-transparent py-2 pl-3 pr-8 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
                     placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 text-neutral-400 hover:text-neutral-700 transition-colors p-1 cursor-pointer"
+                    className="absolute right-2 text-neutral-400 hover:text-neutral-700 transition-colors p-1 cursor-pointer"
                     title={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                 </div>
               </div>
@@ -541,27 +541,27 @@ export const LoginPage = () => {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-1.5"
+                  className="space-y-1"
                 >
-                  <label className="text-xs font-bold text-neutral-700">
+                  <label className="text-[11px] font-semibold text-neutral-600">
                     Confirm Password
                   </label>
-                  <div className="relative flex items-center rounded-xl border border-neutral-300/80 bg-white/90 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
+                  <div className="relative flex items-center rounded-lg border border-neutral-300/80 bg-white/95 transition-all focus-within:border-neutral-900 focus-within:ring-2 focus-within:ring-neutral-900/10">
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full rounded-xl bg-transparent py-2.5 pl-4 pr-10 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
+                      className="w-full rounded-lg bg-transparent py-2 pl-3 pr-8 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none font-medium"
                       placeholder="••••••••"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 text-neutral-400 hover:text-neutral-700 transition-colors p-1 cursor-pointer"
+                      className="absolute right-2 text-neutral-400 hover:text-neutral-700 transition-colors p-1 cursor-pointer"
                       title={showConfirmPassword ? "Hide password" : "Show password"}
                     >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </motion.div>
@@ -571,16 +571,16 @@ export const LoginPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-neutral-950 hover:bg-neutral-800 py-3 text-sm font-bold text-white transition-all hover:opacity-95 active:scale-[0.98] disabled:opacity-50 shadow-md cursor-pointer"
+                className="w-full mt-1.5 flex items-center justify-center gap-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 py-2.5 text-xs font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50 shadow-xs cursor-pointer"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
                     <span>Please wait...</span>
                   </>
                 ) : (
                   <>
-                    {isLogin ? <LogIn className="h-4 w-4 text-white" /> : <UserPlus className="h-4 w-4 text-white" />}
+                    {isLogin ? <LogIn className="h-3.5 w-3.5 text-white" /> : <UserPlus className="h-3.5 w-3.5 text-white" />}
                     <span>{isLogin ? 'Sign In' : 'Sign Up'}</span>
                   </>
                 )}
@@ -591,26 +591,26 @@ export const LoginPage = () => {
           {/* Alternative Logins */}
           {!isForgotPassword && (
             <>
-              <div className="relative my-6">
+              <div className="relative my-3.5">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-neutral-200" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-3 bg-white/95 rounded-full text-neutral-400 font-bold uppercase tracking-wider text-[11px]">
+                  <span className="px-2 bg-white/95 rounded-full text-neutral-400 font-semibold uppercase tracking-wider text-[10px]">
                     or continue with
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {/* Guest Login */}
                 <button
                   type="button"
                   onClick={handleGuestLogin}
-                  className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 py-3 text-sm font-bold text-neutral-800 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 py-2 text-xs font-semibold text-neutral-800 transition-all active:scale-[0.98] shadow-xs cursor-pointer"
                 >
-                  <Sparkles className="h-4 w-4 text-amber-500" />
-                  <span>Continue as Local User (Instant Access)</span>
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Continue as Local User</span>
                 </button>
 
                 {/* Google Login */}
@@ -618,9 +618,9 @@ export const LoginPage = () => {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 py-3 text-sm font-bold text-neutral-800 transition-all active:scale-[0.98] shadow-xs disabled:opacity-50 cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 py-2 text-xs font-semibold text-neutral-800 transition-all active:scale-[0.98] shadow-xs disabled:opacity-50 cursor-pointer"
                 >
-                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                  <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -631,12 +631,12 @@ export const LoginPage = () => {
               </div>
 
               {/* Bottom toggle between sign in and sign up */}
-              <div className="mt-7 text-center text-sm text-neutral-600 font-medium">
+              <div className="mt-4 text-center text-xs text-neutral-500">
                 {isLogin ? "Don't have an account? " : "Already have an account? "}
                 <button
                   type="button"
                   onClick={() => { setIsLogin(!isLogin); setError(''); setSuccessMsg(''); }}
-                  className="font-bold text-neutral-950 hover:underline transition-colors ml-1 cursor-pointer"
+                  className="font-bold text-neutral-900 hover:underline transition-colors ml-0.5 cursor-pointer"
                 >
                   {isLogin ? 'Sign up' : 'Sign in'}
                 </button>
