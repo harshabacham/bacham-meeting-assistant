@@ -711,25 +711,25 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
         >
             <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onSelect) onSelect(lecture.id, e);
-                        }}
-                        className={cn(
-                            "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mt-0.5 no-drag",
-                            isSelected 
-                                ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
-                                : isSelectMode
-                                    ? "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
-                                    : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
-                        )}
-                        title={isSelected ? "Deselect" : "Select"}
-                        aria-label={isSelected ? "Deselect" : "Select"}
-                    >
-                        {isSelected && <Check size={11} strokeWidth={3} />}
-                    </button>
+                    {isSelectMode && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onSelect) onSelect(lecture.id, e);
+                            }}
+                            className={cn(
+                                "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mt-0.5 no-drag",
+                                isSelected 
+                                    ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
+                                    : "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
+                            )}
+                            title={isSelected ? "Deselect" : "Select"}
+                            aria-label={isSelected ? "Deselect" : "Select"}
+                        >
+                            {isSelected && <Check size={11} strokeWidth={3} />}
+                        </button>
+                    )}
                     <p className="text-[13px] font-medium text-foreground leading-snug line-clamp-2">
                         {lecture.title || "Untitled Lecture"}
                     </p>
@@ -877,25 +877,25 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                 <GripVertical size={14} />
             </div>
 
-            <button
-                type="button"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (onSelect) onSelect(lecture.id, e);
-                }}
-                className={cn(
-                    "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mr-3 no-drag",
-                    isSelected 
-                        ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
-                        : isSelectMode
-                            ? "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
-                            : "border border-border/80 hover:border-foreground/40 bg-surface/80 opacity-0 group-hover:opacity-100"
-                )}
-                title={isSelected ? "Deselect" : "Select"}
-                aria-label={isSelected ? "Deselect" : "Select"}
-            >
-                {isSelected && <Check size={11} strokeWidth={3} />}
-            </button>
+            {isSelectMode && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onSelect) onSelect(lecture.id, e);
+                    }}
+                    className={cn(
+                        "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mr-3 no-drag",
+                        isSelected 
+                            ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
+                            : "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
+                    )}
+                    title={isSelected ? "Deselect" : "Select"}
+                    aria-label={isSelected ? "Deselect" : "Select"}
+                >
+                    {isSelected && <Check size={11} strokeWidth={3} />}
+                </button>
+            )}
 
             <div className="flex-1 min-w-0 pr-4 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 border border-border/5 bg-surface-raised">
