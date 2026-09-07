@@ -140,22 +140,46 @@ export function CommandPalette() {
         } else if (result.entityType === 'folder' || result.entityType === 'collection') {
             navigate(`/notes?folderId=${encodeURIComponent(result.entityId)}`);
         } else if (result.entityType === 'task' || result.entityType === 'action_item') {
-            navigate('/tasks');
+            const queryParam = result.title ? `&q=${encodeURIComponent(result.title)}` : '';
+            navigate(`/tasks?taskId=${encodeURIComponent(result.entityId)}${queryParam}`);
         } else if (result.entityType === 'conversation' || result.entityType === 'message') {
             navigate('/ai');
         } else if (result.entityType === 'note') {
             const targetNoteId = result.entityId || result.parentLectureId;
             if (targetNoteId) {
-                navigate(`/notes?noteId=${encodeURIComponent(targetNoteId)}`);
+                navigate(`/notes?noteId=${encodeURIComponent(targetNoteId)}&tab=notes`);
             } else {
                 navigate('/notes');
             }
         } else if (result.entityType === 'lecture') {
             navigate(`/notes?noteId=${encodeURIComponent(result.entityId)}`);
-        } else if (result.entityType === 'transcript' || result.entityType === 'summary' || result.entityType === 'artifact' || result.entityType === 'timeline_event' || result.entityType === 'screenshot' || result.entityType === 'flashcard' || result.entityType === 'quiz' || result.entityType === 'bookmark') {
+        } else if (result.entityType === 'flashcard') {
+            const targetId = result.parentLectureId || result.entityId;
+            const cardId = result.entityId;
+            if (targetId) {
+                navigate(`/notes?noteId=${encodeURIComponent(targetId)}&tab=study&cardId=${encodeURIComponent(cardId)}`);
+            } else {
+                navigate('/notes');
+            }
+        } else if (result.entityType === 'quiz') {
+            const targetId = result.parentLectureId || result.entityId;
+            const quizId = result.entityId;
+            if (targetId) {
+                navigate(`/notes?noteId=${encodeURIComponent(targetId)}&tab=study&quizId=${encodeURIComponent(quizId)}`);
+            } else {
+                navigate('/notes');
+            }
+        } else if (result.entityType === 'transcript') {
             const targetId = result.parentLectureId || result.entityId;
             if (targetId) {
-                navigate(`/notes?noteId=${encodeURIComponent(targetId)}`);
+                navigate(`/notes?noteId=${encodeURIComponent(targetId)}&tab=transcript`);
+            } else {
+                navigate('/notes');
+            }
+        } else if (result.entityType === 'summary' || result.entityType === 'artifact') {
+            const targetId = result.parentLectureId || result.entityId;
+            if (targetId) {
+                navigate(`/notes?noteId=${encodeURIComponent(targetId)}&tab=summary`);
             } else {
                 navigate('/notes');
             }

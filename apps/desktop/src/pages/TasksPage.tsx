@@ -3,7 +3,7 @@ import { TauriClient } from '@/infrastructure/tauri-client';
 import { 
   CheckSquare, Plus, Trash2, Copy, Check, 
   FileText, Target, CheckCircle2, AlertCircle, Clock, Share2, RefreshCw,
-  CalendarPlus
+  CalendarPlus, Search, X
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -200,14 +200,23 @@ export const TasksPage: React.FC = () => {
     showToast(`Copied ${pending.length} pending tasks to clipboard`, 'success');
   };
 
+  const querySearch = searchParams.get('q') || '';
+  const queryTaskId = searchParams.get('taskId') || '';
+
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
+      if (queryTaskId && (String(t.id) === queryTaskId || String(t.lectureId) === queryTaskId)) {
+        return true;
+      }
+      if (querySearch && !t.task.toLowerCase().includes(querySearch.toLowerCase())) {
+        return false;
+      }
       if (filterTab === 'done') return t.status === 'done';
       if (filterTab === 'mine') return t.status === 'todo' && (t.owner.toLowerCase() === 'me' || t.owner.toLowerCase().includes('harsha'));
       if (filterTab === 'urgent') return t.status === 'todo' && t.priority === 'urgent';
       return t.status === 'todo'; // 'all'
     });
-  }, [tasks, filterTab]);
+  }, [tasks, filterTab, querySearch, queryTaskId]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter' || !newTaskText.trim()) return;
@@ -477,6 +486,24 @@ export const TasksPage: React.FC = () => {
                     </button>
                   </div>
                   
+                  {/* Search Filter Active Banner */}
+                  {(querySearch || queryTaskId) && (
+                    <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-yellow-400/10 border border-yellow-400/20 text-xs text-yellow-400 mb-3 animate-fade-in">
+                      <div className="flex items-center gap-2">
+                        <Search size={13} />
+                        <span>Filtered from search: <strong>"{querySearch || queryTaskId}"</strong></span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSearchParams({})}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-300 transition-colors cursor-pointer"
+                      >
+                        <X size={11} />
+                        <span>Clear</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Quick Add Bar */}
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -513,24 +540,31 @@ export const TasksPage: React.FC = () => {
                   ) : (
                     <div className="flex flex-col gap-1">
                       <AnimatePresence initial={false}>
-                        {sortedTasks.map((task) => (
-                          <motion.div
-                            key={task.id}
-                            layout="position"
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, height: 0, scale: 0.98 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <TaskRow 
-                              task={task} 
-                              onToggle={() => toggleStatus(task)} 
-                              onDelete={() => handleDeleteTask(task.id)}
-                              onSchedule={handleScheduleTask}
-                              onClick={() => task.lectureId && navigate(task.lectureId.startsWith('note_') ? '/notes' : `/lectures/${task.lectureId}`)} 
-                            />
-                          </motion.div>
-                        ))}
+                        {sortedTasks.map((task) => {
+                          const isHighlighted = Boolean(
+                            (queryTaskId && (String(task.id) === queryTaskId || String(task.lectureId) === queryTaskId)) || 
+                            (querySearch && task.task.toLowerCase().includes(querySearch.toLowerCase()))
+                          );
+                          return (
+                            <motion.div
+                              key={task.id}
+                              layout="position"
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, height: 0, scale: 0.98 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <TaskRow 
+                                task={task} 
+                                onToggle={() => toggleStatus(task)} 
+                                onDelete={() => handleDeleteTask(task.id)}
+                                onSchedule={handleScheduleTask}
+                                onClick={() => task.lectureId && navigate(task.lectureId.startsWith('note_') ? `/notes?noteId=${encodeURIComponent(task.lectureId)}` : `/notes?noteId=${encodeURIComponent(task.lectureId)}`)} 
+                                isHighlighted={isHighlighted}
+                              />
+                            </motion.div>
+                          );
+                        })}
                       </AnimatePresence>
                     </div>
                   )}
@@ -559,13 +593,15 @@ const TaskRow = ({
   onToggle, 
   onDelete, 
   onSchedule,
-  onClick 
+  onClick,
+  isHighlighted = false
 }: { 
   task: GlobalActionItem; 
   onToggle: () => void; 
   onDelete: () => void;
   onSchedule: (task: GlobalActionItem) => void;
   onClick: () => void;
+  isHighlighted?: boolean;
 }) => {
   const isDone = task.status === 'done';
   const isUrgent = task.priority === 'urgent';
@@ -574,9 +610,14 @@ const TaskRow = ({
     <motion.div 
       whileHover={{ scale: 1.002, backgroundColor: 'rgba(255,255,255,0.03)' }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`group flex items-start gap-4 p-3.5 rounded-xl border border-transparent transition-all duration-200 ${
-      isDone ? 'opacity-40 hover:opacity-70' : 'hover:border-[var(--border)]/40 hover:shadow-sm'
-    }`}>
+      className={`group flex items-start gap-4 p-3.5 rounded-xl border transition-all duration-200 ${
+        isHighlighted 
+          ? 'border-yellow-400/50 bg-yellow-400/[0.04] shadow-sm' 
+          : 'border-transparent'
+      } ${
+        isDone ? 'opacity-40 hover:opacity-70' : 'hover:border-[var(--border)]/40 hover:shadow-sm'
+      }`}
+    >
       {/* Checkbox */}
       <button 
         onClick={(e) => { e.stopPropagation(); onToggle(); }}

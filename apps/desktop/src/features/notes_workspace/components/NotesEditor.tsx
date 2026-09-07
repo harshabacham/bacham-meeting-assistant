@@ -16,9 +16,9 @@ import {
     Sparkles, Folder, Calendar as CalendarIcon, Hash, Plus, X, Download, 
     Copy, Check, Bold, Italic, Strikethrough, Code, Search, ChevronDown, 
     FileText, CheckSquare, Edit3, Mic, ArrowLeft, RefreshCw, Wand2, List,
-    MoreHorizontal, Bookmark, Trash2, VideoOff, Share2
+    MoreHorizontal, Bookmark, Trash2, VideoOff, Share2, Zap
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { TauriClient, Screenshot } from '@/infrastructure/tauri-client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -26,6 +26,7 @@ import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { ExportPdfDialog } from './ExportPdfDialog';
 import { ExportPushDialog } from '@/components/workspace/ExportPushDialog';
+import { StudyWorkspaceView } from './StudyWorkspaceView';
 
 export function parseTimestampToSeconds(ts: string): number | null {
     if (!ts) return null;
@@ -403,8 +404,46 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // ── 4-WAY VIEW MODES: 'summary' | 'notes' | 'transcript' | 'chat' ──────────────
-    const [viewMode, setViewMode] = useState<'summary' | 'notes' | 'transcript' | 'chat'>('summary');
+    // ── 5-WAY VIEW MODES: 'summary' | 'notes' | 'transcript' | 'study' | 'chat' ──────────────
+    type ViewMode = 'summary' | 'notes' | 'transcript' | 'study' | 'chat';
+    const [searchParams] = useSearchParams();
+    const queryTab = searchParams.get('tab');
+    const queryCardId = searchParams.get('cardId');
+    const queryQuizId = searchParams.get('quizId');
+
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
+        if (queryTab === 'study' || queryTab === 'flashcards' || queryTab === 'quiz' || queryCardId || queryQuizId) return 'study';
+        if (queryTab === 'transcript') return 'transcript';
+        if (queryTab === 'notes') return 'notes';
+        if (queryTab === 'chat') return 'chat';
+        if (note.isMeeting) return 'summary';
+        return 'notes';
+    });
+
+    const [flashcardCount, setFlashcardCount] = useState<number>(0);
+
+    useEffect(() => {
+        if (note.id) {
+            TauriClient.listFlashcards(note.id)
+                .then(cards => setFlashcardCount(cards ? cards.length : 0))
+                .catch(() => setFlashcardCount(0));
+        }
+    }, [note.id]);
+
+    useEffect(() => {
+        if (queryTab === 'study' || queryTab === 'flashcards' || queryTab === 'quiz' || queryCardId || queryQuizId) {
+            setViewMode('study');
+        } else if (queryTab === 'transcript') {
+            setViewMode('transcript');
+        } else if (queryTab === 'notes') {
+            setViewMode('notes');
+        } else if (queryTab === 'chat') {
+            setViewMode('chat');
+        } else if (queryTab === 'summary') {
+            setViewMode('summary');
+        }
+    }, [queryTab, queryCardId, queryQuizId]);
+
     const [rawTranscript, setRawTranscript] = useState<string>(() => note.transcript || localStorage.getItem(`transcript_${note.id}`) || '');
     const [aiSummary, setAiSummary] = useState<string>(() => note.summary || localStorage.getItem(`summary_${note.id}`) || '');
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -918,7 +957,27 @@ Return only the polished transcript text:`;
                         {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />}
                     </button>
 
-                    {/* 4. Chat Button */}
+                    {/* 4. Study / Flashcards Button */}
+                    <button
+                        data-tauri-drag-region="false"
+                        type="button"
+                        onClick={() => setViewMode('study')}
+                        className={cn(
+                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            viewMode === 'study'
+                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
+                        )}
+                        title="Flashcards & Active Recall"
+                    >
+                        <Zap size={12} className={cn("shrink-0", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
+                        <span className={cn(viewMode === 'study' ? "inline" : "hidden xl:inline")}>Study</span>
+                        {flashcardCount > 0 && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                        )}
+                    </button>
+
+                    {/* 5. Chat Button */}
                     <button
                         data-tauri-drag-region="false"
                         type="button"
@@ -1703,6 +1762,21 @@ Return only the polished transcript text:`;
                         }}
                     />
                 </div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════════════════════ */}
+            {/* VIEW 5: ⚡ ACTIVE RECALL & STUDY (FLASHCARDS & QUIZ)                         */}
+            {/* ════════════════════════════════════════════════════════════════════════════ */}
+            {viewMode === 'study' && (
+                <StudyWorkspaceView
+                    noteId={note.id}
+                    noteTitle={note.title}
+                    initialCardId={queryCardId}
+                    initialQuizId={queryQuizId}
+                    rawTranscript={rawTranscript}
+                    noteContent={editor ? editor.getText() : note.content}
+                    onSeekToTimestamp={handleSeekToTimestamp}
+                />
             )}
 
             {/* Export as PDF Dialog Modal */}
