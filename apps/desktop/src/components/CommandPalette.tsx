@@ -99,19 +99,30 @@ export function CommandPalette() {
                     navigate('/settings'); 
                     break;
                 case 'cmd_theme': 
-                    navigate('/settings'); 
+                    navigate('/settings?tab=appearance'); 
+                    break;
+                case 'cmd_integrations':
+                    navigate('/settings?tab=integrations');
                     break;
                 case 'cmd_record':
-                    // Open capture overlay or navigate to record page
-                    navigate('/record');
+                    navigate('/copilot');
                     break;
                 case 'cmd_library':
-                    navigate('/');
+                case 'cmd_notes':
+                    navigate('/notes');
+                    break;
+                case 'cmd_tasks':
+                    navigate('/tasks');
+                    break;
+                case 'cmd_ai':
+                    navigate('/ai');
+                    break;
+                case 'cmd_trash':
+                    navigate('/trash');
                     break;
                 case 'cmd_gen_flashcards':
                 case 'cmd_gen_quiz':
-                    // Hand off to study workspace
-                    navigate('/study');
+                    navigate('/ai');
                     break;
                 case 'cmd_feedback':
                     openFeedbackModal('general');
@@ -122,11 +133,40 @@ export function CommandPalette() {
                 case 'cmd_suggestion':
                     openFeedbackModal('suggestion');
                     break;
+                default:
+                    navigate('/notes');
+                    break;
             }
-        } else if (result.parentLectureId) {
-            navigate(`/lectures/${result.parentLectureId}`);
+        } else if (result.entityType === 'folder' || result.entityType === 'collection') {
+            navigate(`/notes?folderId=${encodeURIComponent(result.entityId)}`);
+        } else if (result.entityType === 'task' || result.entityType === 'action_item') {
+            navigate('/tasks');
+        } else if (result.entityType === 'conversation' || result.entityType === 'message') {
+            navigate('/ai');
+        } else if (result.entityType === 'note') {
+            const targetNoteId = result.entityId || result.parentLectureId;
+            if (targetNoteId) {
+                navigate(`/notes?noteId=${encodeURIComponent(targetNoteId)}`);
+            } else {
+                navigate('/notes');
+            }
         } else if (result.entityType === 'lecture') {
-            navigate(`/lectures/${result.entityId}`);
+            navigate(`/notes?noteId=${encodeURIComponent(result.entityId)}`);
+        } else if (result.entityType === 'transcript' || result.entityType === 'summary' || result.entityType === 'artifact' || result.entityType === 'timeline_event' || result.entityType === 'screenshot' || result.entityType === 'flashcard' || result.entityType === 'quiz' || result.entityType === 'bookmark') {
+            const targetId = result.parentLectureId || result.entityId;
+            if (targetId) {
+                navigate(`/notes?noteId=${encodeURIComponent(targetId)}`);
+            } else {
+                navigate('/notes');
+            }
+        } else {
+            // Fallback for any other indexed entity
+            const targetId = result.entityId || result.parentLectureId;
+            if (targetId) {
+                navigate(`/notes?noteId=${encodeURIComponent(targetId)}`);
+            } else {
+                navigate('/notes');
+            }
         }
     };
 

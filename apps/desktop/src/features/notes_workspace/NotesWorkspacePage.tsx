@@ -157,13 +157,27 @@ export function NotesWorkspacePage() {
     }, [refreshWorkspaceData]);
 
     useEffect(() => {
-        if (queryNoteId && notes.length > 0 && activeNoteId !== queryNoteId) {
-            const noteExists = notes.some(n => n.id === queryNoteId);
-            if (noteExists) {
-                setActiveNoteId(queryNoteId);
+        if (queryNoteId) {
+            if (notes.length > 0) {
+                const note = notes.find(n => 
+                    String(n.id) === String(queryNoteId) || 
+                    String(n.id).toLowerCase() === String(queryNoteId).toLowerCase()
+                );
+                if (note) {
+                    if (activeNoteId !== note.id) {
+                        setActiveNoteId(note.id);
+                    }
+                } else {
+                    refreshWorkspaceData();
+                }
+            }
+        } else {
+            // When queryNoteId is cleared/absent in URL, clear activeNoteId so dashboard or folder view shows
+            if (activeNoteId !== null) {
+                setActiveNoteId(null);
             }
         }
-    }, [queryNoteId, notes, activeNoteId]);
+    }, [queryNoteId, notes, activeNoteId, refreshWorkspaceData]);
 
     // Open or create calendar event note if query params are present
     const createdEventRef = useRef<string | null>(null);
