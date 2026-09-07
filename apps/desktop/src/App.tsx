@@ -43,10 +43,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!hasSeenOnboarding && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
-  
-  if (hasSeenOnboarding && location.pathname === '/onboarding') {
-    return <Navigate to="/" replace />;
-  }
 
   return <>{children}</>;
 };

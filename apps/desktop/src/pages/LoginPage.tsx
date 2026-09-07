@@ -138,7 +138,11 @@ export const LoginPage = () => {
     };
     setUser(guestUser);
     const hasSeen = localStorage.getItem('hasSeenOnboarding') === 'true';
-    navigate(hasSeen ? '/' : '/onboarding');
+    if (!hasSeen) {
+      navigate('/onboarding');
+    } else {
+      navigate('/');
+    }
   };
 
   const handleProfileComplete = async (data: { username: string; avatarId: number }) => {

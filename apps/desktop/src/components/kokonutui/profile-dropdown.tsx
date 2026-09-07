@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, LogOut, Settings, User, Trash2, Sun, Moon, MessageSquareHeart } from "lucide-react";
+import { FileText, LogOut, Settings, User, Trash2, Sun, Moon, MessageSquareHeart, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import * as React from "react";
 import {
@@ -105,6 +105,11 @@ export default function ProfileDropdown({
       label: "Settings",
       href: "/settings?tab=general",
       icon: <Settings className="h-4 w-4" />,
+    },
+    {
+      label: "Welcome Tour",
+      href: "/onboarding",
+      icon: <Sparkles className="h-4 w-4 text-lime" />,
     },
     {
       label: "Give Feedback",
