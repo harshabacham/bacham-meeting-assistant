@@ -58,6 +58,19 @@ export function NotesWorkspacePage() {
         }
     }, [paramFolderId, storeFolderId, setStoreFolderId]);
 
+    const handleSelectNote = useCallback((noteId: string | null) => {
+        setActiveNoteId(noteId);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (noteId) {
+                next.set('noteId', noteId);
+            } else {
+                next.delete('noteId');
+            }
+            return next;
+        }, { replace: true });
+    }, [setSearchParams]);
+
     const handleSelectFolder = useCallback((folderId: string | null) => {
         setStoreFolderId(folderId);
         setActiveNoteId(null);
@@ -65,6 +78,7 @@ export function NotesWorkspacePage() {
             const next = new URLSearchParams(prev);
             if (folderId) next.set('folderId', folderId);
             else next.delete('folderId');
+            next.delete('noteId');
             return next;
         }, { replace: true });
     }, [setStoreFolderId, setSearchParams]);
@@ -74,7 +88,14 @@ export function NotesWorkspacePage() {
 
     const updateTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-    const activeNote = notes.find(n => n.id === activeNoteId) || null;
+    const activeNote = useMemo(() => {
+        if (!activeNoteId) return null;
+        return notes.find(n => 
+            String(n.id) === String(activeNoteId) || 
+            String(n.id).toLowerCase() === String(activeNoteId).toLowerCase()
+        ) || null;
+    }, [notes, activeNoteId]);
+
     const activeFolder = folders.find(f => f.id === activeFolderId) || null;
 
     useLearningContext({
@@ -101,6 +122,8 @@ export function NotesWorkspacePage() {
                 const savedTranscript = localStorage.getItem(`transcript_${n.id}`) || n.transcript || undefined;
                 return {
                     ...n,
+                    id: String(n.id),
+                    tags: Array.isArray(n.tags) ? n.tags : [],
                     folderId,
                     summary: savedSummary,
                     transcript: savedTranscript,
@@ -113,7 +136,7 @@ export function NotesWorkspacePage() {
                 const savedDraft = localStorage.getItem(`user_notes_draft_${lec.id}`) || '';
                 const lecFolderId = lec.folderId || (lec as any).folder_id || null;
                 return {
-                    id: lec.id,
+                    id: String(lec.id),
                     title: lec.title || 'Untitled Meeting',
                     content: savedDraft,
                     summary: lec.summary || undefined,
@@ -156,6 +179,7 @@ export function NotesWorkspacePage() {
         refreshWorkspaceData();
     }, [refreshWorkspaceData]);
 
+    const triedRefreshForNoteId = useRef<string | null>(null);
     useEffect(() => {
         if (queryNoteId) {
             if (notes.length > 0) {
@@ -164,20 +188,17 @@ export function NotesWorkspacePage() {
                     String(n.id).toLowerCase() === String(queryNoteId).toLowerCase()
                 );
                 if (note) {
-                    if (activeNoteId !== note.id) {
-                        setActiveNoteId(note.id);
-                    }
-                } else {
+                    setActiveNoteId(note.id);
+                } else if (triedRefreshForNoteId.current !== queryNoteId) {
+                    triedRefreshForNoteId.current = queryNoteId;
                     refreshWorkspaceData();
                 }
             }
         } else {
-            // When queryNoteId is cleared/absent in URL, clear activeNoteId so dashboard or folder view shows
-            if (activeNoteId !== null) {
-                setActiveNoteId(null);
-            }
+            triedRefreshForNoteId.current = null;
+            setActiveNoteId(null);
         }
-    }, [queryNoteId, notes, activeNoteId, refreshWorkspaceData]);
+    }, [queryNoteId, notes, refreshWorkspaceData]);
 
     // Open or create calendar event note if query params are present
     const createdEventRef = useRef<string | null>(null);
@@ -197,7 +218,7 @@ export function NotesWorkspacePage() {
                 TauriClient.updateWorkspaceNote(existing.id, undefined, undefined, undefined, updatedTags).catch(() => {});
                 setNotes(prev => prev.map(n => n.id === existing.id ? { ...n, folderId: targetFolder, tags: updatedTags } : n));
             }
-            setActiveNoteId(existing.id);
+            handleSelectNote(existing.id);
         } else {
             TauriClient.createWorkspaceNote(cleanTitle, '')
                 .then(async newNote => {
@@ -214,11 +235,11 @@ export function NotesWorkspacePage() {
                         folderId: targetFolder,
                     };
                     setNotes(prev => [noteObj, ...prev]);
-                    setActiveNoteId(newNote.id);
+                    handleSelectNote(newNote.id);
                 })
                 .catch(console.error);
         }
-    }, [eventTitle, eventTime, eventDate, eventFolderId, activeFolderId, notes]);
+    }, [eventTitle, eventTime, eventDate, eventFolderId, activeFolderId, notes, handleSelectNote]);
 
     // Filter notes and lectures by active folder
     const displayNotes = useMemo(() => {
@@ -313,26 +334,26 @@ export function NotesWorkspacePage() {
                 folderId: activeFolderId,
             };
             setNotes(prev => [noteObj, ...prev]);
-            setActiveNoteId(newNote.id);
+            handleSelectNote(newNote.id);
         } catch (e) {
             console.error('Failed to create note', e);
         }
-    }, [activeFolderId]);
+    }, [activeFolderId, handleSelectNote]);
 
     const handleDeleteNote = useCallback((id: string) => {
         handleUpdateNote(id, { tags: [...(notes.find(n => n.id === id)?.tags || []), 'system:trash'] });
-        if (activeNoteId === id) setActiveNoteId(null);
-    }, [activeNoteId, notes, handleUpdateNote]);
+        if (activeNoteId === id) handleSelectNote(null);
+    }, [activeNoteId, notes, handleUpdateNote, handleSelectNote]);
 
     const handleHardDeleteNote = useCallback(async (id: string) => {
         try {
             await TauriClient.deleteWorkspaceNote(id);
             setNotes(prev => prev.filter(n => n.id !== id));
-            if (activeNoteId === id) setActiveNoteId(null);
+            if (activeNoteId === id) handleSelectNote(null);
         } catch (e) {
             console.error('Failed to hard delete note', e);
         }
-    }, [activeNoteId]);
+    }, [activeNoteId, handleSelectNote]);
 
     const handleRestoreNote = useCallback((id: string) => {
         const note = notes.find(n => n.id === id);
@@ -344,12 +365,12 @@ export function NotesWorkspacePage() {
     const handleDeleteLecture = useCallback(async (id: string) => {
         try {
             await TauriClient.deleteLectures([id]);
-            // Refresh workspace data to hide deleted lecture from dashboard if it was there
+            if (activeNoteId === id) handleSelectNote(null);
             refreshWorkspaceData();
         } catch (e) {
             console.error('Failed to trash lecture', e);
         }
-    }, [refreshWorkspaceData]);
+    }, [activeNoteId, handleSelectNote, refreshWorkspaceData]);
 
     const handleRestoreLecture = useCallback(async (id: string) => {
         try {
@@ -363,11 +384,12 @@ export function NotesWorkspacePage() {
     const handleHardDeleteLecture = useCallback(async (id: string) => {
         try {
             await TauriClient.hardDeleteLectures([id]);
+            if (activeNoteId === id) handleSelectNote(null);
             refreshWorkspaceData();
         } catch (e) {
             console.error('Failed to hard delete lecture', e);
         }
-    }, [refreshWorkspaceData]);
+    }, [activeNoteId, handleSelectNote, refreshWorkspaceData]);
 
     const handleDeleteVideo = useCallback(async (id: string) => {
         try {
@@ -392,8 +414,7 @@ export function NotesWorkspacePage() {
                         folders={folders}
                         folderName={activeNoteFolderName}
                         onBack={() => {
-                            setActiveNoteId(null);
-                            setSearchParams(new URLSearchParams());
+                            handleSelectNote(null);
                             refreshWorkspaceData();
                         }}
                         onUpdate={(patch) => handleUpdateNote(activeNote.id, patch)}
@@ -403,8 +424,7 @@ export function NotesWorkspacePage() {
                             } else {
                                 handleDeleteNote(activeNote.id);
                             }
-                            setActiveNoteId(null);
-                            setSearchParams(new URLSearchParams());
+                            handleSelectNote(null);
                         }}
                         onDeleteVideo={() => {
                             handleDeleteVideo(activeNote.id);
@@ -418,7 +438,7 @@ export function NotesWorkspacePage() {
                         onSelectFolder={handleSelectFolder}
                         lectures={displayLectures}
                         onCreateNote={handleCreateNote}
-                        onSelectNote={setActiveNoteId}
+                        onSelectNote={handleSelectNote}
                         onUpdateNote={handleUpdateNote}
                         onDeleteNote={handleDeleteNote}
                         onHardDeleteNote={handleHardDeleteNote}
