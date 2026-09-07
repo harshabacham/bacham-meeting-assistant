@@ -343,7 +343,7 @@ export function NotesDashboard({
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
                                                         <div className="shrink-0 p-1.5 rounded-lg bg-[var(--surface-hover)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
-                                                            {note.isMeeting ? <Video size={14} className="text-primary" /> : <FileText size={14} />}
+                                                            {note.isMeeting ? <Video size={14} /> : <FileText size={14} />}
                                                         </div>
                                                         <div className="flex flex-col min-w-0 flex-1">
                                                             {editingNoteId === note.id ? (
@@ -380,13 +380,13 @@ export function NotesDashboard({
                                                                             {note.title || (note.isMeeting ? 'Untitled Meeting' : 'Untitled Note')}
                                                                         </span>
                                                                         {note.isMeeting && (
-                                                                            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.2 rounded shrink-0">
+                                                                            <span className="text-[10px] font-medium bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded-md shrink-0">
                                                                                 Meeting
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                     <span className="text-[11px] text-[var(--text-muted)]">
-                                                                        {note.isMeeting ? (note.meetingDurationMs ? `${Math.round(note.meetingDurationMs / 60000)} min` : 'Meeting Note') : 'Note'}
+                                                                        {note.isMeeting ? (note.meetingDurationMs ? `${Math.round(note.meetingDurationMs / 60000)} min` : 'Meeting') : 'Note'}
                                                                     </span>
                                                                 </>
                                                             )}
