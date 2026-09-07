@@ -36,6 +36,11 @@ export function StudyWorkspaceView({
     const [isLoading, setIsLoading] = useState(true);
     const [subTab, setSubTab] = useState<'deck' | 'list' | 'quiz'>(initialQuizId ? 'quiz' : 'deck');
 
+    // Source material check: requires transcript or notes
+    const hasNotes = Boolean(noteContent && noteContent.trim().length > 0);
+    const hasTranscript = Boolean(rawTranscript && rawTranscript.trim().length > 0);
+    const hasSourceMaterial = hasNotes || hasTranscript;
+
     // Deck practice states
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
@@ -324,19 +329,21 @@ export function StudyWorkspaceView({
                         <BookOpen size={13} />
                         <span>All Cards ({flashcards.length})</span>
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => setSubTab('quiz')}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
-                            subTab === 'quiz'
-                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                        )}
-                    >
-                        <HelpCircle size={13} />
-                        <span>Quiz ({quizzes.length})</span>
-                    </button>
+                    {(hasSourceMaterial || quizzes.length > 0) && (
+                        <button
+                            type="button"
+                            onClick={() => setSubTab('quiz')}
+                            className={cn(
+                                "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                subTab === 'quiz'
+                                    ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                            )}
+                        >
+                            <HelpCircle size={13} />
+                            <span>Quiz ({quizzes.length})</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Study Action Buttons */}
@@ -350,15 +357,17 @@ export function StudyWorkspaceView({
                         <span className="hidden sm:inline">Add Card</span>
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={handleGenerateFlashcards}
-                        disabled={isGeneratingCards}
-                        className="px-3 py-1.5 rounded-md bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
-                    >
-                        <Sparkles size={13} className={isGeneratingCards ? "animate-spin" : "text-yellow-400"} />
-                        <span>{isGeneratingCards ? 'Generating...' : 'AI Generate'}</span>
-                    </button>
+                    {hasSourceMaterial && (
+                        <button
+                            type="button"
+                            onClick={handleGenerateFlashcards}
+                            disabled={isGeneratingCards}
+                            className="px-3 py-1.5 rounded-md bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                            <Sparkles size={13} className={isGeneratingCards ? "animate-spin" : "text-yellow-400"} />
+                            <span>{isGeneratingCards ? 'Generating...' : 'AI Generate'}</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -376,21 +385,25 @@ export function StudyWorkspaceView({
                             <Zap size={28} />
                         </div>
                         <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">
-                            No flashcards for this note yet
+                            {hasSourceMaterial ? "No flashcards for this note yet" : "No notes or transcript available"}
                         </h3>
                         <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
-                            Convert core concepts, facts, or discussions from this meeting into interactive flashcards for active recall.
+                            {hasSourceMaterial 
+                                ? "Convert core concepts, facts, or discussions from this meeting into interactive flashcards for active recall."
+                                : "Write notes or record a meeting first to automatically generate AI flashcards and quiz questions."}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-2.5 w-full justify-center">
-                            <button
-                                type="button"
-                                onClick={handleGenerateFlashcards}
-                                disabled={isGeneratingCards}
-                                className="px-4 py-2 rounded-lg bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
-                            >
-                                <Sparkles size={14} className={isGeneratingCards ? "animate-spin" : "text-yellow-400"} />
-                                <span>{isGeneratingCards ? 'Generating Deck...' : '✨ Generate with AI'}</span>
-                            </button>
+                            {hasSourceMaterial && (
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateFlashcards}
+                                    disabled={isGeneratingCards}
+                                    className="px-4 py-2 rounded-lg bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    <Sparkles size={14} className={isGeneratingCards ? "animate-spin" : "text-yellow-400"} />
+                                    <span>{isGeneratingCards ? 'Generating Deck...' : '✨ Generate with AI'}</span>
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => { setIsCreating(true); setSubTab('list'); }}
@@ -824,20 +837,24 @@ export function StudyWorkspaceView({
                                     <HelpCircle size={28} />
                                 </div>
                                 <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">
-                                    No quiz questions generated yet
+                                    {hasSourceMaterial ? "No quiz questions generated yet" : "No notes or transcript available"}
                                 </h3>
                                 <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
-                                    Generate multiple-choice quiz questions from this meeting note to test your knowledge retention.
+                                    {hasSourceMaterial
+                                        ? "Generate multiple-choice quiz questions from this meeting note to test your knowledge retention."
+                                        : "Write notes or record a meeting first to generate multiple-choice quizzes."}
                                 </p>
-                                <button
-                                    type="button"
-                                    onClick={handleGenerateQuiz}
-                                    disabled={isGeneratingQuiz}
-                                    className="px-4 py-2 rounded-lg bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                    <Sparkles size={14} className={isGeneratingQuiz ? "animate-spin" : "text-green-400"} />
-                                    <span>{isGeneratingQuiz ? 'Generating Quiz...' : '✨ Generate Quiz with AI'}</span>
-                                </button>
+                                {hasSourceMaterial && (
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateQuiz}
+                                        disabled={isGeneratingQuiz}
+                                        className="px-4 py-2 rounded-lg bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                        <Sparkles size={14} className={isGeneratingQuiz ? "animate-spin" : "text-green-400"} />
+                                        <span>{isGeneratingQuiz ? 'Generating Quiz...' : '✨ Generate Quiz with AI'}</span>
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className="w-full flex flex-col gap-4">

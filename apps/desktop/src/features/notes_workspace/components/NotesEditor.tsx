@@ -411,8 +411,41 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
     const queryCardId = searchParams.get('cardId');
     const queryQuizId = searchParams.get('quizId');
 
+    const [rawTranscript, setRawTranscript] = useState<string>(() => note.transcript || localStorage.getItem(`transcript_${note.id}`) || '');
+    const [aiSummary, setAiSummary] = useState<string>(() => note.summary || localStorage.getItem(`summary_${note.id}`) || '');
+    const [notePlainText, setNotePlainText] = useState<string>(() => {
+        const direct = note.content ? note.content.replace(/<[^>]+>/g, '').trim() : '';
+        const savedDraft = localStorage.getItem(`user_notes_draft_${note.id}`) || '';
+        const draftText = savedDraft ? savedDraft.replace(/<[^>]+>/g, '').trim() : '';
+        return direct || draftText || '';
+    });
+    const [flashcardCount, setFlashcardCount] = useState<number>(0);
+    const [quizCount, setQuizCount] = useState<number>(0);
+
+    useEffect(() => {
+        if (note.id) {
+            TauriClient.listFlashcards(note.id)
+                .then(cards => setFlashcardCount(cards ? cards.length : 0))
+                .catch(() => setFlashcardCount(0));
+            TauriClient.listQuizQuestions(note.id)
+                .then(quizzes => setQuizCount(quizzes ? quizzes.length : 0))
+                .catch(() => setQuizCount(0));
+        }
+    }, [note.id]);
+
+    const hasTranscript = Boolean(rawTranscript && rawTranscript.trim().length > 0);
+    const hasNotes = Boolean(notePlainText && notePlainText.trim().length > 0);
+    // Don't give option for quiz or flashcards until they have any one of transcript or notes (or existing cards)
+    const hasStudyMaterial = hasTranscript || hasNotes || flashcardCount > 0 || quizCount > 0;
+
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        if (queryTab === 'study' || queryTab === 'flashcards' || queryTab === 'quiz' || queryCardId || queryQuizId) return 'study';
+        const hasInitialSource = Boolean(
+            (note.transcript && note.transcript.trim().length > 0) ||
+            (localStorage.getItem(`transcript_${note.id}`)?.trim()) ||
+            (note.content && note.content.replace(/<[^>]+>/g, '').trim().length > 0) ||
+            (localStorage.getItem(`user_notes_draft_${note.id}`)?.trim())
+        );
+        if (hasInitialSource && (queryTab === 'study' || queryTab === 'flashcards' || queryTab === 'quiz' || queryCardId || queryQuizId)) return 'study';
         if (queryTab === 'transcript') return 'transcript';
         if (queryTab === 'notes') return 'notes';
         if (queryTab === 'chat') return 'chat';
@@ -420,18 +453,14 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         return 'notes';
     });
 
-    const [flashcardCount, setFlashcardCount] = useState<number>(0);
-
     useEffect(() => {
-        if (note.id) {
-            TauriClient.listFlashcards(note.id)
-                .then(cards => setFlashcardCount(cards ? cards.length : 0))
-                .catch(() => setFlashcardCount(0));
+        if (!hasStudyMaterial && viewMode === 'study') {
+            setViewMode(note.isMeeting ? 'summary' : 'notes');
         }
-    }, [note.id]);
+    }, [hasStudyMaterial, viewMode, note.isMeeting]);
 
     useEffect(() => {
-        if (queryTab === 'study' || queryTab === 'flashcards' || queryTab === 'quiz' || queryCardId || queryQuizId) {
+        if (hasStudyMaterial && (queryTab === 'study' || queryTab === 'flashcards' || queryTab === 'quiz' || queryCardId || queryQuizId)) {
             setViewMode('study');
         } else if (queryTab === 'transcript') {
             setViewMode('transcript');
@@ -442,15 +471,20 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         } else if (queryTab === 'summary') {
             setViewMode('summary');
         }
-    }, [queryTab, queryCardId, queryQuizId]);
+    }, [queryTab, queryCardId, queryQuizId, hasStudyMaterial]);
 
-    const [rawTranscript, setRawTranscript] = useState<string>(() => note.transcript || localStorage.getItem(`transcript_${note.id}`) || '');
-    const [aiSummary, setAiSummary] = useState<string>(() => note.summary || localStorage.getItem(`summary_${note.id}`) || '');
     const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
     const [transcriptSearch, setTranscriptSearch] = useState<string>('');
     const [transcriptCopied, setTranscriptCopied] = useState(false);
     const [summaryCopied, setSummaryCopied] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    useEffect(() => {
+        if (note.content) {
+            const text = note.content.replace(/<[^>]+>/g, '').trim();
+            if (text) setNotePlainText(text);
+        }
+    }, [note.content]);
 
     useEffect(() => {
         const storedTranscript = note.transcript || localStorage.getItem(`transcript_${note.id}`) || '';
@@ -479,6 +513,8 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
             // Always fetch saved notes from database for meetings if note content is not yet in editor
             TauriClient.getNotes(note.id).then(dbNotes => {
                 if (dbNotes && dbNotes.trim()) {
+                    const plain = dbNotes.replace(/<[^>]+>/g, '').trim();
+                    if (plain) setNotePlainText(plain);
                     onUpdate({ content: dbNotes });
                     localStorage.setItem(`user_notes_draft_${note.id}`, dbNotes);
                     if (editor && (!editor.getText().trim() || editor.getHTML() === '<p></p>')) {
@@ -510,6 +546,8 @@ export function NotesEditor({ note, folders = [], folderName = 'All Notes', focu
         content: note.content || '',
         onUpdate: ({ editor }) => {
             const html = editor.getHTML();
+            const plain = editor.getText().trim();
+            setNotePlainText(plain);
             onUpdate({ content: html });
         },
         editorProps: {
@@ -957,25 +995,27 @@ Return only the polished transcript text:`;
                         {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />}
                     </button>
 
-                    {/* 4. Study / Flashcards Button */}
-                    <button
-                        data-tauri-drag-region="false"
-                        type="button"
-                        onClick={() => setViewMode('study')}
-                        className={cn(
-                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
-                            viewMode === 'study'
-                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
-                        )}
-                        title="Flashcards & Active Recall"
-                    >
-                        <Zap size={12} className={cn("shrink-0", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
-                        <span className={cn(viewMode === 'study' ? "inline" : "hidden xl:inline")}>Study</span>
-                        {flashcardCount > 0 && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
-                        )}
-                    </button>
+                    {/* 4. Study / Flashcards Button - only available if transcript or notes exist */}
+                    {hasStudyMaterial && (
+                        <button
+                            data-tauri-drag-region="false"
+                            type="button"
+                            onClick={() => setViewMode('study')}
+                            className={cn(
+                                "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                                viewMode === 'study'
+                                    ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
+                            )}
+                            title="Flashcards & Active Recall"
+                        >
+                            <Zap size={12} className={cn("shrink-0", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
+                            <span className={cn(viewMode === 'study' ? "inline" : "hidden xl:inline")}>Study</span>
+                            {(flashcardCount > 0 || quizCount > 0) && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                            )}
+                        </button>
+                    )}
 
                     {/* 5. Chat Button */}
                     <button
@@ -1767,14 +1807,14 @@ Return only the polished transcript text:`;
             {/* ════════════════════════════════════════════════════════════════════════════ */}
             {/* VIEW 5: ⚡ ACTIVE RECALL & STUDY (FLASHCARDS & QUIZ)                         */}
             {/* ════════════════════════════════════════════════════════════════════════════ */}
-            {viewMode === 'study' && (
+            {viewMode === 'study' && hasStudyMaterial && (
                 <StudyWorkspaceView
                     noteId={note.id}
                     noteTitle={note.title}
                     initialCardId={queryCardId}
                     initialQuizId={queryQuizId}
                     rawTranscript={rawTranscript}
-                    noteContent={editor ? editor.getText() : note.content}
+                    noteContent={notePlainText || (editor ? editor.getText() : note.content)}
                     onSeekToTimestamp={handleSeekToTimestamp}
                 />
             )}
