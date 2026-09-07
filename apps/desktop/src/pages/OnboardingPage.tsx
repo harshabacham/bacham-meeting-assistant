@@ -20,16 +20,10 @@ export const OnboardingPage: React.FC = () => {
   const { user } = useAuthStore();
 
   const handleFinish = () => {
-    // If already logged in, route to storage setup or workspace
+    localStorage.setItem('hasSeenOnboarding', 'true');
     if (user) {
-      const hasSetup = localStorage.getItem('hasSetupStoragePath') === 'true';
-      if (!hasSetup) {
-        navigate('/setup-storage');
-      } else {
-        navigate('/');
-      }
+      navigate('/');
     } else {
-      // Proceed new user to login page
       navigate('/login');
     }
   };

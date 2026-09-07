@@ -146,8 +146,10 @@ export const LoginPage = () => {
       photoURL: 'avatar:1',
     };
     setUser(guestUser);
+    localStorage.setItem('hasSeenOnboarding', 'true');
     const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
     if (!hasSetupStorage) {
+      localStorage.setItem('needs_storage_setup', 'true');
       navigate('/setup-storage');
     } else {
       navigate('/');
@@ -170,8 +172,10 @@ export const LoginPage = () => {
         console.error("Failed to update profile", error);
       }
     }
+    localStorage.setItem('hasSeenOnboarding', 'true');
     const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
     if (!hasSetupStorage) {
+      localStorage.setItem('needs_storage_setup', 'true');
       navigate('/setup-storage');
     } else {
       navigate('/');

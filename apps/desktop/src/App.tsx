@@ -35,18 +35,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <SplashScreen />;
   }
 
+  // If user is already authenticated, mark onboarding as completed so they are never bothered
+  if (user && localStorage.getItem('hasSeenOnboarding') !== 'true') {
+    localStorage.setItem('hasSeenOnboarding', 'true');
+  }
+
   const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
 
-  if (!hasSeenOnboarding && location.pathname !== '/onboarding' && location.pathname !== '/login') {
+  // Only show onboarding ONCE for brand new unauthenticated users
+  if (!user && !hasSeenOnboarding && location.pathname !== '/onboarding' && location.pathname !== '/login') {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (!user) {
+  if (!user && location.pathname !== '/onboarding') {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
-  if (!hasSetupStorage && location.pathname !== '/setup-storage') {
+  // Only route to storage setup if explicitly flagged during first-time signup
+  const needsStorageSetup = localStorage.getItem('needs_storage_setup') === 'true';
+  if (user && needsStorageSetup && location.pathname !== '/setup-storage') {
     return <Navigate to="/setup-storage" replace />;
   }
 
