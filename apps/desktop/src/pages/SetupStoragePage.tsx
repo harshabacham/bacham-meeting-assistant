@@ -58,9 +58,8 @@ export const SetupStoragePage: React.FC = () => {
     const targetPath = isCustom && selectedPath.trim() ? selectedPath.trim() : defaultPath;
 
     try {
-      if (isCustom && selectedPath.trim()) {
-        await TauriClient.changeStorageLocation(targetPath);
-      }
+      // Always call changeStorageLocation so the backend initializes the layout and records the location
+      await TauriClient.changeStorageLocation(targetPath);
       localStorage.setItem('hasSetupStoragePath', 'true');
       localStorage.setItem('hasSeenOnboarding', 'true');
       localStorage.removeItem('needs_storage_setup');

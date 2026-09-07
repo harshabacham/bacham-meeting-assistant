@@ -54,9 +54,25 @@ pub fn run() {
     let builder = builder.setup(move |app| {
             let handle = app.handle().clone();
             
-            // Resolve DB Path
-            let docs = handle.path().document_dir().expect("Failed to resolve Documents dir");
-            let bacham_dir = docs.join("BACHAM");
+            // Resolve DB Path from custom marker file if configured, otherwise default to Documents/BACHAM
+            let default_bacham_dir = handle.path().document_dir().expect("Failed to resolve Documents dir").join("BACHAM");
+            let bacham_dir = if let Ok(config_dir) = handle.path().app_config_dir() {
+                let marker = config_dir.join("storage_location.txt");
+                if let Ok(custom) = std::fs::read_to_string(&marker) {
+                    let trimmed = custom.trim();
+                    if !trimmed.is_empty() {
+                        std::path::PathBuf::from(trimmed)
+                    } else {
+                        default_bacham_dir
+                    }
+                } else {
+                    default_bacham_dir
+                }
+            } else {
+                default_bacham_dir
+            };
+
+            let _ = crate::storage::initialize_layout(bacham_dir.clone());
             let db_path = bacham_dir.join("Data").join("bacham.sqlite");
             
             // Ensure main window is present and visible

@@ -30,8 +30,8 @@ pub async fn storage_change_location(app: AppHandle, input: ChangeLocationInput,
     let pool = &state.pool;
     
     let storage_row = sqlx::query("SELECT value FROM settings WHERE key = 'storage_root_path'").fetch_optional(pool).await?;
-    let old_path_str = storage_row.map(|r| r.get::<String, _>("value")).unwrap_or_else(|| {
-        app.path().document_dir().unwrap().join("BACHAM").to_string_lossy().to_string()
+    let old_path_str = storage_row.and_then(|r| r.get::<Option<String>, _>("value")).unwrap_or_else(|| {
+        app.path().document_dir().unwrap_or_else(|_| PathBuf::from(".")).join("BACHAM").to_string_lossy().to_string()
     });
 
     let old_root = PathBuf::from(&old_path_str);
@@ -39,10 +39,20 @@ pub async fn storage_change_location(app: AppHandle, input: ChangeLocationInput,
 
     if old_root != new_root {
         move_storage(&old_root, &new_root)?;
-        
-        sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('storage_root_path', ?)")
-            .bind(&input.new_path)
-            .execute(pool).await?;
+    } else {
+        initialize_layout(new_root.clone())?;
+    }
+
+    // Always persist to SQLite settings table
+    sqlx::query("INSERT OR REPLACE INTO settings (key, value) VALUES ('storage_root_path', ?)")
+        .bind(&input.new_path)
+        .execute(pool).await?;
+
+    // Persist to marker file in app_config_dir so startup knows the custom location before DB opens
+    if let Ok(config_dir) = app.path().app_config_dir() {
+        let _ = std::fs::create_dir_all(&config_dir);
+        let marker = config_dir.join("storage_location.txt");
+        let _ = std::fs::write(&marker, &input.new_path);
     }
     
     let layout = initialize_layout(new_root)?;
