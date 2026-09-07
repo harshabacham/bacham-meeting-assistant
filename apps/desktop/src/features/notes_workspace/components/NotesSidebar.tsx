@@ -1,8 +1,9 @@
-import { Search, Plus, Pin, Trash2, Copy, MoreVertical, FileText, Folder as FolderIcon, FolderPlus, Layers, Edit2, Video } from 'lucide-react';
+import { Search, Plus, Pin, Trash2, Copy, MoreVertical, FileText, Folder as FolderIcon, FolderPlus, Layers, Edit2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/components';
 import { useConfirmStore } from '@/components/ui/ConfirmProvider';
 import { Note } from '../NotesWorkspacePage';
+import { ItemPlatformLogo } from '@/components/ui/ItemPlatformLogo';
 
 interface NotesSidebarProps {
     notes: Note[];
@@ -411,7 +412,7 @@ function NoteItem({ note, isActive, onSelect, onTogglePin, onDuplicate, onDelete
                 <div className="flex flex-col gap-1 pr-6">
                     <div className="flex items-center gap-1.5 min-w-0">
                         {note.isPinned && <Pin size={10} className="text-[var(--accent)] shrink-0 fill-[var(--accent)]" />}
-                        {note.isMeeting && <Video size={11} className="text-[var(--text-muted)] shrink-0" />}
+                        <ItemPlatformLogo note={note} size={12} className="shrink-0" />
                         <span className={cn(
                             'text-[13px] font-bold truncate',
                             isActive ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'
@@ -422,9 +423,6 @@ function NoteItem({ note, isActive, onSelect, onTogglePin, onDuplicate, onDelete
                     <span className="text-[11px] text-[var(--text-muted)] line-clamp-1">{snippet}</span>
                     <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[10px] font-semibold text-[var(--text-muted)] shrink-0">{dateStr}</span>
-                        {note.isMeeting && (
-                            <span className="text-[9px] font-medium px-1.5 py-0.5 bg-[var(--surface-raised)] border border-[var(--border)]/60 text-[var(--text-secondary)] rounded-md">Meeting</span>
-                        )}
                         {userTags.slice(0, 2).map(t => (
                             <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 bg-[var(--accent-dim)] text-[var(--accent)] rounded">#{t}</span>
                         ))}

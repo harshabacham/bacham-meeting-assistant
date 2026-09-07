@@ -268,8 +268,11 @@ export const LoginPage = () => {
         {/* Ambient Specular Sheen */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/70 to-transparent rounded-t-3xl" />
 
-        {/* Title */}
-        <div className="relative z-10 text-center mb-5">
+        {/* Real Logo & Title */}
+        <div className="relative z-10 text-center mb-5 flex flex-col items-center">
+          <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-black/5 p-2 mb-3 flex items-center justify-center">
+            <img src="/logo.png" alt="Bacham" className="w-full h-full object-contain" />
+          </div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </h1>

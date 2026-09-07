@@ -21,6 +21,7 @@ import { Note } from '../NotesWorkspacePage';
 import { AgenticAiChat, AiRecipe } from './AgenticAiChat';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { AddLecturesDialog } from '@/components/library/AddLecturesDialog';
+import { ItemPlatformLogo, detectNotePlatform } from '@/components/ui/ItemPlatformLogo';
 
 const DASHBOARD_RECIPES: AiRecipe[] = [
     {
@@ -339,11 +340,11 @@ export function NotesDashboard({
                                                         if (editingNoteId === note.id) return;
                                                         onSelectNote(note.id);
                                                     }}
-                                                    className="group flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-[var(--surface-hover)] cursor-pointer transition-colors relative"
+                                                    className="group flex items-center justify-between px-3 py-2.5 -mx-3 rounded-xl hover:bg-[var(--surface-hover)] cursor-pointer transition-colors relative"
                                                 >
                                                     <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
-                                                        <div className="shrink-0 p-1.5 rounded-lg bg-[var(--surface-hover)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
-                                                            {note.isMeeting ? <Video size={14} /> : <FileText size={14} />}
+                                                        <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)]/60 shadow-2xs">
+                                                            <ItemPlatformLogo note={note} size={15} />
                                                         </div>
                                                         <div className="flex flex-col min-w-0 flex-1">
                                                             {editingNoteId === note.id ? (
@@ -373,23 +374,24 @@ export function NotesDashboard({
                                                                         <X size={14} />
                                                                     </button>
                                                                 </div>
-                                                            ) : (
-                                                                <>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-[13px] font-medium text-[var(--text-primary)] truncate">
+                                                            ) : (() => {
+                                                                const platformInfo = detectNotePlatform(note);
+                                                                const durationMin = note.meetingDurationMs ? Math.round(note.meetingDurationMs / 60000) : 0;
+                                                                const subtitle = note.isMeeting 
+                                                                    ? (durationMin > 0 ? `${platformInfo.label} · ${durationMin} min` : platformInfo.label)
+                                                                    : (note.content ? note.content.slice(0, 50).replace(/^[#\s\-*]+/, '').trim() || 'Note' : 'Note');
+
+                                                                return (
+                                                                    <>
+                                                                        <span className="text-[13px] font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors truncate">
                                                                             {note.title || (note.isMeeting ? 'Untitled Meeting' : 'Untitled Note')}
                                                                         </span>
-                                                                        {note.isMeeting && (
-                                                                            <span className="text-[10px] font-medium bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)] px-1.5 py-0.5 rounded-md shrink-0">
-                                                                                Meeting
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <span className="text-[11px] text-[var(--text-muted)]">
-                                                                        {note.isMeeting ? (note.meetingDurationMs ? `${Math.round(note.meetingDurationMs / 60000)} min` : 'Meeting') : 'Note'}
-                                                                    </span>
-                                                                </>
-                                                            )}
+                                                                        <span className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">
+                                                                            {subtitle}
+                                                                        </span>
+                                                                    </>
+                                                                );
+                                                            })()}
                                                         </div>
                                                     </div>
                                                     
@@ -508,11 +510,11 @@ export function NotesDashboard({
                                 {trashedLectures.map((item: any) => (
                                     <div 
                                         key={item.id}
-                                        className="group flex items-center justify-between p-2.5 -mx-2.5 rounded-xl hover:bg-[var(--surface-hover)] transition-colors relative"
+                                        className="group flex items-center justify-between px-3 py-2.5 -mx-3 rounded-xl hover:bg-[var(--surface-hover)] transition-colors relative"
                                     >
                                         <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
-                                            <div className="shrink-0 p-1.5 rounded-lg bg-[var(--surface-hover)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
-                                                <Video size={14} />
+                                            <div className="shrink-0 flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)]/60 shadow-2xs">
+                                                <ItemPlatformLogo note={{ title: item.title, isMeeting: true, source: item.source }} size={15} />
                                             </div>
                                             <div className="flex flex-col min-w-0 flex-1">
                                                 <span className="text-[13px] font-medium text-[var(--text-primary)] truncate">{item.title}</span>

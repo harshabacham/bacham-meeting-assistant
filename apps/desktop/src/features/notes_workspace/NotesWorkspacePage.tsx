@@ -23,6 +23,7 @@ export interface Note {
     isMeeting?: boolean;
     meetingDurationMs?: number;
     videoPath?: string;
+    source?: string;
 }
 
 export function NotesWorkspacePage() {
@@ -126,6 +127,7 @@ export function NotesWorkspacePage() {
                     meetingDurationMs: lec.durationMs,
                     transcript: lec.transcript || undefined,
                     videoPath: lec.videoPath || undefined,
+                    source: lec.source,
                 };
             });
 
