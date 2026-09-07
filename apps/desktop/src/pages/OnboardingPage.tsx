@@ -3,16 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, ArrowLeft, Sparkles, Check,
-  Layers, Sliders, CheckCircle2
+  Layers, CheckCircle2, Mic, FileText, Brain, ShieldCheck
 } from 'lucide-react';
 import { WelcomeBentoGrid } from '@/components/onboarding/WelcomeBentoGrid';
-import { WelcomePersonalizeStep } from '@/components/onboarding/WelcomePersonalizeStep';
 import { WelcomeLaunchStep } from '@/components/onboarding/WelcomeLaunchStep';
 import { useAuthStore } from '@/shared/stores/authStore';
 
 const STEPS = [
-  { id: 0, label: 'Superpowers', icon: Layers },
-  { id: 1, label: 'Personalize', icon: Sliders },
+  { id: 0, label: 'Welcome', icon: Sparkles },
+  { id: 1, label: 'Features', icon: Layers },
   { id: 2, label: 'Ready', icon: CheckCircle2 },
 ];
 
@@ -157,7 +156,7 @@ export const OnboardingPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.2 }}
-              className="w-full flex flex-col items-center text-center space-y-8"
+              className="w-full flex flex-col items-center text-center space-y-10"
             >
               {/* Hero Title */}
               <div className="max-w-3xl space-y-3">
@@ -176,8 +175,136 @@ export const OnboardingPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Bento Grid Showcase */}
-              <WelcomeBentoGrid />
+              {/* 3 Core Highlights */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-5xl text-left">
+                {/* Pillar 1: Speech Capture */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="rounded-2xl border border-white/[0.08] bg-[#141517]/80 hover:bg-[#141517] backdrop-blur-xl p-6 flex flex-col justify-between transition-all duration-300 hover:border-lime/30 hover:shadow-[0_0_25px_rgba(186,255,41,0.06)]"
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-lime/10 border border-lime/20 flex items-center justify-center text-lime mb-4">
+                      <Mic size={18} />
+                    </div>
+                    <h3 className="text-base font-bold text-white tracking-tight mb-2">
+                      Live Speech Capture
+                    </h3>
+                    <p className="text-xs text-white/60 leading-relaxed mb-4">
+                      Record system audio and microphone simultaneously with real-time speaker separation and offline speech recognition.
+                    </p>
+                  </div>
+
+                  {/* Minimalist Waveform Graphic */}
+                  <div className="rounded-xl border border-white/[0.06] bg-[#0A0A0C]/90 p-3.5 flex items-center justify-between shadow-inner">
+                    <span className="text-[11px] font-medium text-white/70">Audio Stream</span>
+                    <div className="flex items-center gap-1 h-5">
+                      {[25, 55, 80, 45, 90, 70, 40, 85, 60, 95, 50, 75, 30].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          animate={{ height: [`${Math.max(20, h * 0.3)}%`, `${h}%`, `${Math.max(20, h * 0.4)}%`] }}
+                          transition={{
+                            repeat: Infinity,
+                            repeatType: "reverse",
+                            duration: 0.9 + (i % 4) * 0.15,
+                            ease: "easeInOut",
+                          }}
+                          className="w-1 rounded-full bg-lime/80"
+                          style={{ height: `${h}%` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Pillar 2: Automated Notes */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
+                  className="rounded-2xl border border-white/[0.08] bg-[#141517]/80 hover:bg-[#141517] backdrop-blur-xl p-6 flex flex-col justify-between transition-all duration-300 hover:border-lime/30 hover:shadow-[0_0_25px_rgba(186,255,41,0.06)]"
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-lime/10 border border-lime/20 flex items-center justify-center text-lime mb-4">
+                      <FileText size={18} />
+                    </div>
+                    <h3 className="text-base font-bold text-white tracking-tight mb-2">
+                      Instant Structured Notes
+                    </h3>
+                    <p className="text-xs text-white/60 leading-relaxed mb-4">
+                      Automatically turns hours of meetings into concise executive summaries, key decisions, and actionable task lists.
+                    </p>
+                  </div>
+
+                  {/* Summary Preview */}
+                  <div className="rounded-xl border border-white/[0.06] bg-[#0A0A0C]/90 p-3.5 space-y-2 shadow-inner">
+                    <div className="flex items-center gap-1.5 text-lime text-[10px] font-semibold tracking-wide uppercase">
+                      <Check size={11} strokeWidth={3} />
+                      <span>Key Action Items</span>
+                    </div>
+                    <p className="text-[11px] text-white/80 leading-snug line-clamp-2">
+                      Review production architecture & finalize weekly release milestones.
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Pillar 3: Flashcards */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="rounded-2xl border border-white/[0.08] bg-[#141517]/80 hover:bg-[#141517] backdrop-blur-xl p-6 flex flex-col justify-between transition-all duration-300 hover:border-lime/30 hover:shadow-[0_0_25px_rgba(186,255,41,0.06)]"
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-lime/10 border border-lime/20 flex items-center justify-center text-lime mb-4">
+                      <Brain size={18} />
+                    </div>
+                    <h3 className="text-base font-bold text-white tracking-tight mb-2">
+                      Flashcards & Study Decks
+                    </h3>
+                    <p className="text-xs text-white/60 leading-relaxed mb-4">
+                      Convert complex lecture ideas and meeting points into spaced-repetition cards and quizzes for instant memory retention.
+                    </p>
+                  </div>
+
+                  {/* Flashcard Preview */}
+                  <div className="rounded-xl border border-white/[0.06] bg-[#0A0A0C]/90 p-3.5 space-y-2 shadow-inner">
+                    <div className="flex items-center justify-between text-[10px] text-lime font-mono">
+                      <span>ACTIVE RECALL</span>
+                      <span className="text-white/40">Deck #1</span>
+                    </div>
+                    <p className="text-[11px] text-white/80 leading-snug">
+                      Key concepts converted into practice questions ready for review.
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Privacy Guarantee Banner */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.25 }}
+                className="w-full max-w-5xl rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3 flex items-center justify-center gap-2 text-xs text-white/60 text-center"
+              >
+                <ShieldCheck size={15} className="text-lime shrink-0" />
+                <span>
+                  <strong className="text-white font-medium">100% Local-First Storage:</strong> Your audio recordings, transcripts, and notes stay encrypted on your machine.
+                </span>
+              </motion.div>
+
+              {/* Explore Features CTA button */}
+              <motion.button
+                type="button"
+                onClick={handleNext}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-lime hover:bg-[#aef520] text-black font-bold text-sm shadow-[0_0_25px_rgba(186,255,41,0.2)] transition-all cursor-pointer"
+              >
+                <span>Explore Interactive Features</span>
+                <ArrowRight size={15} strokeWidth={2.5} />
+              </motion.button>
             </motion.div>
           )}
 
@@ -188,9 +315,24 @@ export const OnboardingPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.2 }}
-              className="w-full flex flex-col items-center"
+              className="w-full flex flex-col items-center text-center space-y-8"
             >
-              <WelcomePersonalizeStep />
+              {/* Features Header */}
+              <div className="max-w-3xl space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-xs font-semibold">
+                  <Layers size={13} />
+                  <span>Interactive Feature Suite</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                  Engineered for Focus, Speed & Retention.
+                </h2>
+                <p className="text-sm sm:text-base text-white/60 max-w-2xl mx-auto leading-relaxed">
+                  Interact with real-time waveform visualizers, speaker diarization, auto-generated task checklists, and active recall study decks below.
+                </p>
+              </div>
+
+              {/* Interactive Bento Grid Showcase */}
+              <WelcomeBentoGrid />
             </motion.div>
           )}
 
