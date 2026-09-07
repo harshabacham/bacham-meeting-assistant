@@ -204,7 +204,7 @@ export const LoginPage = () => {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
-          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-3xl border border-black/10 bg-[#F2F2F2] shadow-[0_20px_50px_rgba(0,0,0,0.25),inset_0_1px_1px_0_rgba(255,255,255,0.9)] p-6 text-neutral-900"
+          className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-3xl border border-black/10 bg-[#F2F2F2] shadow-[0_20px_50px_rgba(0,0,0,0.25),inset_0_1px_1px_0_rgba(255,255,255,0.9)] selection:bg-neutral-900 selection:text-white p-6 text-neutral-900"
         >
           {/* Ambient Specular Sheen */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/70 to-transparent rounded-t-3xl" />
@@ -220,7 +220,7 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-white/20 selection:text-white overflow-y-auto">
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-neutral-900 selection:text-white overflow-y-auto">
       {/* Background Video */}
       <video
         autoPlay
@@ -263,7 +263,7 @@ export const LoginPage = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-3xl border border-black/10 bg-[#F2F2F2] p-6 text-neutral-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),inset_0_1px_1px_0_rgba(255,255,255,0.9)] my-auto"
+        className="relative z-10 w-full max-w-[340px] overflow-hidden rounded-3xl border border-black/10 bg-[#F2F2F2] p-6 text-neutral-900 shadow-[0_20px_50px_rgba(0,0,0,0.25),inset_0_1px_1px_0_rgba(255,255,255,0.9)] selection:bg-neutral-900 selection:text-white my-auto"
       >
         {/* Ambient Specular Sheen */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/70 to-transparent rounded-t-3xl" />
@@ -295,7 +295,7 @@ export const LoginPage = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-neutral-300 bg-white hover:border-neutral-400 focus:bg-white py-2.5 pl-10 pr-3.5 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                className="w-full rounded-2xl border border-neutral-300 bg-white hover:border-neutral-400 focus:bg-white py-2.5 pl-10 pr-3.5 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] selection:bg-neutral-900 selection:text-white"
                 placeholder="you@example.com"
                 required
               />
@@ -310,7 +310,7 @@ export const LoginPage = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-neutral-300 bg-white hover:border-neutral-400 focus:bg-white py-2.5 pl-10 pr-10 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
+                className="w-full rounded-2xl border border-neutral-300 bg-white hover:border-neutral-400 focus:bg-white py-2.5 pl-10 pr-10 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none transition-all focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] selection:bg-neutral-900 selection:text-white"
                 placeholder="••••••••"
                 required
               />
