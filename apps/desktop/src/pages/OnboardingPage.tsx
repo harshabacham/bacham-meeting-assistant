@@ -50,7 +50,7 @@ export const OnboardingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen w-full bg-[#0A0A0C] text-[#F8F9FA] flex flex-col justify-between overflow-x-hidden select-none font-sans">
+    <div className="relative h-screen max-h-screen w-full bg-[#0A0A0C] text-[#F8F9FA] flex flex-col overflow-y-auto overflow-x-hidden select-none font-sans scroll-smooth">
       {/* ─── Ambient Glow & Subtle Grid Background ─── */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {/* Subtle dot matrix grid */}
@@ -60,67 +60,73 @@ export const OnboardingPage: React.FC = () => {
         <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-lime/5 rounded-full blur-[120px] pointer-events-none" />
       </div>
 
-      {/* ─── Top Navigation Header ─── */}
-      <header className="relative z-20 w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between border-b border-white/[0.06] backdrop-blur-md">
-        {/* Logo & Brand */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-lime shadow-[0_0_12px_rgba(186,255,41,0.8)]" />
-            <span className="font-extrabold text-lg tracking-tight text-white font-sans">
-              BACHAM<span className="text-lime">.AI</span>
+      {/* ─── Top Navigation Header (Sticky) ─── */}
+      <header className="sticky top-0 z-30 w-full border-b border-white/[0.06] backdrop-blur-xl bg-[#0A0A0C]/85 shrink-0">
+        <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <img 
+                src="/logo.png" 
+                alt="Bacham Logo" 
+                className="w-7 h-7 rounded-lg object-contain shadow-sm" 
+              />
+              <span className="font-bold text-lg tracking-tight text-white font-sans">
+                Bacham
+              </span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white/10 text-white/70 border border-white/10">
+              v1.0.0
             </span>
           </div>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-white/10 text-white/70 border border-white/10">
-            v2.0
-          </span>
+
+          {/* Stepper Pills */}
+          <div className="hidden sm:flex items-center gap-1.5 p-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+            {STEPS.map((step, idx) => {
+              const isActive = currentStep === idx;
+              const isCompleted = currentStep > idx;
+              const Icon = step.icon;
+
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => setCurrentStep(idx)}
+                  className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'bg-lime text-black shadow-sm'
+                      : isCompleted
+                      ? 'text-white/80 hover:text-white'
+                      : 'text-white/40 hover:text-white/60'
+                  }`}
+                >
+                  {isCompleted ? (
+                    <Check size={12} strokeWidth={3} className="text-lime" />
+                  ) : (
+                    <Icon size={12} className={isActive ? "text-black" : "text-white/50"} />
+                  )}
+                  <span>{step.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Skip button */}
+          <button
+            type="button"
+            onClick={handleFinish}
+            className="flex items-center gap-2 text-xs text-white/50 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            <span>Skip to Workspace</span>
+            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white/10 rounded text-white/60">
+              Esc
+            </kbd>
+          </button>
         </div>
-
-        {/* Stepper Pills */}
-        <div className="hidden sm:flex items-center gap-1.5 p-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
-          {STEPS.map((step, idx) => {
-            const isActive = currentStep === idx;
-            const isCompleted = currentStep > idx;
-            const Icon = step.icon;
-
-            return (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => setCurrentStep(idx)}
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
-                  isActive
-                    ? 'bg-lime text-black shadow-sm'
-                    : isCompleted
-                    ? 'text-white/80 hover:text-white'
-                    : 'text-white/40 hover:text-white/60'
-                }`}
-              >
-                {isCompleted ? (
-                  <Check size={12} strokeWidth={3} className="text-lime" />
-                ) : (
-                  <Icon size={12} className={isActive ? "text-black" : "text-white/50"} />
-                )}
-                <span>{step.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Skip button */}
-        <button
-          type="button"
-          onClick={handleFinish}
-          className="flex items-center gap-2 text-xs text-white/50 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
-        >
-          <span>Skip to Workspace</span>
-          <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white/10 rounded text-white/60">
-            Esc
-          </kbd>
-        </button>
       </header>
 
-      {/* ─── Main Content Canvas ─── */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 w-full max-w-6xl mx-auto">
+      {/* ─── Main Content Canvas (Scrollable) ─── */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-start px-4 sm:px-6 py-8 sm:py-10 w-full max-w-6xl mx-auto">
         <AnimatePresence mode="wait">
           {currentStep === 0 && (
             <motion.div
@@ -135,7 +141,7 @@ export const OnboardingPage: React.FC = () => {
               <div className="max-w-3xl space-y-3">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime/10 border border-lime/20 text-lime text-xs font-semibold">
                   <Sparkles size={13} />
-                  <span>Welcome to Bacham Intelligence</span>
+                  <span>Welcome to Bacham</span>
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
                   Your Second Brain for Every <br />
@@ -181,49 +187,51 @@ export const OnboardingPage: React.FC = () => {
         </AnimatePresence>
       </main>
 
-      {/* ─── Bottom Action Bar (Steps 0 & 1) ─── */}
+      {/* ─── Bottom Action Bar (Sticky, Steps 0 & 1) ─── */}
       {currentStep < 2 && (
-        <footer className="relative z-20 w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-between border-t border-white/[0.06] backdrop-blur-md">
-          {/* Back button */}
-          <div>
-            {currentStep > 0 ? (
-              <button
-                type="button"
-                onClick={handleBack}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white/70 hover:text-white hover:bg-white/5 transition-all"
-              >
-                <ArrowLeft size={14} /> Back
-              </button>
-            ) : (
-              <span className="text-xs text-white/40">Step 1 of 3</span>
-            )}
-          </div>
+        <footer className="sticky bottom-0 z-30 w-full border-t border-white/[0.06] backdrop-blur-xl bg-[#0A0A0C]/85 shrink-0">
+          <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
+            {/* Back button */}
+            <div>
+              {currentStep > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                >
+                  <ArrowLeft size={14} /> Back
+                </button>
+              ) : (
+                <span className="text-xs text-white/40">Step 1 of 3</span>
+              )}
+            </div>
 
-          {/* Step dots */}
-          <div className="flex items-center gap-2">
-            {STEPS.map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === currentStep
-                    ? 'w-6 bg-lime shadow-[0_0_8px_rgba(186,255,41,0.6)]'
-                    : 'w-1.5 bg-white/20'
-                }`}
-              />
-            ))}
-          </div>
+            {/* Step dots */}
+            <div className="flex items-center gap-2">
+              {STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === currentStep
+                      ? 'w-6 bg-lime shadow-[0_0_8px_rgba(186,255,41,0.6)]'
+                      : 'w-1.5 bg-white/20'
+                  }`}
+                />
+              ))}
+            </div>
 
-          {/* Continue button */}
-          <motion.button
-            type="button"
-            onClick={handleNext}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lime hover:bg-[#aef520] text-black font-bold text-xs tracking-wide shadow-[0_0_20px_rgba(186,255,41,0.25)] transition-all cursor-pointer"
-          >
-            <span>{currentStep === 0 ? 'Explore & Personalize' : 'Continue to Launch'}</span>
-            <ArrowRight size={14} strokeWidth={2.5} />
-          </motion.button>
+            {/* Continue button */}
+            <motion.button
+              type="button"
+              onClick={handleNext}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lime hover:bg-[#aef520] text-black font-bold text-xs tracking-wide shadow-[0_0_20px_rgba(186,255,41,0.25)] transition-all cursor-pointer"
+            >
+              <span>{currentStep === 0 ? 'Explore & Personalize' : 'Continue to Launch'}</span>
+              <ArrowRight size={14} strokeWidth={2.5} />
+            </motion.button>
+          </div>
         </footer>
       )}
     </div>
