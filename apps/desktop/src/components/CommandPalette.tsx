@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     Search as SearchIcon, FileText, BrainCircuit, Play, BookOpen, Clock, Command, Terminal, Tags, Sparkles, History,
-    MessageSquareHeart
+    MessageSquareHeart, X
 } from 'lucide-react';
 import { useSearchStore } from '@/features/search/searchStore';
 import { UniversalSearchResult, TauriClient } from '@/infrastructure/tauri-client';
-import { SmoothInput } from '@/components/ui/skiper-ui/skiper106';
 import { useFeedbackStore } from '@/shared/stores/feedbackStore';
 
 const ENTITY_FILTERS = [
@@ -158,55 +157,78 @@ export function CommandPalette() {
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'lecture': return <Play size={16} className="text-primary" />;
-            case 'transcript': return <FileText size={16} className="text-muted-foreground" />;
-            case 'summary': return <BrainCircuit size={16} className="text-accent" />;
-            case 'timeline': return <Clock size={16} className="text-warning" />;
-            case 'flashcard': return <BookOpen size={16} className="text-blue-400" />;
-            case 'command': return <Terminal size={16} className="text-green-400" />;
-            case 'tag': return <Tags size={16} className="text-purple-400" />;
-            default: return <BookOpen size={16} className="text-muted-foreground" />;
+            case 'lecture': return <Play size={15} className="text-violet-400" />;
+            case 'transcript': return <FileText size={15} className="text-neutral-400" />;
+            case 'summary': return <BrainCircuit size={15} className="text-amber-400" />;
+            case 'timeline': return <Clock size={15} className="text-sky-400" />;
+            case 'flashcard': return <BookOpen size={15} className="text-blue-400" />;
+            case 'command': return <Terminal size={15} className="text-emerald-400" />;
+            case 'tag': return <Tags size={15} className="text-purple-400" />;
+            default: return <BookOpen size={15} className="text-neutral-400" />;
         }
     };
 
     const flatResults = results?.bestOverall || [];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-            <div className="absolute inset-0 bg-[var(--glass-bg)] backdrop-blur-sm" onClick={close} />
-            <div className="relative w-full max-w-2xl bg-surface border border-border/60 rounded-2xl shadow-2xl overflow-hidden animate-fade-in-up">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[14vh] px-4 selection:bg-neutral-800 selection:text-white">
+            <div 
+                className="absolute inset-0 bg-black/65 backdrop-blur-sm transition-opacity" 
+                onClick={close} 
+            />
+            <div className="relative w-full max-w-2xl bg-[#18181b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden transition-all">
                 
                 {/* Search Input */}
-                <div className="flex items-center px-4 py-3 border-b border-border/50 bg-surface/50">
-                    <SearchIcon size={20} className="text-muted-foreground mr-3" />
-                    <SmoothInput
+                <div className="flex items-center px-4 py-3.5 border-b border-white/10 bg-transparent">
+                    <SearchIcon size={18} className="text-neutral-400 shrink-0 mr-3 pointer-events-none" />
+                    <input
                         autoFocus
+                        type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search across your knowledge & visual concepts..."
-                        className="flex-1 bg-transparent border-none outline-none text-foreground text-[16px] placeholder:text-muted-foreground/50 w-full"
-                        wrapperClassName="flex-1 max-w-full p-0 bg-transparent rounded-none focus-within:outline-none focus-within:ring-0 shadow-none border-none outline-none ring-0 has-[:focus-visible]:outline-none"
+                        className="flex-1 bg-transparent border-0 outline-none ring-0 focus:outline-none focus:ring-0 text-white text-[15px] placeholder:text-neutral-500 w-full"
+                        style={{ boxShadow: 'none' }}
                     />
-                    {query.trim().length > 0 && !aiMode && flatResults.length > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-1 rounded cursor-pointer hover:bg-indigo-500/20 transition-colors" onClick={handleAskAi}>
-                            <Sparkles size={12} /> <Command size={12} /> Enter to Smart Search
+                    {query.trim().length > 0 && (
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                            <button 
+                                type="button"
+                                onClick={() => setQuery('')}
+                                className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                title="Clear search"
+                            >
+                                <X size={14} />
+                            </button>
+                            {!aiMode && flatResults.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={handleAskAi}
+                                    className="flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-1 rounded-lg hover:bg-indigo-500/25 transition-all cursor-pointer font-medium"
+                                >
+                                    <Sparkles size={12} className="text-indigo-400" />
+                                    <span>Ask AI</span>
+                                    <kbd className="text-[10px] text-indigo-300/80 font-mono">⌘↵</kbd>
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
 
                 {/* Filters Row */}
                 {!aiMode && (
-                    <div className="flex items-center gap-2 px-4 py-2 border-b border-border/50 bg-surface-hover overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-1.5 px-4 py-2 border-b border-white/[0.06] bg-black/20 overflow-x-auto no-scrollbar">
                         {ENTITY_FILTERS.map(f => {
                             const isActive = (filters.entityTypes?.[0] === f.value) || (!filters.entityTypes && !f.value);
                             return (
                                 <button
                                     key={f.label}
+                                    type="button"
                                     onClick={() => setFilters({ entityTypes: f.value ? [f.value] : undefined })}
-                                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                                    className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                                         isActive 
-                                        ? 'bg-primary/20 text-primary border border-primary/30' 
-                                        : 'bg-surface border border-border/50 text-muted-foreground hover:bg-surface-hover hover:text-foreground'
+                                        ? 'bg-white/15 text-white border border-white/20 shadow-xs' 
+                                        : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border border-transparent'
                                     }`}
                                 >
                                     {f.label}
@@ -220,65 +242,81 @@ export function CommandPalette() {
                 <div className="max-h-[50vh] overflow-y-auto p-2">
                     {aiMode ? (
                         <div className="p-4">
-                            <div className="flex items-center gap-2 mb-4 text-accent font-medium">
+                            <div className="flex items-center gap-2 mb-3 text-indigo-400 font-medium text-sm">
                                 <Sparkles size={16} />
-                                AI Summary
+                                <span>AI Summary</span>
                             </div>
-                            <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                            <div className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap font-sans bg-black/30 p-4 rounded-xl border border-white/5">
                                 {aiResponse}
-                                {isAiLoading && <span className="animate-pulse">...</span>}
+                                {isAiLoading && <span className="inline-block animate-pulse ml-1 text-indigo-400">...</span>}
                             </div>
-                            <button onClick={() => setAiMode(false)} className="mt-6 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                            <button 
+                                type="button"
+                                onClick={() => setAiMode(false)} 
+                                className="mt-4 inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                            >
                                 ← Back to search results
                             </button>
                         </div>
                     ) : !query.trim() ? (
-                        <div className="py-4">
+                        <div className="py-2 px-1">
                             {history.length > 0 ? (
-                                <div className="space-y-1">
-                                    <div className="px-3 pb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Searches</div>
+                                <div className="space-y-0.5">
+                                    <div className="px-3 pb-1.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Recent Searches</div>
                                     {history.map((item) => (
-                                        <div key={item.id} onClick={() => handleSuggestionClick(item.query)} className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-surface-hover text-foreground transition-colors">
-                                            <History size={14} className="text-muted-foreground" />
+                                        <div 
+                                            key={item.id} 
+                                            onClick={() => handleSuggestionClick(item.query)} 
+                                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-white/[0.06] text-neutral-300 hover:text-white transition-colors"
+                                        >
+                                            <History size={14} className="text-neutral-500 shrink-0" />
                                             <span className="text-sm">{item.query}</span>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="py-8 text-center text-muted-foreground">
-                                    <Command size={32} className="mx-auto mb-3 opacity-20" />
-                                    <p>Type to search your library, transcripts, and visual concepts (e.g. diagrams)</p>
-                                    <div className="mt-4 flex justify-center">
+                                <div className="py-10 text-center text-neutral-400">
+                                    <Command size={28} className="mx-auto mb-3 text-neutral-600 stroke-[1.5]" />
+                                    <p className="text-sm font-medium text-neutral-300">Quick Search & Navigation</p>
+                                    <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+                                        Type keywords to search across lectures, transcripts, notes, or invoke commands.
+                                    </p>
+                                    <div className="mt-5 flex justify-center">
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 close();
                                                 openFeedbackModal();
                                             }}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-surface-raised hover:bg-surface-hover text-muted-foreground hover:text-foreground border border-border transition-colors cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-neutral-200 border border-white/10 transition-all cursor-pointer"
                                         >
-                                            <MessageSquareHeart size={13} className="text-primary" />
-                                            <span>Share Feedback or Report Bug (v1.0.0)</span>
+                                            <MessageSquareHeart size={13} className="text-rose-400" />
+                                            <span>Share Feedback or Report Bug</span>
                                         </button>
                                     </div>
                                 </div>
                             )}
                         </div>
                     ) : flatResults.length === 0 ? (
-                        <div className="py-12 text-center text-muted-foreground">
-                            <p>No results found for "{query}"</p>
+                        <div className="py-12 text-center text-neutral-500 text-sm">
+                            No results found for &ldquo;<span className="text-neutral-300">{query}</span>&rdquo;
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3 p-1">
                             {suggestions.length > 0 && (
-                                <div className="px-2 pt-2 pb-1 border-b border-border/50">
-                                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Suggestions</div>
-                                    <div className="flex flex-wrap gap-2">
+                                <div className="px-2 pt-1 pb-2 border-b border-white/[0.06]">
+                                    <div className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Suggestions</div>
+                                    <div className="flex flex-wrap gap-1.5">
                                         {suggestions.map((s, i) => (
-                                            <div key={i} onClick={() => handleSuggestionClick(s.text)} className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-surface-hover text-foreground rounded-md border border-border/60 cursor-pointer hover:bg-primary/20 hover:text-primary hover:border-primary/30 transition-all">
-                                                {s.suggestionType === 'history' ? <History size={12} /> : <SearchIcon size={12} />}
-                                                {s.text}
-                                            </div>
+                                            <button 
+                                                key={i} 
+                                                type="button"
+                                                onClick={() => handleSuggestionClick(s.text)} 
+                                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-white/[0.04] text-neutral-300 rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.08] hover:text-white transition-all"
+                                            >
+                                                {s.suggestionType === 'history' ? <History size={12} className="text-neutral-500" /> : <SearchIcon size={12} className="text-neutral-500" />}
+                                                <span>{s.text}</span>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -288,23 +326,25 @@ export function CommandPalette() {
                                     <div
                                         key={`${result.entityType}-${result.entityId}-${index}`}
                                         onClick={() => handleSelect(result)}
-                                        className={`flex items-start gap-4 p-3 rounded-xl cursor-pointer transition-colors ${
-                                            index === selectedResultIndex ? 'bg-primary/10 text-primary' : 'hover:bg-surface-hover text-foreground'
+                                        className={`flex items-start gap-3.5 p-2.5 rounded-xl cursor-pointer transition-all ${
+                                            index === selectedResultIndex 
+                                            ? 'bg-white/[0.09] text-white border border-white/10 shadow-xs' 
+                                            : 'hover:bg-white/[0.04] text-neutral-300 border border-transparent'
                                         }`}
                                     >
-                                        <div className="mt-1 shrink-0">
+                                        <div className="mt-1 shrink-0 p-1.5 rounded-lg bg-white/[0.04]">
                                             {getIcon(result.entityType)}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-medium text-sm truncate">{result.title || 'Untitled'}</span>
-                                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground bg-background px-1.5 py-0.5 rounded border border-border/50 shrink-0">
+                                                <span className="font-medium text-sm text-white truncate">{result.title || 'Untitled'}</span>
+                                                <span className="text-[10px] font-medium tracking-wide uppercase text-neutral-400 bg-white/[0.05] px-1.5 py-0.5 rounded border border-white/[0.08] shrink-0">
                                                     {result.entityType}
                                                 </span>
                                             </div>
                                             {result.bodySnippet && (
-                                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed" 
-                                                   dangerouslySetInnerHTML={{ __html: result.bodySnippet.replace(/<b>/g, '<span class="text-primary font-bold">').replace(/<\/b>/g, '</span>') }}
+                                                <p className="text-xs text-neutral-400 mt-1 line-clamp-2 leading-relaxed" 
+                                                   dangerouslySetInnerHTML={{ __html: result.bodySnippet.replace(/<b>/g, '<span class="text-indigo-300 font-semibold underline underline-offset-2">').replace(/<\/b>/g, '</span>') }}
                                                 />
                                             )}
                                         </div>
@@ -315,14 +355,31 @@ export function CommandPalette() {
                     )}
                 </div>
                 
-                {/* Footer Footer */}
-                <div className="px-4 py-2 border-t border-border/50 bg-[var(--glass-bg)] flex items-center justify-between text-[10px] text-muted-foreground">
-                    <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-surface rounded border border-border/50">↑</kbd><kbd className="px-1.5 py-0.5 bg-surface rounded border border-border/50">↓</kbd> Navigate</span>
-                        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-surface rounded border border-border/50">↵</kbd> Open</span>
-                        {!aiMode && <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-surface rounded border border-border/50">⌘</kbd><kbd className="px-1.5 py-0.5 bg-surface rounded border border-border/50">↵</kbd> Ask AI</span>}
+                {/* Footer */}
+                <div className="px-4 py-2.5 border-t border-white/10 bg-black/25 flex items-center justify-between text-[11px] text-neutral-400">
+                    <div className="flex items-center gap-3.5">
+                        <span className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↑</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↓</kbd>
+                            <span className="ml-1 text-neutral-400">Navigate</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↵</kbd>
+                            <span className="ml-1 text-neutral-400">Open</span>
+                        </span>
+                        {!aiMode && (
+                            <span className="flex items-center gap-1">
+                                <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">⌘</kbd>
+                                <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↵</kbd>
+                                <span className="ml-1 text-neutral-400">Ask AI</span>
+                            </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">esc</kbd>
+                            <span className="ml-1 text-neutral-400">Close</span>
+                        </span>
                     </div>
-                    <span>BACHAM Universal Search</span>
+                    <span className="text-[10px] tracking-wide text-neutral-500 font-medium">BACHAM Universal Search</span>
                 </div>
             </div>
         </div>
