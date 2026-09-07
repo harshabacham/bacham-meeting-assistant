@@ -21,6 +21,7 @@ const NotesWorkspacePage = lazy(() => import("./features/notes_workspace/NotesWo
 const TasksPage = lazy(() => import("./pages/TasksPage").then(m => ({ default: m.TasksPage })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then(m => ({ default: m.OnboardingPage })));
+const SetupStoragePage = lazy(() => import("./pages/SetupStoragePage").then(m => ({ default: m.SetupStoragePage })));
 const TermsPage = lazy(() => import("./pages/TermsPage").then(m => ({ default: m.TermsPage })));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 
@@ -34,14 +35,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <SplashScreen />;
   }
 
+  const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
+
+  if (!hasSeenOnboarding && location.pathname !== '/onboarding' && location.pathname !== '/login') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
-  
-  if (!hasSeenOnboarding && location.pathname !== '/onboarding') {
-    return <Navigate to="/onboarding" replace />;
+  const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
+  if (!hasSetupStorage && location.pathname !== '/setup-storage') {
+    return <Navigate to="/setup-storage" replace />;
   }
 
   return <>{children}</>;
@@ -100,9 +106,10 @@ function App() {
             <AnimatePresence mode="wait">
               <Suspense fallback={<SplashScreen />}>
                 <Routes>
+                  <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/setup-storage" element={<ProtectedRoute><SetupStoragePage /></ProtectedRoute>} />
                   <Route path="/copilot" element={<CopilotWindow />} />
-                  <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
                   <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                     <Route index element={<DashboardPage />} />
                     <Route path="lectures" element={<LibraryPage />} />

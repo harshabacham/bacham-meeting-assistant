@@ -50,6 +50,15 @@ export const LoginPage = () => {
       if (isLogin) {
         try {
           await signInWithEmailAndPassword(auth, email, password);
+          if (auth.currentUser?.displayName) {
+            const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
+            if (!hasSetupStorage) {
+              navigate('/setup-storage');
+            } else {
+              navigate('/');
+            }
+            return;
+          }
         } catch (innerErr: any) {
           if (innerErr.code === 'auth/user-not-found' || innerErr.code === 'auth/invalid-credential' || innerErr.code === 'auth/invalid-login-credentials') {
             try {
@@ -137,9 +146,9 @@ export const LoginPage = () => {
       photoURL: 'avatar:1',
     };
     setUser(guestUser);
-    const hasSeen = localStorage.getItem('hasSeenOnboarding') === 'true';
-    if (!hasSeen) {
-      navigate('/onboarding');
+    const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
+    if (!hasSetupStorage) {
+      navigate('/setup-storage');
     } else {
       navigate('/');
     }
@@ -161,7 +170,12 @@ export const LoginPage = () => {
         console.error("Failed to update profile", error);
       }
     }
-    navigate('/');
+    const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
+    if (!hasSetupStorage) {
+      navigate('/setup-storage');
+    } else {
+      navigate('/');
+    }
   };
 
   if (showProfileSetup) {
