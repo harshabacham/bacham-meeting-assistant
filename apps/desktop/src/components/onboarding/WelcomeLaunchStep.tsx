@@ -205,7 +205,7 @@ export const WelcomeLaunchStep: React.FC<WelcomeLaunchStepProps> = ({ onLaunch }
           whileTap={{ scale: 0.98 }}
           className="w-full py-4 px-6 rounded-xl bg-lime hover:bg-[#aef520] text-black font-bold text-base flex items-center justify-center gap-2 shadow-[0_0_35px_rgba(186,255,41,0.25)] transition-all duration-200 cursor-pointer"
         >
-          <span>Launch Workspace</span>
+          <span>Proceed to Sign In</span>
           <ArrowRight size={18} strokeWidth={2.5} />
         </motion.button>
       </div>
