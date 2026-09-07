@@ -137,8 +137,8 @@ export const LoginPage = () => {
       photoURL: 'avatar:1',
     };
     setUser(guestUser);
-    localStorage.setItem('hasSeenOnboarding', 'true');
-    navigate('/');
+    const hasSeen = localStorage.getItem('hasSeenOnboarding') === 'true';
+    navigate(hasSeen ? '/' : '/onboarding');
   };
 
   const handleProfileComplete = async (data: { username: string; avatarId: number }) => {
