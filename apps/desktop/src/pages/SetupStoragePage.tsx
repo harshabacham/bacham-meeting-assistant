@@ -63,6 +63,7 @@ export const SetupStoragePage: React.FC = () => {
       }
       localStorage.setItem('hasSetupStoragePath', 'true');
       localStorage.setItem('hasSeenOnboarding', 'true');
+      localStorage.removeItem('needs_storage_setup');
       showToast('Storage location configured successfully.', 'success');
       navigate('/');
     } catch (err: any) {
