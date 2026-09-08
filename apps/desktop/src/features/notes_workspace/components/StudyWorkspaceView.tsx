@@ -20,6 +20,89 @@ interface StudyWorkspaceViewProps {
     onSeekToTimestamp?: (ts: string) => void;
 }
 
+interface QuizAnswerState {
+    choiceIndex?: number;
+    textInput?: string;
+    isSubmitted?: boolean;
+    isRevealed?: boolean;
+    isCorrect?: boolean;
+}
+
+// Helper: Check if a multiple choice / true-false option is correct
+function checkOptionCorrect(quiz: QuizQuestion, optText: string, optIndex: number): boolean {
+    if (!quiz.answerKey) return false;
+    const key = String(quiz.answerKey).trim();
+    const keyLower = key.toLowerCase();
+    const optLower = optText.trim().toLowerCase();
+
+    // 1. Direct text match
+    if (optLower === keyLower) return true;
+
+    // 2. Numeric index match (e.g. answerKey is "1" and optIndex is 1)
+    if (key === String(optIndex)) return true;
+
+    // 3. Letter match (e.g. answerKey is "A", "B", "C", "D" or "a)", "b)")
+    const cleanLetter = keyLower.replace(/[^a-d]/g, '');
+    if (cleanLetter.length === 1) {
+        const letterIndex = cleanLetter.charCodeAt(0) - 97;
+        if (letterIndex === optIndex) return true;
+    }
+
+    // 4. Explicit correct_answer_index ONLY if actually defined as a valid number
+    const explicitIdx = (quiz as any).correct_answer_index ?? (quiz as any).correctAnswerIndex;
+    if (typeof explicitIdx === 'number' && explicitIdx === optIndex) return true;
+
+    return false;
+}
+
+// Helper: Resolve effective options for any quiz question
+function getQuizOptions(quiz: QuizQuestion): string[] {
+    let opts: string[] = [];
+    try {
+        const rawOptions = (quiz as any).options;
+        if (typeof rawOptions === 'string') {
+            const parsed = JSON.parse(rawOptions);
+            if (Array.isArray(parsed)) {
+                opts = parsed.filter(Boolean).map(String);
+            }
+        } else if (Array.isArray(rawOptions)) {
+            opts = (rawOptions as any[]).filter(Boolean).map(String);
+        }
+    } catch {
+        opts = [];
+    }
+
+    // If options array is populated, return it
+    if (opts.length > 0) return opts;
+
+    // If it's a True/False question or the answer is True/False, provide standard True/False options
+    const keyLower = String(quiz.answerKey || '').trim().toLowerCase();
+    const isTrueFalse = quiz.type === 'true_false' || keyLower === 'true' || keyLower === 'false';
+    if (isTrueFalse) {
+        return ['True', 'False'];
+    }
+
+    return [];
+}
+
+// Helper: Badge label for question type
+function getQuestionBadge(quiz: QuizQuestion, options: string[]): string {
+    if (options.length > 0) {
+        const keyLower = String(quiz.answerKey || '').trim().toLowerCase();
+        if (quiz.type === 'true_false' || keyLower === 'true' || keyLower === 'false') {
+            return 'True / False';
+        }
+        return 'Multiple Choice';
+    }
+    switch (quiz.type) {
+        case 'fill_blank': return 'Fill in the Blank';
+        case 'short_answer': return 'Short Answer';
+        case 'code': return 'Code Output';
+        case 'formula': return 'Formula';
+        default: return 'Question';
+    }
+}
+
 export function StudyWorkspaceView({
     noteId,
     noteTitle: _noteTitle,
@@ -62,7 +145,8 @@ export function StudyWorkspaceView({
     const [editAnswer, setEditAnswer] = useState('');
 
     // Interactive Quiz State
-    const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
+    const [quizAnswers, setQuizAnswers] = useState<Record<string, QuizAnswerState>>({});
+    const [textInputs, setTextInputs] = useState<Record<string, string>>({});
 
     // Source material check
     const hasNotes = Boolean(noteContent && noteContent.trim().length > 0);
@@ -217,7 +301,8 @@ export function StudyWorkspaceView({
             await invoke('quiz_generate', { lectureId: noteId, transcript: textToUse });
             showToast('Quiz questions generated successfully!', 'success');
             await loadStudyData();
-            setUserAnswers({});
+            setQuizAnswers({});
+            setTextInputs({});
             setActiveTab('quiz');
         } catch (err: any) {
             console.error('Failed to generate quiz', err);
@@ -272,37 +357,74 @@ export function StudyWorkspaceView({
         }
     };
 
-    // Quiz Option Selection
-    const handleSelectQuizOption = (questionKey: string, optIndex: number) => {
-        setUserAnswers(prev => ({
+    // Quiz Handlers
+    const handleSelectQuizOption = (questionKey: string, quiz: QuizQuestion, optIndex: number, options: string[]) => {
+        const isCorrect = checkOptionCorrect(quiz, options[optIndex], optIndex);
+        setQuizAnswers(prev => ({
             ...prev,
-            [questionKey]: optIndex
+            [questionKey]: {
+                choiceIndex: optIndex,
+                isSubmitted: true,
+                isCorrect
+            }
         }));
+    };
+
+    const handleTextSubmit = (questionKey: string, quiz: QuizQuestion) => {
+        const input = (textInputs[questionKey] || '').trim();
+        if (!input) return;
+
+        const userVal = input.toLowerCase();
+        const targetVal = String(quiz.answerKey || '').trim().toLowerCase();
+
+        // Exact match or contains key words
+        const isCorrect = userVal === targetVal || 
+            (targetVal.length > 3 && (userVal.includes(targetVal) || targetVal.includes(userVal)));
+
+        setQuizAnswers(prev => ({
+            ...prev,
+            [questionKey]: {
+                textInput: input,
+                isSubmitted: true,
+                isCorrect
+            }
+        }));
+    };
+
+    const handleRevealAnswer = (questionKey: string) => {
+        setQuizAnswers(prev => ({
+            ...prev,
+            [questionKey]: {
+                ...(prev[questionKey] || {}),
+                isRevealed: true
+            }
+        }));
+    };
+
+    const handleResetSingle = (questionKey: string) => {
+        setQuizAnswers(prev => {
+            const next = { ...prev };
+            delete next[questionKey];
+            return next;
+        });
+        setTextInputs(prev => {
+            const next = { ...prev };
+            delete next[questionKey];
+            return next;
+        });
     };
 
     // Quiz Score Calculation
     const quizStats = useMemo(() => {
-        if (quizzes.length === 0) return { answered: 0, correct: 0, total: 0, pct: 0 };
-        let correctCount = 0;
         let answeredCount = 0;
+        let correctCount = 0;
 
         quizzes.forEach((q, idx) => {
             const key = q.id || String(idx);
-            const userChoice = userAnswers[key];
-            if (userChoice !== undefined) {
+            const state = quizAnswers[key];
+            if (state?.isSubmitted) {
                 answeredCount++;
-                let options: string[] = [];
-                try {
-                    options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
-                } catch {
-                    options = [];
-                }
-                const chosenText = options[userChoice];
-                const isCorrect = (q.answerKey && chosenText && chosenText.trim().toLowerCase() === q.answerKey.trim().toLowerCase()) ||
-                    String(userChoice) === String(q.answerKey) ||
-                    userChoice === ((q as any).correct_answer_index ?? (q as any).correctAnswerIndex ?? 0);
-
-                if (isCorrect) correctCount++;
+                if (state.isCorrect) correctCount++;
             }
         });
 
@@ -312,7 +434,7 @@ export function StudyWorkspaceView({
             total: quizzes.length,
             pct: answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0
         };
-    }, [quizzes, userAnswers]);
+    }, [quizzes, quizAnswers]);
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--bg)] text-[var(--text-primary)]">
@@ -348,7 +470,7 @@ export function StudyWorkspaceView({
                                 activeTab === 'quiz'
                                     ? "bg-white dark:bg-[#18191B] text-[var(--text-primary)] shadow-sm font-semibold"
                                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                            )}
+                        )}
                         >
                             <HelpCircle size={13} className="opacity-70" />
                             <span>Quiz</span>
@@ -877,7 +999,7 @@ export function StudyWorkspaceView({
                                 </h3>
                                 <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
                                     {hasSourceMaterial
-                                        ? "Generate multiple-choice quiz questions based on this note's discussion to test your knowledge retention."
+                                        ? "Generate quiz questions based on this note's discussion to test your knowledge retention."
                                         : "Take notes or record a meeting first to generate quizzes."}
                                 </p>
                                 {hasSourceMaterial && (
@@ -909,7 +1031,10 @@ export function StudyWorkspaceView({
                                     {quizStats.answered > 0 && (
                                         <button
                                             type="button"
-                                            onClick={() => setUserAnswers({})}
+                                            onClick={() => {
+                                                setQuizAnswers({});
+                                                setTextInputs({});
+                                            }}
                                             className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                                         >
                                             <RotateCcw size={12} />
@@ -922,15 +1047,10 @@ export function StudyWorkspaceView({
                                 <div className="flex flex-col gap-4">
                                     {quizzes.map((quiz, qIdx) => {
                                         const questionKey = quiz.id || String(qIdx);
-                                        const userChoice = userAnswers[questionKey];
-                                        const isAnswered = userChoice !== undefined;
-
-                                        let options: string[] = [];
-                                        try {
-                                            options = typeof quiz.options === 'string' ? JSON.parse(quiz.options) : (quiz.options || []);
-                                        } catch {
-                                            options = [];
-                                        }
+                                        const userState = quizAnswers[questionKey];
+                                        const isAnswered = userState?.isSubmitted || userState?.isRevealed;
+                                        const options = getQuizOptions(quiz);
+                                        const badge = getQuestionBadge(quiz, options);
 
                                         return (
                                             <div
@@ -938,66 +1058,150 @@ export function StudyWorkspaceView({
                                                 id={`quiz-question-${quiz.id}`}
                                                 className="p-6 rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-2xs flex flex-col gap-4"
                                             >
-                                                <div className="flex items-start gap-2.5">
-                                                    <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-[#F4F3EE] dark:bg-white/[0.06] text-[var(--text-muted)] shrink-0">
-                                                        Q{qIdx + 1}
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex items-start gap-2.5">
+                                                        <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-[#F4F3EE] dark:bg-white/[0.06] text-[var(--text-muted)] shrink-0">
+                                                            Q{qIdx + 1}
+                                                        </span>
+                                                        <h3 className="text-sm sm:text-base font-medium text-[var(--text-primary)] leading-snug whitespace-pre-wrap">
+                                                            {quiz.question}
+                                                        </h3>
+                                                    </div>
+                                                    <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-md bg-[#F4F3EE] dark:bg-white/[0.04] text-[var(--text-muted)] shrink-0">
+                                                        {badge}
                                                     </span>
-                                                    <h3 className="text-sm sm:text-base font-medium text-[var(--text-primary)] leading-snug">
-                                                        {quiz.question}
-                                                    </h3>
                                                 </div>
 
-                                                {/* Options */}
-                                                <div className="flex flex-col gap-2 pt-1">
-                                                    {options.map((opt: string, optIdx: number) => {
-                                                        const isCorrectOption = (quiz.answerKey && opt.trim().toLowerCase() === quiz.answerKey.trim().toLowerCase()) ||
-                                                            String(optIdx) === String(quiz.answerKey) ||
-                                                            optIdx === ((quiz as any).correct_answer_index ?? (quiz as any).correctAnswerIndex ?? 0);
+                                                {/* Choice Questions (MCQ / True-False) */}
+                                                {options.length > 0 ? (
+                                                    <div className="flex flex-col gap-2 pt-1">
+                                                        {options.map((opt: string, optIdx: number) => {
+                                                            const isCorrectOption = checkOptionCorrect(quiz, opt, optIdx);
+                                                            const isSelected = userState?.choiceIndex === optIdx;
 
-                                                        const isSelected = userChoice === optIdx;
-
-                                                        let optionStyle = "border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.04] text-[var(--text-primary)]";
-                                                        if (isAnswered) {
-                                                            if (isCorrectOption) {
-                                                                optionStyle = "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-medium";
-                                                            } else if (isSelected) {
-                                                                optionStyle = "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300";
-                                                            } else {
-                                                                optionStyle = "opacity-50 border-[#E5E4DC] dark:border-white/10 text-[var(--text-muted)]";
+                                                            let optionStyle = "border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.04] text-[var(--text-primary)]";
+                                                            if (isAnswered) {
+                                                                if (isCorrectOption) {
+                                                                    optionStyle = "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-medium";
+                                                                } else if (isSelected) {
+                                                                    optionStyle = "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300";
+                                                                } else {
+                                                                    optionStyle = "opacity-50 border-[#E5E4DC] dark:border-white/10 text-[var(--text-muted)]";
+                                                                }
                                                             }
-                                                        }
 
-                                                        return (
-                                                            <button
-                                                                key={optIdx}
-                                                                type="button"
-                                                                onClick={() => !isAnswered && handleSelectQuizOption(questionKey, optIdx)}
-                                                                disabled={isAnswered}
-                                                                className={cn(
-                                                                    "w-full text-left px-4 py-3 rounded-xl border text-xs leading-relaxed flex items-center justify-between transition-all cursor-pointer",
-                                                                    optionStyle
-                                                                )}
+                                                            return (
+                                                                <button
+                                                                    key={optIdx}
+                                                                    type="button"
+                                                                    onClick={() => !isAnswered && handleSelectQuizOption(questionKey, quiz, optIdx, options)}
+                                                                    disabled={isAnswered}
+                                                                    className={cn(
+                                                                        "w-full text-left px-4 py-3 rounded-xl border text-xs leading-relaxed flex items-center justify-between transition-all cursor-pointer",
+                                                                        optionStyle
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="w-5 h-5 rounded-full border border-current/30 flex items-center justify-center text-[10px] font-mono shrink-0">
+                                                                            {String.fromCharCode(65 + optIdx)}
+                                                                        </span>
+                                                                        <span>{opt}</span>
+                                                                    </div>
+
+                                                                    {isAnswered && (
+                                                                        isCorrectOption ? (
+                                                                            <Check size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                                                        ) : isSelected ? (
+                                                                            <X size={14} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                                                                        ) : null
+                                                                    )}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    /* Text Questions (Fill in the Blank / Short Answer / Code) */
+                                                    <div className="flex flex-col gap-3 pt-1">
+                                                        {!isAnswered ? (
+                                                            <form
+                                                                onSubmit={(e) => {
+                                                                    e.preventDefault();
+                                                                    handleTextSubmit(questionKey, quiz);
+                                                                }}
+                                                                className="flex flex-col sm:flex-row gap-2"
                                                             >
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="w-5 h-5 rounded-full border border-current/30 flex items-center justify-center text-[10px] font-mono shrink-0">
-                                                                        {String.fromCharCode(65 + optIdx)}
-                                                                    </span>
-                                                                    <span>{opt}</span>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder={quiz.type === 'fill_blank' ? "Type the missing word(s)..." : "Type your answer..."}
+                                                                    value={textInputs[questionKey] || ''}
+                                                                    onChange={(e) => setTextInputs(prev => ({ ...prev, [questionKey]: e.target.value }))}
+                                                                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)]"
+                                                                    autoFocus={qIdx === 0}
+                                                                />
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        type="submit"
+                                                                        disabled={!textInputs[questionKey]?.trim()}
+                                                                        className="px-4 py-2.5 rounded-xl text-xs font-medium bg-[#1F2023] hover:bg-[#2C2E33] dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-all cursor-pointer disabled:opacity-40 shadow-xs"
+                                                                    >
+                                                                        Check Answer
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRevealAnswer(questionKey)}
+                                                                        className="px-3 py-2.5 rounded-xl text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                                                    >
+                                                                        Show Answer
+                                                                    </button>
                                                                 </div>
-
-                                                                {isAnswered && (
-                                                                    isCorrectOption ? (
-                                                                        <Check size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                                                    ) : isSelected ? (
-                                                                        <X size={14} className="text-rose-600 dark:text-rose-400 shrink-0" />
-                                                                    ) : null
+                                                            </form>
+                                                        ) : (
+                                                            <div className="flex flex-col gap-2.5 animate-fade-in">
+                                                                {userState?.textInput && (
+                                                                    <div className={cn(
+                                                                        "flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs",
+                                                                        userState.isCorrect
+                                                                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-medium"
+                                                                            : "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300"
+                                                                    )}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="opacity-70">Your answer:</span>
+                                                                            <span className="font-semibold">{userState.textInput}</span>
+                                                                        </div>
+                                                                        {userState.isCorrect ? (
+                                                                            <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                                                                                <Check size={13} />
+                                                                                Correct
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400">
+                                                                                <X size={13} />
+                                                                                Incorrect
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
 
-                                                {/* Explanation if Answered */}
+                                                                {/* Answer Display */}
+                                                                <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[var(--text-muted)]">Expected Answer:</span>
+                                                                        <span className="font-semibold text-[var(--text-primary)]">{quiz.answerKey}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleResetSingle(questionKey)}
+                                                                        className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] underline cursor-pointer"
+                                                                    >
+                                                                        Try Again
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Explanation if Available and Answered */}
                                                 {isAnswered && (quiz as any).explanation && (
                                                     <div className="p-3 rounded-xl bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-secondary)] leading-relaxed mt-1 animate-fade-in">
                                                         <span className="font-semibold text-[var(--text-primary)] mr-1">Explanation:</span>
