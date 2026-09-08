@@ -159,11 +159,11 @@ export const FeedbackSettingsTab: React.FC = () => {
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Feedback Type
               </label>
-              <div className="flex max-w-md p-1 bg-surface-raised rounded-xl border border-border/60 gap-1">
+              <div className="flex max-w-md p-1 bg-surface-raised rounded-xl border border-border gap-1">
                 {[
-                  { id: 'suggestion' as FeedbackCategory, label: 'Feature Idea', icon: Lightbulb, iconColor: 'text-amber-400' },
-                  { id: 'bug' as FeedbackCategory, label: 'Bug / Defect', icon: Bug, iconColor: 'text-rose-400' },
-                  { id: 'general' as FeedbackCategory, label: 'Praise / Feedback', icon: Heart, iconColor: 'text-emerald-400' },
+                  { id: 'suggestion' as FeedbackCategory, label: 'Feature Idea', icon: Lightbulb, iconColor: 'text-amber-500 dark:text-amber-400' },
+                  { id: 'bug' as FeedbackCategory, label: 'Bug / Defect', icon: Bug, iconColor: 'text-rose-500 dark:text-rose-400' },
+                  { id: 'general' as FeedbackCategory, label: 'Praise / Feedback', icon: Heart, iconColor: 'text-emerald-600 dark:text-emerald-400' },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isSelected = category === item.id;
@@ -174,8 +174,8 @@ export const FeedbackSettingsTab: React.FC = () => {
                       onClick={() => setCategory(item.id)}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer select-none ${
                         isSelected
-                          ? 'bg-surface text-foreground font-semibold shadow-xs border border-border/70'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'
+                          ? 'bg-surface text-foreground font-semibold shadow-xs border border-border'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
                       }`}
                     >
                       <Icon size={13} className={isSelected ? item.iconColor : 'opacity-70'} />
@@ -204,8 +204,8 @@ export const FeedbackSettingsTab: React.FC = () => {
                       onClick={() => setRating(item.id)}
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-primary/15 text-foreground font-medium border border-primary/30 shadow-xs'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-surface-raised border border-transparent'
+                          ? 'bg-surface-raised text-foreground font-semibold border border-border shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover border border-transparent'
                       }`}
                       title={item.label}
                     >
@@ -227,7 +227,7 @@ export const FeedbackSettingsTab: React.FC = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="What can we improve, fix, or add before the next release?"
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all resize-none leading-relaxed"
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:bg-surface focus:border-border-accent focus:ring-1 focus:ring-border-accent transition-all resize-none leading-relaxed"
                 required
               />
             </div>
@@ -241,7 +241,7 @@ export const FeedbackSettingsTab: React.FC = () => {
                     <span>Contact Email</span>
                   </label>
                   {isAccountEmail && (
-                    <span className="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                       <CheckCircle2 size={11} />
                       Your account email
                     </span>
@@ -259,20 +259,20 @@ export const FeedbackSettingsTab: React.FC = () => {
                     }
                   }}
                   placeholder="name@example.com (optional)"
-                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all font-normal"
+                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:bg-surface focus:border-border-accent focus:ring-1 focus:ring-border-accent transition-all font-normal"
                 />
               </div>
 
               <div className="flex items-center pt-5">
-                <label className="flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors">
                   <input
                     type="checkbox"
                     checked={includeDiagnostics}
                     onChange={(e) => setIncludeDiagnostics(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
                   />
                   <div className="flex items-center gap-1">
-                    <ShieldCheck size={13} className="text-emerald-400" />
+                    <ShieldCheck size={13} className="text-emerald-600 dark:text-emerald-400" />
                     <span>Attach OS & App Version diagnostics</span>
                   </div>
                 </label>
@@ -281,7 +281,7 @@ export const FeedbackSettingsTab: React.FC = () => {
 
             {/* Submit button */}
             {errorMessage && (
-              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+              <div className="p-2.5 rounded-xl bg-destructive-dim border border-destructive/20 text-destructive text-xs">
                 {errorMessage}
               </div>
             )}
@@ -290,7 +290,7 @@ export const FeedbackSettingsTab: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !message.trim()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
               >
                 {isSubmitting ? (
                   <>

@@ -15,9 +15,9 @@ const CATEGORIES: Array<{
   icon: React.ComponentType<{ size?: number; className?: string }>;
   iconColor: string;
 }> = [
-  { id: 'suggestion', label: 'Feature', icon: Lightbulb, iconColor: 'text-amber-400' },
-  { id: 'bug', label: 'Bug Report', icon: Bug, iconColor: 'text-rose-400' },
-  { id: 'general', label: 'Feedback', icon: MessageSquareHeart, iconColor: 'text-emerald-400' },
+  { id: 'suggestion', label: 'Feature', icon: Lightbulb, iconColor: 'text-amber-500 dark:text-amber-400' },
+  { id: 'bug', label: 'Bug Report', icon: Bug, iconColor: 'text-rose-500 dark:text-rose-400' },
+  { id: 'general', label: 'Feedback', icon: MessageSquareHeart, iconColor: 'text-emerald-600 dark:text-emerald-400' },
 ];
 
 const RATINGS: Array<{
@@ -113,18 +113,18 @@ export const FeedbackModal: React.FC = () => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/35 dark:bg-black/65 backdrop-blur-sm animate-in fade-in duration-150">
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 8 }}
           transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface/95 backdrop-blur-xl shadow-2xl overflow-hidden p-5"
+          className="relative w-full max-w-md rounded-2xl border border-border bg-surface text-foreground shadow-2xl shadow-black/10 dark:shadow-black/60 overflow-hidden p-5"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-lime-500/15 text-lime-700 dark:bg-primary/15 dark:text-primary border border-lime-500/25 dark:border-primary/25 flex items-center justify-center">
                 <MessageSquareHeart size={16} />
               </div>
               <div>
@@ -138,7 +138,7 @@ export const FeedbackModal: React.FC = () => {
             <button
               type="button"
               onClick={closeModal}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-raised transition-colors cursor-pointer"
               title="Close (Esc)"
             >
               <X size={15} />
@@ -151,7 +151,7 @@ export const FeedbackModal: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="py-10 flex flex-col items-center justify-center text-center space-y-2.5"
             >
-              <div className="w-12 h-12 rounded-full bg-primary/15 text-primary border border-primary/25 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center justify-center">
                 <CheckCircle2 size={24} />
               </div>
               <h3 className="text-sm font-bold text-foreground">Feedback Sent!</h3>
@@ -162,7 +162,7 @@ export const FeedbackModal: React.FC = () => {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Category Segmented Control */}
-              <div className="flex p-1 bg-surface-raised/80 rounded-xl border border-border/50 gap-1">
+              <div className="flex p-1 bg-surface-raised rounded-xl border border-border gap-1">
                 {CATEGORIES.map((cat) => {
                   const Icon = cat.icon;
                   const isSelected = category === cat.id;
@@ -172,13 +172,13 @@ export const FeedbackModal: React.FC = () => {
                       type="button"
                       onClick={() => setCategory(cat.id)}
                       className={`relative flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-colors cursor-pointer select-none ${
-                        isSelected ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
+                        isSelected ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'
                       }`}
                     >
                       {isSelected && (
                         <motion.div
                           layoutId="feedback-category-pill"
-                          className="absolute inset-0 bg-surface rounded-lg border border-border/70 shadow-xs"
+                          className="absolute inset-0 bg-surface rounded-lg border border-border shadow-xs"
                           transition={{ type: 'spring', bounce: 0.15, duration: 0.25 }}
                         />
                       )}
@@ -202,10 +202,10 @@ export const FeedbackModal: React.FC = () => {
                         key={rate.id}
                         type="button"
                         onClick={() => setRating(rate.id)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-primary/15 text-foreground font-medium border border-primary/30 shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-surface-raised/80 border border-transparent'
+                            ? 'bg-surface-raised text-foreground font-semibold border border-border shadow-xs'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover border border-transparent'
                         }`}
                         title={rate.label}
                       >
@@ -224,7 +224,7 @@ export const FeedbackModal: React.FC = () => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={getPlaceholder()}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all resize-none leading-relaxed"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:bg-surface focus:border-border-accent focus:ring-1 focus:ring-border-accent transition-all resize-none leading-relaxed"
                   required
                   autoFocus
                 />
@@ -238,7 +238,7 @@ export const FeedbackModal: React.FC = () => {
                     <span>Contact Email</span>
                   </label>
                   {isAccountEmail && (
-                    <span className="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                       <CheckCircle2 size={11} />
                       Your account email
                     </span>
@@ -256,40 +256,40 @@ export const FeedbackModal: React.FC = () => {
                     }
                   }}
                   placeholder="your.email@example.com (optional)"
-                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all font-normal"
+                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:bg-surface focus:border-border-accent focus:ring-1 focus:ring-border-accent transition-all font-normal"
                 />
               </div>
 
               {/* Diagnostics Toggle */}
               <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
+                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-foreground transition-colors">
                   <input
                     type="checkbox"
                     checked={includeDiagnostics}
                     onChange={(e) => setIncludeDiagnostics(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
                   />
                   <span className="flex items-center gap-1.5">
-                    <ShieldCheck size={13} className="text-emerald-400" />
+                    <ShieldCheck size={13} className="text-emerald-600 dark:text-emerald-400" />
                     <span>Include diagnostic info</span>
-                    <span className="text-[10px] text-muted-foreground/60 font-mono">(Windows, App v1.0.0)</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">(Windows, App v1.0.0)</span>
                   </span>
                 </label>
               </div>
 
               {/* Error Banner */}
               {errorMessage && (
-                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                <div className="p-2.5 rounded-xl bg-destructive-dim border border-destructive/20 text-destructive text-xs">
                   {errorMessage}
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between pt-3 border-t border-border">
                 <button
                   type="button"
                   onClick={openGitHubIssue}
-                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-surface-raised"
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-surface-raised cursor-pointer"
                   title="Open public issue on GitHub"
                 >
                   <Github size={12} />
@@ -310,7 +310,7 @@ export const FeedbackModal: React.FC = () => {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={isSubmitting || !message.trim()}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
                   >
                     {isSubmitting ? (
                       <>
