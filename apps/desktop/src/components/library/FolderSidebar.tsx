@@ -330,7 +330,7 @@ function FolderNode({
                     "flex items-center group py-1.5 pr-2 rounded-md transition-colors cursor-pointer text-sm border",
                     isDragOver ? "bg-primary/10 border-primary text-primary" : 
                     selectedFolderId === folder.id 
-                        ? "bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-medium" 
+                        ? "bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-white/[0.08] dark:text-white dark:border-white/5 font-medium" 
                         : "text-muted-foreground border-transparent hover:bg-surface-hover hover:text-foreground"
                 )}
                 onClick={() => onSelectFolder?.(folder.id)}

@@ -230,7 +230,7 @@ export function AppLayout() {
                                                     className={cn(
                                                         "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-[11.5px] font-medium border",
                                                         activeSettingsTab === item.id 
-                                                            ? "bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-medium" 
+                                                            ? "bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-white/[0.08] dark:text-white dark:border-white/5 font-medium" 
                                                             : "text-muted-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white"
                                                     )}
                                                 >
@@ -282,12 +282,9 @@ export function AppLayout() {
                                                     <div className={cn(
                                                         'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors border',
                                                         isActive(item.path) 
-                                                            ? 'bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-semibold' 
+                                                            ? 'bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-white/[0.08] dark:text-white dark:border-white/5 font-medium' 
                                                             : 'text-muted-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white'
                                                     )}>
-                                                        {isActive(item.path) && (
-                                                            <span className="hidden dark:block absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-[#BAFF29] shadow-[0_0_8px_rgba(186,255,41,0.6)]" />
-                                                        )}
                                                         <item.icon size={13} strokeWidth={2} />
                                                         <span>{item.label}</span>
                                                     </div>
@@ -309,12 +306,9 @@ export function AppLayout() {
                                                         <div className={cn(
                                                             'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors border',
                                                             active 
-                                                                ? 'bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-semibold' 
+                                                                ? 'bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-white/[0.08] dark:text-white dark:border-white/5 font-medium' 
                                                                 : 'text-muted-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white'
                                                         )} onClick={() => { setSelectedFolderId(null); if (item.id === 'archive') setSystemView('archive'); else setSystemView('all'); }}>
-                                                            {active && (
-                                                                <span className="hidden dark:block absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-[#BAFF29] shadow-[0_0_8px_rgba(186,255,41,0.6)]" />
-                                                            )}
                                                             <item.icon size={13} strokeWidth={2} />
                                                             <span>{item.label}</span>
                                                         </div>
