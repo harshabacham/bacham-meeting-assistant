@@ -117,6 +117,7 @@ html, body, #root {
   --card:                var(--surface);
   --card-foreground:     var(--text-primary);
   --primary:             var(--accent);
+  --sidebar-bg:          var(--surface);
   --primary-foreground:  var(--color-black);
   --muted:               var(--surface-raised);
   --muted-foreground:    var(--text-muted);
@@ -127,60 +128,61 @@ html, body, #root {
 
 .light {
   color-scheme: light;
-  /* High-end "Clean. Modern. Premium." Light Mode */
-  --bg:              #F7F7F2;
-  --surface:         #FCFCF9;
-  --surface-raised:  #F2F2ED;
-  --surface-hover:   rgba(0, 0, 0, 0.04);
+  /* Granola Warm Editorial Light Mode */
+  --bg:              #FAF9F5; /* Warm Japanese book paper canvas */
+  --surface:         #FFFFFF; /* Pure crisp white cards */
+  --surface-raised:  #F4F3ED; /* Warm parchment for tracks, search, badges */
+  --surface-hover:   rgba(31, 30, 27, 0.04);
+  --sidebar-bg:      #F4F3ED; /* Warm parchment sidebar */
 
-  --text-primary:    #09090b;
-  --text-secondary:  #3f3f46;
-  --text-muted:      #71717a;
+  --text-primary:    #1C1C1A; /* Deep warm espresso charcoal */
+  --text-secondary:  #585750; /* Warm slate charcoal */
+  --text-muted:      #8A8981; /* Soft stone gray */
 
-  --accent:          #09090b;
-  --accent-hover:    #27272a;
-  --accent-dim:      rgba(9, 9, 11, 0.06);
-  --accent-glow:     rgba(9, 9, 11, 0.1);
+  --accent:          #1C1C1A;
+  --accent-hover:    #353430;
+  --accent-dim:      rgba(28, 28, 26, 0.06);
+  --accent-glow:     rgba(28, 28, 26, 0.12);
   
-  --border:          #E3E3DD;
-  --border-accent:   rgba(9, 9, 11, 0.15);
+  --border:          #E5E4DC; /* Warm stone border */
+  --border-accent:   rgba(28, 28, 26, 0.20);
 
   /* Semantic Status Colors */
-  --destructive:     #EF4444; 
-  --destructive-dim: rgba(239, 68, 68, 0.1);
-  --success:         #10B981; 
-  --success-dim:     rgba(16, 185, 129, 0.1);
-  --warning:         #F59E0B; 
-  --warning-dim:     rgba(245, 158, 11, 0.1);
-  --info:            #3B82F6; 
-  --info-dim:        rgba(59, 130, 246, 0.1);
+  --destructive:     #DC2626; 
+  --destructive-dim: rgba(220, 38, 38, 0.08);
+  --success:         #16A34A; 
+  --success-dim:     rgba(22, 163, 74, 0.08);
+  --warning:         #D97706; 
+  --warning-dim:     rgba(217, 119, 6, 0.08);
+  --info:            #2563EB; 
+  --info-dim:        rgba(37, 99, 235, 0.08);
 
-  --glass-bg:        rgba(252, 252, 249, 0.85);
-  --glass-border:    #E3E3DD;
+  --glass-bg:        rgba(255, 255, 255, 0.94);
+  --glass-border:    #E5E4DC;
 
-  --overlay-hover:   rgba(0,0,0,0.03);
-  --overlay-pressed: rgba(0,0,0,0.06);
-  --overlay-02:      rgba(0,0,0,0.02);
+  --overlay-hover:   rgba(28, 28, 26, 0.03);
+  --overlay-pressed: rgba(28, 28, 26, 0.06);
+  --overlay-02:      rgba(28, 28, 26, 0.02);
 
-  --shadow-sm:  0 1px 2px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02);
-  --shadow-md:  0 2px 8px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.02);
-  --shadow-lg:  0 8px 24px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-  --shadow-lime: 0 0 20px rgba(9, 9, 11, 0.06);
+  --shadow-sm:  0 1px 2px rgba(28, 28, 26, 0.03), 0 1px 1px rgba(28, 28, 26, 0.02);
+  --shadow-md:  0 2px 8px rgba(28, 28, 26, 0.04), 0 1px 3px rgba(28, 28, 26, 0.02);
+  --shadow-lg:  0 8px 24px rgba(28, 28, 26, 0.06), 0 2px 6px rgba(28, 28, 26, 0.03);
+  --shadow-lime: 0 0 20px rgba(28, 28, 26, 0.05);
 
   /* Scrollbar */
-  --scrollbar-thumb: rgba(0,0,0,0.12);
-  --scrollbar-thumb-hover: rgba(0,0,0,0.22);
+  --scrollbar-thumb: rgba(28, 28, 26, 0.12);
+  --scrollbar-thumb-hover: rgba(28, 28, 26, 0.22);
 
   --background:          var(--bg);
   --foreground:          var(--text-primary);
   --card:                var(--surface);
   --card-foreground:     var(--text-primary);
   --primary:             var(--text-primary);
-  --primary-foreground:  var(--surface);
+  --primary-foreground:  #FFFFFF;
   --muted:               var(--surface-raised);
   --muted-foreground:    var(--text-muted);
-  --input:               rgba(0,0,0,0.04);
-  --ring:                var(--accent);
+  --input:               var(--surface-raised);
+  --ring:                var(--border-accent);
   --border-color:        var(--border);
 }
 
@@ -243,6 +245,10 @@ html, body, #root {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
+  }
+
+  .light, .light body {
+    background-image: none !important;
   }
 
   #root {

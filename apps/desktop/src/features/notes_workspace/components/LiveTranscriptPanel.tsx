@@ -441,7 +441,7 @@ export function LiveTranscriptPanel({ isOpen, isStreaming, onStreamingChange, on
                         {/* Transcript body — single flowing paragraph */}
                         <div
                             ref={scrollRef}
-                            className="px-6 py-5 max-h-[46vh] min-h-[220px] overflow-y-auto bg-[#0D0D0F] scroll-smooth select-text ai-selectable"
+                            className="px-6 py-5 max-h-[46vh] min-h-[220px] overflow-y-auto bg-[var(--surface-raised)] dark:bg-[#0D0D0F] scroll-smooth select-text ai-selectable"
                         >
                             {!fullText ? (
                                 <div className="flex flex-col items-center justify-center min-h-[170px] gap-3 text-center select-none">

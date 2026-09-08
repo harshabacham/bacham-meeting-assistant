@@ -329,7 +329,7 @@ function FolderNode({
                 className={cn(
                     "flex items-center group py-1.5 pr-2 rounded-md transition-colors cursor-pointer text-sm",
                     isDragOver ? "bg-primary/10 border border-primary text-primary" : 
-                    selectedFolderId === folder.id ? "bg-accent/10 text-accent font-medium border-transparent" : 
+                    selectedFolderId === folder.id ? "bg-[#E6E5DC] text-[#1C1C1A] dark:bg-accent/10 dark:text-accent font-medium border-transparent" : 
                     "text-muted-foreground hover:bg-surface-hover hover:text-foreground border-transparent"
                 )}
                 onClick={() => onSelectFolder?.(folder.id)}
@@ -372,7 +372,7 @@ function FolderNode({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent 
                             align="start" 
-                            className="w-48 rounded-xl border border-border/50 bg-surface/95 p-1 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in-0 zoom-in-95"
+                            className="w-48 rounded-xl border border-border bg-surface p-1 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in-0 zoom-in-95"
                             sideOffset={5}
                         >
                             <DropdownMenuItem className="cursor-pointer font-medium text-xs py-2 text-foreground flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setIsRenaming(true); }}>

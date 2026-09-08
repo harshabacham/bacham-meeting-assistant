@@ -73,7 +73,7 @@ export function NotesSidebar({
     };
 
     return (
-        <div className="flex flex-col h-full w-[272px] overflow-hidden bg-[var(--surface)] text-[var(--text-primary)] border-r border-[var(--border)]">
+        <div className="flex flex-col h-full w-[272px] overflow-hidden bg-[var(--sidebar-bg)] text-[var(--text-primary)] border-r border-[var(--border)]">
             
             {/* Header */}
             <div className="px-4 pt-4 pb-3 flex items-center justify-between shrink-0 border-b border-[var(--border)]/40">

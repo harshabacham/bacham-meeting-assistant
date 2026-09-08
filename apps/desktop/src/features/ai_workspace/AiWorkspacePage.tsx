@@ -133,7 +133,7 @@ export function AiWorkspacePage() {
         <div className="flex h-full w-full bg-background overflow-hidden">
             {/* ─── LEFT SIDEBAR ─── */}
             <div className={cn(
-                'shrink-0 flex flex-col h-full border-r border-border bg-surface transition-all duration-300 overflow-hidden',
+                'shrink-0 flex flex-col h-full border-r border-border bg-[var(--sidebar-bg)] transition-all duration-300 overflow-hidden',
                 sidebarOpen ? 'w-[280px]' : 'w-0'
             )}>
                 {sidebarOpen && (
