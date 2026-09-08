@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export type FeedbackCategory = 'bug' | 'suggestion' | 'general';
 export type FeedbackRating = 'love' | 'good' | 'neutral' | 'frustrated';
@@ -94,7 +95,7 @@ interface FeedbackState {
   resetForm: () => void;
 
   submitFeedback: () => Promise<boolean>;
-  openGitHubIssue: () => void;
+  openGitHubIssue: () => Promise<void>;
 }
 
 export const useFeedbackStore = create<FeedbackState>((set, get) => ({
@@ -243,7 +244,7 @@ export const useFeedbackStore = create<FeedbackState>((set, get) => ({
     }
   },
 
-  openGitHubIssue: () => {
+  openGitHubIssue: async () => {
     const { category, rating, message, includeDiagnostics } = get();
     const diagnostics = getSystemDiagnostics();
 
@@ -264,12 +265,24 @@ export const useFeedbackStore = create<FeedbackState>((set, get) => ({
     }
 
     const githubUrl = `${GITHUB_REPO_URL}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-    import('@tauri-apps/plugin-shell')
-      .then(({ open }) => open(githubUrl))
-      .catch(() => {
-        if (typeof window !== 'undefined') {
-          window.open(githubUrl, '_blank', 'noopener,noreferrer');
-        }
-      });
+
+    try {
+      await openUrl(githubUrl);
+      return;
+    } catch (err) {
+      console.warn('Tauri openUrl failed, trying plugin-shell fallback:', err);
+    }
+
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(githubUrl);
+      return;
+    } catch (err) {
+      console.warn('plugin-shell failed, trying window.open fallback:', err);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.open(githubUrl, '_blank', 'noopener,noreferrer');
+    }
   },
 }));

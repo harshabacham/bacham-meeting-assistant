@@ -288,7 +288,11 @@ export const FeedbackModal: React.FC = () => {
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <button
                   type="button"
-                  onClick={openGitHubIssue}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openGitHubIssue();
+                  }}
                   className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-surface-raised cursor-pointer"
                   title="Open public issue on GitHub"
                 >
