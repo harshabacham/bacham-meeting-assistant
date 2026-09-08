@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { TauriClient, Flashcard, QuizQuestion } from '@/infrastructure/tauri-client';
 import { invoke } from '@tauri-apps/api/core';
 import { 
-    Zap, BookOpen, CheckCircle, RefreshCw, ChevronLeft, ChevronRight, 
-    Plus, Edit2, Trash2, Sparkles, HelpCircle, Search, Layers, X, ArrowRight
+    Sparkles, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, 
+    RotateCcw, Check, X, Search, Layers, BookOpen, 
+    HelpCircle, ArrowRight, CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/components';
 import { useConfirmStore } from '@/components/ui/ConfirmProvider';
@@ -30,40 +31,45 @@ export function StudyWorkspaceView({
     const { showToast } = useToast();
     const { showConfirm } = useConfirmStore();
 
-    // Data states
+    // Primary data
     const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
     const [quizzes, setQuizzes] = useState<QuizQuestion[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [subTab, setSubTab] = useState<'deck' | 'list' | 'quiz'>(initialQuizId ? 'quiz' : 'deck');
 
-    // Source material check: requires transcript or notes
-    const hasNotes = Boolean(noteContent && noteContent.trim().length > 0);
-    const hasTranscript = Boolean(rawTranscript && rawTranscript.trim().length > 0);
-    const hasSourceMaterial = hasNotes || hasTranscript;
+    // Navigation: primary tab ('flashcards' | 'quiz') and sub-view ('practice' | 'deck')
+    const [activeTab, setActiveTab] = useState<'flashcards' | 'quiz'>(initialQuizId ? 'quiz' : 'flashcards');
+    const [cardViewMode, setCardViewMode] = useState<'practice' | 'deck'>('practice');
 
-    // Deck practice states
+    // Practice Deck state
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
+    const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
     const [isReviewing, setIsReviewing] = useState(false);
+    const [sessionCompleted, setSessionCompleted] = useState(false);
 
     // AI Generation states
     const [isGeneratingCards, setIsGeneratingCards] = useState(false);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
-    // Card List / Creation / Editing states
-    const [searchFilter, setSearchFilter] = useState('');
-    const [isCreating, setIsCreating] = useState(false);
+    // Deck List & Creation / Editing states
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isCreatingCard, setIsCreatingCard] = useState(false);
     const [newQuestion, setNewQuestion] = useState('');
     const [newAnswer, setNewAnswer] = useState('');
     const [newDifficulty, setNewDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
 
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingCardId, setEditingCardId] = useState<string | null>(null);
     const [editQuestion, setEditQuestion] = useState('');
     const [editAnswer, setEditAnswer] = useState('');
-    const [, setEditDifficulty] = useState<string>('medium');
-    const [, setReviewedCount] = useState<number>(0);
 
-    // Load flashcards and quizzes
+    // Interactive Quiz State
+    const [userAnswers, setUserAnswers] = useState<Record<string, number>>({});
+
+    // Source material check
+    const hasNotes = Boolean(noteContent && noteContent.trim().length > 0);
+    const hasTranscript = Boolean(rawTranscript && rawTranscript.trim().length > 0);
+    const hasSourceMaterial = hasNotes || hasTranscript;
+
+    // Load data from Tauri IPC
     const loadStudyData = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -84,118 +90,113 @@ export function StudyWorkspaceView({
         loadStudyData();
     }, [loadStudyData]);
 
-    // Focus on initialCardId when provided
+    // Focus on initialCardId
     useEffect(() => {
         if (!initialCardId || flashcards.length === 0) return;
         const targetIdx = flashcards.findIndex(c => String(c.id) === String(initialCardId));
         if (targetIdx !== -1) {
             setCurrentIndex(targetIdx);
-            setIsFlipped(false);
-            setSubTab('deck');
+            setIsAnswerRevealed(false);
+            setSessionCompleted(false);
+            setActiveTab('flashcards');
+            setCardViewMode('practice');
         }
     }, [initialCardId, flashcards]);
 
-    // Focus on initialQuizId when provided
+    // Focus on initialQuizId
     useEffect(() => {
         if (!initialQuizId || quizzes.length === 0) return;
-        setSubTab('quiz');
+        setActiveTab('quiz');
         setTimeout(() => {
-            const el = document.getElementById(`quiz-item-${initialQuizId}`);
+            const el = document.getElementById(`quiz-question-${initialQuizId}`);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-        }, 100);
+        }, 150);
     }, [initialQuizId, quizzes]);
 
-    // Current flashcard in deck
     const currentCard = flashcards[currentIndex] || null;
 
-    // Filtered flashcards for list view
+    // Filtered flashcards for Deck view
     const filteredCards = useMemo(() => {
-        if (!searchFilter.trim()) return flashcards;
-        const q = searchFilter.toLowerCase();
+        if (!searchQuery.trim()) return flashcards;
+        const q = searchQuery.toLowerCase();
         return flashcards.filter(c => 
             c.question.toLowerCase().includes(q) || 
             c.answer.toLowerCase().includes(q)
         );
-    }, [flashcards, searchFilter]);
+    }, [flashcards, searchQuery]);
 
-    // Flip toggle
-    const handleFlip = useCallback(() => {
-        setIsFlipped(prev => !prev);
-    }, []);
-
-    // SM-2 Review Handler
-    const handleReview = async (rating: number) => {
+    // Handle SM-2 Flashcard Review
+    const handleReview = useCallback(async (rating: number) => {
         if (!currentCard || isReviewing) return;
         setIsReviewing(true);
         try {
             await TauriClient.reviewFlashcard(currentCard.id, rating);
-            setReviewedCount((c: number) => c + 1);
-            showToast(`Recorded review (${rating >= 3 ? 'Mastered' : 'Needs practice'})`, 'success');
             
-            // Brief animation flip reset
-            setIsFlipped(false);
-            setTimeout(() => {
-                if (currentIndex < flashcards.length - 1) {
-                    setCurrentIndex(i => i + 1);
-                } else {
-                    showToast('🎉 You finished reviewing this deck!', 'success');
-                }
-                setIsReviewing(false);
-            }, 150);
-        } catch (err: any) {
-            console.error('Review failed', err);
+            // Advance to next card or complete deck
+            if (currentIndex < flashcards.length - 1) {
+                setCurrentIndex(prev => prev + 1);
+                setIsAnswerRevealed(false);
+            } else {
+                setSessionCompleted(true);
+            }
+        } catch (err) {
+            console.error('Failed to review card', err);
+            showToast('Failed to record review', 'error');
+        } finally {
             setIsReviewing(false);
         }
-    };
+    }, [currentCard, isReviewing, currentIndex, flashcards.length, showToast]);
 
-    // Keyboard shortcuts for deck practice
+    // Keyboard Shortcuts for Practice Mode
     useEffect(() => {
-        if (subTab !== 'deck' || !currentCard) return;
+        if (activeTab !== 'flashcards' || cardViewMode !== 'practice' || !currentCard || sessionCompleted) return;
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if inside an input or textarea
             const target = e.target as HTMLElement;
             if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
 
             if (e.code === 'Space') {
                 e.preventDefault();
-                handleFlip();
+                setIsAnswerRevealed(prev => !prev);
             } else if (e.code === 'ArrowRight' && currentIndex < flashcards.length - 1) {
                 e.preventDefault();
-                setIsFlipped(false);
+                setIsAnswerRevealed(false);
                 setCurrentIndex(i => i + 1);
             } else if (e.code === 'ArrowLeft' && currentIndex > 0) {
                 e.preventDefault();
-                setIsFlipped(false);
+                setIsAnswerRevealed(false);
                 setCurrentIndex(i => i - 1);
-            } else if (isFlipped) {
-                if (e.key === '1') handleReview(0);
-                else if (e.key === '2') handleReview(2);
-                else if (e.key === '3') handleReview(3);
-                else if (e.key === '4') handleReview(5);
+            } else if (isAnswerRevealed) {
+                if (e.key === '1') handleReview(1); // Review Again
+                else if (e.key === '2') handleReview(2); // Hard
+                else if (e.key === '3') handleReview(4); // Got It
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [subTab, currentCard, currentIndex, flashcards.length, isFlipped, handleFlip]);
+    }, [activeTab, cardViewMode, currentCard, sessionCompleted, currentIndex, flashcards.length, isAnswerRevealed, handleReview]);
 
-    // AI Generate Flashcards
+    // AI Generation Handlers
     const handleGenerateFlashcards = async () => {
         const textToUse = rawTranscript || noteContent || '';
         if (!textToUse.trim()) {
-            showToast('Note content or transcript is required to generate flashcards.', 'error');
+            showToast('Note content or transcript is required to generate cards.', 'error');
             return;
         }
 
         setIsGeneratingCards(true);
         try {
             await TauriClient.generateFlashcards(noteId, textToUse);
-            showToast('Generated flashcards successfully!', 'success');
+            showToast('Flashcards generated successfully!', 'success');
             await loadStudyData();
-            setSubTab('deck');
+            setActiveTab('flashcards');
+            setCardViewMode('practice');
+            setCurrentIndex(0);
+            setIsAnswerRevealed(false);
+            setSessionCompleted(false);
         } catch (err: any) {
             console.error('Failed to generate flashcards', err);
             showToast(`Generation failed: ${err.message || err}`, 'error');
@@ -204,7 +205,6 @@ export function StudyWorkspaceView({
         }
     };
 
-    // AI Generate Quiz
     const handleGenerateQuiz = async () => {
         const textToUse = rawTranscript || noteContent || '';
         if (!textToUse.trim()) {
@@ -215,9 +215,10 @@ export function StudyWorkspaceView({
         setIsGeneratingQuiz(true);
         try {
             await invoke('quiz_generate', { lectureId: noteId, transcript: textToUse });
-            showToast('Generated quiz questions successfully!', 'success');
+            showToast('Quiz questions generated successfully!', 'success');
             await loadStudyData();
-            setSubTab('quiz');
+            setUserAnswers({});
+            setActiveTab('quiz');
         } catch (err: any) {
             console.error('Failed to generate quiz', err);
             showToast(`Quiz generation failed: ${err.message || err}`, 'error');
@@ -226,40 +227,38 @@ export function StudyWorkspaceView({
         }
     };
 
-    // Manual Card Creation
+    // Card CRUD
     const handleCreateCard = async () => {
         if (!newQuestion.trim() || !newAnswer.trim()) {
-            showToast('Both Question and Answer are required.', 'error');
+            showToast('Question and answer are both required.', 'error');
             return;
         }
         try {
             await TauriClient.createFlashcard(noteId, newQuestion.trim(), newAnswer.trim(), newDifficulty);
-            setIsCreating(false);
+            setIsCreatingCard(false);
             setNewQuestion('');
             setNewAnswer('');
-            showToast('Flashcard created!', 'success');
+            showToast('Flashcard created', 'success');
             await loadStudyData();
         } catch (err: any) {
             showToast(`Failed to create card: ${err.message || err}`, 'error');
         }
     };
 
-    // Card Update
     const handleSaveEdit = async (id: string) => {
         if (!editQuestion.trim() || !editAnswer.trim()) return;
         try {
             await TauriClient.updateFlashcard(id, editQuestion.trim(), editAnswer.trim());
-            setEditingId(null);
-            showToast('Flashcard updated!', 'success');
+            setEditingCardId(null);
+            showToast('Flashcard updated', 'success');
             await loadStudyData();
         } catch (err: any) {
             showToast(`Update failed: ${err.message || err}`, 'error');
         }
     };
 
-    // Card Delete
     const handleDeleteCard = async (id: string) => {
-        const ok = await showConfirm('Delete this flashcard permanently?');
+        const ok = await showConfirm('Permanently delete this flashcard?');
         if (!ok) return;
         try {
             await TauriClient.deleteFlashcard(id);
@@ -273,667 +272,747 @@ export function StudyWorkspaceView({
         }
     };
 
-    const getDifficultyColor = (diff: string) => {
-        switch (diff?.toLowerCase()) {
-            case 'easy': return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
-            case 'hard': return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
-            default: return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-        }
+    // Quiz Option Selection
+    const handleSelectQuizOption = (questionKey: string, optIndex: number) => {
+        setUserAnswers(prev => ({
+            ...prev,
+            [questionKey]: optIndex
+        }));
     };
+
+    // Quiz Score Calculation
+    const quizStats = useMemo(() => {
+        if (quizzes.length === 0) return { answered: 0, correct: 0, total: 0, pct: 0 };
+        let correctCount = 0;
+        let answeredCount = 0;
+
+        quizzes.forEach((q, idx) => {
+            const key = q.id || String(idx);
+            const userChoice = userAnswers[key];
+            if (userChoice !== undefined) {
+                answeredCount++;
+                let options: string[] = [];
+                try {
+                    options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
+                } catch {
+                    options = [];
+                }
+                const chosenText = options[userChoice];
+                const isCorrect = (q.answerKey && chosenText && chosenText.trim().toLowerCase() === q.answerKey.trim().toLowerCase()) ||
+                    String(userChoice) === String(q.answerKey) ||
+                    userChoice === ((q as any).correct_answer_index ?? (q as any).correctAnswerIndex ?? 0);
+
+                if (isCorrect) correctCount++;
+            }
+        });
+
+        return {
+            answered: answeredCount,
+            correct: correctCount,
+            total: quizzes.length,
+            pct: answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0
+        };
+    }, [quizzes, userAnswers]);
 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--bg)] text-[var(--text-primary)]">
-            {/* ── Subheader / Study Navigation ──────────────────────────────── */}
-            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 border-b border-[var(--border)] bg-[var(--surface-raised)]/60 backdrop-blur-md shrink-0">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-yellow-400/15 text-yellow-400">
-                        <Zap size={15} />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">
-                                Study & Active Recall
-                            </h2>
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)]">
-                                {flashcards.length} cards
+            {/* ── Minimalist Clean Header ───────────────────────────────────── */}
+            <header className="flex items-center justify-between px-6 py-3 border-b border-[#E5E4DC] dark:border-white/10 bg-white/50 dark:bg-[#18191B]/50 backdrop-blur-md shrink-0">
+                {/* Left: Tab Segmented Control */}
+                <div className="flex items-center gap-1 bg-[#F4F3EE] dark:bg-white/[0.06] p-1 rounded-xl border border-[#E5E4DC] dark:border-white/10">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('flashcards')}
+                        className={cn(
+                            "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                            activeTab === 'flashcards'
+                                ? "bg-white dark:bg-[#18191B] text-[var(--text-primary)] shadow-sm font-semibold"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        )}
+                    >
+                        <Layers size={13} className="opacity-70" />
+                        <span>Flashcards</span>
+                        {flashcards.length > 0 && (
+                            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-black/5 dark:bg-white/10 text-[var(--text-secondary)]">
+                                {flashcards.length}
                             </span>
-                        </div>
-                    </div>
-                </div>
+                        )}
+                    </button>
 
-                {/* SubTab Switcher */}
-                <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-lg border border-[var(--border)] shadow-2xs">
-                    <button
-                        type="button"
-                        onClick={() => setSubTab('deck')}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
-                            subTab === 'deck'
-                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                        )}
-                    >
-                        <Layers size={13} />
-                        <span>Practice Deck</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSubTab('list')}
-                        className={cn(
-                            "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
-                            subTab === 'list'
-                                ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                        )}
-                    >
-                        <BookOpen size={13} />
-                        <span>All Cards ({flashcards.length})</span>
-                    </button>
                     {(hasSourceMaterial || quizzes.length > 0) && (
                         <button
                             type="button"
-                            onClick={() => setSubTab('quiz')}
+                            onClick={() => setActiveTab('quiz')}
                             className={cn(
-                                "flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
-                                subTab === 'quiz'
-                                    ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
+                                "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                                activeTab === 'quiz'
+                                    ? "bg-white dark:bg-[#18191B] text-[var(--text-primary)] shadow-sm font-semibold"
                                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                             )}
                         >
-                            <HelpCircle size={13} />
-                            <span>Quiz ({quizzes.length})</span>
+                            <HelpCircle size={13} className="opacity-70" />
+                            <span>Quiz</span>
+                            {quizzes.length > 0 && (
+                                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-black/5 dark:bg-white/10 text-[var(--text-secondary)]">
+                                    {quizzes.length}
+                                </span>
+                            )}
                         </button>
                     )}
                 </div>
 
-                {/* Study Action Buttons */}
+                {/* Right: Actions */}
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setIsCreating(true)}
-                        className="px-2.5 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-xs font-medium text-[var(--text-primary)] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                    >
-                        <Plus size={13} />
-                        <span className="hidden sm:inline">Add Card</span>
-                    </button>
+                    {activeTab === 'flashcards' && flashcards.length > 0 && (
+                        <div className="flex items-center gap-0.5 bg-[#F4F3EE] dark:bg-white/[0.06] p-0.5 rounded-lg border border-[#E5E4DC] dark:border-white/10 mr-1">
+                            <button
+                                type="button"
+                                onClick={() => setCardViewMode('practice')}
+                                className={cn(
+                                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                    cardViewMode === 'practice'
+                                        ? "bg-white dark:bg-[#18191B] text-[var(--text-primary)] shadow-2xs font-semibold"
+                                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                )}
+                                title="Focused study practice"
+                            >
+                                Practice
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCardViewMode('deck')}
+                                className={cn(
+                                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                    cardViewMode === 'deck'
+                                        ? "bg-white dark:bg-[#18191B] text-[var(--text-primary)] shadow-2xs font-semibold"
+                                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                )}
+                                title="View and manage all cards"
+                            >
+                                All Cards
+                            </button>
+                        </div>
+                    )}
+
+                    {activeTab === 'flashcards' && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsCreatingCard(true);
+                                setCardViewMode('deck');
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+                        >
+                            <Plus size={13} />
+                            <span>Add Card</span>
+                        </button>
+                    )}
 
                     {hasSourceMaterial && (
                         <button
                             type="button"
-                            onClick={handleGenerateFlashcards}
-                            disabled={isGeneratingCards}
-                            className="px-3 py-1.5 rounded-md bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                            onClick={activeTab === 'flashcards' ? handleGenerateFlashcards : handleGenerateQuiz}
+                            disabled={isGeneratingCards || isGeneratingQuiz}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#1F2023] hover:bg-[#2C2E33] dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-all cursor-pointer shadow-xs disabled:opacity-50"
                         >
-                            <Sparkles size={13} className={isGeneratingCards ? "animate-spin" : "text-yellow-400"} />
-                            <span>{isGeneratingCards ? 'Generating...' : 'AI Generate'}</span>
+                            <Sparkles size={12} className={cn((isGeneratingCards || isGeneratingQuiz) && "animate-spin")} />
+                            <span>
+                                {activeTab === 'flashcards'
+                                    ? (isGeneratingCards ? 'Generating...' : 'AI Flashcards')
+                                    : (isGeneratingQuiz ? 'Generating...' : 'AI Quiz')}
+                            </span>
                         </button>
                     )}
                 </div>
-            </div>
+            </header>
 
-            {/* ── Main Content Area ────────────────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
+            {/* ── Main Study Workspace Body ─────────────────────────────────── */}
+            <main className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center my-auto py-16 gap-3">
-                        <RefreshCw size={24} className="animate-spin text-yellow-400" />
-                        <span className="text-xs text-[var(--text-muted)] font-medium">Loading study deck...</span>
+                    <div className="flex flex-col items-center justify-center my-auto py-20 gap-3">
+                        <div className="w-6 h-6 border-2 border-[var(--text-muted)] border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-[var(--text-muted)] font-medium">Loading study materials...</span>
                     </div>
-                ) : flashcards.length === 0 && subTab !== 'quiz' ? (
-                    /* Empty Deck State */
-                    <div className="flex flex-col items-center justify-center my-auto py-16 px-6 max-w-md text-center rounded-2xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
-                        <div className="p-4 rounded-2xl bg-yellow-400/10 text-yellow-400 mb-4 shadow-sm">
-                            <Zap size={28} />
-                        </div>
-                        <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">
-                            {hasSourceMaterial ? "No flashcards for this note yet" : "No notes or transcript available"}
-                        </h3>
-                        <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
-                            {hasSourceMaterial 
-                                ? "Convert core concepts, facts, or discussions from this meeting into interactive flashcards for active recall."
-                                : "Write notes or record a meeting first to automatically generate AI flashcards and quiz questions."}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2.5 w-full justify-center">
-                            {hasSourceMaterial && (
+                ) : activeTab === 'flashcards' ? (
+                    /* ══════════════════════════════════════════════════════════ */
+                    /* FLASHCARDS SECTION                                         */
+                    /* ══════════════════════════════════════════════════════════ */
+                    flashcards.length === 0 ? (
+                        /* Empty Flashcards State */
+                        <div className="flex flex-col items-center justify-center my-auto py-16 px-8 max-w-md text-center rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-sm">
+                            <div className="w-12 h-12 rounded-2xl bg-[#F4F3EE] dark:bg-white/[0.06] flex items-center justify-center text-[var(--text-muted)] mb-4">
+                                <BookOpen size={22} />
+                            </div>
+                            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">
+                                No flashcards yet
+                            </h3>
+                            <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
+                                {hasSourceMaterial
+                                    ? "Generate active-recall flashcards from this note's transcript and notes, or create custom cards manually."
+                                    : "Take notes or record a meeting first to automatically generate AI study materials."}
+                            </p>
+                            <div className="flex items-center gap-2">
+                                {hasSourceMaterial && (
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateFlashcards}
+                                        disabled={isGeneratingCards}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-[#1F2023] hover:bg-[#2C2E33] dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                                    >
+                                        <Sparkles size={13} className={cn(isGeneratingCards && "animate-spin")} />
+                                        <span>{isGeneratingCards ? 'Generating...' : 'Generate with AI'}</span>
+                                    </button>
+                                )}
                                 <button
                                     type="button"
-                                    onClick={handleGenerateFlashcards}
-                                    disabled={isGeneratingCards}
-                                    className="px-4 py-2 rounded-lg bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                    onClick={() => {
+                                        setIsCreatingCard(true);
+                                        setCardViewMode('deck');
+                                    }}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
                                 >
-                                    <Sparkles size={14} className={isGeneratingCards ? "animate-spin" : "text-yellow-400"} />
-                                    <span>{isGeneratingCards ? 'Generating Deck...' : '✨ Generate with AI'}</span>
+                                    <Plus size={13} />
+                                    <span>Create Card</span>
                                 </button>
-                            )}
-                            <button
-                                type="button"
-                                onClick={() => { setIsCreating(true); setSubTab('list'); }}
-                                className="px-4 py-2 rounded-lg bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-medium flex items-center justify-center gap-1.5 hover:bg-[var(--surface-raised)] transition-colors cursor-pointer"
-                            >
-                                <Plus size={14} />
-                                <span>Add Custom Card</span>
-                            </button>
-                        </div>
-                    </div>
-                ) : subTab === 'deck' && currentCard ? (
-                    /* ══════════════════════════════════════════════════════════ */
-                    /* 1. INTERACTIVE 3D FLASHCARD DECK                           */
-                    /* ══════════════════════════════════════════════════════════ */
-                    <div className="w-full max-w-2xl flex flex-col items-center gap-6 my-auto">
-                        {/* Top Indicator Bar */}
-                        <div className="w-full flex items-center justify-between text-xs text-[var(--text-muted)] px-1">
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-[var(--text-primary)]">
-                                    Card {currentIndex + 1} of {flashcards.length}
-                                </span>
-                                {initialCardId && String(currentCard.id) === String(initialCardId) && (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 animate-pulse">
-                                        📍 Matching Search Result
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium border uppercase tracking-wider", getDifficultyColor(currentCard.difficulty))}>
-                                    {currentCard.difficulty || 'medium'}
-                                </span>
-                                {currentCard.lastReviewedAt && (
-                                    <span className="text-[11px] opacity-70">
-                                        Last: {new Date(currentCard.lastReviewedAt).toLocaleDateString()}
-                                    </span>
-                                )}
                             </div>
                         </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full h-1.5 bg-[var(--surface)] rounded-full overflow-hidden border border-[var(--border)]">
-                            <div 
-                                className="h-full bg-yellow-400 transition-all duration-300"
-                                style={{ width: `${((currentIndex + 1) / flashcards.length) * 100}%` }}
-                            />
-                        </div>
-
-                        {/* 3D Flip Card */}
-                        <div 
-                            onClick={handleFlip}
-                            className={cn(
-                                "flashcard w-full min-h-[320px] sm:min-h-[360px] select-none transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]",
-                                isFlipped && "flipped"
-                            )}
-                            role="button"
-                            tabIndex={0}
-                            title="Click or press Space to flip card"
-                        >
-                            <div className="flashcard-inner relative w-full h-full min-h-[320px] sm:min-h-[360px]">
-                                {/* ── FRONT FACE: QUESTION ──────────────── */}
-                                <div className="flashcard-face flex flex-col justify-between p-8 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-lg hover:border-[var(--border-accent)] transition-colors">
-                                    <div className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] pb-2 border-b border-[var(--border)]/60">
-                                        <div className="flex items-center gap-1.5 text-yellow-400">
-                                            <HelpCircle size={14} />
-                                            <span>Question</span>
-                                        </div>
-                                        <span className="text-[10px] opacity-60">Click to flip ↷</span>
-                                    </div>
-
-                                    <div className="my-auto py-6 text-center">
-                                        <h3 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)] leading-snug tracking-tight">
-                                            {currentCard.question}
-                                        </h3>
-                                    </div>
-
-                                    <div className="w-full flex items-center justify-center text-[11px] text-[var(--text-muted)] pt-2 border-t border-[var(--border)]/60 gap-1.5">
-                                        <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--surface-raised)] border border-[var(--border)]">Space</kbd>
-                                        <span>or click card to reveal answer</span>
-                                    </div>
+                    ) : cardViewMode === 'practice' ? (
+                        /* ── Practice Session ────────────────────────────────── */
+                        sessionCompleted ? (
+                            /* Completed Session Screen */
+                            <div className="flex flex-col items-center justify-center my-auto py-16 px-8 max-w-md text-center rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-sm">
+                                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4">
+                                    <CheckCircle2 size={24} />
                                 </div>
-
-                                {/* ── BACK FACE: ANSWER ─────────────────── */}
-                                <div className="flashcard-face flashcard-back flex flex-col justify-between p-8 rounded-2xl bg-[var(--surface-raised)] border-2 border-yellow-400/40 shadow-xl">
-                                    <div className="w-full flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] pb-2 border-b border-[var(--border)]/60">
-                                        <div className="flex items-center gap-1.5 text-emerald-400">
-                                            <CheckCircle size={14} />
-                                            <span>Answer</span>
-                                        </div>
-                                        <span className="text-[10px] opacity-60">Click to flip back</span>
-                                    </div>
-
-                                    <div className="my-auto py-6 text-center">
-                                        <p className="text-base sm:text-lg text-[var(--text-primary)] leading-relaxed font-medium">
-                                            {currentCard.answer}
-                                        </p>
-                                    </div>
-
-                                    <div className="w-full flex items-center justify-center text-[11px] text-[var(--text-muted)] pt-2 border-t border-[var(--border)]/60">
-                                        <span>Rate your recall below to adjust spaced repetition</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Controls Bottom Row */}
-                        <div className="w-full flex flex-col gap-4">
-                            {/* SM-2 Spaced Repetition Buttons (Visible when flipped) */}
-                            {isFlipped ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 animate-fade-in">
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); handleReview(0); }}
-                                        disabled={isReviewing}
-                                        className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
-                                    >
-                                        <span className="text-xs font-bold">Again (1)</span>
-                                        <span className="text-[10px] opacity-75">&lt; 1 min</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); handleReview(2); }}
-                                        disabled={isReviewing}
-                                        className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
-                                    >
-                                        <span className="text-xs font-bold">Hard (2)</span>
-                                        <span className="text-[10px] opacity-75">~2 days</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); handleReview(3); }}
-                                        disabled={isReviewing}
-                                        className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
-                                    >
-                                        <span className="text-xs font-bold">Good (3)</span>
-                                        <span className="text-[10px] opacity-75">~6 days</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); handleReview(5); }}
-                                        disabled={isReviewing}
-                                        className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
-                                    >
-                                        <span className="text-xs font-bold">Easy (4)</span>
-                                        <span className="text-[10px] opacity-75">~10 days</span>
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={handleFlip}
-                                        className="px-6 py-2.5 rounded-xl bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] font-semibold text-xs shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-2"
-                                    >
-                                        <RefreshCw size={14} />
-                                        <span>Reveal Answer (Space)</span>
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Deck Navigation Buttons */}
-                            <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
-                                <button
-                                    type="button"
-                                    onClick={() => { setIsFlipped(false); setCurrentIndex(i => Math.max(0, i - 1)); }}
-                                    disabled={currentIndex === 0}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-md hover:bg-[var(--surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                                >
-                                    <ChevronLeft size={14} />
-                                    <span>Previous</span>
-                                </button>
-
+                                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+                                    Deck Complete!
+                                </h3>
+                                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
+                                    You've reviewed all {flashcards.length} cards in this study deck.
+                                </p>
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setEditingId(currentCard.id);
-                                            setEditQuestion(currentCard.question);
-                                            setEditAnswer(currentCard.answer);
-                                            setEditDifficulty(currentCard.difficulty || 'medium');
-                                            setSubTab('list');
+                                            setCurrentIndex(0);
+                                            setIsAnswerRevealed(false);
+                                            setSessionCompleted(false);
                                         }}
-                                        className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors"
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-[#1F2023] hover:bg-[#2C2E33] dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-all cursor-pointer shadow-xs"
                                     >
-                                        <Edit2 size={12} />
-                                        <span>Edit Card</span>
+                                        <RotateCcw size={13} />
+                                        <span>Study Again</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCardViewMode('deck')}
+                                        className="px-4 py-2 rounded-xl text-xs font-medium border border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                    >
+                                        View All Cards
                                     </button>
                                 </div>
+                            </div>
+                        ) : currentCard ? (
+                            /* Active Card Surface */
+                            <div className="w-full max-w-xl flex flex-col items-center gap-6 my-auto">
+                                {/* Sleek Progress Line & Header */}
+                                <div className="w-full flex flex-col gap-2">
+                                    <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                                        <span className="font-medium text-[var(--text-secondary)]">
+                                            Card {currentIndex + 1} of {flashcards.length}
+                                        </span>
+                                        {initialCardId && String(currentCard.id) === String(initialCardId) && (
+                                            <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                                                Matching Search
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="w-full h-1 bg-[#E5E4DC] dark:bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-[var(--text-primary)] transition-all duration-300 rounded-full"
+                                            style={{ width: `${((currentIndex + 1) / flashcards.length) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => { setIsFlipped(false); setCurrentIndex(i => Math.min(flashcards.length - 1, i + 1)); }}
-                                    disabled={currentIndex === flashcards.length - 1}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-md hover:bg-[var(--surface-hover)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                {/* Minimalist Study Card */}
+                                <div 
+                                    onClick={() => !isAnswerRevealed && setIsAnswerRevealed(true)}
+                                    className={cn(
+                                        "w-full rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] p-8 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex flex-col justify-between min-h-[340px] transition-all",
+                                        !isAnswerRevealed ? "cursor-pointer hover:border-[#D0CEBE] dark:hover:border-white/20" : ""
+                                    )}
                                 >
-                                    <span>Next</span>
-                                    <ChevronRight size={14} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ) : subTab === 'list' ? (
-                    /* ══════════════════════════════════════════════════════════ */
-                    /* 2. ALL FLASHCARDS (LIBRARY & INLINE MANAGEMENT)            */
-                    /* ══════════════════════════════════════════════════════════ */
-                    <div className="w-full max-w-4xl flex flex-col gap-4">
-                        {/* Search & Filter bar */}
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-3 border-b border-[var(--border)]">
-                            <div className="relative w-full sm:w-72">
-                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                                <input
-                                    type="text"
-                                    placeholder="Search flashcards in this deck..."
-                                    value={searchFilter}
-                                    onChange={e => setSearchFilter(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-yellow-400/50"
-                                />
-                            </div>
-                            <div className="text-xs text-[var(--text-muted)]">
-                                Showing {filteredCards.length} of {flashcards.length} cards
-                            </div>
-                        </div>
-
-                        {/* Inline Create Form */}
-                        {isCreating && (
-                            <div className="p-5 rounded-xl bg-[var(--surface)] border-2 border-yellow-400/40 shadow-md flex flex-col gap-3.5 animate-fade-in">
-                                <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-                                    <h4 className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
-                                        <Plus size={14} />
-                                        <span>New Flashcard</span>
-                                    </h4>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsCreating(false)} 
-                                        className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
-
-                                <div>
-                                    <label className="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">
-                                        Question / Prompt
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. What are the 3 core principles agreed in the sync?"
-                                        value={newQuestion}
-                                        onChange={e => setNewQuestion(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-yellow-400/50"
-                                        autoFocus
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">
-                                        Answer / Recall Details
-                                    </label>
-                                    <textarea
-                                        placeholder="Enter the complete, clear answer..."
-                                        value={newAnswer}
-                                        onChange={e => setNewAnswer(e.target.value)}
-                                        rows={3}
-                                        className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-yellow-400/50 leading-relaxed resize-none"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between pt-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[11px] text-[var(--text-muted)] font-medium">Difficulty:</span>
-                                        {(['easy', 'medium', 'hard'] as const).map(d => (
-                                            <button
-                                                key={d}
-                                                type="button"
-                                                onClick={() => setNewDifficulty(d)}
-                                                className={cn(
-                                                    "px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase border transition-all cursor-pointer",
-                                                    newDifficulty === d
-                                                        ? getDifficultyColor(d) + " font-bold scale-105"
-                                                        : "opacity-40 border-transparent hover:opacity-75"
-                                                )}
-                                            >
-                                                {d}
-                                            </button>
-                                        ))}
+                                    {/* Question Section */}
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                            <span>Question</span>
+                                            {!isAnswerRevealed && (
+                                                <span className="text-[10px] font-normal normal-case tracking-normal opacity-60">
+                                                    Click or Space to reveal
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h2 className="text-lg sm:text-xl font-medium text-[var(--text-primary)] leading-snug">
+                                            {currentCard.question}
+                                        </h2>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsCreating(false)}
-                                            className="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={handleCreateCard}
-                                            className="px-4 py-1.5 rounded-md bg-yellow-400 text-black font-semibold text-xs shadow-xs hover:bg-yellow-300 transition-colors"
-                                        >
-                                            Save Card
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Cards List */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pb-12">
-                            {filteredCards.map((card, idx) => {
-                                const isMatchingSearch = initialCardId && String(card.id) === String(initialCardId);
-                                const isEditing = editingId === card.id;
-
-                                return (
-                                    <div
-                                        key={card.id}
-                                        className={cn(
-                                            "p-4 rounded-xl bg-[var(--surface)] border transition-all flex flex-col justify-between gap-3 relative group",
-                                            isMatchingSearch 
-                                                ? "border-yellow-400 ring-2 ring-yellow-400/20 shadow-md bg-yellow-400/[0.03]" 
-                                                : "border-[var(--border)] hover:border-[var(--border-accent)]"
-                                        )}
-                                    >
-                                        {isMatchingSearch && (
-                                            <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-yellow-400 text-black text-[10px] font-bold shadow-xs">
-                                                📍 Search Result
+                                    {/* Answer Section */}
+                                    {isAnswerRevealed ? (
+                                        <div className="flex flex-col gap-4 pt-6 mt-6 border-t border-[#E5E4DC] dark:border-white/10 animate-fade-in">
+                                            <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                                Answer
                                             </div>
-                                        )}
+                                            <p className="text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
+                                                {currentCard.answer}
+                                            </p>
 
-                                        {isEditing ? (
-                                            <div className="flex flex-col gap-2.5">
-                                                <input
-                                                    type="text"
-                                                    value={editQuestion}
-                                                    onChange={e => setEditQuestion(e.target.value)}
-                                                    className="w-full px-2.5 py-1.5 rounded bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)]"
-                                                />
-                                                <textarea
-                                                    value={editAnswer}
-                                                    onChange={e => setEditAnswer(e.target.value)}
-                                                    rows={3}
-                                                    className="w-full px-2.5 py-1.5 rounded bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text-primary)] resize-none"
-                                                />
-                                                <div className="flex justify-end gap-2 pt-1">
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setEditingId(null)} 
-                                                        className="px-2.5 py-1 text-xs text-[var(--text-muted)]"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => handleSaveEdit(card.id)} 
-                                                        className="px-3 py-1 bg-yellow-400 text-black text-xs font-bold rounded"
-                                                    >
-                                                        Save
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div>
-                                                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                        <span className="text-[11px] font-bold text-yellow-400">Q:</span>
-                                                        <span className={cn("px-1.5 py-0.2 rounded text-[9px] font-bold uppercase border", getDifficultyColor(card.difficulty))}>
-                                                            {card.difficulty || 'medium'}
-                                                        </span>
-                                                    </div>
-                                                    <h4 className="text-xs font-semibold text-[var(--text-primary)] leading-snug mb-3">
-                                                        {card.question}
-                                                    </h4>
-                                                    <div className="text-[11px] font-bold text-emerald-400 mb-0.5">A:</div>
-                                                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed bg-[var(--surface-raised)] p-2.5 rounded-lg border border-[var(--border)]/50">
-                                                        {card.answer}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]/40 text-[11px] text-[var(--text-muted)]">
+                                            {/* Recall Rating Actions */}
+                                            <div className="flex flex-col gap-2 pt-4 mt-2">
+                                                <span className="text-[11px] text-center text-[var(--text-muted)]">
+                                                    How well did you know this?
+                                                </span>
+                                                <div className="grid grid-cols-3 gap-2">
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            setCurrentIndex(idx);
-                                                            setIsFlipped(false);
-                                                            setSubTab('deck');
-                                                        }}
-                                                        className="text-yellow-400 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                                                        onClick={(e) => { e.stopPropagation(); handleReview(1); }}
+                                                        disabled={isReviewing}
+                                                        className="flex flex-col items-center justify-center py-2 px-3 rounded-xl border border-[#E5E4DC] dark:border-white/10 hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--text-primary)] hover:text-rose-600 dark:hover:text-rose-400 transition-all cursor-pointer text-xs"
                                                     >
-                                                        <span>Practice This Card</span>
-                                                        <ArrowRight size={11} />
+                                                        <span className="font-semibold">Again</span>
+                                                        <span className="text-[10px] opacity-60">Key 1</span>
                                                     </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); handleReview(2); }}
+                                                        disabled={isReviewing}
+                                                        className="flex flex-col items-center justify-center py-2 px-3 rounded-xl border border-[#E5E4DC] dark:border-white/10 hover:bg-amber-500/10 hover:border-amber-500/30 text-[var(--text-primary)] hover:text-amber-600 dark:hover:text-amber-400 transition-all cursor-pointer text-xs"
+                                                    >
+                                                        <span className="font-semibold">Hard</span>
+                                                        <span className="text-[10px] opacity-60">Key 2</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); handleReview(4); }}
+                                                        disabled={isReviewing}
+                                                        className="flex flex-col items-center justify-center py-2 px-3 rounded-xl border border-[#E5E4DC] dark:border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/30 text-[var(--text-primary)] hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer text-xs"
+                                                    >
+                                                        <span className="font-semibold">Got It</span>
+                                                        <span className="text-[10px] opacity-60">Key 3</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-center pt-8">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAnswerRevealed(true)}
+                                                className="px-5 py-2.5 rounded-xl text-xs font-medium bg-[#F4F3EE] dark:bg-white/[0.06] border border-[#E5E4DC] dark:border-white/10 hover:bg-[#EAE8DF] dark:hover:bg-white/10 text-[var(--text-primary)] transition-colors cursor-pointer flex items-center gap-2"
+                                            >
+                                                <span>Reveal Answer</span>
+                                                <kbd className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-white dark:bg-[#18191B] border border-[#E5E4DC] dark:border-white/10">Space</kbd>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
 
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {/* Navigation Bar */}
+                                <div className="w-full flex items-center justify-between text-xs text-[var(--text-muted)] px-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsAnswerRevealed(false);
+                                            setCurrentIndex(i => Math.max(0, i - 1));
+                                        }}
+                                        disabled={currentIndex === 0}
+                                        className="flex items-center gap-1 py-1.5 px-2.5 rounded-lg hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                    >
+                                        <ChevronLeft size={14} />
+                                        <span>Previous</span>
+                                    </button>
+
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditingCardId(currentCard.id);
+                                                setEditQuestion(currentCard.question);
+                                                setEditAnswer(currentCard.answer);
+                                                setCardViewMode('deck');
+                                            }}
+                                            className="hover:text-[var(--text-primary)] flex items-center gap-1 transition-colors cursor-pointer"
+                                        >
+                                            <Edit2 size={12} />
+                                            <span>Edit</span>
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (currentIndex < flashcards.length - 1) {
+                                                setIsAnswerRevealed(false);
+                                                setCurrentIndex(i => i + 1);
+                                            } else {
+                                                setSessionCompleted(true);
+                                            }
+                                        }}
+                                        className="flex items-center gap-1 py-1.5 px-2.5 rounded-lg hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] cursor-pointer transition-colors"
+                                    >
+                                        <span>{currentIndex === flashcards.length - 1 ? 'Finish' : 'Next'}</span>
+                                        <ChevronRight size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ) : null
+                    ) : (
+                        /* ── Deck Management View ────────────────────────────── */
+                        <div className="w-full max-w-3xl flex flex-col gap-5">
+                            {/* Search bar */}
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="relative flex-1 max-w-sm">
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search flashcards..."
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white dark:bg-[#18191B] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--text-primary)] transition-colors"
+                                    />
+                                </div>
+                                <span className="text-xs text-[var(--text-muted)]">
+                                    {filteredCards.length} of {flashcards.length} cards
+                                </span>
+                            </div>
+
+                            {/* Inline Add Card Drawer */}
+                            {isCreatingCard && (
+                                <div className="p-5 rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-sm flex flex-col gap-4 animate-fade-in">
+                                    <div className="flex items-center justify-between pb-2 border-b border-[#E5E4DC] dark:border-white/10">
+                                        <h4 className="text-xs font-semibold text-[var(--text-primary)]">
+                                            New Flashcard
+                                        </h4>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCreatingCard(false)}
+                                            className="text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[11px] font-medium text-[var(--text-secondary)]">Question</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. What were the 3 action items agreed upon?"
+                                            value={newQuestion}
+                                            onChange={e => setNewQuestion(e.target.value)}
+                                            className="w-full px-3 py-2 rounded-xl bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)]"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[11px] font-medium text-[var(--text-secondary)]">Answer</label>
+                                        <textarea
+                                            placeholder="Enter the concise answer..."
+                                            value={newAnswer}
+                                            onChange={e => setNewAnswer(e.target.value)}
+                                            rows={3}
+                                            className="w-full px-3 py-2 rounded-xl bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--text-primary)] resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-1">
+                                        <div className="flex items-center gap-1.5">
+                                            {(['easy', 'medium', 'hard'] as const).map(d => (
+                                                <button
+                                                    key={d}
+                                                    type="button"
+                                                    onClick={() => setNewDifficulty(d)}
+                                                    className={cn(
+                                                        "px-2.5 py-0.5 rounded-md text-[10px] font-medium capitalize border transition-all cursor-pointer",
+                                                        newDifficulty === d
+                                                            ? "bg-[var(--text-primary)] text-[var(--bg)] border-transparent"
+                                                            : "border-[#E5E4DC] dark:border-white/10 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                                    )}
+                                                >
+                                                    {d}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsCreatingCard(false)}
+                                                className="px-3 py-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleCreateCard}
+                                                className="px-3.5 py-1.5 rounded-lg bg-[#1F2023] hover:bg-[#2C2E33] dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-900 text-xs font-medium cursor-pointer shadow-2xs"
+                                            >
+                                                Save Card
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Card Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-8">
+                                {filteredCards.map((card, idx) => {
+                                    const isEditing = editingCardId === card.id;
+
+                                    return (
+                                        <div
+                                            key={card.id}
+                                            className="p-4 rounded-xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-2xs flex flex-col justify-between gap-3 group"
+                                        >
+                                            {isEditing ? (
+                                                <div className="flex flex-col gap-2.5">
+                                                    <input
+                                                        type="text"
+                                                        value={editQuestion}
+                                                        onChange={e => setEditQuestion(e.target.value)}
+                                                        className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-primary)]"
+                                                    />
+                                                    <textarea
+                                                        value={editAnswer}
+                                                        onChange={e => setEditAnswer(e.target.value)}
+                                                        rows={3}
+                                                        className="w-full px-2.5 py-1.5 rounded-lg bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-primary)] resize-none"
+                                                    />
+                                                    <div className="flex justify-end gap-2 pt-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEditingCardId(null)}
+                                                            className="px-2.5 py-1 text-xs text-[var(--text-muted)] cursor-pointer"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSaveEdit(card.id)}
+                                                            className="px-3 py-1 bg-[var(--text-primary)] text-[var(--bg)] text-xs font-medium rounded-lg cursor-pointer"
+                                                        >
+                                                            Save
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="flex flex-col gap-2">
+                                                        <h4 className="text-xs font-medium text-[var(--text-primary)] leading-snug">
+                                                            {card.question}
+                                                        </h4>
+                                                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-3">
+                                                            {card.answer}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between pt-2 border-t border-[#E5E4DC]/60 dark:border-white/5 text-[11px] text-[var(--text-muted)]">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                setEditingId(card.id);
-                                                                setEditQuestion(card.question);
-                                                                setEditAnswer(card.answer);
-                                                                setEditDifficulty(card.difficulty || 'medium');
+                                                                setCurrentIndex(idx);
+                                                                setIsAnswerRevealed(false);
+                                                                setSessionCompleted(false);
+                                                                setCardViewMode('practice');
                                                             }}
-                                                            className="p-1 rounded hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                                                            title="Edit"
+                                                            className="text-[var(--text-primary)] hover:underline flex items-center gap-1 font-medium cursor-pointer"
                                                         >
-                                                            <Edit2 size={12} />
+                                                            <span>Practice</span>
+                                                            <ArrowRight size={11} />
                                                         </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleDeleteCard(card.id)}
-                                                            className="p-1 rounded hover:bg-rose-500/10 text-[var(--text-muted)] hover:text-rose-400"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 size={12} />
-                                                        </button>
+
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setEditingCardId(card.id);
+                                                                    setEditQuestion(card.question);
+                                                                    setEditAnswer(card.answer);
+                                                                }}
+                                                                className="p-1 rounded hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                                                                title="Edit"
+                                                            >
+                                                                <Edit2 size={12} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDeleteCard(card.id)}
+                                                                className="p-1 rounded hover:bg-rose-500/10 text-[var(--text-muted)] hover:text-rose-500 cursor-pointer"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )
                 ) : (
                     /* ══════════════════════════════════════════════════════════ */
-                    /* 3. INTERACTIVE QUIZ MODE                                   */
+                    /* INTERACTIVE QUIZ SECTION                                   */
                     /* ══════════════════════════════════════════════════════════ */
-                    <div className="w-full max-w-2xl flex flex-col items-center gap-6 my-auto">
+                    <div className="w-full max-w-2xl flex flex-col gap-6 my-auto">
                         {quizzes.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center my-auto py-16 px-6 max-w-md text-center rounded-2xl bg-[var(--surface)] border border-dashed border-[var(--border)]">
-                                <div className="p-4 rounded-2xl bg-green-400/10 text-green-400 mb-4 shadow-sm">
-                                    <HelpCircle size={28} />
+                            <div className="flex flex-col items-center justify-center my-auto py-16 px-8 max-w-md text-center rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-sm mx-auto">
+                                <div className="w-12 h-12 rounded-2xl bg-[#F4F3EE] dark:bg-white/[0.06] flex items-center justify-center text-[var(--text-muted)] mb-4">
+                                    <HelpCircle size={22} />
                                 </div>
                                 <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">
-                                    {hasSourceMaterial ? "No quiz questions generated yet" : "No notes or transcript available"}
+                                    No quiz questions yet
                                 </h3>
                                 <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-6">
                                     {hasSourceMaterial
-                                        ? "Generate multiple-choice quiz questions from this meeting note to test your knowledge retention."
-                                        : "Write notes or record a meeting first to generate multiple-choice quizzes."}
+                                        ? "Generate multiple-choice quiz questions based on this note's discussion to test your knowledge retention."
+                                        : "Take notes or record a meeting first to generate quizzes."}
                                 </p>
                                 {hasSourceMaterial && (
                                     <button
                                         type="button"
                                         onClick={handleGenerateQuiz}
                                         disabled={isGeneratingQuiz}
-                                        className="px-4 py-2 rounded-lg bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-[#1F2023] hover:bg-[#2C2E33] dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-900 transition-all cursor-pointer shadow-xs disabled:opacity-50"
                                     >
-                                        <Sparkles size={14} className={isGeneratingQuiz ? "animate-spin" : "text-green-400"} />
-                                        <span>{isGeneratingQuiz ? 'Generating Quiz...' : '✨ Generate Quiz with AI'}</span>
+                                        <Sparkles size={13} className={cn(isGeneratingQuiz && "animate-spin")} />
+                                        <span>{isGeneratingQuiz ? 'Generating Quiz...' : 'Generate Quiz with AI'}</span>
                                     </button>
                                 )}
                             </div>
                         ) : (
-                            <div className="w-full flex flex-col gap-4">
-                                {quizzes.map((quiz, qIdx) => {
-                                    const isMatchingQuiz = initialQuizId && String(quiz.id) === String(initialQuizId);
-                                    let options: string[] = [];
-                                    try {
-                                        options = typeof quiz.options === 'string' ? JSON.parse(quiz.options) : (quiz.options || []);
-                                    } catch {
-                                        options = [];
-                                    }
-
-                                    return (
-                                        <div 
-                                            key={quiz.id || qIdx}
-                                            id={`quiz-item-${quiz.id}`}
-                                            className={cn(
-                                                "p-6 rounded-2xl bg-[var(--surface)] border shadow-sm flex flex-col gap-4 relative",
-                                                isMatchingQuiz 
-                                                    ? "border-green-400 ring-2 ring-green-400/20 bg-green-400/[0.02]" 
-                                                    : "border-[var(--border)]"
-                                            )}
+                            <div className="flex flex-col gap-6 pb-12">
+                                {/* Quiz Progress & Stats */}
+                                <div className="flex items-center justify-between px-1 text-xs text-[var(--text-muted)]">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium text-[var(--text-primary)]">
+                                            {quizStats.answered} of {quizStats.total} answered
+                                        </span>
+                                        {quizStats.answered > 0 && (
+                                            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                                {quizStats.correct}/{quizStats.answered} Correct ({quizStats.pct}%)
+                                            </span>
+                                        )}
+                                    </div>
+                                    {quizStats.answered > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setUserAnswers({})}
+                                            className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                                         >
-                                            {isMatchingQuiz && (
-                                                <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-green-400 text-black text-[10px] font-bold shadow-xs">
-                                                    📍 Quiz Search Result
+                                            <RotateCcw size={12} />
+                                            <span>Reset</span>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Questions List */}
+                                <div className="flex flex-col gap-4">
+                                    {quizzes.map((quiz, qIdx) => {
+                                        const questionKey = quiz.id || String(qIdx);
+                                        const userChoice = userAnswers[questionKey];
+                                        const isAnswered = userChoice !== undefined;
+
+                                        let options: string[] = [];
+                                        try {
+                                            options = typeof quiz.options === 'string' ? JSON.parse(quiz.options) : (quiz.options || []);
+                                        } catch {
+                                            options = [];
+                                        }
+
+                                        return (
+                                            <div
+                                                key={quiz.id || qIdx}
+                                                id={`quiz-question-${quiz.id}`}
+                                                className="p-6 rounded-2xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[#18191B] shadow-2xs flex flex-col gap-4"
+                                            >
+                                                <div className="flex items-start gap-2.5">
+                                                    <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-md bg-[#F4F3EE] dark:bg-white/[0.06] text-[var(--text-muted)] shrink-0">
+                                                        Q{qIdx + 1}
+                                                    </span>
+                                                    <h3 className="text-sm sm:text-base font-medium text-[var(--text-primary)] leading-snug">
+                                                        {quiz.question}
+                                                    </h3>
                                                 </div>
-                                            )}
 
-                                            <div className="flex items-start gap-2">
-                                                <span className="text-xs font-bold text-green-400 bg-green-400/15 px-2 py-0.5 rounded">
-                                                    Q{qIdx + 1}
-                                                </span>
-                                                <h3 className="text-sm sm:text-base font-semibold text-[var(--text-primary)] leading-snug">
-                                                    {quiz.question}
-                                                </h3>
-                                            </div>
+                                                {/* Options */}
+                                                <div className="flex flex-col gap-2 pt-1">
+                                                    {options.map((opt: string, optIdx: number) => {
+                                                        const isCorrectOption = (quiz.answerKey && opt.trim().toLowerCase() === quiz.answerKey.trim().toLowerCase()) ||
+                                                            String(optIdx) === String(quiz.answerKey) ||
+                                                            optIdx === ((quiz as any).correct_answer_index ?? (quiz as any).correctAnswerIndex ?? 0);
 
-                                            {/* Options */}
-                                            <div className="flex flex-col gap-2 pt-2">
-                                                {options.map((opt: string, optIdx: number) => {
-                                                    const isCorrect = (quiz.answerKey && opt.trim().toLowerCase() === quiz.answerKey.trim().toLowerCase()) ||
-                                                        String(optIdx) === String(quiz.answerKey) ||
-                                                        optIdx === ((quiz as any).correct_answer_index ?? (quiz as any).correctAnswerIndex ?? 0);
-                                                    return (
-                                                        <div 
-                                                            key={optIdx}
-                                                            className={cn(
-                                                                "px-3.5 py-2.5 rounded-xl border text-xs leading-relaxed flex items-center justify-between",
-                                                                isCorrect 
-                                                                    ? "bg-green-500/10 border-green-500/30 text-green-300 font-medium" 
-                                                                    : "bg-[var(--surface-raised)] border-[var(--border)] text-[var(--text-secondary)]"
-                                                            )}
-                                                        >
-                                                            <span>{opt}</span>
-                                                            {isCorrect && (
-                                                                <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 shrink-0 ml-2">
-                                                                    Correct Answer
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                        const isSelected = userChoice === optIdx;
 
-                                            {(quiz as any).explanation && (
-                                                <div className="p-3 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                                                    <span className="font-semibold text-[var(--text-primary)] mr-1">Explanation:</span>
-                                                    {(quiz as any).explanation}
+                                                        let optionStyle = "border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.04] text-[var(--text-primary)]";
+                                                        if (isAnswered) {
+                                                            if (isCorrectOption) {
+                                                                optionStyle = "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-medium";
+                                                            } else if (isSelected) {
+                                                                optionStyle = "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300";
+                                                            } else {
+                                                                optionStyle = "opacity-50 border-[#E5E4DC] dark:border-white/10 text-[var(--text-muted)]";
+                                                            }
+                                                        }
+
+                                                        return (
+                                                            <button
+                                                                key={optIdx}
+                                                                type="button"
+                                                                onClick={() => !isAnswered && handleSelectQuizOption(questionKey, optIdx)}
+                                                                disabled={isAnswered}
+                                                                className={cn(
+                                                                    "w-full text-left px-4 py-3 rounded-xl border text-xs leading-relaxed flex items-center justify-between transition-all cursor-pointer",
+                                                                    optionStyle
+                                                                )}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="w-5 h-5 rounded-full border border-current/30 flex items-center justify-center text-[10px] font-mono shrink-0">
+                                                                        {String.fromCharCode(65 + optIdx)}
+                                                                    </span>
+                                                                    <span>{opt}</span>
+                                                                </div>
+
+                                                                {isAnswered && (
+                                                                    isCorrectOption ? (
+                                                                        <Check size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                                                    ) : isSelected ? (
+                                                                        <X size={14} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                                                                    ) : null
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+
+                                                {/* Explanation if Answered */}
+                                                {isAnswered && (quiz as any).explanation && (
+                                                    <div className="p-3 rounded-xl bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-xs text-[var(--text-secondary)] leading-relaxed mt-1 animate-fade-in">
+                                                        <span className="font-semibold text-[var(--text-primary)] mr-1">Explanation:</span>
+                                                        {(quiz as any).explanation}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
                 )}
-            </div>
+            </main>
         </div>
     );
 }
