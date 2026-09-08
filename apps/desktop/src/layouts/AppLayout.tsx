@@ -51,6 +51,7 @@ const SETTINGS_NAV_ITEMS = [
     { id: 'pets', label: 'Pets', icon: Sparkles },
     { id: 'integrations', label: 'Integrations', icon: PlugZap },
     { id: 'storage', label: 'Storage', icon: Database },
+    { id: 'feedback', label: 'Feedback & Support', icon: MessageSquareHeart },
 ];
 
 export function AppLayout() {
