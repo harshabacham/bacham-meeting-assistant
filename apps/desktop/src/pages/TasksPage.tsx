@@ -332,9 +332,9 @@ export const TasksPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Header Actions */}
+            {/* Header Actions - Uniform h-8 height across all controls */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              {/* Refresh Button */}
+              {/* Refresh Button - Icon only */}
               <button
                 type="button"
                 onClick={async () => {
@@ -342,18 +342,18 @@ export const TasksPage: React.FC = () => {
                   showToast('Action items refreshed', 'success');
                 }}
                 disabled={loading}
-                className="h-8.5 px-2.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-medium transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                className="w-8 h-8 rounded-lg bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all shadow-xs cursor-pointer flex items-center justify-center shrink-0"
                 title="Refresh tasks & action items"
+                aria-label="Refresh tasks & action items"
               >
-                <RefreshCw size={13} className={loading ? "animate-spin text-[var(--text-primary)]" : ""} />
-                <span className="hidden sm:inline">Refresh</span>
+                <RefreshCw size={13.5} className={loading ? "animate-spin text-[var(--text-primary)]" : ""} />
               </button>
 
               {/* Sync Tasks Modal Trigger */}
               <button
                 type="button"
                 onClick={() => setIsSyncModalOpen(true)}
-                className="h-8.5 px-3 rounded-lg bg-[var(--text-primary)] text-[var(--bg)] text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                className="h-8 px-3 rounded-lg bg-[var(--text-primary)] text-[var(--bg)] text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
                 title="Sync action items to Slack or Notion"
               >
                 <Share2 size={13} />
@@ -366,11 +366,11 @@ export const TasksPage: React.FC = () => {
               </button>
 
               {/* View Toggles (Tasks | Calendar) */}
-              <div className="flex items-center p-0.5 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)]">
+              <div className="h-8 flex items-center p-0.5 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => { setViewMode('tasks'); setSearchParams({}); }}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  className={`h-full flex items-center gap-1.5 px-3 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                     viewMode === 'tasks' 
                       ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]/70' 
                       : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -382,7 +382,7 @@ export const TasksPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setViewMode('calendar'); setSearchParams({ view: 'calendar' }); }}
-                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  className={`h-full flex items-center gap-1.5 px-3 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                     viewMode === 'calendar' 
                       ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-xs border border-[var(--border)]/70' 
                       : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
