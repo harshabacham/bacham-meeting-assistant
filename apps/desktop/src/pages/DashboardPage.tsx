@@ -69,7 +69,7 @@ function LectureCard({ lecture, onClick }: { lecture: Lecture; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className="group shrink-0 min-w-[160px] w-[188px] text-left rounded-xl p-4 bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] relative"
+      className="group shrink-0 min-w-[160px] w-[188px] text-left rounded-xl p-4 bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] relative cursor-pointer"
       aria-label={`Open lecture: ${lecture.title || "Untitled lecture"}`}
     >
       {lecture.isFavorite && (
@@ -274,7 +274,7 @@ export function DashboardPage() {
               {continueLecture ? (
                 <button
                   onClick={() => navigate(`/lectures/${continueLecture.id}`)}
-                  className="flex-1 text-left group relative flex flex-col justify-center px-6 py-6 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  className="flex-1 text-left group relative flex flex-col justify-center px-6 py-6 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer"
                   aria-label={`Continue lecture: ${continueLecture.title || "Untitled"}`}
                 >
                   <span className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-[var(--accent)]" aria-hidden="true" />
@@ -317,7 +317,7 @@ export function DashboardPage() {
               {dueCards.length > 0 ? (
                 <button
                   onClick={() => navigate("/lectures")}
-                  className="flex-1 text-left group flex items-center gap-5 px-6 py-6 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border)] shadow-[0_4px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  className="flex-1 text-left group flex items-center gap-5 px-6 py-6 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer"
                 >
                   <div className="p-2.5 rounded bg-[var(--surface-raised)] shrink-0">
                     <Zap size={16} className="text-[var(--text-primary)]" aria-hidden="true" />
@@ -348,7 +348,7 @@ export function DashboardPage() {
             {/* Action Items for YOU */}
             <motion.div {...fadeUp} className="flex flex-col gap-3">
               <Eyebrow>{t('dashboard.action_items_for_you', 'Action items for you')}</Eyebrow>
-              <div className="flex-1 flex flex-col gap-2 p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm overflow-hidden h-full min-h-[160px]">
+              <div className="flex-1 flex flex-col gap-2 p-4 rounded-xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[var(--surface)] shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] overflow-hidden h-full min-h-[160px]">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <CheckSquare size={14} className="text-[var(--accent)]" />
