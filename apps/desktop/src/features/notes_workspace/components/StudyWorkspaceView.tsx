@@ -28,29 +28,67 @@ interface QuizAnswerState {
     isCorrect?: boolean;
 }
 
+function normalizeString(str: string): string {
+    return str
+        .trim()
+        .toLowerCase()
+        .replace(/^[“"'`]+|[”"'`]+$/g, '')
+        .replace(/[.,;:!?]+$/, '')
+        .trim();
+}
+
 // Helper: Check if a multiple choice / true-false option is correct
-function checkOptionCorrect(quiz: QuizQuestion, optText: string, optIndex: number): boolean {
+function checkOptionCorrect(quiz: QuizQuestion, optText: string, optIndex: number, allOptions: string[] = []): boolean {
     if (!quiz.answerKey) return false;
-    const key = String(quiz.answerKey).trim();
-    const keyLower = key.toLowerCase();
-    const optLower = optText.trim().toLowerCase();
+    const keyNorm = normalizeString(String(quiz.answerKey));
+    const optNorm = normalizeString(optText);
 
-    // 1. Direct text match
-    if (optLower === keyLower) return true;
+    // 1. Exact normalized text match (e.g. "blackrock" === "blackrock", "true" === "true", "false" === "false")
+    if (optNorm === keyNorm) return true;
 
-    // 2. Numeric index match (e.g. answerKey is "1" and optIndex is 1)
-    if (key === String(optIndex)) return true;
-
-    // 3. Letter match (e.g. answerKey is "A", "B", "C", "D" or "a)", "b)")
-    const cleanLetter = keyLower.replace(/[^a-d]/g, '');
-    if (cleanLetter.length === 1) {
-        const letterIndex = cleanLetter.charCodeAt(0) - 97;
-        if (letterIndex === optIndex) return true;
+    // 2. Strict single letter match ONLY if key is specifically a letter option (e.g. "A", "B", "(C)", "Option D")
+    const letterMatch = String(quiz.answerKey).trim().match(/^(?:option\s*)?\(?([a-d])\)?\.?$/i);
+    if (letterMatch) {
+        const letterIdx = letterMatch[1].toLowerCase().charCodeAt(0) - 97;
+        if (letterIdx === optIndex) return true;
     }
 
-    // 4. Explicit correct_answer_index ONLY if actually defined as a valid number
+    // 3. Numeric index match ONLY if key is a digit and no option text matches that digit
+    if (/^[0-9]+$/.test(String(quiz.answerKey).trim())) {
+        const digit = parseInt(String(quiz.answerKey).trim(), 10);
+        const hasTextMatch = allOptions.some(o => normalizeString(o) === keyNorm);
+        if (digit === optIndex && !hasTextMatch) {
+            return true;
+        }
+    }
+
+    // 4. Explicit correct_answer_index only if strictly typed as a number
     const explicitIdx = (quiz as any).correct_answer_index ?? (quiz as any).correctAnswerIndex;
-    if (typeof explicitIdx === 'number' && explicitIdx === optIndex) return true;
+    if (typeof explicitIdx === 'number' && explicitIdx === optIndex) {
+        return true;
+    }
+
+    return false;
+}
+
+// Helper: Check if text-based answer is correct
+function checkTextAnswerCorrect(quiz: QuizQuestion, userInput: string): boolean {
+    if (!quiz.answerKey || !userInput.trim()) return false;
+    const userNorm = normalizeString(userInput);
+    const keyNorm = normalizeString(String(quiz.answerKey));
+
+    if (userNorm === keyNorm) return true;
+
+    if (keyNorm.length >= 3 && (userNorm.includes(keyNorm) || keyNorm.includes(userNorm))) {
+        return true;
+    }
+
+    if (keyNorm.includes(';') || keyNorm.includes(' or ')) {
+        const parts = keyNorm.split(/;|\bor\b/).map(p => normalizeString(p)).filter(Boolean);
+        if (parts.some(p => userNorm.includes(p) || p.includes(userNorm))) {
+            return true;
+        }
+    }
 
     return false;
 }
@@ -359,7 +397,7 @@ export function StudyWorkspaceView({
 
     // Quiz Handlers
     const handleSelectQuizOption = (questionKey: string, quiz: QuizQuestion, optIndex: number, options: string[]) => {
-        const isCorrect = checkOptionCorrect(quiz, options[optIndex], optIndex);
+        const isCorrect = checkOptionCorrect(quiz, options[optIndex], optIndex, options);
         setQuizAnswers(prev => ({
             ...prev,
             [questionKey]: {
@@ -374,12 +412,7 @@ export function StudyWorkspaceView({
         const input = (textInputs[questionKey] || '').trim();
         if (!input) return;
 
-        const userVal = input.toLowerCase();
-        const targetVal = String(quiz.answerKey || '').trim().toLowerCase();
-
-        // Exact match or contains key words
-        const isCorrect = userVal === targetVal || 
-            (targetVal.length > 3 && (userVal.includes(targetVal) || targetVal.includes(userVal)));
+        const isCorrect = checkTextAnswerCorrect(quiz, input);
 
         setQuizAnswers(prev => ({
             ...prev,
@@ -387,6 +420,16 @@ export function StudyWorkspaceView({
                 textInput: input,
                 isSubmitted: true,
                 isCorrect
+            }
+        }));
+    };
+
+    const handleMarkSelfCorrect = (questionKey: string) => {
+        setQuizAnswers(prev => ({
+            ...prev,
+            [questionKey]: {
+                ...(prev[questionKey] || {}),
+                isCorrect: true
             }
         }));
     };
@@ -1076,7 +1119,7 @@ export function StudyWorkspaceView({
                                                 {options.length > 0 ? (
                                                     <div className="flex flex-col gap-2 pt-1">
                                                         {options.map((opt: string, optIdx: number) => {
-                                                            const isCorrectOption = checkOptionCorrect(quiz, opt, optIdx);
+                                                            const isCorrectOption = checkOptionCorrect(quiz, opt, optIdx, options);
                                                             const isSelected = userState?.choiceIndex === optIdx;
 
                                                             let optionStyle = "border-[#E5E4DC] dark:border-white/10 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.04] text-[var(--text-primary)]";
@@ -1168,17 +1211,29 @@ export function StudyWorkspaceView({
                                                                             <span className="opacity-70">Your answer:</span>
                                                                             <span className="font-semibold">{userState.textInput}</span>
                                                                         </div>
-                                                                        {userState.isCorrect ? (
-                                                                            <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                                                                                <Check size={13} />
-                                                                                Correct
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400">
-                                                                                <X size={13} />
-                                                                                Incorrect
-                                                                            </span>
-                                                                        )}
+                                                                        <div className="flex items-center gap-2.5">
+                                                                            {userState.isCorrect ? (
+                                                                                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                                                                                    <Check size={13} />
+                                                                                    Correct
+                                                                                </span>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span className="flex items-center gap-1 font-medium text-rose-600 dark:text-rose-400">
+                                                                                        <X size={13} />
+                                                                                        Incorrect
+                                                                                    </span>
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleMarkSelfCorrect(questionKey)}
+                                                                                        className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer font-medium"
+                                                                                        title="Mark this as correct if your phrasing was right"
+                                                                                    >
+                                                                                        I was right
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 )}
 
