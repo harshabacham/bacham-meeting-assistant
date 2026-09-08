@@ -6,22 +6,13 @@ import {
 } from 'lucide-react';
 import { useCalendarStore, CalendarEvent } from '@/shared/stores/calendarStore';
 import { useToast } from '@/components/ui/ToastProvider';
+import { EDITORIAL_COLORS, getEventStyle, normalizeEventColor } from './calendarTheme';
 
 interface EventModalProps {
   isOpen: boolean;
   onClose: () => void;
   eventToEdit?: CalendarEvent | null;
 }
-
-// Warm editorial color palette for custom event labels (no harsh neon greens)
-const COLORS = [
-  '#1C1C1A', // Deep Charcoal
-  '#92400E', // Warm Amber
-  '#1E4D74', // Slate Blue
-  '#9C2738', // Muted Rose
-  '#5B3785', // Soft Purple
-  '#57564F'  // Warm Stone
-];
 
 const ensureYmd = (dStr?: string): string => {
   if (!dStr) return new Date().toISOString().split('T')[0];
@@ -78,7 +69,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [description, setDescription] = useState('');
-  const [color, setColor] = useState(COLORS[0]);
+  const [color, setColor] = useState(EDITORIAL_COLORS[0].hex);
   
   const [location, setLocation] = useState('');
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
@@ -94,7 +85,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
       setStartTime(formatTimeForInput(eventToEdit.startTime));
       setEndTime(formatTimeForInput(eventToEdit.endTime));
       setDescription(eventToEdit.description || '');
-      setColor(eventToEdit.color || COLORS[0]);
+      setColor(normalizeEventColor(eventToEdit.color));
       setLocation(eventToEdit.meetingUrl || '');
       setReminderMinutes(eventToEdit.reminderMinutes ?? null);
     } else {
@@ -104,7 +95,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
       setStartTime(formatTimeForInput(eventToEdit?.startTime || '12:00 PM'));
       setEndTime(formatTimeForInput(eventToEdit?.endTime || '12:30 PM'));
       setDescription(eventToEdit?.description || '');
-      setColor(COLORS[0]);
+      setColor(normalizeEventColor(eventToEdit?.color));
       setLocation(eventToEdit?.meetingUrl || '');
       setReminderMinutes(null);
     }
@@ -171,6 +162,9 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
 
   if (!isOpen) return null;
 
+  const previewStyle = getEventStyle({ color, id: eventToEdit?.id });
+  const viewStyle = getEventStyle(eventToEdit);
+
   const displayDate = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('default', { 
     weekday: 'long', 
     month: 'long', 
@@ -234,9 +228,12 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
             {mode === 'view' ? (
               <div className="p-7 flex flex-col gap-6">
                 {/* Title Section */}
-                <div className="flex items-start gap-4">
-                  <div className="mt-1.5 w-3.5 h-3.5 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: color }} />
-                  <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-start gap-3.5">
+                  <div className={`mt-0.5 px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 border shrink-0 ${viewStyle.bg} ${viewStyle.text} ${viewStyle.border}`}>
+                    <span className="w-2 h-2 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: viewStyle.dot }} />
+                    <span>{viewStyle.name}</span>
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <h2 className="text-xl font-semibold text-[var(--text-primary)] leading-snug break-words">
                       {title || 'Untitled Event'}
                     </h2>
@@ -365,27 +362,52 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
                   </div>
                 </div>
 
-                {/* Editorial Color Selector (no neon greens) */}
-                <div className="flex items-center gap-3.5 pt-1">
-                  <span className="text-[11px] font-semibold text-[var(--text-muted)] w-4 shrink-0" />
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-[11px] font-semibold text-[var(--text-secondary)] mr-1">Color:</span>
-                    {COLORS.map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setColor(c)}
-                        className={`w-5 h-5 rounded-full transition-all cursor-pointer flex items-center justify-center ${
-                          color === c 
-                            ? 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--surface)] ring-[var(--text-primary)] shadow-xs' 
-                            : 'hover:scale-105 opacity-80 hover:opacity-100'
-                        }`}
-                        style={{ backgroundColor: c }}
-                        title={`Select color ${c}`}
-                      >
-                        {color === c && <Check size={10} className="text-white" strokeWidth={3} />}
-                      </button>
-                    ))}
+                {/* Editorial Color Selector */}
+                <div className="space-y-2.5 pt-2 border-t border-[var(--border)]/60">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)]">
+                      <span>Color Theme:</span>
+                      <span className="font-bold text-[var(--text-primary)]">
+                        {EDITORIAL_COLORS.find(c => c.hex.toLowerCase() === color.toLowerCase())?.name || 'Custom'}
+                      </span>
+                    </div>
+
+                    {/* Live Preview Pill */}
+                    <div className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1.5 border transition-all shadow-2xs ${previewStyle.bg} ${previewStyle.text} ${previewStyle.border}`}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: previewStyle.dot }} />
+                      <span className="truncate max-w-[140px]">{title.trim() || 'Event Preview'}</span>
+                      <span className="opacity-75 text-[9.5px] shrink-0 font-medium">
+                        {startTime ? formatTimeForSave(startTime) : '9:00 AM'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {EDITORIAL_COLORS.map(c => {
+                      const isSelected = color.toLowerCase() === c.hex.toLowerCase();
+                      return (
+                        <button
+                          key={c.hex}
+                          type="button"
+                          onClick={() => setColor(c.hex)}
+                          className={`h-8 px-2.5 rounded-xl text-xs font-semibold flex items-center justify-between border transition-all cursor-pointer ${
+                            isSelected
+                              ? `${c.style.bg} ${c.style.text} ${c.style.border} ring-2 ring-[var(--text-primary)]/20 shadow-xs scale-[1.02]`
+                              : 'bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] border-[var(--border)] opacity-85 hover:opacity-100'
+                          }`}
+                          title={c.name}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span 
+                              className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs" 
+                              style={{ backgroundColor: c.hex }} 
+                            />
+                            <span className="truncate">{c.name}</span>
+                          </div>
+                          {isSelected && <Check size={12} className="shrink-0" strokeWidth={2.5} />}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 

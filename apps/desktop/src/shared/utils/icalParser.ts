@@ -72,15 +72,15 @@ export function parseICSData(icsText: string): CalendarEvent[] {
     const dayOfWeek = dateObj.toLocaleString('en-US', { weekday: 'short' }) || 'Thu';
     const dateStr = dateObj.toISOString().split('T')[0];
 
-    // Determine indicator color based on title keywords
-    let color = '#3b82f6'; // default blue
+    // Determine indicator color based on title keywords using warm editorial tones
+    let color = '#1E4D74'; // Slate Blue default
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes('exam') || lowerTitle.includes('quiz') || lowerTitle.includes('test') || lowerTitle.includes('final')) {
-      color = '#ef4444'; // red for exams
+      color = '#9C2738'; // Terracotta Rose for exams
     } else if (lowerTitle.includes('lecture') || lowerTitle.includes('class') || lowerTitle.includes('chapter')) {
-      color = '#10b981'; // emerald for lectures
+      color = '#2D5A43'; // Forest Moss for lectures (warm earthy, never neon)
     } else if (lowerTitle.includes('review') || lowerTitle.includes('study') || lowerTitle.includes('prep')) {
-      color = '#f97316'; // orange for study
+      color = '#92400E'; // Warm Amber for prep/study
     }
 
     events.push({
@@ -156,15 +156,15 @@ export function parseGCalEvents(gcalItems: any[]): CalendarEvent[] {
     const dayOfWeek = dateObj.toLocaleString('en-US', { weekday: 'short' });
     const dateStr = dateObj.toISOString().split('T')[0];
 
-    // Color code
-    let color = '#3b82f6';
+    // Color code using warm editorial tones
+    let color = '#1E4D74';
     const lowerTitle = title.toLowerCase();
     if (lowerTitle.includes('exam') || lowerTitle.includes('quiz') || lowerTitle.includes('test')) {
-      color = '#ef4444';
+      color = '#9C2738';
     } else if (lowerTitle.includes('lecture') || lowerTitle.includes('class')) {
-      color = '#10b981';
-    } else if (lowerTitle.includes('review') || lowerTitle.includes('study')) {
-      color = '#f97316';
+      color = '#2D5A43';
+    } else if (lowerTitle.includes('review') || lowerTitle.includes('study') || lowerTitle.includes('prep')) {
+      color = '#92400E';
     }
 
     return {

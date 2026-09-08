@@ -5,6 +5,7 @@ import { EventModal } from './EventModal';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { getEventStyle } from './calendarTheme';
 
 // Helper to parse "10:30 AM" into hours (e.g. 10.5)
 function parseTimeToHours(timeStr?: string): number {
@@ -20,15 +21,6 @@ function parseTimeToHours(timeStr?: string): number {
   
   return h + m / 60;
 }
-
-const colorPalette = [
-  { bg: 'bg-[#EAE8E1] dark:bg-white/[0.08]', text: 'text-[#1C1C1A] dark:text-[#F4F3ED]', border: 'border-[#DAD7CD] dark:border-white/10' },
-  { bg: 'bg-[#F9EDE0] dark:bg-amber-500/15', text: 'text-[#92400E] dark:text-amber-200', border: 'border-[#EAD5BF] dark:border-amber-500/25' },
-  { bg: 'bg-[#EBF1F7] dark:bg-sky-500/15', text: 'text-[#1E4D74] dark:text-sky-200', border: 'border-[#D4E2EE] dark:border-sky-500/25' },
-  { bg: 'bg-[#F9EBEA] dark:bg-rose-500/15', text: 'text-[#9C2738] dark:text-rose-200', border: 'border-[#EFCFCB] dark:border-rose-500/25' },
-  { bg: 'bg-[#F1ECF7] dark:bg-purple-500/15', text: 'text-[#5B3785] dark:text-purple-200', border: 'border-[#DFD3EC] dark:border-purple-500/25' },
-  { bg: 'bg-[#F2F1EC] dark:bg-stone-500/15', text: 'text-[#3E3D38] dark:text-stone-200', border: 'border-[#DFDDD6] dark:border-stone-500/25' },
-];
 
 export function FullCalendarView() {
   const { events, editEvent, syncNow, autoSyncEnabled } = useCalendarStore();
@@ -301,8 +293,7 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                 </div>
                 <div className="flex flex-col gap-1 overflow-hidden">
                   {dayEvents.slice(0, 4).map((evt: any, idx: number) => {
-                    const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
-                    const style = colorPalette[colorIndex];
+                    const style = getEventStyle(evt, idx);
                     return (
                       <motion.div 
                         key={evt.id}
@@ -317,10 +308,13 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                           e.stopPropagation();
                         }}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
-                        className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-semibold leading-tight flex items-center justify-between cursor-pointer shadow-xs border transition-all ${style.bg} ${style.text} ${style.border}`}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-semibold leading-tight flex items-center justify-between cursor-pointer shadow-xs border transition-all ${style.bg} ${style.text} ${style.border}`}
                       >
-                        <span className="truncate flex-1 pr-2">{evt.title}</span>
-                        {evt.startTime && <span className="opacity-80 shrink-0 text-[10px] font-medium tracking-wide">{evt.startTime}</span>}
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: style.dot }} />
+                          <span className="truncate">{evt.title}</span>
+                        </div>
+                        {evt.startTime && <span className="opacity-80 shrink-0 text-[9.5px] font-medium tracking-wide">{evt.startTime}</span>}
                       </motion.div>
                     );
                   })}
@@ -456,8 +450,7 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                     let endH = parseTimeToHours(evt.endTime) || (startH + 1);
                     if (endH <= startH) endH = startH + 1;
 
-                    const colorIndex = (evt.id.charCodeAt(0) + idx) % colorPalette.length;
-                    const style = colorPalette[colorIndex];
+                    const style = getEventStyle(evt, idx);
 
                     return (
                       <motion.div
@@ -472,8 +465,11 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                           zIndex: 10
                         }}
                       >
-                        <div className="text-[11.5px] font-bold leading-tight truncate">{evt.title}</div>
-                        <div className="text-[10px] font-medium leading-tight opacity-80 mt-1 truncate">{evt.startTime} {evt.endTime && `- ${evt.endTime}`}</div>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: style.dot }} />
+                          <div className="text-[11.5px] font-bold leading-tight truncate">{evt.title}</div>
+                        </div>
+                        <div className="text-[10px] font-medium leading-tight opacity-80 truncate pl-3">{evt.startTime} {evt.endTime && `- ${evt.endTime}`}</div>
                       </motion.div>
                     );
                   })}
@@ -527,14 +523,17 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
              {eventsByDay[currentDate.toLocaleDateString('en-CA')]?.length > 0 ? (
                <div className="flex flex-col gap-4">
                  {eventsByDay[currentDate.toLocaleDateString('en-CA')].map((evt: any, i: number) => {
-                    const style = colorPalette[i % colorPalette.length];
+                    const style = getEventStyle(evt, i);
                     return (
-                      <div key={evt.id} className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
-                        <h3 className={`font-bold text-[14px] mb-2 ${style.text}`}>{evt.title}</h3>
-                       <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{currentDate.toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
-                       <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{evt.startTime} {evt.endTime ? `- ${evt.endTime}` : ''}</p>
-                     </div>
-                   );
+                      <div key={evt.id} className={`p-3.5 rounded-xl border transition-all ${style.bg} ${style.border}`}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: style.dot }} />
+                          <h3 className={`font-bold text-[13.5px] truncate ${style.text}`}>{evt.title}</h3>
+                        </div>
+                        <p className={`text-[11px] font-medium opacity-80 pl-4 ${style.text}`}>{currentDate.toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                        <p className={`text-[11px] font-medium opacity-80 pl-4 ${style.text}`}>{evt.startTime} {evt.endTime ? `- ${evt.endTime}` : ''}</p>
+                      </div>
+                    );
                  })}
                </div>
              ) : (

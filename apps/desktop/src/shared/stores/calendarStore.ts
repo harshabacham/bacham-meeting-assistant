@@ -221,6 +221,26 @@ export const useCalendarStore = create<CalendarState>()(
           // Fetch events first before committing to connected state
           const fetched = await fetchLiveGoogleCalendarEventsOAuth(token);
           
+          const currentEvents = get().events;
+          const currentMap = new Map(currentEvents.map(e => [e.id, e]));
+          const mergedFetched = fetched.map(fe => {
+            const existing = currentMap.get(fe.id);
+            if (existing) {
+              return {
+                ...fe,
+                color: existing.color || fe.color,
+                isCompleted: existing.isCompleted !== undefined ? existing.isCompleted : fe.isCompleted,
+                meetingUrl: existing.meetingUrl || fe.meetingUrl,
+                reminderMinutes: existing.reminderMinutes !== undefined ? existing.reminderMinutes : fe.reminderMinutes,
+              };
+            }
+            return fe;
+          });
+          const localEvents = currentEvents.filter(e => e.type === 'bacham' || e.id.startsWith('evt_') || e.id.startsWith('custom_'));
+          const mergedMap = new Map<string, CalendarEvent>();
+          mergedFetched.forEach(e => mergedMap.set(e.id, e));
+          localEvents.forEach(e => mergedMap.set(e.id, e));
+
           set({
             isConnected: true,
             calendarEmail: email,
@@ -230,7 +250,7 @@ export const useCalendarStore = create<CalendarState>()(
             lastSyncedAt: Date.now(),
             isSyncModalOpen: false,
             syncError: null,
-            events: fetched,
+            events: Array.from(mergedMap.values()),
           });
         } catch (err: any) {
           console.error("Failed Google Calendar OAuth Login:", err);
@@ -268,12 +288,28 @@ export const useCalendarStore = create<CalendarState>()(
             fetched = await fetchLiveGoogleCalendarEvents(iCalUrl.trim());
           }
           
-          // Preserve local Bacham events (focus blocks, custom events)
+          // Preserve local customizations and user-edited colors
           const currentEvents = get().events;
+          const currentMap = new Map(currentEvents.map(e => [e.id, e]));
+
+          const mergedFetched = fetched.map(fe => {
+            const existing = currentMap.get(fe.id);
+            if (existing) {
+              return {
+                ...fe,
+                color: existing.color || fe.color,
+                isCompleted: existing.isCompleted !== undefined ? existing.isCompleted : fe.isCompleted,
+                meetingUrl: existing.meetingUrl || fe.meetingUrl,
+                reminderMinutes: existing.reminderMinutes !== undefined ? existing.reminderMinutes : fe.reminderMinutes,
+              };
+            }
+            return fe;
+          });
+
           const localEvents = currentEvents.filter(e => e.type === 'bacham' || e.id.startsWith('evt_') || e.id.startsWith('custom_'));
 
           const mergedMap = new Map<string, CalendarEvent>();
-          fetched.forEach(e => mergedMap.set(e.id, e));
+          mergedFetched.forEach(e => mergedMap.set(e.id, e));
           localEvents.forEach(e => mergedMap.set(e.id, e));
           
           set({ 
