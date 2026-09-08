@@ -301,7 +301,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
           <div className="p-4 rounded-xl bg-[var(--surface-raised)]/40 border border-[var(--border)] space-y-3 transition-all">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
                   <Hash size={18} />
                 </div>
                 <div>
@@ -309,7 +309,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
                     <span className="text-xs font-bold text-[var(--text-primary)]">Slack Channel</span>
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                       slackConnected 
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' 
+                        ? 'bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border)]' 
                         : 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/20'
                     }`}>
                       {slackConnected ? 'Connected' : 'Setup Required'}
@@ -326,7 +326,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setExpandedSection(expandedSection === 'slack_config' ? 'none' : 'slack_config')}
-                    className="px-3 py-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-semibold transition-all flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold transition-all flex items-center gap-1"
                   >
                     <span>Connect</span>
                     {expandedSection === 'slack_config' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -336,7 +336,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
                     type="button"
                     onClick={handlePushToSlack}
                     disabled={isSendingSlack}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg bg-[var(--text-primary)] hover:opacity-90 active:scale-95 text-[var(--bg)] text-xs font-semibold transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                   >
                     {isSendingSlack ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                     <span>{isSendingSlack ? 'Sending...' : 'Post to Slack'}</span>
@@ -411,7 +411,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
                     <span className="text-xs font-bold text-[var(--text-primary)]">Notion Workspace</span>
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                       notionConnected 
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' 
+                        ? 'bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border)]' 
                         : 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/20'
                     }`}>
                       {notionConnected ? 'Connected' : 'Setup Required'}
@@ -534,7 +534,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
               onClick={handleCopyMarkdown}
               className="px-3.5 py-1.5 rounded-lg bg-[var(--surface-hover)] hover:bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text-primary)] text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              {copiedMarkdown ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              {copiedMarkdown ? <Check size={12} className="text-[var(--text-primary)]" /> : <Copy size={12} />}
               <span>{copiedMarkdown ? 'Copied!' : 'Copy'}</span>
             </button>
           </div>
@@ -548,7 +548,7 @@ export const SyncTasksModal: React.FC<SyncTasksModalProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[var(--text-primary)]">Email Task Digest</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border)]">
                     Ready
                   </span>
                 </div>

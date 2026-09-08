@@ -158,10 +158,22 @@ export function AppLayout() {
 
             {/* Native-style Window Controls (Top Right) */}
             <div className="absolute top-0 right-0 h-12 z-[100] flex items-center justify-end pr-6">
-                <div className="flex items-center gap-2.5">
-                    <button onClick={() => TauriClient.minimize()} className="w-3 h-3 rounded-full bg-[#FFC15E] hover:bg-[#ffb040] shadow-[0_0_8px_rgba(255,193,94,0.2)] transition-all active:scale-95 cursor-default" title="Minimize" />
-                    <button onClick={() => TauriClient.maximize()} className="w-3 h-3 rounded-full bg-[#5EFF9F] hover:bg-[#40ff80] shadow-[0_0_8px_rgba(94,255,159,0.2)] transition-all active:scale-95 cursor-default" title="Maximize" />
-                    <button onClick={() => TauriClient.close()} className="w-3 h-3 rounded-full bg-[#FF5E5E] hover:bg-[#ff4040] shadow-[0_0_8px_rgba(255,94,94,0.2)] transition-all active:scale-95 cursor-default" title="Close" />
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => TauriClient.minimize()} 
+                        className="w-3 h-3 rounded-full bg-[var(--text-muted)]/25 hover:bg-[var(--text-secondary)]/50 transition-all active:scale-90 cursor-pointer" 
+                        title="Minimize" 
+                    />
+                    <button 
+                        onClick={() => TauriClient.maximize()} 
+                        className="w-3 h-3 rounded-full bg-[var(--text-muted)]/25 hover:bg-[var(--text-secondary)]/50 transition-all active:scale-90 cursor-pointer" 
+                        title="Maximize" 
+                    />
+                    <button 
+                        onClick={() => TauriClient.close()} 
+                        className="w-3 h-3 rounded-full bg-[var(--text-muted)]/25 hover:bg-rose-500/80 transition-all active:scale-90 cursor-pointer" 
+                        title="Close" 
+                    />
                 </div>
             </div>
             {/* Global Ambient Background Effects (Dark Mode Only) */}

@@ -510,7 +510,7 @@ export const TasksPage: React.FC = () => {
                   className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 transition-colors disabled:opacity-35 px-2.5 py-1.5 rounded-lg hover:bg-[var(--surface-hover)] cursor-pointer"
                   title="Copy pending tasks as Markdown checklist"
                 >
-                  {copiedAll ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                  {copiedAll ? <Check size={13} className="text-[var(--text-primary)]" /> : <Copy size={13} />}
                   <span>Copy markdown</span>
                 </button>
               </div>
@@ -550,7 +550,7 @@ export const TasksPage: React.FC = () => {
                 >
                   <div className="w-12 h-12 rounded-2xl bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] mb-3.5 shadow-xs">
                     {filterTab === 'done' ? (
-                      <CheckCircle2 size={22} className="text-emerald-600 dark:text-emerald-400" />
+                      <CheckCircle2 size={22} className="text-[var(--text-primary)]" />
                     ) : (
                       <CheckSquare size={22} />
                     )}
