@@ -11,7 +11,7 @@ import { LecturePropertiesPanel } from '@/components/library/LecturePropertiesPa
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
     Trash2, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput,
-    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare, RefreshCw
+    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare, RefreshCw, FileText
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { cn, Button } from '@/components';
@@ -586,29 +586,44 @@ ${transcript || '*(No transcript recorded)*'}
                                     ))}
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {group.items.map(lecture => (
-                                        <LectureListRow
-                                            key={lecture.id}
-                                            lecture={lecture}
-                                            isSelected={selectedIds.has(lecture.id)}
-                                            isSelectMode={isSelectMode}
-                                            onSelect={toggleSelect}
-                                            onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
-                                            onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
-                                            onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
-                                            onMoveToFolder={(folderId: string | null) => handleMoveToFolder(folderId, [lecture.id])}
-                                            folders={folders}
-                                            onClick={() => navigate(`/lectures/${lecture.id}`)}
-                                            onDragStart={(e: React.DragEvent) => {
-                                                const ids = selectedIds.has(lecture.id) ? Array.from(selectedIds) : [lecture.id];
-                                                const payload = JSON.stringify(ids);
-                                                e.dataTransfer.setData('application/x-lecture-ids', payload);
-                                                e.dataTransfer.setData('text/plain', `lectures:${payload}`);
-                                                e.dataTransfer.effectAllowed = 'move';
-                                            }}
-                                        />
-                                    ))}
+                                <div className="bg-white dark:bg-[#18191B] border border-[#E5E4DC] dark:border-white/10 rounded-2xl overflow-hidden shadow-xs">
+                                    {/* Table Header */}
+                                    <div className="flex items-center px-4 py-2.5 bg-[#FAF9F5]/90 dark:bg-white/[0.02] border-b border-[#E5E4DC] dark:border-white/10 text-[11px] font-medium text-[var(--text-muted)] select-none">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+                                            {isSelectMode && <div className="w-4 shrink-0" />}
+                                            <span>Title</span>
+                                        </div>
+                                        <div className="hidden md:block w-36 text-left shrink-0 pr-2">Folder / Category</div>
+                                        <div className="hidden sm:block w-20 text-right shrink-0 pr-2">Duration</div>
+                                        <div className="w-24 text-right shrink-0 pr-2">Date</div>
+                                        <div className="w-14 shrink-0" />
+                                    </div>
+
+                                    {/* Table Body Rows */}
+                                    <div className="divide-y divide-[#E5E4DC]/60 dark:divide-white/5">
+                                        {group.items.map(lecture => (
+                                            <LectureListRow
+                                                key={lecture.id}
+                                                lecture={lecture}
+                                                isSelected={selectedIds.has(lecture.id)}
+                                                isSelectMode={isSelectMode}
+                                                onSelect={toggleSelect}
+                                                onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
+                                                onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
+                                                onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
+                                                onMoveToFolder={(folderId: string | null) => handleMoveToFolder(folderId, [lecture.id])}
+                                                folders={folders}
+                                                onClick={() => navigate(`/lectures/${lecture.id}`)}
+                                                onDragStart={(e: React.DragEvent) => {
+                                                    const ids = selectedIds.has(lecture.id) ? Array.from(selectedIds) : [lecture.id];
+                                                    const payload = JSON.stringify(ids);
+                                                    e.dataTransfer.setData('application/x-lecture-ids', payload);
+                                                    e.dataTransfer.setData('text/plain', `lectures:${payload}`);
+                                                    e.dataTransfer.effectAllowed = 'move';
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -858,10 +873,20 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
         }
     };
 
+    const folder = folders.find((f: any) => f.id === (lecture.folderId || lecture.folder_id));
+    const categoryTag = folder?.name || lecture.subject || lecture.course;
+    const formattedDate = new Date(lecture.createdAt).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+    });
+
     return (
         <div
-            className={cn('group relative flex items-center px-4 py-2.5 cursor-pointer rounded-xl transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5', 
-                isSelected ? 'bg-primary/5 ring-1 ring-primary shadow-sm' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-border/60 hover:border-border'
+            className={cn(
+                'group relative flex items-center px-4 py-2.5 sm:py-3 transition-colors duration-150 cursor-pointer text-left select-none',
+                isSelected
+                    ? 'bg-[#1C1C1A]/[0.05] dark:bg-white/[0.08]'
+                    : 'hover:bg-[#F4F3EE]/80 dark:hover:bg-white/[0.03]'
             )}
             onClick={handleRowClick}
             draggable={!isSelectMode}
@@ -873,10 +898,15 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                 onDragStart(e);
             }}
         >
-            <div className="absolute -left-3 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground z-10" title="Drag to organize">
-                <GripVertical size={14} />
+            {/* Drag Handle */}
+            <div
+                className="w-4 -ml-1.5 mr-1.5 flex items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-[var(--text-muted)] shrink-0"
+                title="Drag to organize"
+            >
+                <GripVertical size={13} />
             </div>
 
+            {/* Selection Checkbox */}
             {isSelectMode && (
                 <button
                     type="button"
@@ -885,128 +915,166 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                         if (onSelect) onSelect(lecture.id, e);
                     }}
                     className={cn(
-                        "w-4 h-4 rounded flex items-center justify-center transition-all duration-150 shrink-0 mr-3 no-drag",
+                        "w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 mr-3 no-drag cursor-pointer",
                         isSelected 
-                            ? "bg-primary text-primary-foreground shadow-sm opacity-100" 
-                            : "border border-border/90 hover:border-primary/80 bg-surface/90 hover:bg-primary/5 opacity-100"
+                            ? "bg-[#1C1C1A] text-white dark:bg-white dark:text-[#1C1C1A] shadow-xs" 
+                            : "border border-[#E5E4DC] dark:border-white/20 hover:border-[var(--text-primary)]"
                     )}
                     title={isSelected ? "Deselect" : "Select"}
-                    aria-label={isSelected ? "Deselect" : "Select"}
                 >
                     {isSelected && <Check size={11} strokeWidth={3} />}
                 </button>
             )}
 
-            <div className="flex-1 min-w-0 pr-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 border border-border/5 bg-surface-raised">
+            {/* Thumbnail & Title */}
+            <div className="flex-1 min-w-0 pr-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-[#E5E4DC]/80 dark:border-white/10 bg-[#F4F3EE] dark:bg-white/[0.04]">
                     {thumbnail ? (
-                        <img src={thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="Thumbnail" />
+                        <img src={thumbnail} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="Thumbnail" />
                     ) : (
-                        <BookOpen size={14} className="text-muted-foreground/50 transition-transform duration-500 group-hover:scale-110" />
+                        <FileText size={14} className="text-[var(--text-muted)]" />
                     )}
                 </div>
-                <div className="flex flex-col min-w-0">
-                    <p className="font-semibold truncate text-[13px] text-foreground tracking-tight">
-                        {lecture.title || "Untitled Lecture"}
+
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <p className="font-medium text-xs sm:text-[13px] text-[var(--text-primary)] truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                        {lecture.title || "Untitled Meeting"}
                     </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                        {lecture.subject || lecture.course || "No Subject"}
-                    </p>
+
+                    {lecture.status === 'RECORDING' && (
+                        <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            Recording
+                        </span>
+                    )}
                 </div>
             </div>
 
-            <div className="flex items-center gap-8 flex-shrink-0 text-[12px] text-muted-foreground relative font-medium">
-                <div className="w-24 flex items-center gap-1">
-                    {lecture.status === 'RECORDING' ? (
-                        <span className="text-destructive flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse"/> Recording</span>
-                    ) : (
-                        <span className="text-primary flex items-center gap-1.5"><Sparkles size={12}/> Ready</span>
-                    )}
-                </div>
+            {/* Category / Folder Column */}
+            <div className="hidden md:flex items-center w-36 shrink-0 pr-2">
+                {categoryTag ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-[11px] font-medium text-[var(--text-secondary)] truncate max-w-full">
+                        {folder ? <Folder size={11} className="text-[var(--text-muted)] shrink-0" /> : <Tag size={11} className="text-[var(--text-muted)] shrink-0" />}
+                        <span className="truncate">{categoryTag}</span>
+                    </span>
+                ) : (
+                    <span className="text-[11px] text-[var(--text-muted)] opacity-30">—</span>
+                )}
+            </div>
 
+            {/* Duration Column */}
+            <div className="hidden sm:flex items-center justify-end w-20 shrink-0 text-right pr-2">
+                <span className="text-[11px] font-mono text-[var(--text-secondary)]">
+                    {durationMin > 0 ? `${durationMin}m` : '—'}
+                </span>
+            </div>
+
+            {/* Date Column */}
+            <div className="w-24 shrink-0 text-right pr-2">
                 {lecture.deletedAt ? (
-                    <span className="flex items-center gap-1 text-destructive w-24 justify-end">
-                        <Trash2 size={12} />
+                    <span className="inline-flex items-center gap-1 text-[11px] text-rose-500">
+                        <Trash2 size={11} />
                         {Math.max(0, 30 - Math.floor((Date.now() - new Date(lecture.deletedAt).getTime()) / (1000 * 60 * 60 * 24)))}d left
                     </span>
                 ) : (
-                    <>
-                        <span className="w-12 text-right">{durationMin > 0 ? `${durationMin}m` : '—'}</span>
-                        <span className="w-20 text-right">{new Date(lecture.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                    </>
+                    <span className="text-[11px] text-[var(--text-muted)]">
+                        {formattedDate}
+                    </span>
                 )}
-                
-                <div className="absolute right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10 bg-background/90 backdrop-blur-xl rounded-lg px-2 py-1.5 border border-border/50 shadow-sm no-drag">
-                    <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="p-1 rounded-md transition-colors hover:bg-surface-hover text-muted-foreground hover:text-foreground no-drag focus:opacity-100" title="More Actions">
-                                    <MoreHorizontal size={14} />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 no-drag z-50">
-                                <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Open</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onClick(e); }} className="cursor-pointer">
-                                    <ExternalLink size={14} className="mr-2 text-muted-foreground" /> Open Lecture
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Organize</DropdownMenuLabel>
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="cursor-pointer">
-                                        <FolderInput size={14} className="mr-2 text-muted-foreground" /> Move to Folder
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="max-h-60 overflow-y-auto w-52">
-                                        {lecture.folderId && (
-                                            <>
-                                                <DropdownMenuItem 
-                                                    onClick={(e) => { e.stopPropagation(); onMoveToFolder(null); }}
-                                                    className="cursor-pointer text-muted-foreground hover:text-foreground"
-                                                >
-                                                    <X size={14} className="mr-2" /> Remove from folder (Root)
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                            </>
-                                        )}
-                                        {folders.length === 0 && (
-                                            <DropdownMenuItem disabled>No folders</DropdownMenuItem>
-                                        )}
-                                        {folders.map((f: any) => {
-                                            const isCurrent = lecture.folderId === f.id;
-                                            return (
-                                                <DropdownMenuItem 
-                                                    key={f.id} 
-                                                    onClick={(e) => { 
-                                                        e.stopPropagation(); 
-                                                        if (!isCurrent) onMoveToFolder(f.id); 
-                                                    }}
-                                                    className={cn("cursor-pointer flex items-center justify-between", isCurrent && "font-semibold text-primary")}
-                                                >
-                                                    <span className="flex items-center gap-1.5 truncate">
-                                                        {f.icon ? <span>{f.icon}</span> : <Folder size={13} className="text-muted-foreground shrink-0" />}
-                                                        <span className="truncate">{f.name}</span>
-                                                    </span>
-                                                    {isCurrent && <Check size={13} className="text-primary ml-2 shrink-0" />}
-                                                </DropdownMenuItem>
-                                            );
-                                        })}
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }} className="cursor-pointer">
-                                    <Bookmark size={14} className={cn("mr-2", lecture.isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} /> {lecture.isFavorite ? "Remove Bookmark" : "Bookmark"}
-                                </DropdownMenuItem>
-                                
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Manage</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleArchive(e); }} className="cursor-pointer">
-                                    <Archive size={14} className="mr-2 text-muted-foreground" /> {lecture.isArchived ? "Unarchive" : "Archive"}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(e); }} className="cursor-pointer text-destructive focus:text-destructive">
-                                    <Trash2 size={14} className="mr-2" /> Move to Trash
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
+            </div>
+
+            {/* Quick Actions (Direct Bookmark & More Options) */}
+            <div className="w-14 shrink-0 flex items-center justify-end gap-1 no-drag">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(e);
+                    }}
+                    className={cn(
+                        "p-1 rounded-md transition-all cursor-pointer",
+                        lecture.isFavorite
+                            ? "text-amber-500 opacity-100"
+                            : "text-[var(--text-muted)] opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06]"
+                    )}
+                    title={lecture.isFavorite ? "Remove Bookmark" : "Bookmark"}
+                >
+                    <Bookmark size={13} className={lecture.isFavorite ? "fill-amber-500 text-amber-500" : ""} />
+                </button>
+
+                <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                                title="More options"
+                            >
+                                <MoreHorizontal size={14} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 no-drag z-50">
+                            <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Open</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onClick(e); }} className="cursor-pointer">
+                                <ExternalLink size={14} className="mr-2 text-muted-foreground" /> Open Lecture
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Organize</DropdownMenuLabel>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger className="cursor-pointer">
+                                    <FolderInput size={14} className="mr-2 text-muted-foreground" /> Move to Folder
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent className="max-h-60 overflow-y-auto w-52">
+                                    {lecture.folderId && (
+                                        <>
+                                            <DropdownMenuItem 
+                                                onClick={(e) => { e.stopPropagation(); onMoveToFolder(null); }}
+                                                className="cursor-pointer text-muted-foreground hover:text-foreground"
+                                            >
+                                                <X size={14} className="mr-2" /> Remove from folder (Root)
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                        </>
+                                    )}
+                                    {folders.length === 0 && (
+                                        <DropdownMenuItem disabled>No folders</DropdownMenuItem>
+                                    )}
+                                    {folders.map((f: any) => {
+                                        const isCurrent = lecture.folderId === f.id;
+                                        return (
+                                            <DropdownMenuItem 
+                                                key={f.id} 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    if (!isCurrent) onMoveToFolder(f.id); 
+                                                }}
+                                                className={cn("cursor-pointer flex items-center justify-between", isCurrent && "font-semibold text-primary")}
+                                            >
+                                                <span className="flex items-center gap-1.5 truncate">
+                                                    {f.icon ? <span>{f.icon}</span> : <Folder size={13} className="text-muted-foreground shrink-0" />}
+                                                    <span className="truncate">{f.name}</span>
+                                                </span>
+                                                {isCurrent && <Check size={13} className="text-primary ml-2 shrink-0" />}
+                                            </DropdownMenuItem>
+                                        );
+                                    })}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }} className="cursor-pointer">
+                                <Bookmark size={14} className={cn("mr-2", lecture.isFavorite ? "fill-primary text-primary" : "text-muted-foreground")} /> {lecture.isFavorite ? "Remove Bookmark" : "Bookmark"}
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Manage</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onToggleArchive(e); }} className="cursor-pointer">
+                                <Archive size={14} className="mr-2 text-muted-foreground" /> {lecture.isArchived ? "Unarchive" : "Archive"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(e); }} className="cursor-pointer text-destructive focus:text-destructive">
+                                <Trash2 size={14} className="mr-2" /> Move to Trash
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </div>
