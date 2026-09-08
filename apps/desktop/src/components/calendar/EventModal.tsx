@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Clock, AlignLeft, MapPin, 
-  Bell, Trash2, Edit3, Video, Type 
+  Trash2, Edit3, Video, Type, Check
 } from 'lucide-react';
 import { useCalendarStore, CalendarEvent } from '@/shared/stores/calendarStore';
 import { useToast } from '@/components/ui/ToastProvider';
@@ -13,14 +13,64 @@ interface EventModalProps {
   eventToEdit?: CalendarEvent | null;
 }
 
+// Warm editorial color palette for custom event labels (no harsh neon greens)
 const COLORS = [
-  '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#64748b'
+  '#1C1C1A', // Deep Charcoal
+  '#92400E', // Warm Amber
+  '#1E4D74', // Slate Blue
+  '#9C2738', // Muted Rose
+  '#5B3785', // Soft Purple
+  '#57564F'  // Warm Stone
 ];
+
+const ensureYmd = (dStr?: string): string => {
+  if (!dStr) return new Date().toISOString().split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
+  const d = new Date(dStr);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split('T')[0];
+  }
+  return new Date().toISOString().split('T')[0];
+};
+
+const formatTimeForInput = (tStr?: string): string => {
+  if (!tStr) return '';
+  if (/^\d{1,2}:\d{2}$/.test(tStr.trim())) {
+    const [h, m] = tStr.trim().split(':');
+    return `${h.padStart(2, '0')}:${m}`;
+  }
+  const match = tStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = match[2].padStart(2, '0');
+    const ampm = match[3].toUpperCase();
+    if (ampm === 'PM' && h < 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${m}`;
+  }
+  return tStr;
+};
+
+const formatTimeForSave = (tStr?: string): string => {
+  if (!tStr || !tStr.trim()) return '';
+  const trimmed = tStr.trim();
+  if (trimmed.includes('AM') || trimmed.includes('PM')) {
+    return trimmed;
+  }
+  const [h, m] = trimmed.split(':');
+  if (!h || m === undefined) return trimmed;
+  let hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  if (hour > 12) hour -= 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${m.padStart(2, '0')} ${ampm}`;
+};
 
 export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventToEdit }) => {
   const { addEvent, editEvent, deleteEvent } = useCalendarStore();
   const { showToast } = useToast();
 
+  const isExistingEvent = Boolean(eventToEdit && eventToEdit.id);
   const [mode, setMode] = useState<'view' | 'edit'>('edit');
   
   const [title, setTitle] = useState('');
@@ -30,51 +80,32 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(COLORS[0]);
   
-  // Optional fields
   const [location, setLocation] = useState('');
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    if (eventToEdit) {
+    if (eventToEdit && eventToEdit.id) {
       setMode('view');
-      setTitle(eventToEdit.title);
-      setDateStr(eventToEdit.dateStr || new Date().toISOString().split('T')[0]);
-      
-      const formatTimeForInput = (tStr: string) => {
-        if (!tStr) return '';
-        const match = tStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-            let h = parseInt(match[1]);
-            const m = match[2];
-            const ampm = match[3].toUpperCase();
-            if (ampm === 'PM' && h < 12) h += 12;
-            if (ampm === 'AM' && h === 12) h = 0;
-            return `${h.toString().padStart(2, '0')}:${m}`;
-        }
-        return tStr; 
-      };
-      
-      setStartTime(formatTimeForInput(eventToEdit.startTime || ''));
-      setEndTime(formatTimeForInput(eventToEdit.endTime || ''));
+      setTitle(eventToEdit.title || '');
+      setDateStr(ensureYmd(eventToEdit.dateStr));
+      setStartTime(formatTimeForInput(eventToEdit.startTime));
+      setEndTime(formatTimeForInput(eventToEdit.endTime));
       setDescription(eventToEdit.description || '');
       setColor(eventToEdit.color || COLORS[0]);
-      
       setLocation(eventToEdit.meetingUrl || '');
       setReminderMinutes(eventToEdit.reminderMinutes ?? null);
-      
     } else {
       setMode('edit');
-      setTitle('');
-      setDateStr(new Date().toISOString().split('T')[0]);
-      setStartTime('');
-      setEndTime('');
-      setDescription('');
+      setTitle(eventToEdit?.title || '');
+      setDateStr(ensureYmd(eventToEdit?.dateStr));
+      setStartTime(formatTimeForInput(eventToEdit?.startTime || '12:00 PM'));
+      setEndTime(formatTimeForInput(eventToEdit?.endTime || '12:30 PM'));
+      setDescription(eventToEdit?.description || '');
       setColor(COLORS[0]);
-      setLocation('');
+      setLocation(eventToEdit?.meetingUrl || '');
       setReminderMinutes(null);
     }
   }, [eventToEdit, isOpen]);
@@ -83,50 +114,47 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Format input time back to standard 12-hour string (e.g. 14:00 -> 2:00 PM)
-    const formatTimeForSave = (tStr: string) => {
-        if (!tStr) return '';
-        const [h, m] = tStr.split(':');
-        let hour = parseInt(h);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        if (hour > 12) hour -= 12;
-        if (hour === 0) hour = 12;
-        return `${hour}:${m} ${ampm}`;
-    };
+    const safeTitle = title.trim() || 'Untitled Event';
+    const safeDate = ensureYmd(dateStr);
+    const safeStart = formatTimeForSave(startTime);
+    const safeEnd = formatTimeForSave(endTime);
 
     try {
-      if (eventToEdit) {
+      if (eventToEdit && eventToEdit.id) {
+        // Update existing event
         await editEvent(eventToEdit.id, {
-          title: title || 'Untitled Event',
-          dateStr,
-          startTime: formatTimeForSave(startTime),
-          endTime: formatTimeForSave(endTime),
-          description,
+          title: safeTitle,
+          dateStr: safeDate,
+          startTime: safeStart,
+          endTime: safeEnd,
+          description: description.trim(),
           color,
-          meetingUrl: location,
+          meetingUrl: location.trim(),
           reminderMinutes: reminderMinutes ?? undefined
         });
         showToast('Event updated successfully', 'success');
       } else {
+        // Create new event
+        const dObj = new Date(safeDate + 'T00:00:00');
         await addEvent({
-          title: title || 'Untitled Event',
-          dateStr,
-          startTime: formatTimeForSave(startTime),
-          endTime: formatTimeForSave(endTime),
-          description,
-          type: 'google',
+          title: safeTitle,
+          dateStr: safeDate,
+          startTime: safeStart,
+          endTime: safeEnd,
+          description: description.trim(),
+          type: 'bacham',
           color: color,
-          dayNum: new Date(dateStr).getDate(),
-          monthStr: new Date(dateStr).toLocaleString('default', { month: 'short' }),
-          dayOfWeek: new Date(dateStr).toLocaleString('default', { weekday: 'short' }),
-          meetingUrl: location,
+          dayNum: dObj.getDate(),
+          monthStr: dObj.toLocaleString('default', { month: 'short' }),
+          dayOfWeek: dObj.toLocaleString('default', { weekday: 'short' }),
+          meetingUrl: location.trim(),
           reminderMinutes: reminderMinutes ?? undefined
         });
-        showToast('Event added successfully', 'success');
+        showToast('Event created successfully', 'success');
       }
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error("Failed to save calendar event", err);
       showToast('Failed to save event', 'error');
     } finally {
       setIsSubmitting(false);
@@ -134,7 +162,7 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
   };
 
   const handleDelete = async () => {
-    if (eventToEdit) {
+    if (eventToEdit && eventToEdit.id) {
       await deleteEvent(eventToEdit.id);
       showToast('Event deleted', 'info');
       onClose();
@@ -143,76 +171,122 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
 
   if (!isOpen) return null;
 
-  const displayDate = new Date(dateStr).toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const displayTime = `${eventToEdit?.startTime || startTime} ${eventToEdit?.endTime || endTime ? `- ${eventToEdit?.endTime || endTime}` : ''}`;
+  const displayDate = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('default', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric', 
+    year: 'numeric' 
+  }) : '';
+  const displayTime = `${eventToEdit?.startTime || formatTimeForSave(startTime)} ${
+    (eventToEdit?.endTime || formatTimeForSave(endTime)) ? `- ${eventToEdit?.endTime || formatTimeForSave(endTime)}` : ''
+  }`.trim();
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.18 }}
           className="w-full max-w-lg overflow-hidden rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl flex flex-col max-h-[90vh]"
         >
-          
           {/* Header */}
-          <div className="flex items-center justify-end p-2 border-b border-[var(--border)] bg-[var(--surface-raised)] shrink-0">
-             <div className="flex items-center gap-1 px-2">
-                {mode === 'view' && (
-                  <>
-                    <button onClick={() => setMode('edit')} className="p-2 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors" title="Edit Event">
-                      <Edit3 size={16} />
-                    </button>
-                    <button onClick={handleDelete} className="p-2 rounded-lg hover:bg-red-500/10 text-[var(--text-secondary)] hover:text-red-500 transition-colors" title="Delete Event">
-                      <Trash2 size={16} />
-                    </button>
-                  </>
-                )}
-                <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors" title="Close">
-                  <X size={18} />
-                </button>
-             </div>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border)] bg-[var(--surface-raised)]/40 shrink-0">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              {mode === 'view' ? 'Event Details' : (isExistingEvent ? 'Edit Event' : 'New Event')}
+            </h3>
+            
+            <div className="flex items-center gap-1.5">
+              {mode === 'view' && isExistingEvent && (
+                <>
+                  <button 
+                    type="button"
+                    onClick={() => setMode('edit')} 
+                    className="h-7.5 px-2.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer border border-[var(--border)] bg-[var(--surface)] shadow-xs" 
+                    title="Edit Event"
+                  >
+                    <Edit3 size={12} />
+                    <span>Edit</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleDelete} 
+                    className="h-7.5 w-7.5 flex items-center justify-center rounded-lg hover:bg-rose-500/10 text-[var(--text-secondary)] hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer border border-transparent hover:border-rose-500/20" 
+                    title="Delete Event"
+                  >
+                    <Trash2 size={13.5} />
+                  </button>
+                </>
+              )}
+              <button 
+                type="button"
+                onClick={onClose} 
+                className="h-7.5 w-7.5 flex items-center justify-center rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer" 
+                title="Close"
+              >
+                <X size={15} />
+              </button>
+            </div>
           </div>
 
           <div className="overflow-y-auto custom-scrollbar flex-1">
             {mode === 'view' ? (
-              <div className="p-8 flex flex-col gap-6">
-                 {/* Title Section */}
-                 <div className="flex items-start gap-4">
-                    <div className="mt-1.5 w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                    <div className="flex flex-col gap-1">
-                      <h2 className="text-2xl font-bold text-[var(--text-primary)] leading-tight">{title || 'Untitled Event'}</h2>
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{displayDate}</p>
-                      <p className="text-sm text-[var(--text-muted)]">{displayTime || 'All Day'}</p>
+              <div className="p-7 flex flex-col gap-6">
+                {/* Title Section */}
+                <div className="flex items-start gap-4">
+                  <div className="mt-1.5 w-3.5 h-3.5 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: color }} />
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <h2 className="text-xl font-semibold text-[var(--text-primary)] leading-snug break-words">
+                      {title || 'Untitled Event'}
+                    </h2>
+                    <p className="text-xs font-medium text-[var(--text-secondary)]">{displayDate}</p>
+                    <p className="text-xs text-[var(--text-muted)] font-mono">{displayTime || 'All Day'}</p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-[var(--border)] w-full" />
+
+                {/* Details List */}
+                <div className="flex flex-col gap-3.5">
+                  {location && (
+                    <div className="flex items-start gap-3">
+                      <Video size={16} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-[var(--text-primary)] font-medium truncate">{location}</span>
+                        {location.startsWith('http') && (
+                          <a 
+                            href={location} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-xs text-[var(--text-primary)] underline hover:opacity-80 font-medium mt-0.5"
+                          >
+                            Open Meeting Link →
+                          </a>
+                        )}
+                      </div>
                     </div>
-                 </div>
+                  )}
 
-                 <div className="h-px bg-[var(--border)] w-full my-2" />
+                  {description && (
+                    <div className="flex items-start gap-3">
+                      <AlignLeft size={16} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
+                      <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">
+                        {description}
+                      </p>
+                    </div>
+                  )}
 
-                 {/* Details List */}
-                 <div className="flex flex-col gap-4">
-                    {location && (
-                      <div className="flex items-start gap-4">
-                        <Video size={18} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
-                        <div className="flex flex-col">
-                           <span className="text-sm text-[var(--text-primary)] font-medium">{location}</span>
-                           <button className="text-xs text-[var(--accent)] font-semibold text-left mt-0.5">Join Meeting</button>
-                        </div>
-                      </div>
-                    )}
-                    {description && (
-                      <div className="flex items-start gap-4">
-                        <AlignLeft size={18} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
-                        <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{description}</p>
-                      </div>
-                    )}
-                 </div>
+                  {!location && !description && (
+                    <p className="text-xs text-[var(--text-muted)] italic">No additional details recorded for this event.</p>
+                  )}
+                </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                {/* Title Input */}
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg">
+                  <div className="p-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-lg shrink-0">
                     <Type size={16} className="text-[var(--text-muted)]" />
                   </div>
                   <input
@@ -220,128 +294,119 @@ export const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, eventTo
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-transparent border-b-2 border-[var(--border)] focus:border-[var(--accent)] outline-none text-xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-muted)] placeholder:font-medium transition-all"
+                    className="flex-1 px-3 py-2 bg-transparent border-b border-[var(--border)] focus:border-[var(--text-primary)] outline-none text-base font-semibold text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-colors"
                     placeholder="Event Title"
+                    autoFocus
                   />
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <Clock size={18} className="text-[var(--text-muted)] shrink-0 mt-2.5" />
-                  <div className="flex-1 grid grid-cols-2 gap-4">
-                     <div className="space-y-1">
-                       <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Date</label>
-                       <input
-                         type="date"
-                         required
-                         value={dateStr}
-                         onChange={(e) => setDateStr(e.target.value)}
-                         className="w-full px-4 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)]"
-                       />
-                     </div>
-                     <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Start</label>
-                          <input
-                            type="time"
-                            required
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                            className="w-full px-2 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)]"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">End</label>
-                          <input
-                            type="time"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                            className="w-full px-2 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)]"
-                          />
-                        </div>
-                     </div>
+                {/* Date & Time Grid */}
+                <div className="flex items-start gap-3.5">
+                  <Clock size={16} className="text-[var(--text-muted)] shrink-0 mt-2.5" />
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10.5px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={dateStr}
+                        onChange={(e) => setDateStr(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--text-primary)]/40 outline-none text-xs font-medium text-[var(--text-primary)]"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[10.5px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Start</label>
+                        <input
+                          type="time"
+                          required
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--text-primary)]/40 outline-none text-xs font-medium text-[var(--text-primary)]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10.5px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">End</label>
+                        <input
+                          type="time"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--text-primary)]/40 outline-none text-xs font-medium text-[var(--text-primary)]"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                   <MapPin size={18} className="text-[var(--text-muted)] shrink-0" />
-                   <div className="flex-1">
-                     <input
-                       type="text"
-                       value={location}
-                       onChange={(e) => setLocation(e.target.value)}
-                       className="w-full px-4 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
-                       placeholder="Location or Video Call URL"
-                     />
-                   </div>
+                {/* Location / Meeting URL */}
+                <div className="flex items-center gap-3.5">
+                  <MapPin size={16} className="text-[var(--text-muted)] shrink-0" />
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--text-primary)]/40 outline-none text-xs font-medium text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
+                      placeholder="Location or Video Call URL (Zoom, Meet, Teams)"
+                    />
+                  </div>
                 </div>
 
-                 <div className="flex items-center gap-4">
-                   <Bell size={18} className="text-[var(--text-muted)] shrink-0" />
-                   <div className="flex-1">
-                     <select
-                       value={reminderMinutes === null ? 'default' : reminderMinutes}
-                       onChange={(e) => setReminderMinutes(e.target.value === 'default' ? null : parseInt(e.target.value))}
-                       className="w-full px-4 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)]"
-                     >
-                       <option value="default">Default calendar reminder</option>
-                       <option value="0">At time of event</option>
-                       <option value="5">5 minutes before</option>
-                       <option value="10">10 minutes before</option>
-                       <option value="15">15 minutes before</option>
-                       <option value="30">30 minutes before</option>
-                       <option value="60">1 hour before</option>
-                       <option value="1440">1 day before</option>
-                     </select>
-                   </div>
-                 </div>
-
-                <div className="flex items-start gap-4">
-                   <AlignLeft size={18} className="text-[var(--text-muted)] shrink-0 mt-2.5" />
-                   <div className="flex-1">
-                     <textarea
-                       value={description}
-                       onChange={(e) => setDescription(e.target.value)}
-                       className="w-full px-4 py-3 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--accent)] outline-none text-sm text-[var(--text-primary)] h-24 resize-none placeholder:text-[var(--text-muted)]"
-                       placeholder="Add description or attachments..."
-                     />
-                   </div>
+                {/* Description */}
+                <div className="flex items-start gap-3.5">
+                  <AlignLeft size={16} className="text-[var(--text-muted)] shrink-0 mt-2" />
+                  <div className="flex-1">
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border)] rounded-xl focus:border-[var(--text-primary)]/40 outline-none text-xs text-[var(--text-primary)] h-20 resize-none placeholder:text-[var(--text-muted)]"
+                      placeholder="Add event notes, agenda, or deliverables..."
+                    />
+                  </div>
                 </div>
 
-                {/* Color Picker */}
-                <div className="flex items-center gap-4 pt-2">
-                   <div className="w-[18px] shrink-0" />
-                   <div className="flex gap-2">
-                      {COLORS.map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setColor(c)}
-                          className={`w-6 h-6 rounded-full transition-transform ${color === c ? 'scale-125 ring-2 ring-offset-2 ring-offset-[var(--bg)] ring-[var(--accent)]' : 'hover:scale-110'}`}
-                          style={{ backgroundColor: c }}
-                          title={`Color ${c}`}
-                        />
-                      ))}
-                   </div>
+                {/* Editorial Color Selector (no neon greens) */}
+                <div className="flex items-center gap-3.5 pt-1">
+                  <span className="text-[11px] font-semibold text-[var(--text-muted)] w-4 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[11px] font-semibold text-[var(--text-secondary)] mr-1">Color:</span>
+                    {COLORS.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setColor(c)}
+                        className={`w-5 h-5 rounded-full transition-all cursor-pointer flex items-center justify-center ${
+                          color === c 
+                            ? 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--surface)] ring-[var(--text-primary)] shadow-xs' 
+                            : 'hover:scale-105 opacity-80 hover:opacity-100'
+                        }`}
+                        style={{ backgroundColor: c }}
+                        title={`Select color ${c}`}
+                      >
+                        {color === c && <Check size={10} className="text-white" strokeWidth={3} />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 
-                {/* Submit footer */}
-                <div className="pt-6 mt-4 border-t border-[var(--border)] flex justify-end gap-3">
+                {/* Actions Footer */}
+                <div className="pt-4 border-t border-[var(--border)] flex justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => {
-                      if (eventToEdit) setMode('view');
+                      if (eventToEdit && eventToEdit.id) setMode('view');
                       else onClose();
                     }}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold text-[var(--text-primary)] bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] transition-colors border border-[var(--border)]"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)] transition-colors border border-[var(--border)] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-2 rounded-xl text-sm font-bold text-[var(--bg)] bg-[var(--accent)] hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="px-5 py-2 rounded-xl text-xs font-semibold text-[var(--bg)] bg-[var(--text-primary)] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-xs"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save'}
+                    {isSubmitting ? 'Saving...' : (isExistingEvent ? 'Save Changes' : 'Create Event')}
                   </button>
                 </div>
               </form>

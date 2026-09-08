@@ -22,12 +22,12 @@ function parseTimeToHours(timeStr?: string): number {
 }
 
 const colorPalette = [
-  { bg: 'bg-purple-200', text: 'text-purple-900' },
-  { bg: 'bg-emerald-200', text: 'text-emerald-900' },
-  { bg: 'bg-rose-200', text: 'text-rose-900' },
-  { bg: 'bg-amber-200', text: 'text-amber-900' },
-  { bg: 'bg-sky-200', text: 'text-sky-900' },
-  { bg: 'bg-indigo-200', text: 'text-indigo-900' },
+  { bg: 'bg-[#EAE8E1] dark:bg-white/[0.08]', text: 'text-[#1C1C1A] dark:text-[#F4F3ED]', border: 'border-[#DAD7CD] dark:border-white/10' },
+  { bg: 'bg-[#F9EDE0] dark:bg-amber-500/15', text: 'text-[#92400E] dark:text-amber-200', border: 'border-[#EAD5BF] dark:border-amber-500/25' },
+  { bg: 'bg-[#EBF1F7] dark:bg-sky-500/15', text: 'text-[#1E4D74] dark:text-sky-200', border: 'border-[#D4E2EE] dark:border-sky-500/25' },
+  { bg: 'bg-[#F9EBEA] dark:bg-rose-500/15', text: 'text-[#9C2738] dark:text-rose-200', border: 'border-[#EFCFCB] dark:border-rose-500/25' },
+  { bg: 'bg-[#F1ECF7] dark:bg-purple-500/15', text: 'text-[#5B3785] dark:text-purple-200', border: 'border-[#DFD3EC] dark:border-purple-500/25' },
+  { bg: 'bg-[#F2F1EC] dark:bg-stone-500/15', text: 'text-[#3E3D38] dark:text-stone-200', border: 'border-[#DFDDD6] dark:border-stone-500/25' },
 ];
 
 export function FullCalendarView() {
@@ -317,7 +317,7 @@ function MonthView({ currentDate, eventsByDay, onEditEvent, onAddEvent, onDropEv
                           e.stopPropagation();
                         }}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
-                        className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold leading-tight flex items-center justify-between cursor-pointer shadow-sm hover:brightness-105 transition-all ${style.bg} ${style.text}`}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11.5px] font-semibold leading-tight flex items-center justify-between cursor-pointer shadow-xs border transition-all ${style.bg} ${style.text} ${style.border}`}
                       >
                         <span className="truncate flex-1 pr-2">{evt.title}</span>
                         {evt.startTime && <span className="opacity-80 shrink-0 text-[10px] font-medium tracking-wide">{evt.startTime}</span>}
@@ -465,7 +465,7 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                         layoutId={`timeline-${evt.id}`}
                         onClick={(e) => { e.stopPropagation(); onEditEvent(evt); }}
                         whileHover={{ scale: 1.02, zIndex: 30 }}
-                        className={`absolute left-1.5 right-2.5 rounded-lg p-2.5 overflow-hidden cursor-pointer shadow-sm transition-shadow hover:shadow-lg hover:brightness-105 ${style.bg} ${style.text}`}
+                        className={`absolute left-1.5 right-2.5 rounded-lg p-2.5 overflow-hidden cursor-pointer shadow-xs border transition-all hover:shadow-md ${style.bg} ${style.text} ${style.border}`}
                         style={{
                           top: `${startH * 60}px`,
                           height: `${(endH - startH) * 60}px`,
@@ -529,7 +529,7 @@ function TimelineView({ mode, currentDate, eventsByDay, onEditEvent, onAddEvent,
                  {eventsByDay[currentDate.toLocaleDateString('en-CA')].map((evt: any, i: number) => {
                     const style = colorPalette[i % colorPalette.length];
                     return (
-                      <div key={evt.id} className={`p-4 rounded-xl border ${style.bg}`}>
+                      <div key={evt.id} className={`p-4 rounded-xl border ${style.bg} ${style.border}`}>
                         <h3 className={`font-bold text-[14px] mb-2 ${style.text}`}>{evt.title}</h3>
                        <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{currentDate.toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' })}</p>
                        <p className={`text-[12px] font-medium opacity-80 ${style.text}`}>{evt.startTime} {evt.endTime ? `- ${evt.endTime}` : ''}</p>

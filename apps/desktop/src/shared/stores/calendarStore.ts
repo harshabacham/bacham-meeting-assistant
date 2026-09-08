@@ -268,8 +268,16 @@ export const useCalendarStore = create<CalendarState>()(
             fetched = await fetchLiveGoogleCalendarEvents(iCalUrl.trim());
           }
           
+          // Preserve local Bacham events (focus blocks, custom events)
+          const currentEvents = get().events;
+          const localEvents = currentEvents.filter(e => e.type === 'bacham' || e.id.startsWith('evt_') || e.id.startsWith('custom_'));
+
+          const mergedMap = new Map<string, CalendarEvent>();
+          fetched.forEach(e => mergedMap.set(e.id, e));
+          localEvents.forEach(e => mergedMap.set(e.id, e));
+          
           set({ 
-            events: fetched, 
+            events: Array.from(mergedMap.values()), 
             isSyncing: false, 
             lastSyncedAt: Date.now(),
             syncError: null
@@ -431,10 +439,8 @@ export const useCalendarStore = create<CalendarState>()(
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                await get().syncNow();
-            } else {
-                console.error("Failed to edit event", await response.text());
+            if (!response.ok) {
+                console.warn("Could not patch Google Calendar remote event; local state updated", await response.text());
             }
         } catch (e) {
             console.error("Error editing event:", e);
