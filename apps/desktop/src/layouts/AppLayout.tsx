@@ -9,14 +9,13 @@ import ProfileDropdown from '@/components/kokonutui/profile-dropdown';
 import {
     Home, Settings as SettingsIcon, User, Database, ChevronLeft, Search, Sidebar, LogOut,
     Library, BrainCircuit, Edit3, Bookmark, Archive, ChevronDown, CheckSquare, Sparkles, Plus, PlugZap,
-    MessageSquareHeart, UserPlus
+    MessageSquareHeart
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { cn, CommandPalette } from '@/components';
 import { FolderSidebar } from '@/components/library/FolderSidebar';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from '@/components/ui/ToastProvider';
 
 import { useSearchStore } from '@/features/search/searchStore';
 import { InlineAIToolbar } from '@/components/command_center/InlineAIToolbar';
@@ -58,7 +57,6 @@ export function AppLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { showToast } = useToast();
     const initialize = useAppStore(state => state.initialize);
     const { fetchLectures, systemView, setSystemView, selectedFolderId, setSelectedFolderId } = useLectureStore();
     const { user, signOut } = useAuthStore();
@@ -157,36 +155,9 @@ export function AppLayout() {
             {/* Invisible Drag Region across the very top */}
             <div data-tauri-drag-region className="absolute top-0 left-0 right-0 h-8 z-[5] pointer-events-auto" />
 
-            {/* Top Right Header Controls & Window Buttons matching Granola */}
-            <div className="absolute top-0 right-0 h-12 z-[100] flex items-center justify-end pr-5 gap-2.5">
-                <button
-                    onClick={() => {
-                        navigator.clipboard?.writeText(window.location.origin);
-                        showToast('Invite link copied to clipboard', 'info');
-                    }}
-                    className="h-7 px-2.5 rounded-lg border border-border bg-surface hover:bg-surface-hover text-muted-foreground hover:text-foreground text-[11px] font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
-                    title="Invite members"
-                >
-                    <UserPlus size={12} />
-                    <span>Invite</span>
-                </button>
-                <button
-                    onClick={async () => {
-                        try {
-                            const newNote = await TauriClient.createWorkspaceNote('Untitled Note', '');
-                            navigate(`/notes?noteId=${newNote.id}`);
-                        } catch (err) {
-                            navigate('/notes');
-                        }
-                    }}
-                    className="h-7 px-2.5 rounded-lg border border-border bg-surface hover:bg-surface-hover text-foreground text-[11px] font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
-                    title="Create new note"
-                >
-                    <Plus size={12} />
-                    <span>New note</span>
-                </button>
-
-                <div className="flex items-center gap-2 pl-2 border-l border-border/40">
+            {/* Native-style Window Controls (Top Right) */}
+            <div className="absolute top-0 right-0 h-12 z-[100] flex items-center justify-end pr-6">
+                <div className="flex items-center gap-2.5">
                     <button onClick={() => TauriClient.minimize()} className="w-3 h-3 rounded-full bg-[#FFC15E] hover:bg-[#ffb040] shadow-[0_0_8px_rgba(255,193,94,0.2)] transition-all active:scale-95 cursor-default" title="Minimize" />
                     <button onClick={() => TauriClient.maximize()} className="w-3 h-3 rounded-full bg-[#5EFF9F] hover:bg-[#40ff80] shadow-[0_0_8px_rgba(94,255,159,0.2)] transition-all active:scale-95 cursor-default" title="Maximize" />
                     <button onClick={() => TauriClient.close()} className="w-3 h-3 rounded-full bg-[#FF5E5E] hover:bg-[#ff4040] shadow-[0_0_8px_rgba(255,94,94,0.2)] transition-all active:scale-95 cursor-default" title="Close" />
@@ -256,10 +227,10 @@ export function AppLayout() {
                                                     key={item.id}
                                                     onClick={() => setSearchParams({ tab: item.id })}
                                                     className={cn(
-                                                        "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-[11.5px] font-medium",
+                                                        "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors text-[11.5px] font-medium border",
                                                         activeSettingsTab === item.id 
-                                                            ? "bg-[#E6E5DC] text-[#1C1C1A] dark:bg-primary/10 dark:text-primary font-medium" 
-                                                            : "text-muted-foreground hover:bg-black/5 dark:hover:bg-surface-hover hover:text-foreground"
+                                                            ? "bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-medium" 
+                                                            : "text-muted-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white"
                                                     )}
                                                 >
                                                     <item.icon size={13} strokeWidth={2} />
@@ -308,10 +279,14 @@ export function AppLayout() {
                                                     }}
                                                 >
                                                     <div className={cn(
-                                                        'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors',
-                                                        isActive(item.path) ? 'bg-[#E6E5DC] text-[#1C1C1A] dark:bg-primary/10 dark:text-primary font-semibold' : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-surface-hover hover:text-foreground'
+                                                        'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors border',
+                                                        isActive(item.path) 
+                                                            ? 'bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-semibold' 
+                                                            : 'text-muted-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white'
                                                     )}>
-                                                        {isActive(item.path) && <span className="hidden dark:block absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-primary" />}
+                                                        {isActive(item.path) && (
+                                                            <span className="hidden dark:block absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-[#BAFF29] shadow-[0_0_8px_rgba(186,255,41,0.6)]" />
+                                                        )}
                                                         <item.icon size={13} strokeWidth={2} />
                                                         <span>{item.label}</span>
                                                     </div>
@@ -331,10 +306,14 @@ export function AppLayout() {
                                                 return (
                                                     <Link key={item.id} to={`/lectures?view=${item.id}`} className="block rounded-lg outline-none">
                                                         <div className={cn(
-                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors',
-                                                            active ? 'bg-[#E6E5DC] text-[#1C1C1A] dark:bg-primary/10 dark:text-primary font-semibold' : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-surface-hover hover:text-foreground'
+                                                            'relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium transition-colors border',
+                                                            active 
+                                                                ? 'bg-[#E6E5DC] text-[#1C1C1A] border-transparent dark:bg-[rgba(186,255,41,0.12)] dark:text-[#BAFF29] dark:border-[rgba(186,255,41,0.20)] font-semibold' 
+                                                                : 'text-muted-foreground border-transparent hover:bg-black/5 dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white'
                                                         )} onClick={() => { setSelectedFolderId(null); if (item.id === 'archive') setSystemView('archive'); else setSystemView('all'); }}>
-                                                            {active && <span className="hidden dark:block absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-primary" />}
+                                                            {active && (
+                                                                <span className="hidden dark:block absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-[#BAFF29] shadow-[0_0_8px_rgba(186,255,41,0.6)]" />
+                                                            )}
                                                             <item.icon size={13} strokeWidth={2} />
                                                             <span>{item.label}</span>
                                                         </div>
@@ -427,14 +406,14 @@ export function AppLayout() {
                                 <button
                                     type="button"
                                     onClick={() => openFeedbackModal()}
-                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors border border-transparent hover:border-border/50 cursor-pointer"
+                                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/[0.05] transition-colors border border-transparent hover:border-border/50 cursor-pointer"
                                     title="Share feedback or report an issue"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <MessageSquareHeart size={14} className="text-primary" />
+                                        <MessageSquareHeart size={14} className="text-[#1C1C1A] dark:text-[#BAFF29]" />
                                         <span>Give Feedback</span>
                                     </div>
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-black/5 dark:bg-[rgba(186,255,41,0.12)] text-[#1C1C1A] dark:text-[#BAFF29] border border-black/10 dark:border-[rgba(186,255,41,0.25)]">
                                         v1.0.0
                                     </span>
                                 </button>
