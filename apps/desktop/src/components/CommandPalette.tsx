@@ -221,37 +221,37 @@ export function CommandPalette() {
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'lecture': return <Play size={15} className="text-violet-400" />;
-            case 'transcript': return <FileText size={15} className="text-neutral-400" />;
-            case 'summary': return <BrainCircuit size={15} className="text-amber-400" />;
-            case 'timeline': return <Clock size={15} className="text-sky-400" />;
-            case 'flashcard': return <BookOpen size={15} className="text-blue-400" />;
-            case 'command': return <Terminal size={15} className="text-emerald-400" />;
-            case 'tag': return <Tags size={15} className="text-purple-400" />;
-            default: return <BookOpen size={15} className="text-neutral-400" />;
+            case 'lecture': return <Play size={15} className="text-violet-600 dark:text-violet-400" />;
+            case 'transcript': return <FileText size={15} className="text-zinc-600 dark:text-neutral-400" />;
+            case 'summary': return <BrainCircuit size={15} className="text-amber-600 dark:text-amber-400" />;
+            case 'timeline': return <Clock size={15} className="text-sky-600 dark:text-sky-400" />;
+            case 'flashcard': return <BookOpen size={15} className="text-blue-600 dark:text-blue-400" />;
+            case 'command': return <Terminal size={15} className="text-emerald-600 dark:text-emerald-400" />;
+            case 'tag': return <Tags size={15} className="text-purple-600 dark:text-purple-400" />;
+            default: return <BookOpen size={15} className="text-zinc-600 dark:text-neutral-400" />;
         }
     };
 
     const flatResults = results?.bestOverall || [];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[14vh] px-4 selection:bg-neutral-800 selection:text-white">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[14vh] px-4 selection:bg-black/10 selection:text-[var(--text-primary)] dark:selection:bg-neutral-800 dark:selection:text-white">
             <div 
-                className="absolute inset-0 bg-black/65 backdrop-blur-sm transition-opacity" 
+                className="absolute inset-0 bg-black/35 backdrop-blur-xs dark:bg-black/65 dark:backdrop-blur-sm transition-opacity" 
                 onClick={close} 
             />
-            <div className="relative w-full max-w-2xl bg-[#18181b]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden transition-all">
+            <div className="relative w-full max-w-2xl bg-white dark:bg-[#18181b]/95 backdrop-blur-xl border border-[var(--border)] dark:border-white/10 rounded-2xl shadow-[0_25px_60px_rgba(28,28,26,0.12),0_0_0_1px_rgba(28,28,26,0.05)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden transition-all">
                 
                 {/* Search Input */}
-                <div className="flex items-center px-4 py-3.5 border-b border-white/10 bg-transparent">
-                    <SearchIcon size={18} className="text-neutral-400 shrink-0 mr-3 pointer-events-none" />
+                <div className="flex items-center px-4 py-3.5 border-b border-[var(--border)] dark:border-white/10 bg-transparent">
+                    <SearchIcon size={18} className="text-[var(--text-muted)] dark:text-neutral-400 shrink-0 mr-3 pointer-events-none" />
                     <input
                         autoFocus
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Search across your knowledge & visual concepts..."
-                        className="flex-1 bg-transparent border-0 outline-none ring-0 focus:outline-none focus:ring-0 text-white text-[15px] placeholder:text-neutral-500 w-full"
+                        className="flex-1 bg-transparent border-0 outline-none ring-0 focus:outline-none focus:ring-0 text-[var(--text-primary)] dark:text-white text-[15px] placeholder:text-[var(--text-muted)] dark:placeholder:text-neutral-500 w-full"
                         style={{ boxShadow: 'none' }}
                     />
                     {query.trim().length > 0 && (
@@ -259,7 +259,7 @@ export function CommandPalette() {
                             <button 
                                 type="button"
                                 onClick={() => setQuery('')}
-                                className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                                className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
                                 title="Clear search"
                             >
                                 <X size={14} />
@@ -268,11 +268,11 @@ export function CommandPalette() {
                                 <button
                                     type="button"
                                     onClick={handleAskAi}
-                                    className="flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-1 rounded-lg hover:bg-indigo-500/25 transition-all cursor-pointer font-medium"
+                                    className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/15 border border-indigo-200 dark:border-indigo-500/30 px-2.5 py-1 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/25 transition-all cursor-pointer font-medium"
                                 >
-                                    <Sparkles size={12} className="text-indigo-400" />
+                                    <Sparkles size={12} className="text-indigo-600 dark:text-indigo-400" />
                                     <span>Ask AI</span>
-                                    <kbd className="text-[10px] text-indigo-300/80 font-mono">⌘↵</kbd>
+                                    <kbd className="text-[10px] text-indigo-500 dark:text-indigo-300/80 font-mono">⌘↵</kbd>
                                 </button>
                             )}
                         </div>
@@ -281,7 +281,7 @@ export function CommandPalette() {
 
                 {/* Filters Row */}
                 {!aiMode && (
-                    <div className="flex items-center gap-1.5 px-4 py-2 border-b border-white/[0.06] bg-black/20 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[var(--border)] dark:border-white/[0.06] bg-[var(--surface-raised)] dark:bg-black/20 overflow-x-auto no-scrollbar">
                         {ENTITY_FILTERS.map(f => {
                             const isActive = (filters.entityTypes?.[0] === f.value) || (!filters.entityTypes && !f.value);
                             return (
@@ -291,8 +291,8 @@ export function CommandPalette() {
                                     onClick={() => setFilters({ entityTypes: f.value ? [f.value] : undefined })}
                                     className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                                         isActive 
-                                        ? 'bg-white/15 text-white border border-white/20 shadow-xs' 
-                                        : 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5 border border-transparent'
+                                        ? 'bg-[#E6E5DC] text-[#1C1C1A] border border-[var(--border)] shadow-2xs dark:bg-white/15 dark:text-white dark:border-white/20' 
+                                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-black/5 border border-transparent dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-white/5'
                                     }`}
                                 >
                                     {f.label}
@@ -306,18 +306,18 @@ export function CommandPalette() {
                 <div className="max-h-[50vh] overflow-y-auto p-2">
                     {aiMode ? (
                         <div className="p-4">
-                            <div className="flex items-center gap-2 mb-3 text-indigo-400 font-medium text-sm">
+                            <div className="flex items-center gap-2 mb-3 text-indigo-600 dark:text-indigo-400 font-medium text-sm">
                                 <Sparkles size={16} />
                                 <span>AI Summary</span>
                             </div>
-                            <div className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap font-sans bg-black/30 p-4 rounded-xl border border-white/5">
+                            <div className="text-sm text-[var(--text-primary)] dark:text-neutral-200 leading-relaxed whitespace-pre-wrap font-sans bg-[var(--surface-raised)] dark:bg-black/30 p-4 rounded-xl border border-[var(--border)] dark:border-white/5">
                                 {aiResponse}
-                                {isAiLoading && <span className="inline-block animate-pulse ml-1 text-indigo-400">...</span>}
+                                {isAiLoading && <span className="inline-block animate-pulse ml-1 text-indigo-500 dark:text-indigo-400">...</span>}
                             </div>
                             <button 
                                 type="button"
                                 onClick={() => setAiMode(false)} 
-                                className="mt-4 inline-flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                                className="mt-4 inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] dark:text-neutral-400 dark:hover:text-white transition-colors cursor-pointer"
                             >
                                 ← Back to search results
                             </button>
@@ -326,23 +326,23 @@ export function CommandPalette() {
                         <div className="py-2 px-1">
                             {history.length > 0 ? (
                                 <div className="space-y-0.5">
-                                    <div className="px-3 pb-1.5 text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Recent Searches</div>
+                                    <div className="px-3 pb-1.5 text-[11px] font-semibold text-[var(--text-muted)] dark:text-neutral-500 uppercase tracking-wider">Recent Searches</div>
                                     {history.map((item) => (
                                         <div 
                                             key={item.id} 
                                             onClick={() => handleSuggestionClick(item.query)} 
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-white/[0.06] text-neutral-300 hover:text-white transition-colors"
+                                            className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/[0.06] text-[var(--text-primary)] dark:text-neutral-300 dark:hover:text-white transition-colors"
                                         >
-                                            <History size={14} className="text-neutral-500 shrink-0" />
+                                            <History size={14} className="text-[var(--text-muted)] dark:text-neutral-500 shrink-0" />
                                             <span className="text-sm">{item.query}</span>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="py-10 text-center text-neutral-400">
-                                    <Command size={28} className="mx-auto mb-3 text-neutral-600 stroke-[1.5]" />
-                                    <p className="text-sm font-medium text-neutral-300">Quick Search & Navigation</p>
-                                    <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+                                <div className="py-10 text-center text-[var(--text-muted)] dark:text-neutral-400">
+                                    <Command size={28} className="mx-auto mb-3 text-[var(--text-muted)]/50 dark:text-neutral-600 stroke-[1.5]" />
+                                    <p className="text-sm font-medium text-[var(--text-primary)] dark:text-neutral-300">Quick Search & Navigation</p>
+                                    <p className="text-xs text-[var(--text-muted)] dark:text-neutral-500 mt-1 max-w-sm mx-auto">
                                         Type keywords to search across lectures, transcripts, notes, or invoke commands.
                                     </p>
                                     <div className="mt-5 flex justify-center">
@@ -352,9 +352,9 @@ export function CommandPalette() {
                                                 close();
                                                 openFeedbackModal();
                                             }}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs bg-white/[0.04] hover:bg-white/[0.08] text-neutral-400 hover:text-neutral-200 border border-white/10 transition-all cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs bg-black/5 hover:bg-black/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:text-neutral-400 dark:hover:text-neutral-200 dark:border-white/10 transition-all cursor-pointer"
                                         >
-                                            <MessageSquareHeart size={13} className="text-rose-400" />
+                                            <MessageSquareHeart size={13} className="text-rose-500 dark:text-rose-400" />
                                             <span>Share Feedback or Report Bug</span>
                                         </button>
                                     </div>
@@ -362,23 +362,23 @@ export function CommandPalette() {
                             )}
                         </div>
                     ) : flatResults.length === 0 ? (
-                        <div className="py-12 text-center text-neutral-500 text-sm">
-                            No results found for &ldquo;<span className="text-neutral-300">{query}</span>&rdquo;
+                        <div className="py-12 text-center text-[var(--text-muted)] dark:text-neutral-500 text-sm">
+                            No results found for &ldquo;<span className="text-[var(--text-primary)] dark:text-neutral-300 font-medium">{query}</span>&rdquo;
                         </div>
                     ) : (
                         <div className="space-y-3 p-1">
                             {suggestions.length > 0 && (
-                                <div className="px-2 pt-1 pb-2 border-b border-white/[0.06]">
-                                    <div className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Suggestions</div>
+                                <div className="px-2 pt-1 pb-2 border-b border-[var(--border)] dark:border-white/[0.06]">
+                                    <div className="text-[11px] font-semibold text-[var(--text-muted)] dark:text-neutral-500 uppercase tracking-wider mb-2">Suggestions</div>
                                     <div className="flex flex-wrap gap-1.5">
                                         {suggestions.map((s, i) => (
                                             <button 
                                                 key={i} 
                                                 type="button"
                                                 onClick={() => handleSuggestionClick(s.text)} 
-                                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-white/[0.04] text-neutral-300 rounded-lg border border-white/[0.08] cursor-pointer hover:bg-white/[0.08] hover:text-white transition-all"
+                                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-[var(--surface-raised)] text-[var(--text-secondary)] rounded-lg border border-[var(--border)] cursor-pointer hover:bg-black/5 hover:text-[var(--text-primary)] dark:bg-white/[0.04] dark:text-neutral-300 dark:border-white/[0.08] dark:hover:bg-white/[0.08] dark:hover:text-white transition-all"
                                             >
-                                                {s.suggestionType === 'history' ? <History size={12} className="text-neutral-500" /> : <SearchIcon size={12} className="text-neutral-500" />}
+                                                {s.suggestionType === 'history' ? <History size={12} className="text-[var(--text-muted)] dark:text-neutral-500" /> : <SearchIcon size={12} className="text-[var(--text-muted)] dark:text-neutral-500" />}
                                                 <span>{s.text}</span>
                                             </button>
                                         ))}
@@ -392,23 +392,23 @@ export function CommandPalette() {
                                         onClick={() => handleSelect(result)}
                                         className={`flex items-start gap-3.5 p-2.5 rounded-xl cursor-pointer transition-all ${
                                             index === selectedResultIndex 
-                                            ? 'bg-white/[0.09] text-white border border-white/10 shadow-xs' 
-                                            : 'hover:bg-white/[0.04] text-neutral-300 border border-transparent'
+                                            ? 'bg-[var(--surface-raised)] text-[var(--text-primary)] border border-[var(--border)] shadow-xs dark:bg-white/[0.09] dark:text-white dark:border-white/10' 
+                                            : 'hover:bg-black/5 text-[var(--text-secondary)] border border-transparent dark:hover:bg-white/[0.04] dark:text-neutral-300'
                                         }`}
                                     >
-                                        <div className="mt-1 shrink-0 p-1.5 rounded-lg bg-white/[0.04]">
+                                        <div className="mt-1 shrink-0 p-1.5 rounded-lg bg-black/5 dark:bg-white/[0.04]">
                                             {getIcon(result.entityType)}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-medium text-sm text-white truncate">{result.title || 'Untitled'}</span>
-                                                <span className="text-[10px] font-medium tracking-wide uppercase text-neutral-400 bg-white/[0.05] px-1.5 py-0.5 rounded border border-white/[0.08] shrink-0">
+                                                <span className="font-medium text-sm text-[var(--text-primary)] dark:text-white truncate">{result.title || 'Untitled'}</span>
+                                                <span className="text-[10px] font-medium tracking-wide uppercase text-[var(--text-muted)] bg-[var(--surface-raised)] px-1.5 py-0.5 rounded border border-[var(--border)] shrink-0 dark:text-neutral-400 dark:bg-white/[0.05] dark:border-white/[0.08]">
                                                     {result.entityType}
                                                 </span>
                                             </div>
                                             {result.bodySnippet && (
-                                                <p className="text-xs text-neutral-400 mt-1 line-clamp-2 leading-relaxed" 
-                                                   dangerouslySetInnerHTML={{ __html: result.bodySnippet.replace(/<b>/g, '<span class="text-indigo-300 font-semibold underline underline-offset-2">').replace(/<\/b>/g, '</span>') }}
+                                                <p className="text-xs text-[var(--text-secondary)] dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed" 
+                                                   dangerouslySetInnerHTML={{ __html: result.bodySnippet.replace(/<b>/g, '<span class="text-indigo-600 dark:text-indigo-300 font-semibold underline underline-offset-2">').replace(/<\/b>/g, '</span>') }}
                                                 />
                                             )}
                                         </div>
@@ -420,30 +420,30 @@ export function CommandPalette() {
                 </div>
                 
                 {/* Footer */}
-                <div className="px-4 py-2.5 border-t border-white/10 bg-black/25 flex items-center justify-between text-[11px] text-neutral-400">
+                <div className="px-4 py-2.5 border-t border-[var(--border)] bg-[var(--surface-raised)] dark:border-white/10 dark:bg-black/25 flex items-center justify-between text-[11px] text-[var(--text-muted)] dark:text-neutral-400">
                     <div className="flex items-center gap-3.5">
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↑</kbd>
-                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↓</kbd>
-                            <span className="ml-1 text-neutral-400">Navigate</span>
+                            <kbd className="px-1.5 py-0.5 bg-white border border-[var(--border)] text-[10px] font-mono text-[var(--text-secondary)] shadow-2xs rounded dark:bg-white/[0.08] dark:border-white/10 dark:text-neutral-300">↑</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-white border border-[var(--border)] text-[10px] font-mono text-[var(--text-secondary)] shadow-2xs rounded dark:bg-white/[0.08] dark:border-white/10 dark:text-neutral-300">↓</kbd>
+                            <span className="ml-1 text-[var(--text-muted)] dark:text-neutral-400">Navigate</span>
                         </span>
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↵</kbd>
-                            <span className="ml-1 text-neutral-400">Open</span>
+                            <kbd className="px-1.5 py-0.5 bg-white border border-[var(--border)] text-[10px] font-mono text-[var(--text-secondary)] shadow-2xs rounded dark:bg-white/[0.08] dark:border-white/10 dark:text-neutral-300">↵</kbd>
+                            <span className="ml-1 text-[var(--text-muted)] dark:text-neutral-400">Open</span>
                         </span>
                         {!aiMode && (
                             <span className="flex items-center gap-1">
-                                <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">⌘</kbd>
-                                <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">↵</kbd>
-                                <span className="ml-1 text-neutral-400">Ask AI</span>
+                                <kbd className="px-1.5 py-0.5 bg-white border border-[var(--border)] text-[10px] font-mono text-[var(--text-secondary)] shadow-2xs rounded dark:bg-white/[0.08] dark:border-white/10 dark:text-neutral-300">⌘</kbd>
+                                <kbd className="px-1.5 py-0.5 bg-white border border-[var(--border)] text-[10px] font-mono text-[var(--text-secondary)] shadow-2xs rounded dark:bg-white/[0.08] dark:border-white/10 dark:text-neutral-300">↵</kbd>
+                                <span className="ml-1 text-[var(--text-muted)] dark:text-neutral-400">Ask AI</span>
                             </span>
                         )}
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-white/[0.08] rounded border border-white/10 text-[10px] font-mono text-neutral-300 shadow-xs">esc</kbd>
-                            <span className="ml-1 text-neutral-400">Close</span>
+                            <kbd className="px-1.5 py-0.5 bg-white border border-[var(--border)] text-[10px] font-mono text-[var(--text-secondary)] shadow-2xs rounded dark:bg-white/[0.08] dark:border-white/10 dark:text-neutral-300">esc</kbd>
+                            <span className="ml-1 text-[var(--text-muted)] dark:text-neutral-400">Close</span>
                         </span>
                     </div>
-                    <span className="text-[10px] tracking-wide text-neutral-500 font-medium">BACHAM Universal Search</span>
+                    <span className="text-[10px] tracking-wide text-[var(--text-muted)]/80 dark:text-neutral-500 font-medium">BACHAM Universal Search</span>
                 </div>
             </div>
         </div>
