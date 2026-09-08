@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, LogOut, Settings, User, Trash2, Sun, Moon, MessageSquareHeart, Sparkles } from "lucide-react";
+import { FileText, LogOut, Settings, User, Trash2, Sun, Moon } from "lucide-react";
 import { Link } from "react-router-dom";
 import * as React from "react";
 import {
@@ -17,7 +17,6 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useSettingsStore } from "@/shared/stores/settingsStore";
 import { useLectureStore } from "@/shared/stores/lectureStore";
 import { useAnimatedTheme } from "@/components/ui/animated-theme-toggler";
-import { useFeedbackStore } from "@/shared/stores/feedbackStore";
 
 interface Profile {
   name: string;
@@ -58,7 +57,6 @@ export default function ProfileDropdown({
   const { user, signOut } = useAuthStore();
   const { settings, updateSettings } = useSettingsStore();
   const { setSystemView, setSelectedFolderId } = useLectureStore();
-  const { openModal: openFeedbackModal } = useFeedbackStore();
   
   const isDarkCurrent = settings?.theme === 'dark' || (settings?.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
@@ -105,18 +103,6 @@ export default function ProfileDropdown({
       label: "Settings",
       href: "/settings?tab=general",
       icon: <Settings className="h-4 w-4" />,
-    },
-    {
-      label: "Welcome Tour",
-      href: "/onboarding",
-      icon: <Sparkles className="h-4 w-4 text-lime" />,
-    },
-    {
-      label: "Give Feedback",
-      icon: <MessageSquareHeart className="h-4 w-4 text-primary" />,
-      onClick: () => {
-        openFeedbackModal();
-      },
     },
     {
       label: "Terms & Policies",
