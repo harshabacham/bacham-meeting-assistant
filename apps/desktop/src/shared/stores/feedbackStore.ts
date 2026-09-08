@@ -241,8 +241,12 @@ export const useFeedbackStore = create<FeedbackState>((set, get) => ({
     }
 
     const githubUrl = `${GITHUB_REPO_URL}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-    if (typeof window !== 'undefined') {
-      window.open(githubUrl, '_blank', 'noopener,noreferrer');
-    }
+    import('@tauri-apps/plugin-shell')
+      .then(({ open }) => open(githubUrl))
+      .catch(() => {
+        if (typeof window !== 'undefined') {
+          window.open(githubUrl, '_blank', 'noopener,noreferrer');
+        }
+      });
   },
 }));
