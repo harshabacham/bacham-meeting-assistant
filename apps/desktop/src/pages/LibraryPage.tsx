@@ -11,7 +11,7 @@ import { LecturePropertiesPanel } from '@/components/library/LecturePropertiesPa
 import {
     Search, Grid3X3, List, Clock, BookOpen, Tag, Bookmark,
     Trash2, Archive, GripVertical, Sparkles, MoreHorizontal, FolderPlus, Upload, Plus, ExternalLink, FolderInput,
-    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare, RefreshCw, FileText
+    Folder, Check, X, ChevronRight, CheckSquare, Square, MinusSquare, RefreshCw, Video
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { cn, Button } from '@/components';
@@ -150,6 +150,33 @@ export function LibraryPage() {
             return a.label.localeCompare(b.label);
         });
     }
+
+    // Granola-style Timeline Date Grouping (Today, Yesterday, Previous 7 Days, Month Year)
+    const timelineGroups = React.useMemo(() => {
+        if (groupByCourse) return groups;
+        
+        const map = new Map<string, typeof filtered>();
+        for (const item of filtered) {
+            const dateStr = item.createdAt || item.updatedAt;
+            const d = new Date(dateStr);
+            let key = 'Earlier';
+            if (!isNaN(d.getTime())) {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const itemDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                const diffDays = Math.round((today.getTime() - itemDay.getTime()) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) key = 'Today';
+                else if (diffDays === 1) key = 'Yesterday';
+                else if (diffDays > 1 && diffDays <= 7) key = 'Previous 7 Days';
+                else key = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            }
+
+            if (!map.has(key)) map.set(key, []);
+            map.get(key)!.push(item);
+        }
+        return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
+    }, [filtered, groupByCourse, groups]);
 
     const toggleSelect = useCallback((id: string, e: React.MouseEvent) => {
         e.preventDefault();
@@ -547,7 +574,7 @@ ${transcript || '*(No transcript recorded)*'}
                             </div>
                         </motion.div>
                     </div>
-                ) : (
+                ) : viewMode === 'grid' ? (
                     groups.map(group => (
                         <div key={group.label || 'all'} className="mb-8">
                             {groupByCourse && group.label && (
@@ -560,10 +587,50 @@ ${transcript || '*(No transcript recorded)*'}
                                 </div>
                             )}
 
-                            {viewMode === 'grid' ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {group.items.map(lecture => (
+                                    <LectureGridCard
+                                        key={lecture.id}
+                                        lecture={lecture}
+                                        isSelected={selectedIds.has(lecture.id)}
+                                        isSelectMode={isSelectMode}
+                                        onSelect={toggleSelect}
+                                        onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
+                                        onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
+                                        onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
+                                        onMoveToFolder={(folderId: string | null) => handleMoveToFolder(folderId, [lecture.id])}
+                                        folders={folders}
+                                        onClick={() => navigate(`/lectures/${lecture.id}`)}
+                                        onDragStart={(e: React.DragEvent) => {
+                                            const ids = selectedIds.has(lecture.id) ? Array.from(selectedIds) : [lecture.id];
+                                            const payload = JSON.stringify(ids);
+                                            e.dataTransfer.setData('application/x-lecture-ids', payload);
+                                            e.dataTransfer.setData('text/plain', `lectures:${payload}`);
+                                            e.dataTransfer.effectAllowed = 'move';
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    /* Granola-style Clean Timeline List */
+                    <div className="max-w-3xl mx-auto flex flex-col space-y-7 pb-20 pt-1">
+                        {timelineGroups.map(group => (
+                            <div key={group.label || 'all'} className="flex flex-col">
+                                {group.label && (
+                                    <div className="flex items-center gap-2 mb-1.5 px-1 select-none">
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                            {group.label}
+                                        </span>
+                                        <span className="text-[10px] font-mono text-[var(--text-muted)] opacity-50">
+                                            {group.items.length}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="flex flex-col space-y-0.5">
                                     {group.items.map(lecture => (
-                                        <LectureGridCard
+                                        <LectureListRow
                                             key={lecture.id}
                                             lecture={lecture}
                                             isSelected={selectedIds.has(lecture.id)}
@@ -585,49 +652,9 @@ ${transcript || '*(No transcript recorded)*'}
                                         />
                                     ))}
                                 </div>
-                            ) : (
-                                <div className="bg-white dark:bg-[#18191B] border border-[#E5E4DC] dark:border-white/10 rounded-2xl overflow-hidden shadow-xs">
-                                    {/* Table Header */}
-                                    <div className="flex items-center px-4 py-2.5 bg-[#FAF9F5]/90 dark:bg-white/[0.02] border-b border-[#E5E4DC] dark:border-white/10 text-[11px] font-medium text-[var(--text-muted)] select-none">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
-                                            {isSelectMode && <div className="w-4 shrink-0" />}
-                                            <span>Title</span>
-                                        </div>
-                                        <div className="hidden md:block w-36 text-left shrink-0 pr-2">Folder / Category</div>
-                                        <div className="hidden sm:block w-20 text-right shrink-0 pr-2">Duration</div>
-                                        <div className="w-24 text-right shrink-0 pr-2">Date</div>
-                                        <div className="w-14 shrink-0" />
-                                    </div>
-
-                                    {/* Table Body Rows */}
-                                    <div className="divide-y divide-[#E5E4DC]/60 dark:divide-white/5">
-                                        {group.items.map(lecture => (
-                                            <LectureListRow
-                                                key={lecture.id}
-                                                lecture={lecture}
-                                                isSelected={selectedIds.has(lecture.id)}
-                                                isSelectMode={isSelectMode}
-                                                onSelect={toggleSelect}
-                                                onDelete={(e: React.MouseEvent) => handleDeleteSingle(lecture.id, e)}
-                                                onToggleFavorite={(e: React.MouseEvent) => handleToggleFavorite(lecture.id, lecture.isFavorite, e)}
-                                                onToggleArchive={(e: React.MouseEvent) => handleToggleArchive(lecture.id, lecture.isArchived, e)}
-                                                onMoveToFolder={(folderId: string | null) => handleMoveToFolder(folderId, [lecture.id])}
-                                                folders={folders}
-                                                onClick={() => navigate(`/lectures/${lecture.id}`)}
-                                                onDragStart={(e: React.DragEvent) => {
-                                                    const ids = selectedIds.has(lecture.id) ? Array.from(selectedIds) : [lecture.id];
-                                                    const payload = JSON.stringify(ids);
-                                                    e.dataTransfer.setData('application/x-lecture-ids', payload);
-                                                    e.dataTransfer.setData('text/plain', `lectures:${payload}`);
-                                                    e.dataTransfer.effectAllowed = 'move';
-                                                }}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
             {quickLookLecture && (
@@ -851,7 +878,7 @@ const LectureGridCard = React.memo(function LectureGridCard({ lecture, isSelecte
     );
 });
 
-// ─── List Row ─────────────────────────────────────────────────────────────────
+// ─── List Row (Granola Timeline Style) ─────────────────────────────────────────
 const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected, isSelectMode, onSelect, onDelete, onToggleFavorite, onToggleArchive, onClick, onDragStart, onMoveToFolder, folders = [] }: any) {
     const durationMin = Math.round(lecture.durationMs / 60000);
     const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -874,19 +901,18 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
     };
 
     const folder = folders.find((f: any) => f.id === (lecture.folderId || lecture.folder_id));
-    const categoryTag = folder?.name || lecture.subject || lecture.course;
-    const formattedDate = new Date(lecture.createdAt).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-    });
+    const dateObj = new Date(lecture.createdAt || lecture.updatedAt);
+    const timeString = isNaN(dateObj.getTime())
+        ? ''
+        : dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
     return (
         <div
             className={cn(
-                'group relative flex items-center px-4 py-2.5 sm:py-3 transition-colors duration-150 cursor-pointer text-left select-none',
+                'group relative flex items-center justify-between py-2 px-3 -mx-2.5 rounded-xl transition-all duration-150 cursor-pointer select-none',
                 isSelected
-                    ? 'bg-[#1C1C1A]/[0.05] dark:bg-white/[0.08]'
-                    : 'hover:bg-[#F4F3EE]/80 dark:hover:bg-white/[0.03]'
+                    ? 'bg-[#1C1C1A]/[0.08] dark:bg-white/[0.12]'
+                    : 'hover:bg-[#EAE8DF]/60 dark:hover:bg-white/[0.04]'
             )}
             onClick={handleRowClick}
             draggable={!isSelectMode}
@@ -898,93 +924,98 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                 onDragStart(e);
             }}
         >
-            {/* Drag Handle */}
-            <div
-                className="w-4 -ml-1.5 mr-1.5 flex items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-[var(--text-muted)] shrink-0"
-                title="Drag to organize"
-            >
-                <GripVertical size={13} />
-            </div>
-
-            {/* Selection Checkbox */}
-            {isSelectMode && (
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (onSelect) onSelect(lecture.id, e);
-                    }}
-                    className={cn(
-                        "w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 mr-3 no-drag cursor-pointer",
-                        isSelected 
-                            ? "bg-[#1C1C1A] text-white dark:bg-white dark:text-[#1C1C1A] shadow-xs" 
-                            : "border border-[#E5E4DC] dark:border-white/20 hover:border-[var(--text-primary)]"
-                    )}
-                    title={isSelected ? "Deselect" : "Select"}
+            {/* Left: Drag Handle, Select Checkbox, Meeting Icon, Title, Metadata */}
+            <div className="flex items-center min-w-0 flex-1 pr-4">
+                {/* Drag Handle */}
+                <div
+                    className="w-4 -ml-1 mr-1 flex items-center justify-center opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-[var(--text-muted)] shrink-0"
+                    title="Drag to organize"
                 >
-                    {isSelected && <Check size={11} strokeWidth={3} />}
-                </button>
-            )}
+                    <GripVertical size={13} />
+                </div>
 
-            {/* Thumbnail & Title */}
-            <div className="flex-1 min-w-0 pr-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-[#E5E4DC]/80 dark:border-white/10 bg-[#F4F3EE] dark:bg-white/[0.04]">
+                {/* Selection Checkbox */}
+                {isSelectMode && (
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelect) onSelect(lecture.id, e);
+                        }}
+                        className={cn(
+                            "w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 mr-2.5 no-drag cursor-pointer",
+                            isSelected 
+                                ? "bg-[#1C1C1A] text-white dark:bg-white dark:text-[#1C1C1A] shadow-xs" 
+                                : "border border-[#E5E4DC] dark:border-white/20 hover:border-[var(--text-primary)]"
+                        )}
+                        title={isSelected ? "Deselect" : "Select"}
+                    >
+                        {isSelected && <Check size={11} strokeWidth={3} />}
+                    </button>
+                )}
+
+                {/* Meeting Thumbnail or Clean Video Icon */}
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border border-[#E5E4DC]/80 dark:border-white/10 bg-[#FAF9F5] dark:bg-white/[0.04] text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors">
                     {thumbnail ? (
                         <img src={thumbnail} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="Thumbnail" />
                     ) : (
-                        <FileText size={14} className="text-[var(--text-muted)]" />
+                        <Video size={14} />
                     )}
                 </div>
 
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <p className="font-medium text-xs sm:text-[13px] text-[var(--text-primary)] truncate group-hover:text-black dark:group-hover:text-white transition-colors">
-                        {lecture.title || "Untitled Meeting"}
-                    </p>
-
-                    {lecture.status === 'RECORDING' && (
-                        <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                            Recording
+                {/* Title & Editorial Subtitle */}
+                <div className="flex flex-col min-w-0 flex-1 pl-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[13px] font-medium text-[var(--text-primary)] truncate group-hover:text-black dark:group-hover:text-white transition-colors">
+                            {lecture.title || "Untitled Meeting"}
                         </span>
-                    )}
+
+                        {lecture.status === 'RECORDING' && (
+                            <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                Recording
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Metadata line: Time · Duration · Folder / Course */}
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[var(--text-muted)]">
+                        {timeString && <span>{timeString}</span>}
+                        {durationMin > 0 && (
+                            <>
+                                <span className="opacity-40">·</span>
+                                <span>{durationMin} min</span>
+                            </>
+                        )}
+                        {folder && (
+                            <>
+                                <span className="opacity-40">·</span>
+                                <span className="inline-flex items-center gap-1 font-medium text-[var(--text-secondary)]">
+                                    <Folder size={10.5} className="text-[var(--text-muted)]" />
+                                    {folder.name}
+                                </span>
+                            </>
+                        )}
+                        {lecture.course && !folder && (
+                            <>
+                                <span className="opacity-40">·</span>
+                                <span>{lecture.course}</span>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Category / Folder Column */}
-            <div className="hidden md:flex items-center w-36 shrink-0 pr-2">
-                {categoryTag ? (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#F4F3EE] dark:bg-white/[0.04] border border-[#E5E4DC] dark:border-white/10 text-[11px] font-medium text-[var(--text-secondary)] truncate max-w-full">
-                        {folder ? <Folder size={11} className="text-[var(--text-muted)] shrink-0" /> : <Tag size={11} className="text-[var(--text-muted)] shrink-0" />}
-                        <span className="truncate">{categoryTag}</span>
-                    </span>
-                ) : (
-                    <span className="text-[11px] text-[var(--text-muted)] opacity-30">—</span>
-                )}
-            </div>
-
-            {/* Duration Column */}
-            <div className="hidden sm:flex items-center justify-end w-20 shrink-0 text-right pr-2">
-                <span className="text-[11px] font-mono text-[var(--text-secondary)]">
-                    {durationMin > 0 ? `${durationMin}m` : '—'}
-                </span>
-            </div>
-
-            {/* Date Column */}
-            <div className="w-24 shrink-0 text-right pr-2">
-                {lecture.deletedAt ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-rose-500">
+            {/* Right: Trash Countdown, 1-Click Bookmark, More Options */}
+            <div className="flex items-center gap-1 shrink-0 no-drag">
+                {lecture.deletedAt && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-rose-500 mr-2">
                         <Trash2 size={11} />
                         {Math.max(0, 30 - Math.floor((Date.now() - new Date(lecture.deletedAt).getTime()) / (1000 * 60 * 60 * 24)))}d left
                     </span>
-                ) : (
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                        {formattedDate}
-                    </span>
                 )}
-            </div>
 
-            {/* Quick Actions (Direct Bookmark & More Options) */}
-            <div className="w-14 shrink-0 flex items-center justify-end gap-1 no-drag">
+                {/* Direct 1-Click Bookmark */}
                 <button
                     type="button"
                     onClick={(e) => {
@@ -992,22 +1023,23 @@ const LectureListRow = React.memo(function LectureListRow({ lecture, isSelected,
                         onToggleFavorite(e);
                     }}
                     className={cn(
-                        "p-1 rounded-md transition-all cursor-pointer",
+                        "p-1.5 rounded-lg transition-all cursor-pointer",
                         lecture.isFavorite
                             ? "text-amber-500 opacity-100"
-                            : "text-[var(--text-muted)] opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06]"
+                            : "text-[var(--text-muted)] opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] hover:bg-[#EAE8DF] dark:hover:bg-white/[0.08]"
                     )}
                     title={lecture.isFavorite ? "Remove Bookmark" : "Bookmark"}
                 >
-                    <Bookmark size={13} className={lecture.isFavorite ? "fill-amber-500 text-amber-500" : ""} />
+                    <Bookmark size={13.5} className={lecture.isFavorite ? "fill-amber-500 text-amber-500" : ""} />
                 </button>
 
+                {/* More Options Dropdown */}
                 <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
                                 type="button"
-                                className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-[#F4F3EE] dark:hover:bg-white/[0.06] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[#EAE8DF] dark:hover:bg-white/[0.08] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                                 title="More options"
                             >
                                 <MoreHorizontal size={14} />
