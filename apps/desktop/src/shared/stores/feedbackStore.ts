@@ -31,6 +31,23 @@ export function getSystemDiagnostics(): SystemDiagnostics {
   };
 }
 
+export function getResolvedUserEmail(authEmail?: string | null, calendarEmail?: string | null): string {
+  // Ignore dummy/guest mock emails
+  if (authEmail && !authEmail.endsWith('@bacham.local') && !authEmail.endsWith('@bacham.app')) {
+    return authEmail;
+  }
+  if (calendarEmail && calendarEmail.includes('@') && !calendarEmail.endsWith('@bacham.local') && !calendarEmail.endsWith('@bacham.app')) {
+    return calendarEmail;
+  }
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('bacham_feedback_email');
+    if (saved && saved.includes('@') && !saved.endsWith('@bacham.local') && !saved.endsWith('@bacham.app')) {
+      return saved;
+    }
+  }
+  return '';
+}
+
 const DISCORD_WEBHOOK_URL =
   import.meta.env.VITE_DISCORD_FEEDBACK_WEBHOOK_URL ||
   'https://discord.com/api/webhooks/1545830015101440050/Qu6t5rlHFjucq6XySN3i6vdsOBpiLfUxdChmOf6EDtZY-yZBwUHvgP1SDPePyTAW6OUu';
@@ -206,6 +223,12 @@ export const useFeedbackStore = create<FeedbackState>((set, get) => ({
 
       if (!response.ok) {
         throw new Error(`Server returned HTTP ${response.status}`);
+      }
+
+      if (typeof window !== 'undefined' && email.trim() && !email.endsWith('@bacham.local') && !email.endsWith('@bacham.app')) {
+        try {
+          localStorage.setItem('bacham_feedback_email', email.trim());
+        } catch {}
       }
 
       set({ isSubmitting: false, isSuccess: true, errorMessage: null });

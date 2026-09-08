@@ -2,21 +2,22 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Send, Bug, Lightbulb, MessageSquareHeart, 
-  Github, ExternalLink, Loader2, CheckCircle2, ShieldCheck, Sparkles 
+  Github, ExternalLink, Loader2, CheckCircle2, ShieldCheck, Mail 
 } from 'lucide-react';
-import { useFeedbackStore, FeedbackCategory, FeedbackRating } from '@/shared/stores/feedbackStore';
+import { useFeedbackStore, FeedbackCategory, FeedbackRating, getResolvedUserEmail } from '@/shared/stores/feedbackStore';
 import { useAuthStore } from '@/shared/stores/authStore';
+import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { useToast } from '@/components/ui/ToastProvider';
 
 const CATEGORIES: Array<{
   id: FeedbackCategory;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  color: string;
+  iconColor: string;
 }> = [
-  { id: 'bug', label: 'Bug / Issue', icon: Bug, color: 'text-red-400 border-red-500/30 bg-red-500/10 hover:bg-red-500/20' },
-  { id: 'suggestion', label: 'Feature Idea', icon: Lightbulb, color: 'text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20' },
-  { id: 'general', label: 'Praise / Feedback', icon: MessageSquareHeart, color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20' },
+  { id: 'suggestion', label: 'Feature', icon: Lightbulb, iconColor: 'text-amber-400' },
+  { id: 'bug', label: 'Bug Report', icon: Bug, iconColor: 'text-rose-400' },
+  { id: 'general', label: 'Feedback', icon: MessageSquareHeart, iconColor: 'text-emerald-400' },
 ];
 
 const RATINGS: Array<{
@@ -27,7 +28,7 @@ const RATINGS: Array<{
   { id: 'love', emoji: '🤩', label: 'Love it' },
   { id: 'good', emoji: '🙂', label: 'Good' },
   { id: 'neutral', emoji: '😐', label: 'Okay' },
-  { id: 'frustrated', emoji: '😕', label: 'Frustrated' },
+  { id: 'frustrated', emoji: '😕', label: 'Issues' },
 ];
 
 export const FeedbackModal: React.FC = () => {
@@ -53,14 +54,25 @@ export const FeedbackModal: React.FC = () => {
   } = useFeedbackStore();
 
   const { user } = useAuthStore();
+  const { calendarEmail } = useCalendarStore();
   const { showToast } = useToast();
 
-  // Pre-fill email from auth if empty
+  const isAccountEmail = Boolean(
+    user?.email && 
+    !user.email.endsWith('@bacham.local') && 
+    !user.email.endsWith('@bacham.app')
+  );
+
+  // Pre-fill user's genuine email if empty or dummy placeholder
   useEffect(() => {
-    if (isOpen && !email && user?.email) {
-      setEmail(user.email);
+    if (isOpen) {
+      const isDummy = !email || email.endsWith('@bacham.local') || email.endsWith('@bacham.app');
+      if (isDummy) {
+        const resolved = getResolvedUserEmail(user?.email, calendarEmail);
+        setEmail(resolved);
+      }
     }
-  }, [isOpen, user?.email, email, setEmail]);
+  }, [isOpen, user?.email, calendarEmail, setEmail]);
 
   // Handle escape key
   useEffect(() => {
@@ -77,23 +89,23 @@ export const FeedbackModal: React.FC = () => {
     e.preventDefault();
     const success = await submitFeedback();
     if (success) {
-      showToast('Feedback sent! Thank you for helping us polish v1.0.0 🎉', 'success');
+      showToast('Feedback sent! Thank you for helping us polish Bacham 🎉', 'success');
       setTimeout(() => {
         closeModal();
         resetForm();
-      }, 1600);
+      }, 1500);
     }
   };
 
   const getPlaceholder = () => {
     switch (category) {
       case 'bug':
-        return 'What happened? What were you trying to do, and what went wrong? (e.g. mic disconnect during recording)';
+        return 'What happened, and what did you expect instead?';
       case 'suggestion':
-        return 'What feature, shortcut, or integration would make Bacham 10x better for your workflow?';
+        return 'What feature or improvement would make Bacham better for you?';
       case 'general':
       default:
-        return 'Tell us how you are using Bacham, what you like most, or any thoughts before our v1.0.0 launch...';
+        return 'Share your thoughts, suggestions, or experience with us...';
     }
   };
 
@@ -101,209 +113,221 @@ export const FeedbackModal: React.FC = () => {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative w-full max-w-lg rounded-2xl border border-border/80 bg-surface shadow-2xl overflow-hidden"
+          exit={{ opacity: 0, scale: 0.96, y: 8 }}
+          transition={{ duration: 0.16, ease: 'easeOut' }}
+          className="relative w-full max-w-md rounded-2xl border border-border/80 bg-surface/95 backdrop-blur-xl shadow-2xl overflow-hidden p-5"
         >
-          {/* Header Accent Glow Bar */}
-          <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-emerald-400" />
-
-          <div className="p-6">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-4 mb-5">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                <MessageSquareHeart size={16} />
+              </div>
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 mb-2">
-                  <Sparkles size={12} />
-                  <span>v1.0.0 Community Feedback</span>
-                </div>
-                <h2 className="text-base font-bold text-foreground">Share Feedback or Report an Issue</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  We are 100% open-source. Your feedback reaches our development team directly.
+                <h2 className="text-sm font-semibold text-foreground leading-tight">Send Feedback</h2>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Help us improve Bacham
                 </p>
               </div>
-
-              <button
-                type="button"
-                onClick={closeModal}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
-                title="Close"
-              >
-                <X size={16} />
-              </button>
             </div>
 
-            {isSuccess ? (
-              <div className="py-10 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
-                  <CheckCircle2 size={28} />
-                </div>
-                <h3 className="text-sm font-bold text-foreground">Feedback Received!</h3>
-                <p className="text-xs text-muted-foreground max-w-xs">
-                  Thank you for contributing to Bacham. We are actively reviewing submissions for the v1.0.0 release.
-                </p>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors cursor-pointer"
+              title="Close (Esc)"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          {isSuccess ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="py-10 flex flex-col items-center justify-center text-center space-y-2.5"
+            >
+              <div className="w-12 h-12 rounded-full bg-primary/15 text-primary border border-primary/25 flex items-center justify-center">
+                <CheckCircle2 size={24} />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Category Selection */}
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    What would you like to share?
+              <h3 className="text-sm font-bold text-foreground">Feedback Sent!</h3>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                Thank you for helping make Bacham better.
+              </p>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {/* Category Segmented Control */}
+              <div className="flex p-1 bg-surface-raised/80 rounded-xl border border-border/50 gap-1">
+                {CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = category === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategory(cat.id)}
+                      className={`relative flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-colors cursor-pointer select-none ${
+                        isSelected ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {isSelected && (
+                        <motion.div
+                          layoutId="feedback-category-pill"
+                          className="absolute inset-0 bg-surface rounded-lg border border-border/70 shadow-xs"
+                          transition={{ type: 'spring', bounce: 0.15, duration: 0.25 }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center gap-1.5">
+                        <Icon size={13} className={isSelected ? cat.iconColor : 'opacity-70'} />
+                        <span>{cat.label}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sentiment / Experience */}
+              <div className="flex items-center justify-between px-0.5">
+                <span className="text-[11px] font-medium text-muted-foreground">Experience</span>
+                <div className="flex items-center gap-1">
+                  {RATINGS.map((rate) => {
+                    const isSelected = rating === rate.id;
+                    return (
+                      <button
+                        key={rate.id}
+                        type="button"
+                        onClick={() => setRating(rate.id)}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary/15 text-foreground font-medium border border-primary/30 shadow-xs'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-surface-raised/80 border border-transparent'
+                        }`}
+                        title={rate.label}
+                      >
+                        <span className="text-sm">{rate.emoji}</span>
+                        {isSelected && <span className="text-[11px]">{rate.label}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Message Details */}
+              <div>
+                <textarea
+                  rows={4}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={getPlaceholder()}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all resize-none leading-relaxed"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {/* Contact Email */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Mail size={12} className="text-muted-foreground" />
+                    <span>Contact Email</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {CATEGORIES.map((cat) => {
-                      const Icon = cat.icon;
-                      const isSelected = category === cat.id;
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setCategory(cat.id)}
-                          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                            isSelected
-                              ? `${cat.color} font-semibold shadow-sm border-current`
-                              : 'border-border/60 bg-surface hover:bg-surface-hover text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          <Icon size={14} />
-                          <span>{cat.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {isAccountEmail && (
+                    <span className="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1">
+                      <CheckCircle2 size={11} />
+                      Your account email
+                    </span>
+                  )}
                 </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (e.target.value.includes('@') && !e.target.value.endsWith('@bacham.local')) {
+                      try {
+                        localStorage.setItem('bacham_feedback_email', e.target.value.trim());
+                      } catch {}
+                    }
+                  }}
+                  placeholder="your.email@example.com (optional)"
+                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all font-normal"
+                />
+              </div>
 
-                {/* Rating / Sentiment */}
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    How is your experience so far?
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {RATINGS.map((rate) => {
-                      const isSelected = rating === rate.id;
-                      return (
-                        <button
-                          key={rate.id}
-                          type="button"
-                          onClick={() => setRating(rate.id)}
-                          className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-xl text-xs border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-primary/10 border-primary text-foreground font-semibold shadow-sm'
-                              : 'border-border/60 bg-surface hover:bg-surface-hover text-muted-foreground'
-                          }`}
-                        >
-                          <span className="text-sm">{rate.emoji}</span>
-                          <span className="text-[11px]">{rate.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Message Textarea */}
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                    Details <span className="text-red-400">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder={getPlaceholder()}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none"
-                    required
-                  />
-                </div>
-
-                {/* Optional Email Contact */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Contact Email <span className="text-[10px] lowercase text-muted-foreground/80">(optional)</span>
-                    </label>
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@company.com (if you'd like us to reply)"
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
-                  />
-                </div>
-
-                {/* Diagnostics Toggle */}
-                <div className="flex items-start gap-2.5 pt-1">
+              {/* Diagnostics Toggle */}
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground px-0.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    id="include-diagnostics"
                     checked={includeDiagnostics}
                     onChange={(e) => setIncludeDiagnostics(e.target.checked)}
-                    className="mt-0.5 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
                   />
-                  <label htmlFor="include-diagnostics" className="text-[11px] text-muted-foreground cursor-pointer select-none">
-                    <div className="flex items-center gap-1 font-medium text-foreground">
-                      <ShieldCheck size={12} className="text-emerald-400" />
-                      <span>Include diagnostic info (Windows, App v1.0.0, current view)</span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/80 block mt-0.5">
-                      No recordings, notes, transcripts, or personal data are ever shared.
-                    </span>
-                  </label>
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck size={13} className="text-emerald-400" />
+                    <span>Include diagnostic info</span>
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">(Windows, App v1.0.0)</span>
+                  </span>
+                </label>
+              </div>
+
+              {/* Error Banner */}
+              {errorMessage && (
+                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                  {errorMessage}
                 </div>
+              )}
 
-                {/* Error Banner */}
-                {errorMessage && (
-                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                    {errorMessage}
-                  </div>
-                )}
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                <button
+                  type="button"
+                  onClick={openGitHubIssue}
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-surface-raised"
+                  title="Open public issue on GitHub"
+                >
+                  <Github size={12} />
+                  <span>GitHub Issue</span>
+                  <ExternalLink size={10} className="opacity-60" />
+                </button>
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/50">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={openGitHubIssue}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-lg hover:bg-surface-hover"
-                    title="Open an issue on our public GitHub repository"
+                    onClick={closeModal}
+                    className="px-3 py-1.5 rounded-xl text-xs text-muted-foreground hover:text-foreground hover:bg-surface-raised transition-colors cursor-pointer"
                   >
-                    <Github size={13} />
-                    <span>Open on GitHub</span>
-                    <ExternalLink size={11} className="opacity-60" />
+                    Cancel
                   </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="px-3 py-1.5 rounded-xl text-xs text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting || !message.trim()}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95 cursor-pointer"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 size={13} className="animate-spin" />
-                          <span>Sending...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send size={13} />
-                          <span>Send Feedback</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isSubmitting || !message.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={12} />
+                        <span>Send Feedback</span>
+                      </>
+                    )}
+                  </motion.button>
                 </div>
-              </form>
-            )}
-          </div>
+              </div>
+            </form>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

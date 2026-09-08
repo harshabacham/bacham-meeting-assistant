@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   MessageSquareHeart, Bug, Lightbulb, Github, ExternalLink, 
   Send, Loader2, CheckCircle2, ShieldCheck, Sparkles, Heart,
-  FileCode2, Users
+  FileCode2, Users, Mail
 } from 'lucide-react';
-import { useFeedbackStore, FeedbackCategory, FeedbackRating } from '@/shared/stores/feedbackStore';
+import { useFeedbackStore, FeedbackCategory, FeedbackRating, getResolvedUserEmail } from '@/shared/stores/feedbackStore';
 import { useAuthStore } from '@/shared/stores/authStore';
+import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { useToast } from '@/components/ui/ToastProvider';
 
 export const FeedbackSettingsTab: React.FC = () => {
@@ -29,13 +30,28 @@ export const FeedbackSettingsTab: React.FC = () => {
   } = useFeedbackStore();
 
   const { user } = useAuthStore();
+  const { calendarEmail } = useCalendarStore();
   const { showToast } = useToast();
+
+  const isAccountEmail = Boolean(
+    user?.email && 
+    !user.email.endsWith('@bacham.local') && 
+    !user.email.endsWith('@bacham.app')
+  );
+
+  useEffect(() => {
+    const isDummy = !email || email.endsWith('@bacham.local') || email.endsWith('@bacham.app');
+    if (isDummy) {
+      const resolved = getResolvedUserEmail(user?.email, calendarEmail);
+      setEmail(resolved);
+    }
+  }, [user?.email, calendarEmail, setEmail]);
 
   const handleInlineSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const success = await submitFeedback();
     if (success) {
-      showToast('Feedback sent! Thank you for helping us polish v1.0.0 🎉', 'success');
+      showToast('Feedback sent! Thank you for helping us polish Bacham 🎉', 'success');
       setTimeout(() => {
         resetForm();
       }, 2500);
@@ -143,11 +159,11 @@ export const FeedbackSettingsTab: React.FC = () => {
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Feedback Type
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex max-w-md p-1 bg-surface-raised rounded-xl border border-border/60 gap-1">
                 {[
-                  { id: 'bug' as FeedbackCategory, label: 'Bug / Defect', icon: Bug, color: 'text-red-400 border-red-500/30 bg-red-500/10' },
-                  { id: 'suggestion' as FeedbackCategory, label: 'Feature Request', icon: Lightbulb, color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
-                  { id: 'general' as FeedbackCategory, label: 'General / Praise', icon: Heart, color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+                  { id: 'suggestion' as FeedbackCategory, label: 'Feature Idea', icon: Lightbulb, iconColor: 'text-amber-400' },
+                  { id: 'bug' as FeedbackCategory, label: 'Bug / Defect', icon: Bug, iconColor: 'text-rose-400' },
+                  { id: 'general' as FeedbackCategory, label: 'Praise / Feedback', icon: Heart, iconColor: 'text-emerald-400' },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isSelected = category === item.id;
@@ -156,13 +172,13 @@ export const FeedbackSettingsTab: React.FC = () => {
                       key={item.id}
                       type="button"
                       onClick={() => setCategory(item.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer select-none ${
                         isSelected
-                          ? `${item.color} font-semibold border-current shadow-sm`
-                          : 'border-border bg-surface-raised hover:bg-surface-hover text-muted-foreground hover:text-foreground'
+                          ? 'bg-surface text-foreground font-semibold shadow-xs border border-border/70'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'
                       }`}
                     >
-                      <Icon size={14} />
+                      <Icon size={13} className={isSelected ? item.iconColor : 'opacity-70'} />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -171,31 +187,33 @@ export const FeedbackSettingsTab: React.FC = () => {
             </div>
 
             {/* Experience Rating */}
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                Rating
-              </label>
-              <div className="flex gap-2">
+            <div className="flex items-center justify-between max-w-md px-0.5">
+              <span className="text-[11px] font-medium text-muted-foreground">Experience</span>
+              <div className="flex items-center gap-1">
                 {[
                   { id: 'love' as FeedbackRating, emoji: '🤩', label: 'Love it' },
                   { id: 'good' as FeedbackRating, emoji: '🙂', label: 'Good' },
                   { id: 'neutral' as FeedbackRating, emoji: '😐', label: 'Okay' },
-                  { id: 'frustrated' as FeedbackRating, emoji: '😕', label: 'Frustrated' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setRating(item.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border transition-all cursor-pointer ${
-                      rating === item.id
-                        ? 'bg-primary/10 border-primary text-foreground font-semibold shadow-sm'
-                        : 'border-border bg-surface-raised hover:bg-surface-hover text-muted-foreground'
-                    }`}
-                  >
-                    <span>{item.emoji}</span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
+                  { id: 'frustrated' as FeedbackRating, emoji: '😕', label: 'Issues' },
+                ].map((item) => {
+                  const isSelected = rating === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setRating(item.id)}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary/15 text-foreground font-medium border border-primary/30 shadow-xs'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-surface-raised border border-transparent'
+                      }`}
+                      title={item.label}
+                    >
+                      <span className="text-sm">{item.emoji}</span>
+                      {isSelected && <span className="text-[11px]">{item.label}</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -208,37 +226,53 @@ export const FeedbackSettingsTab: React.FC = () => {
                 rows={3}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="What can we improve, fix, or add before the September 11th release?"
-                className="w-full px-3 py-2.5 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all resize-none"
+                placeholder="What can we improve, fix, or add before the next release?"
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all resize-none leading-relaxed"
                 required
               />
             </div>
 
-            {/* Optional Email */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Email & Diagnostics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                  Your Email (Optional)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Mail size={12} className="text-muted-foreground" />
+                    <span>Contact Email</span>
+                  </label>
+                  {isAccountEmail && (
+                    <span className="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1">
+                      <CheckCircle2 size={11} />
+                      Your account email
+                    </span>
+                  )}
+                </div>
                 <input
                   type="email"
-                  value={email || user?.email || ''}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="contact@domain.com (for replies)"
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-surface-raised border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-all"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (e.target.value.includes('@') && !e.target.value.endsWith('@bacham.local')) {
+                      try {
+                        localStorage.setItem('bacham_feedback_email', e.target.value.trim());
+                      } catch {}
+                    }
+                  }}
+                  placeholder="name@example.com (optional)"
+                  className="w-full px-3.5 py-2 rounded-xl text-xs bg-surface-raised/70 border border-border/70 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/80 focus:ring-1 focus:ring-primary/30 transition-all font-normal"
                 />
               </div>
 
               <div className="flex items-center pt-5">
-                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={includeDiagnostics}
                     onChange={(e) => setIncludeDiagnostics(e.target.checked)}
-                    className="rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
                   />
                   <div className="flex items-center gap-1">
-                    <ShieldCheck size={14} className="text-emerald-400" />
+                    <ShieldCheck size={13} className="text-emerald-400" />
                     <span>Attach OS & App Version diagnostics</span>
                   </div>
                 </label>
