@@ -1,14 +1,12 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { useAnimatedTheme } from '@/components/ui/animated-theme-toggler';
 import { 
   Sun, Moon, Monitor, Globe, 
-  Calendar, Check, SlidersHorizontal, ChevronDown, Compass, Sparkles
+  Calendar, Check, SlidersHorizontal, ChevronDown
 } from 'lucide-react';
 
 export const GeneralSettingsTab: React.FC = () => {
-  const navigate = useNavigate();
   const { settings, updateSettings } = useSettingsStore();
 
   const { setTheme } = useAnimatedTheme({
@@ -190,39 +188,6 @@ export const GeneralSettingsTab: React.FC = () => {
             </select>
             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           </div>
-        </div>
-      </div>
-
-      {/* Welcome & Tour */}
-      <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-border">
-          <div className="p-2 rounded-xl bg-primary/10 text-primary">
-            <Compass size={16} />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Welcome & Onboarding Tour</h3>
-            <p className="text-[11px] text-muted-foreground">Replay the interactive feature tour, audio setup, and product guide</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-          <div>
-            <p className="text-xs font-semibold text-foreground">First-Time Setup Guide</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Re-experience the 4-step welcome walkthrough and test your microphone hardware.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.removeItem('hasSeenOnboarding');
-              navigate('/onboarding');
-            }}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-surface-raised hover:bg-surface-hover border border-border text-foreground transition-all duration-150 shadow-sm shrink-0 flex items-center gap-2 hover:border-primary/50"
-          >
-            <Sparkles size={13} className="text-primary" />
-            <span>Replay Welcome Tour</span>
-          </button>
         </div>
       </div>
     </div>
