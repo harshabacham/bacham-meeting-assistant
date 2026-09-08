@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Copy, Check, Mail, Loader2, FileText, Eye, Download, ChevronLeft, Sparkles } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import jsPDF from 'jspdf';
@@ -464,9 +465,10 @@ ${markdownToHtml(markdownContent)}
     magic_link: handleExportMagicLink,
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 dark:bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
       <div
         className="relative bg-[var(--surface)] border border-border/60 rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
         style={{ height: view === 'preview' ? '80vh' : 'auto', maxHeight: '85vh' }}
@@ -570,6 +572,7 @@ ${markdownToHtml(markdownContent)}
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
