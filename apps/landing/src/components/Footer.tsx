@@ -48,6 +48,17 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="#instructions" className="hover:text-[#FFFFFF] transition-colors">
+                  Instructions &amp; Setup
+                </Link>
+              </li>
+              <li>
+                <Link href="#roadmap" className="hover:text-[#FFFFFF] transition-colors flex items-center gap-1.5">
+                  <span>v2.0.0 Roadmap</span>
+                  <span className="text-[10px] font-mono text-[#D1E043] bg-[#D1E043]/15 px-1.5 py-0.2 rounded">NEW</span>
+                </Link>
+              </li>
+              <li>
                 <Link href="#comparison" className="hover:text-[#FFFFFF] transition-colors">
                   Bacham vs. Cloud Bots
                 </Link>
@@ -71,10 +82,10 @@ export default function Footer() {
                   href={repoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-[#FFFFFF] transition-colors flex items-center gap-1.5"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-[#FFFFFF] border border-white/10 hover:border-[#D1E043]/40 text-xs font-semibold transition-all group my-1"
                 >
-                  <Star size={13} className="text-[#D1E043] fill-[#D1E043]" />
-                  <span>GitHub Repository</span>
+                  <Star size={13} className="text-[#D1E043] fill-[#D1E043] group-hover:scale-125 transition-transform" />
+                  <span>Star on GitHub</span>
                 </a>
               </li>
               <li>

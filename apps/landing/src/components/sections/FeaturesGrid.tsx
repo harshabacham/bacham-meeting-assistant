@@ -10,6 +10,8 @@ import {
   ArrowRight,
   Database,
   Sparkles,
+  Network,
+  FileEdit,
 } from "lucide-react";
 import { ChromeIcon } from "@/components/ui/ChromeIcon";
 import {
@@ -201,12 +203,86 @@ export default function FeaturesGrid() {
             </div>
           </motion.div>
 
-          {/* Bento Card 6 (Span 3 on bottom): Local SQLite Knowledge Brain with FTS5 */}
+          {/* Bento Card 6 (Span 2): Interactive Knowledge Graph & Topic Visualizer */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
+            className="md:col-span-2 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 shadow-2xs">
+                  <Network size={18} />
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-white/10 text-[#D1E043] border border-white/15">
+                  Force-Directed Topic Graph
+                </span>
+              </div>
+
+              <h3 className="font-serif text-2xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
+                Interactive knowledge graph &amp; meeting connections
+              </h3>
+              <p className="text-[14px] text-[#A1A1A6] leading-relaxed max-w-xl mb-6">
+                Discover recurring themes across weeks of meetings and lectures. An interactive on-device 2D force graph maps connections between topics, projects, and speakers with zero cloud parsing.
+              </p>
+            </div>
+
+            {/* Mini Graph Nodes Preview */}
+            <div className="p-3 rounded-xl bg-[#080809] border border-white/10 flex items-center justify-between gap-4 text-xs font-mono text-[#D1D1D6]">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5 text-[#D1E043]">
+                  <span className="w-2 h-2 rounded-full bg-[#D1E043]" />
+                  <span>Audio Loopback</span>
+                </span>
+                <span className="text-white/20">─</span>
+                <span className="flex items-center gap-1.5 text-white/80">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  <span>Whisper Quantization</span>
+                </span>
+                <span className="text-white/20">─</span>
+                <span className="flex items-center gap-1.5 text-white/80 hidden sm:inline-flex">
+                  <span className="w-2 h-2 rounded-full bg-purple-400" />
+                  <span>SQLite FTS5</span>
+                </span>
+              </div>
+              <span className="text-[10.5px] text-zinc-500 font-mono shrink-0">d3-force engine</span>
+            </div>
+          </motion.div>
+
+          {/* Bento Card 7 (Span 1): Rich Block Notes & Live Workspace */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="md:col-span-1 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+          >
+            <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 mb-5 shadow-2xs">
+              <FileEdit size={18} />
+            </div>
+
+            <div>
+              <h3 className="font-serif text-xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
+                Rich block notes &amp; syntax highlighting
+              </h3>
+              <p className="text-[13.5px] text-[#A1A1A6] leading-relaxed mb-4">
+                Full-featured Tiptap block editor with code syntax highlighting, interactive task checkboxes, and markdown keyboard shortcuts for fast typing during calls.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-white/10 text-[12px] font-medium text-[#D1E043] flex items-center gap-1">
+              <span>Distraction-Free Live Workspace</span>
+            </div>
+          </motion.div>
+
+          {/* Bento Card 8 (Span 3 on bottom): Local SQLite Knowledge Brain with FTS5 */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.4 }}
             className="md:col-span-3 rounded-2xl bg-[#121214] border-2 border-[#D1E043]/35 p-7 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-xl"
           >
             <WashiTape color="cyan" className="absolute -top-2 left-16 rotate-[-3deg] z-20" />

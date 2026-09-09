@@ -16,7 +16,9 @@ import {
   Play,
   RotateCcw,
   Sparkles,
+  Star,
 } from "lucide-react";
+import { SiGithub } from "react-icons/si";
 import {
   NoBotsSticker,
   LocalSsdSticker,
@@ -114,7 +116,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4"
+              className="flex flex-wrap items-center gap-3.5 mb-4"
             >
               <a
                 href="#downloads"
@@ -122,6 +124,17 @@ export default function Hero() {
               >
                 <span>Download for free</span>
                 <ArrowDown size={16} strokeWidth={2.6} />
+              </a>
+
+              <a
+                href="https://github.com/harshabacham/bacham-meeting-assistant"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/15 text-white font-medium text-[14.5px] border border-white/15 transition-all active:scale-[0.98] hover:border-[#D1E043]/50 group cursor-pointer"
+              >
+                <SiGithub size={17} className="text-white/80 group-hover:text-white" />
+                <span>Star on GitHub</span>
+                <Star size={14} className="text-[#D1E043] fill-[#D1E043] group-hover:scale-125 transition-transform" />
               </a>
 
               <LocalSsdSticker className="-rotate-2" />

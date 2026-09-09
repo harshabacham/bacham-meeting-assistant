@@ -4,22 +4,25 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { Download, Menu, X, ArrowRight } from "lucide-react";
+import { Download, Menu, X, ArrowRight, Star } from "lucide-react";
+import { SiGithub } from "react-icons/si";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
 
   const navLinks = [
     { label: "Features", href: "#features" },
     { label: "How It Works", href: "#how-it-works" },
+    { label: "Instructions", href: "#instructions" },
+    { label: "v2.0 Roadmap", href: "#roadmap" },
     { label: "Comparison", href: "#comparison" },
-    { label: "Privacy", href: "#privacy" },
     { label: "FAQ", href: "#faq" },
   ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#000000]/85 backdrop-blur-md border-b border-white/10 transition-all">
-      <div className="max-w-7xl mx-auto px-4 md:px-10 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
         
         {/* Left: Brand Logo Wordmark */}
         <div className="flex items-center gap-3">
@@ -34,12 +37,12 @@ export default function Navbar() {
         </div>
 
         {/* Center: Minimal Text Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="px-3.5 py-1.5 rounded-full text-[14px] font-medium text-[#D1D1D6] hover:text-[#FFFFFF] hover:bg-white/10 transition-colors duration-150"
+              className="px-3 py-1.5 rounded-full text-[13.5px] font-medium text-[#D1D1D6] hover:text-[#FFFFFF] hover:bg-white/10 transition-colors duration-150"
             >
               {link.label}
             </Link>
@@ -48,7 +51,20 @@ export default function Navbar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2.5">
-          {/* Subtle Download Pill Button */}
+          {/* GitHub Star Button */}
+          <a
+            href={repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-[#FFFFFF] border border-white/15 text-[13px] font-medium transition-all shadow-2xs hover:border-[#D1E043]/50 group cursor-pointer"
+            title="Star Bacham on GitHub"
+          >
+            <SiGithub size={14} className="text-white/80 group-hover:text-white" />
+            <span>Star</span>
+            <Star size={12} className="text-[#D1E043] fill-[#D1E043] group-hover:scale-125 transition-transform" />
+          </a>
+
+          {/* Download Pill Button */}
           <Link
             href="#downloads"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 text-[#FFFFFF] border border-white/15 text-[13.5px] font-medium transition-all shadow-2xs hover:shadow-xs"
@@ -91,12 +107,21 @@ export default function Navbar() {
                 <ArrowRight size={14} className="text-[#8E8E93]" />
               </Link>
             ))}
-            <div className="pt-3 mt-1 border-t border-white/10 flex items-center justify-between">
-              <span className="text-xs text-[#8E8E93]">Dual-Stream · Zero Bots · 100% on your SSD</span>
+            <div className="pt-3 mt-1 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+              <a
+                href={repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-4 py-2 rounded-full bg-white/10 text-white text-xs font-semibold flex items-center justify-center gap-1.5 border border-white/15"
+              >
+                <SiGithub size={13} />
+                <span>Star on GitHub</span>
+                <Star size={11} className="text-[#D1E043] fill-[#D1E043]" />
+              </a>
               <Link
                 href="#downloads"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-1.5 rounded-full bg-[#D1E043] text-[#1E1E1E] text-xs font-semibold"
+                className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#D1E043] text-[#1E1E1E] text-xs font-bold text-center"
               >
                 Download Free
               </Link>
