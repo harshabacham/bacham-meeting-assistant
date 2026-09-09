@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader, Orbitron } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader, Syne } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,10 +18,10 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
 });
 
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
-  weight: ["700"],
+  weight: ["800"],
 });
 
 export const metadata: Metadata = {
@@ -72,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${orbitron.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${syne.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[#000000] text-[#FFFFFF] font-sans selection:bg-[#D1E043]/40 selection:text-[#000000] relative overflow-x-hidden">
