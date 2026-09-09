@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -139,7 +139,7 @@ export default function Hero() {
         <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.5,delay:0.1}}
           className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 mb-10">
           <span className="w-1.5 h-1.5 rounded-full bg-[#D1E043] animate-pulse" />
-          <span className="text-[11px] font-semibold text-[#888888] tracking-widest uppercase">Open Source · Local-first · Bot-free</span>
+          <span className="text-[11px] font-semibold text-[#888888] tracking-widest uppercase">Open Source · Local-first · No Bot</span>
         </motion.div>
 
         {/* Headline typewriter */}
@@ -160,10 +160,9 @@ export default function Hero() {
 
         {/* Body copy */}
         <motion.p initial={{opacity:0,y:10}} animate={{opacity:shDone?1:0,y:shDone?0:10}}
-          transition={{duration:0.6}} className="text-[15px] sm:text-[17px] text-[#808088] leading-relaxed max-w-[52ch] mb-10">
-          Capture the tab, window, screen, video, and audio you choose.
-          Get{" "}<strong className="text-[#C8C8D0] font-semibold">live notes, action items, decisions, and replayable proof</strong>
-          {" "}— without a bot or the cloud.
+          transition={{duration:0.6}} className="text-[15px] sm:text-[17px] text-[#808088] leading-relaxed max-w-[44ch] mb-10">
+          Local AI that turns your meetings into notes, tasks, and proof.
+          <strong className="text-[#C8C8D0] font-semibold"> No bot. No cloud.</strong>
         </motion.p>
 
         {/* Dual CTAs */}
