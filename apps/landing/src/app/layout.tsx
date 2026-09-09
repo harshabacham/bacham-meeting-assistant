@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader, Dancing_Script, Covered_By_Your_Grace } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader, Dancing_Script, Rock_Salt } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,8 +24,8 @@ const dancingScript = Dancing_Script({
   weight: ["700"],
 });
 
-const coveredByYourGrace = Covered_By_Your_Grace({
-  variable: "--font-covered",
+const rockSalt = Rock_Salt({
+  variable: "--font-rock-salt",
   subsets: ["latin"],
   weight: ["400"],
 });
@@ -78,7 +78,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${dancingScript.variable} ${coveredByYourGrace.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${dancingScript.variable} ${rockSalt.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

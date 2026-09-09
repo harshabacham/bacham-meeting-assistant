@@ -82,13 +82,14 @@ export default function Hero() {
               <span
                 className="text-[#D1E043]"
                 style={{
-                  fontFamily: 'var(--font-covered)',
+                  fontFamily: 'var(--font-rock-salt)',
                   fontWeight: 400,
-                  fontSize: '1.3em',
+                  fontSize: '0.65em',
                   letterSpacing: '0.02em',
-                  lineHeight: '1.4',
+                  lineHeight: '1.5',
                   display: 'inline-block',
-                  marginTop: '2px',
+                  marginTop: '4px',
+                  textTransform: 'lowercase',
                 }}
               >
                 Bacham remembers the rest.
