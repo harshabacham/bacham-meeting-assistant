@@ -8,71 +8,71 @@ export default function Privacy() {
     {
       icon: WifiOff,
       title: "100% Offline Air-Gapped Operation",
-      desc: "Bacham doesn't require an internet connection to transcribe speech, detect decisions, or organize meeting notes when using local Whisper and Ollama.",
+      desc: "Bacham does not require an internet connection to transcribe speech, detect decisions, or organize meeting notes when using local Whisper and Ollama.",
     },
     {
       icon: HardDrive,
       title: "Local SQLite Storage & Embeddings",
-      desc: "Transcripts, summaries, action items, and slide images stay encrypted on your local drive. You own your data in standard SQLite and JSON formats.",
+      desc: "Transcripts, summaries, action items, and slide images stay on your local drive. You own your data in open SQLite and JSON formats.",
     },
     {
       icon: Code2,
       title: "Auditable Open-Source Architecture",
-      desc: "No hidden telemetry trackers or proprietary telemetry daemons. The entire Tauri Rust and TypeScript codebase is open and inspectable on GitHub.",
+      desc: "No hidden telemetry trackers or proprietary background daemons. The entire Tauri Rust and TypeScript codebase is open and inspectable on GitHub.",
     },
   ];
 
   return (
-    <section id="privacy" className="py-24 md:py-32 border-t border-white/[0.06] bg-transparent relative">
+    <section id="privacy" className="py-24 md:py-32 bg-[#FCFBF9] border-t border-[#E8E6DE]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none mb-2">
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#4F6322] select-none mb-2 block">
             Data Sovereignty
-          </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#F8F9FA] leading-tight mb-4">
-            Security by Architecture, Not Marketing Promises
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#1E1E1E] leading-tight mb-4">
+            Security by architecture, not marketing promises
           </h2>
-          <p className="text-base sm:text-lg text-white/70 leading-relaxed">
-            Your conversations contain trade secrets, financial models, and strategic plans. Bacham is built to ensure they never leave your computer.
+          <p className="text-base sm:text-lg text-[#666666] leading-relaxed">
+            Your conversations contain trade secrets, financial models, and strategic plans. Bacham ensures they never leave your machine.
           </p>
         </div>
 
         {/* Visual Architecture Pipeline */}
-        <div className="rounded-2xl bg-[#111317] border border-white/[0.08] p-6 sm:p-8 mb-12 shadow-xl">
-          <div className="text-xs font-mono text-white/60 uppercase tracking-wider mb-6 flex items-center justify-between pb-3 border-b border-white/[0.06]">
+        <div className="rounded-3xl bg-[#FAF9F5] border border-[#E8E6DE] p-6 sm:p-8 mb-12 shadow-2xs">
+          <div className="text-xs font-mono text-[#666666] uppercase tracking-wider mb-6 flex items-center justify-between pb-3 border-b border-[#E8E6DE]">
             <span>Local Ingestion Pipeline</span>
-            <span className="text-[#BAFF29] font-bold flex items-center gap-1.5">
-              <Lock size={12} />
+            <span className="text-[#4F6322] font-semibold flex items-center gap-1.5">
+              <Lock size={13} />
               Sandboxed On-Device
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-[#BAFF29] font-bold">01 · SOURCE</span>
-              <h4 className="text-sm font-bold text-[#F8F9FA] mt-2 mb-1">Hardware Capture</h4>
-              <p className="text-xs text-white/60">Direct WASAPI &amp; CoreAudio loopback stream without virtual cable bloat.</p>
+            <div className="p-4 rounded-2xl bg-white border border-[#E8E6DE] flex flex-col justify-between shadow-2xs">
+              <span className="text-[10px] font-mono text-[#4F6322] font-bold">01 · SOURCE</span>
+              <h4 className="text-sm font-semibold text-[#1E1E1E] mt-2 mb-1">Hardware Capture</h4>
+              <p className="text-xs text-[#666666] leading-relaxed">Direct WASAPI &amp; CoreAudio loopback stream without virtual cable bloat.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-[#BAFF29] font-bold">02 · INFERENCE</span>
-              <h4 className="text-sm font-bold text-[#F8F9FA] mt-2 mb-1">Local Whisper Engine</h4>
-              <p className="text-xs text-white/60">Zero cloud streaming. Speech-to-text converted directly into local RAM.</p>
+            <div className="p-4 rounded-2xl bg-white border border-[#E8E6DE] flex flex-col justify-between shadow-2xs">
+              <span className="text-[10px] font-mono text-[#4F6322] font-bold">02 · INFERENCE</span>
+              <h4 className="text-sm font-semibold text-[#1E1E1E] mt-2 mb-1">Local Whisper Engine</h4>
+              <p className="text-xs text-[#666666] leading-relaxed">Zero cloud streaming. Speech converted directly in local RAM.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-[#BAFF29] font-bold">03 · SYNTHESIS</span>
-              <h4 className="text-sm font-bold text-[#F8F9FA] mt-2 mb-1">Local Ollama / BYOK</h4>
-              <p className="text-xs text-white/60">Extracts decisions &amp; action items on your hardware or via personal API keys.</p>
+            <div className="p-4 rounded-2xl bg-white border border-[#E8E6DE] flex flex-col justify-between shadow-2xs">
+              <span className="text-[10px] font-mono text-[#4F6322] font-bold">03 · SYNTHESIS</span>
+              <h4 className="text-sm font-semibold text-[#1E1E1E] mt-2 mb-1">Local Ollama / BYOK</h4>
+              <p className="text-xs text-[#666666] leading-relaxed">Extracts decisions &amp; action items on your hardware or via personal API keys.</p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#BAFF29]/10 border border-[#BAFF29]/30 flex flex-col justify-between">
-              <span className="text-[10px] font-mono text-[#BAFF29] font-bold">04 · VAULT</span>
-              <h4 className="text-sm font-bold text-[#F8F9FA] mt-2 mb-1">Encrypted SQLite DB</h4>
-              <p className="text-xs text-white/70">All notes, embeddings, and snapshots stored exclusively on your SSD.</p>
+            <div className="p-4 rounded-2xl bg-[#F4F7EA] border border-[#4F6322]/30 flex flex-col justify-between shadow-2xs">
+              <span className="text-[10px] font-mono text-[#4F6322] font-bold">04 · VAULT</span>
+              <h4 className="text-sm font-semibold text-[#1E1E1E] mt-2 mb-1">Local SQLite DB</h4>
+              <p className="text-xs text-[#444444] leading-relaxed">All notes, embeddings, and snapshots stored exclusively on your SSD.</p>
             </div>
 
           </div>
@@ -89,13 +89,13 @@ export default function Privacy() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-[#BAFF29]/30 transition-all"
+                className="p-6 rounded-2xl bg-[#FAF9F5] border border-[#E8E6DE] hover:border-[#4F6322]/40 transition-all shadow-2xs"
               >
-                <div className="w-9 h-9 rounded-xl bg-[#BAFF29]/15 text-[#BAFF29] border border-[#BAFF29]/20 flex items-center justify-center mb-4">
+                <div className="w-10 h-10 rounded-xl bg-white text-[#4F6322] border border-[#E8E6DE] flex items-center justify-center mb-4 shadow-2xs">
                   <Icon size={18} />
                 </div>
-                <h3 className="text-base font-bold text-[#F8F9FA] mb-2">{p.title}</h3>
-                <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">{p.desc}</p>
+                <h3 className="font-serif text-lg font-normal text-[#1E1E1E] mb-2">{p.title}</h3>
+                <p className="text-xs sm:text-[13px] text-[#666666] leading-relaxed">{p.desc}</p>
               </motion.div>
             );
           })}

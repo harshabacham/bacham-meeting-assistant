@@ -2,162 +2,194 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Cpu, CheckSquare, ShieldCheck } from "lucide-react";
+import { Calendar, Mic, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function HowItWorks() {
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStage, setActiveStage] = useState<"before" | "during" | "after">("before");
 
-  const steps = [
+  const stages = [
     {
-      num: "01",
+      id: "before" as const,
+      label: "Before the meeting",
+      title: "Start your meeting prepared",
+      description:
+        "Bacham syncs with your local calendar to prepare an Executive Brief before every call: who is attending, what was agreed upon last time, and the top priorities.",
+      icon: Calendar,
+      bulletPoints: [
+        "Automatic attendee detection & company profile notes",
+        "Pulls prior commitments & open loops from past transcripts",
+        "Pre-meeting notification prompt with 1-click start",
+      ],
+      previewContent: {
+        badge: "Meeting Brief · Ready 5m before call",
+        title: "Sprint Review & Q3 GTM Sync",
+        items: [
+          { speaker: "Sarah (VP Product)", note: "Pushed counter-proposal on pricing; brings roadmap update" },
+          { speaker: "David (Lead Eng)", note: "Requested 2-week freeze for Whisper.cpp latency tuning" },
+        ],
+      },
+    },
+    {
+      id: "during" as const,
+      label: "During the meeting",
+      title: "Stay present. Jot three words.",
+      description:
+        "Forget trying to transcribe everything. Type quick shorthand while Bacham captures both your microphone and computer audio with zero bots in the call.",
       icon: Mic,
-      title: "Invisible Ingestion",
-      subtitle: "Zero bots. Zero awkwardness.",
-      description:
-        "Start with 1 click from your Chrome Extension or desktop system tray. Bacham taps into native audio loopback without sending any bot into your meeting.",
-      highlight: "Captures Google Meet, Zoom, Teams, or face-to-face audio.",
-      preview: {
-        tag: "Stage 1 · Hardware Capture",
-        detail: "Mic + System Audio Loopback active",
-        subDetail: "Sample Rate: 16kHz · 0% packet loss",
+      bulletPoints: [
+        "100% invisible native loopback audio capture",
+        "Zero intrusive bots joining your client meeting",
+        "Automatic screen slide snapshots when presentations change",
+      ],
+      previewContent: {
+        badge: "Live Capture · Whisper v3 On-Device",
+        title: "System Audio Loopback Active",
+        items: [
+          { speaker: "You typed", note: "agree pricing, jack deals stall, Tanya pause ads" },
+          { speaker: "Whisper local", note: "Transcribing dual-channel 16kHz audio in real time..." },
+        ],
       },
     },
     {
-      num: "02",
-      icon: Cpu,
-      title: "Local AI Synthesis",
-      subtitle: "Reasoning on your hardware.",
+      id: "after" as const,
+      label: "After the meeting",
+      title: "Effortless notes, enhanced instantly",
       description:
-        "Local Whisper transcribes speech in real-time. Your selected AI model (Ollama or BYOK Cloud) detects decisions and flags action items as they are spoken.",
-      highlight: "Sub-second turnaround with GPU/Metal acceleration.",
-      preview: {
-        tag: "Stage 2 · Local Engine",
-        detail: "Extracting: 2 Decisions · 3 Action Items",
-        subDetail: "Engine: Whisper v3 + Ollama Llama 3.3",
-      },
-    },
-    {
-      num: "03",
-      icon: CheckSquare,
-      title: "Instant Action & Recall",
-      subtitle: "Notes ready before the call ends.",
-      description:
-        "Review clean bullet points, export action items to Slack or Notion, or query across all past conversations with local semantic search.",
-      highlight: "Permanent offline storage in your encrypted SQLite database.",
-      preview: {
-        tag: "Stage 3 · Team Sync",
-        detail: "Synced to Slack #engineering-sync",
-        subDetail: "Saved to: C:\\Users\\...\\bacham_vault.db",
+        "The moment you hang up, your rough notes combine with the local audio transcript to generate clear executive decisions, structured bullet points, and assigned next steps.",
+      icon: Sparkles,
+      bulletPoints: [
+        "Instant structured summary with decisions & owners",
+        "1-click formatted copy for Slack, Notion, or Email",
+        "Permanent vector indexing for sub-second recall anytime",
+      ],
+      previewContent: {
+        badge: "Enhanced Summary · 0.4s Synthesis",
+        title: "Executive Synthesis & Next Steps",
+        items: [
+          { speaker: "Decision", note: "Agreed to narrow Q3 focus to mid-market finance buyers" },
+          { speaker: "Next Step", note: "Tanya to update ICP doc and pause paid campaigns by Tuesday" },
+        ],
       },
     },
   ];
 
+  const currentStage = stages.find((s) => s.id === activeStage)!;
+  const CurrentIcon = currentStage.icon;
+
   return (
-    <section id="how-it-works" className="py-24 md:py-32 border-t border-white/[0.06] bg-transparent">
+    <section id="how-it-works" className="py-24 md:py-32 bg-[#FCFBF9] border-t border-[#E8E6DE]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
-        {/* Header */}
+        {/* Section Headline (Granola Style) */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none mb-2">
-            Seamless Three-Stage Flow
-          </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#F8F9FA] leading-tight mb-4">
-            How Bacham Elevates Your Meetings
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#4F6322] select-none mb-2 block">
+            End-To-End Workflow
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#1E1E1E] leading-tight mb-4">
+            Bacham helps you before, during and after your meetings.
           </h2>
-          <p className="text-base sm:text-lg text-white/70 leading-relaxed">
-            From the moment your conversation begins to the moment decisions are executed.
+          <p className="text-base sm:text-lg text-[#666666] leading-relaxed">
+            A frictionless workflow designed for people with back-to-back schedules.
           </p>
         </div>
 
-        {/* Step Selector Pills */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-          {steps.map((step, idx) => {
-            const isActive = activeStep === idx;
-            const Icon = step.icon;
-            return (
-              <button
-                key={step.num}
-                type="button"
-                onClick={() => setActiveStep(idx)}
-                className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[140px] ${
-                  isActive
-                    ? "bg-[#14161A] border-[#BAFF29]/40 shadow-[0_4px_25px_rgba(186,255,41,0.08)]"
-                    : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/15"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-mono font-bold ${isActive ? "text-[#BAFF29]" : "text-white/50"}`}>
-                    {step.num}
+        {/* 3 Segmented Stage Selector Pills */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex p-1.5 rounded-full bg-[#FAF9F5] border border-[#E8E6DE] shadow-2xs gap-1">
+            {stages.map((stage) => {
+              const isActive = activeStage === stage.id;
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => setActiveStage(stage.id)}
+                  className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-white text-[#1E1E1E] shadow-xs font-semibold border border-[#E8E6DE]"
+                      : "text-[#666666] hover:text-[#1E1E1E]"
+                  }`}
+                >
+                  {stage.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Active Stage Presentation Card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStage.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-[#FAF9F5] border border-[#E8E6DE] rounded-3xl p-8 sm:p-12 shadow-2xs"
+          >
+            {/* Left: Text & Key Highlights */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E8E6DE] text-[#4F6322] text-xs font-semibold mb-4 shadow-2xs">
+                <CurrentIcon size={14} />
+                <span>{currentStage.label}</span>
+              </div>
+
+              <h3 className="font-serif text-3xl sm:text-4xl font-normal text-[#1E1E1E] mb-4 tracking-tight">
+                {currentStage.title}
+              </h3>
+              <p className="text-[#555555] text-base leading-relaxed mb-6">
+                {currentStage.description}
+              </p>
+
+              <div className="space-y-3">
+                {currentStage.bulletPoints.map((bp, i) => (
+                  <div key={i} className="flex items-center gap-2.5 text-sm text-[#333333]">
+                    <CheckCircle2 size={16} className="text-[#4F6322] shrink-0" />
+                    <span>{bp}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Tactile Notepad Preview Mockup */}
+            <div className="w-full bg-white border border-[#E8E6DE] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E8E6DE]">
+                  <span className="text-[11px] font-mono font-medium text-[#4F6322] uppercase tracking-wider">
+                    {currentStage.previewContent.badge}
                   </span>
-                  <div className={`p-2 rounded-xl border ${
-                    isActive ? "bg-[#BAFF29]/15 border-[#BAFF29]/30 text-[#BAFF29]" : "bg-white/[0.03] border-white/[0.06] text-white/50"
-                  }`}>
-                    <Icon size={16} />
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#E8E6DE]" />
+                    <span className="w-2 h-2 rounded-full bg-[#E8E6DE]" />
+                    <span className="w-2 h-2 rounded-full bg-[#E8E6DE]" />
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-sm font-bold text-[#F8F9FA] mb-0.5">{step.title}</h3>
-                  <p className="text-xs text-white/60">{step.subtitle}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                <h4 className="font-serif text-xl font-normal text-[#1E1E1E] mb-4">
+                  {currentStage.previewContent.title}
+                </h4>
 
-        {/* Active Step Detailed Showcase */}
-        <div className="rounded-2xl bg-[#111317] border border-white/[0.08] p-6 sm:p-10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#BAFF29]/[0.04] rounded-full blur-3xl pointer-events-none" />
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
-            >
-              <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#BAFF29]/10 border border-[#BAFF29]/20 text-[#BAFF29] text-xs font-bold">
-                  <span>Stage {steps[activeStep].num}</span>
-                  <span>•</span>
-                  <span>{steps[activeStep].subtitle}</span>
-                </div>
-
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#F8F9FA] tracking-tight">
-                  {steps[activeStep].title}
-                </h3>
-
-                <p className="text-sm sm:text-base text-white/70 leading-relaxed">
-                  {steps[activeStep].description}
-                </p>
-
-                <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-[#F8F9FA]/90">
-                  <ShieldCheck size={16} className="text-[#BAFF29]" />
-                  <span>{steps[activeStep].highlight}</span>
+                <div className="space-y-3">
+                  {currentStage.previewContent.items.map((item, i) => (
+                    <div key={i} className="p-3.5 rounded-xl bg-[#FAF9F5] border border-[#E8E6DE] text-xs">
+                      <span className="font-semibold text-[#1E1E1E] block mb-1">
+                        {item.speaker}
+                      </span>
+                      <span className="text-[#555555] leading-relaxed">
+                        {item.note}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="lg:col-span-5">
-                <div className="p-6 rounded-xl bg-black/40 border border-white/[0.08] space-y-3 font-mono text-xs text-[#F8F9FA]">
-                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-                    <span className="text-[11px] text-[#BAFF29] uppercase font-bold tracking-wider">
-                      {steps[activeStep].preview.tag}
-                    </span>
-                    <span className="w-2 h-2 rounded-full bg-[#BAFF29] animate-pulse" />
-                  </div>
-                  <p className="text-[13px] text-[#F8F9FA] font-sans font-medium">
-                    {steps[activeStep].preview.detail}
-                  </p>
-                  <p className="text-[11px] text-white/50">
-                    {steps[activeStep].preview.subDetail}
-                  </p>
-                </div>
+              <div className="mt-6 pt-4 border-t border-[#E8E6DE] flex items-center justify-between text-xs text-[#666666]">
+                <span>100% On-Device Execution</span>
+                <span className="font-mono text-[#4F6322] font-medium">Local SQLite Vault</span>
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            </div>
+
+          </motion.div>
+        </AnimatePresence>
 
       </div>
     </section>

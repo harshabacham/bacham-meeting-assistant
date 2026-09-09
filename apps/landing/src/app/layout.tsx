@@ -19,10 +19,12 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Bacham — The 100% Local AI Meeting Wingman",
-  description: "Capture Google Meet, Zoom, and system audio in real-time. Automated executive summaries, decisions, action items, and slide snapshots. Zero bots, 100% private.",
+  title: "Bacham — The AI Notepad for back-to-back meetings",
+  description: "The AI notepad for back-to-back meetings. Notes, actions and memory. Without a meeting bot. Runs 100% locally on your computer.",
   keywords: [
-    "AI meeting assistant",
+    "AI notepad",
+    "meeting notepad",
+    "Granola alternative",
     "local AI",
     "meeting notes",
     "Whisper",
@@ -30,20 +32,19 @@ export const metadata: Metadata = {
     "Google Meet transcription",
     "Zoom transcription",
     "private AI",
-    "Granola alternative",
   ],
   authors: [{ name: "Bacham Team" }],
   openGraph: {
-    title: "Bacham — The 100% Local AI Meeting Wingman",
-    description: "Capture meetings instantly. Real-time transcription, automated decisions & action items. No bots, 100% private.",
+    title: "Bacham — The AI Notepad for back-to-back meetings",
+    description: "Notes, actions and memory. Without a meeting bot. 100% local on macOS and Windows.",
     url: "https://bacham.app",
     siteName: "Bacham",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bacham — The 100% Local AI Meeting Wingman",
-    description: "Capture meetings instantly. Real-time transcription, automated decisions & action items. No bots, 100% private.",
+    title: "Bacham — The AI Notepad for back-to-back meetings",
+    description: "Notes, actions and memory. Without a meeting bot. 100% local on macOS and Windows.",
   },
   icons: {
     icon: "/logo.png",
@@ -62,17 +63,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#0A0A0C] text-[#F8F9FA] font-sans selection:bg-[#BAFF29]/30 selection:text-[#F8F9FA] relative overflow-x-hidden">
-        {/* Ambient Subtle Mesh Lighting */}
+      <body className="min-h-full flex flex-col bg-[#FCFBF9] text-[#1E1E1E] font-sans selection:bg-[#D1E043]/50 selection:text-[#1E1E1E] relative overflow-x-hidden">
+        {/* Subtle Warm Paper Lighting */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#BAFF29]/[0.06] via-transparent to-transparent blur-[130px]" />
-          <div className="absolute top-[35%] -left-[200px] w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.03] via-transparent to-transparent blur-[140px]" />
-          <div className="absolute top-[65%] -right-[200px] w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#BAFF29]/[0.04] via-transparent to-transparent blur-[140px]" />
-          {/* Fine subtle noise overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60" />
+          <div className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FAF7EE] via-[#FCFBF9]/60 to-transparent blur-[140px]" />
+          <div className="absolute top-[40%] -right-[200px] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#F4F1E8]/50 via-transparent to-transparent blur-[120px]" />
         </div>
 
         <LenisProvider>
