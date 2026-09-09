@@ -81,7 +81,7 @@ export default function Hero() {
               Your meetings had more than words.{' '}
               <span
                 className="text-[#D1E043]"
-                style={{ fontFamily: 'var(--font-pacifico)', fontWeight: 400, fontSize: '0.95em' }}
+                style={{ fontFamily: 'var(--font-bangers)', fontWeight: 400, fontSize: '1.1em', letterSpacing: '0.04em' }}
               >
                 Bacham remembers the rest.
               </span>
