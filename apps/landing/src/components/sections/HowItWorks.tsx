@@ -77,7 +77,7 @@ export default function HowItWorks() {
   const CurrentIcon = currentStage.icon;
 
   return (
-    <section id="how-it-works" className="py-24 md:py-32 bg-[#353935] border-t border-white/10">
+    <section id="how-it-works" className="py-24 md:py-32 bg-[#000000] border-t border-white/10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Section Headline */}
@@ -85,10 +85,10 @@ export default function HowItWorks() {
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#D1E043] select-none mb-2 block">
             End-To-End Workflow
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#F5F5F0] leading-tight mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#FFFFFF] leading-tight mb-4">
             Bacham helps you before, during and after your meetings.
           </h2>
-          <p className="text-base sm:text-lg text-[#C4C7C0] leading-relaxed">
+          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed">
             A frictionless workflow designed for people with back-to-back schedules.
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function HowItWorks() {
                   className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all cursor-pointer ${
                     isActive
                       ? "bg-[#D1E043] text-[#1E1E1E] shadow-sm font-bold"
-                      : "text-[#E2E4DE] hover:text-[#FFFFFF]"
+                      : "text-[#D1D1D6] hover:text-[#FFFFFF]"
                   }`}
                 >
                   {stage.label}
@@ -124,7 +124,7 @@ export default function HowItWorks() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-[#2C302C] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-xl"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-[#0D0D0E] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-xl"
           >
             {/* Left: Text & Key Highlights */}
             <div>
@@ -133,16 +133,16 @@ export default function HowItWorks() {
                 <span>{currentStage.label}</span>
               </div>
 
-              <h3 className="font-serif text-3xl sm:text-4xl font-normal text-[#F5F5F0] mb-4 tracking-tight">
+              <h3 className="font-serif text-3xl sm:text-4xl font-normal text-[#FFFFFF] mb-4 tracking-tight">
                 {currentStage.title}
               </h3>
-              <p className="text-[#C4C7C0] text-base leading-relaxed mb-6">
+              <p className="text-[#A1A1A6] text-base leading-relaxed mb-6">
                 {currentStage.description}
               </p>
 
               <div className="space-y-3">
                 {currentStage.bulletPoints.map((bp, i) => (
-                  <div key={i} className="flex items-center gap-2.5 text-sm text-[#E2E4DE]">
+                  <div key={i} className="flex items-center gap-2.5 text-sm text-[#D1D1D6]">
                     <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
                     <span>{bp}</span>
                   </div>

@@ -39,7 +39,7 @@ export default function FAQ() {
   };
 
   return (
-    <section id="faq" className="py-24 md:py-32 bg-[#353935] border-t border-white/10 relative z-10">
+    <section id="faq" className="py-24 md:py-32 bg-[#000000] border-t border-white/10 relative z-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -50,10 +50,10 @@ export default function FAQ() {
               <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#D1E043] select-none block">
                 Common Inquiries
               </span>
-              <h2 className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-[#F5F5F0] leading-tight">
+              <h2 className="font-serif text-3xl sm:text-4xl font-normal tracking-tight text-[#FFFFFF] leading-tight">
                 Frequently asked questions
               </h2>
-              <p className="text-base text-[#C4C7C0] leading-relaxed">
+              <p className="text-base text-[#A1A1A6] leading-relaxed">
                 Everything you need to know about Bacham&apos;s privacy model, local AI engine, and extension integration.
               </p>
 
@@ -80,8 +80,8 @@ export default function FAQ() {
                   key={faq.q}
                   className={`rounded-2xl border transition-all overflow-hidden shadow-md ${
                     isOpen
-                      ? "bg-[#2E332E] border-[#D1E043]/40"
-                      : "bg-[#2C302C] border-white/10 hover:border-[#D1E043]/30"
+                      ? "bg-[#121214] border-[#D1E043]/40"
+                      : "bg-[#0D0D0E] border-white/10 hover:border-[#D1E043]/30"
                   }`}
                 >
                   <button
@@ -89,13 +89,13 @@ export default function FAQ() {
                     onClick={() => toggle(idx)}
                     className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer"
                   >
-                    <span className="text-[15px] sm:text-base font-medium text-[#F5F5F0] leading-snug">
+                    <span className="text-[15px] sm:text-base font-medium text-[#FFFFFF] leading-snug">
                       {faq.q}
                     </span>
                     <div className={`p-1.5 rounded-full border transition-transform duration-200 shrink-0 ${
                       isOpen
                         ? "bg-[#D1E043] border-[#D1E043] text-[#1E1E1E] rotate-180"
-                        : "bg-white/10 border-white/15 text-[#C4C7C0]"
+                        : "bg-white/10 border-white/15 text-[#D1D1D6]"
                     }`}>
                       <ChevronDown size={14} />
                     </div>
@@ -109,7 +109,7 @@ export default function FAQ() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       >
-                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 text-[13.5px] text-[#C4C7C0] leading-relaxed border-t border-white/10 pt-4">
+                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 text-[13.5px] text-[#D1D1D6] leading-relaxed border-t border-white/10 pt-4">
                           {faq.a}
                         </div>
                       </motion.div>

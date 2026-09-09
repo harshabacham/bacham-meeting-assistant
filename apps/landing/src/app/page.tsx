@@ -10,7 +10,7 @@ import FAQ from "@/components/sections/FAQ";
 
 export default function Home() {
   return (
-    <div className="flex flex-col w-full min-h-screen bg-[#353935]">
+    <div className="flex flex-col w-full min-h-screen bg-[#000000]">
       <Hero />
       <NotepadIntro />
       <WhyItExists />

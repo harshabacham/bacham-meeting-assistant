@@ -14,7 +14,7 @@ import { ChromeIcon } from "@/components/ui/ChromeIcon";
 
 export default function FeaturesGrid() {
   return (
-    <section id="features" className="py-24 md:py-32 bg-[#353935] border-t border-white/10 relative z-10">
+    <section id="features" className="py-24 md:py-32 bg-[#000000] border-t border-white/10 relative z-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}
@@ -22,10 +22,10 @@ export default function FeaturesGrid() {
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#D1E043] select-none mb-2 block">
             Intelligence Architecture
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#F5F5F0] leading-tight mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#FFFFFF] leading-tight mb-4">
             Everything you need for effortless meeting recall
           </h2>
-          <p className="text-base sm:text-lg text-[#C4C7C0] leading-relaxed">
+          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed">
             Built from the ground up for privacy, speed, and deep executive clarity.
           </p>
         </div>
@@ -39,31 +39,31 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="md:col-span-2 rounded-2xl bg-[#2C302C] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+            className="md:col-span-2 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
           >
             <div>
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 shadow-2xs">
                   <Mic size={18} />
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-[#C4C7C0] border border-white/15">
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-[#D1D1D6] border border-white/15">
                   Dual-Stream WASAPI &amp; CoreAudio
                 </span>
               </div>
 
-              <h3 className="font-serif text-2xl font-normal text-[#F5F5F0] mb-2 tracking-tight">
+              <h3 className="font-serif text-2xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
                 Dual-channel audio &amp; offline Whisper ingestion
               </h3>
-              <p className="text-[14px] text-[#C4C7C0] leading-relaxed max-w-xl mb-6">
+              <p className="text-[14px] text-[#A1A1A6] leading-relaxed max-w-xl mb-6">
                 Separates your microphone from incoming speaker audio with studio clarity. Whisper runs directly on your GPU or NPU with sub-second turnaround—zero audio sent to the cloud.
               </p>
             </div>
 
             {/* Audio Pill Preview */}
-            <div className="p-3 rounded-xl bg-[#222522] border border-white/10 flex items-center justify-between gap-4 shadow-2xs">
+            <div className="p-3 rounded-xl bg-[#080809] border border-white/10 flex items-center justify-between gap-4 shadow-2xs">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-                <span className="text-xs font-mono text-[#F5F5F0] truncate">Mic: HyperX SoloCast · System: Zoom Output</span>
+                <span className="text-xs font-mono text-[#FFFFFF] truncate">Mic: HyperX SoloCast · System: Zoom Output</span>
               </div>
               <span className="text-[11px] font-mono text-[#D1E043] shrink-0 font-semibold">16kHz 16-bit PCM</span>
             </div>
@@ -75,17 +75,17 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="md:col-span-1 rounded-2xl bg-[#2C302C] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+            className="md:col-span-1 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
           >
             <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 mb-5 shadow-2xs">
               <Presentation size={18} />
             </div>
 
             <div>
-              <h3 className="font-serif text-xl font-normal text-[#F5F5F0] mb-2 tracking-tight">
+              <h3 className="font-serif text-xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
                 Visual slide memory &amp; key frames
               </h3>
-              <p className="text-[13.5px] text-[#C4C7C0] leading-relaxed mb-4">
+              <p className="text-[13.5px] text-[#A1A1A6] leading-relaxed mb-4">
                 Smart perceptual hashing detects when someone changes slides, automatically capturing crisp snapshots synchronized with notes.
               </p>
             </div>
@@ -102,17 +102,17 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="md:col-span-1 rounded-2xl bg-[#2C302C] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+            className="md:col-span-1 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
           >
             <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 mb-5 shadow-2xs">
               <ChromeIcon className="w-5 h-5 text-[#D1E043]" />
             </div>
 
             <div>
-              <h3 className="font-serif text-xl font-normal text-[#F5F5F0] mb-2 tracking-tight">
+              <h3 className="font-serif text-xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
                 Chrome extension companion
               </h3>
-              <p className="text-[13.5px] text-[#C4C7C0] leading-relaxed mb-4">
+              <p className="text-[13.5px] text-[#A1A1A6] leading-relaxed mb-4">
                 1-click capture for Google Meet and browser calls. Automatically syncs via local WebSocket (<span className="font-mono text-[11px] text-[#D1E043]">ws://127.0.0.1:1421</span>).
               </p>
             </div>
@@ -128,17 +128,17 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="md:col-span-1 rounded-2xl bg-[#2C302C] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+            className="md:col-span-1 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
           >
             <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 mb-5 shadow-2xs">
               <CalendarCheck2 size={18} />
             </div>
 
             <div>
-              <h3 className="font-serif text-xl font-normal text-[#F5F5F0] mb-2 tracking-tight">
+              <h3 className="font-serif text-xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
                 Calendar brief &amp; smart prep
               </h3>
-              <p className="text-[13.5px] text-[#C4C7C0] leading-relaxed mb-4">
+              <p className="text-[13.5px] text-[#A1A1A6] leading-relaxed mb-4">
                 Reads your local calendar (iCal, Outlook, Google) to prepare attendee context, prior topics, and prompt recording before calls begin.
               </p>
             </div>
@@ -154,17 +154,17 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="md:col-span-1 rounded-2xl bg-[#2C302C] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
+            className="md:col-span-1 rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#D1E043]/40 transition-all shadow-md"
           >
             <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 mb-5 shadow-2xs">
               <Share2 size={18} />
             </div>
 
             <div>
-              <h3 className="font-serif text-xl font-normal text-[#F5F5F0] mb-2 tracking-tight">
+              <h3 className="font-serif text-xl font-normal text-[#FFFFFF] mb-2 tracking-tight">
                 Formats for Slack &amp; Notion
               </h3>
-              <p className="text-[13.5px] text-[#C4C7C0] leading-relaxed mb-4">
+              <p className="text-[13.5px] text-[#A1A1A6] leading-relaxed mb-4">
                 Exports formatted Markdown, executive briefs, bulleted decisions, and action tables directly to your clipboard or knowledge base.
               </p>
             </div>
@@ -180,7 +180,7 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="md:col-span-3 rounded-2xl bg-[#2E332E] border-2 border-[#D1E043]/35 p-7 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-xl"
+            className="md:col-span-3 rounded-2xl bg-[#121214] border-2 border-[#D1E043]/35 p-7 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden shadow-xl"
           >
             <div className="space-y-2 max-w-2xl">
               <div className="flex items-center gap-2">
@@ -191,16 +191,16 @@ export default function FeaturesGrid() {
                   Local Vector Semantic Index
                 </span>
               </div>
-              <h3 className="font-serif text-2xl font-normal text-[#F5F5F0] tracking-tight">
+              <h3 className="font-serif text-2xl font-normal text-[#FFFFFF] tracking-tight">
                 Global memory: ask questions across your entire meeting history
               </h3>
-              <p className="text-[14px] text-[#C4C7C0] leading-relaxed">
+              <p className="text-[14px] text-[#D1D1D6] leading-relaxed">
                 Need to recall what was agreed upon three months ago? Query across all archived recordings with sub-second RAG search and exact timestamp jump links.
               </p>
             </div>
 
             <div className="w-full sm:w-auto shrink-0">
-              <div className="px-5 py-3 rounded-xl bg-[#222522] border border-white/15 text-xs font-mono text-[#F5F5F0] flex items-center gap-3 shadow-md">
+              <div className="px-5 py-3 rounded-xl bg-[#080809] border border-white/15 text-xs font-mono text-[#FFFFFF] flex items-center gap-3 shadow-md">
                 <Search size={14} className="text-[#D1E043]" />
                 <span>&quot;What did Tanya agree to on Q3 ad campaigns?&quot;</span>
               </div>

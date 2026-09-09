@@ -5,14 +5,14 @@
   --font-mono: var(--font-geist-mono), monospace;
   --font-serif: var(--font-newsreader), Georgia, serif;
 
-  --color-paper-bg: #353935;
-  --color-paper-card: #2C302C;
-  --color-paper-card-elevated: #3E433E;
-  --color-paper-border: rgba(255, 255, 255, 0.12);
-  --color-paper-border-strong: rgba(255, 255, 255, 0.22);
-  --color-ink-primary: #F5F5F0;
-  --color-ink-secondary: #C4C7C0;
-  --color-ink-muted: #959891;
+  --color-paper-bg: #000000;
+  --color-paper-card: #0D0D0E;
+  --color-paper-card-elevated: #161618;
+  --color-paper-border: rgba(255, 255, 255, 0.1);
+  --color-paper-border-strong: rgba(255, 255, 255, 0.2);
+  --color-ink-primary: #FFFFFF;
+  --color-ink-secondary: #D1D1D6;
+  --color-ink-muted: #8E8E93;
   --color-accent-olive: #4F6322;
   --color-accent-olive-hover: #43541c;
   --color-accent-lime: #D1E043;
@@ -20,8 +20,8 @@
 }
 
 :root {
-  --background: #353935;
-  --foreground: #F5F5F0;
+  --background: #000000;
+  --foreground: #FFFFFF;
   --accent-olive: #4F6322;
   --notepad-row: 4.5rem;
 }
@@ -51,10 +51,10 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #353935;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #4A504A;
+  background: #2C2C2E;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -73,10 +73,10 @@ body {
 }
 
 .granola-card {
-  background: #2C302C;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0D0D0E;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
 }
 
 .granola-card-hover {

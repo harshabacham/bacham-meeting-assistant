@@ -7,7 +7,7 @@ export default function Footer() {
   const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
 
   return (
-    <footer className="border-t border-white/10 bg-[#2A2E2A] py-16 relative z-10">
+    <footer className="border-t border-white/10 bg-[#000000] py-16 relative z-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-white/10">
@@ -18,11 +18,11 @@ export default function Footer() {
               <div className="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center p-1 shadow-2xs group-hover:border-[#D1E043] transition-colors">
                 <Image src="/logo.png" alt="Bacham Logo" width={22} height={22} className="object-contain" />
               </div>
-              <span className="font-serif text-2xl font-normal tracking-tight text-[#F5F5F0]">
+              <span className="font-serif text-2xl font-normal tracking-tight text-[#FFFFFF]">
                 bacham
               </span>
             </Link>
-            <p className="text-xs sm:text-[13.5px] text-[#C4C7C0] leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-[13.5px] text-[#A1A1A6] leading-relaxed max-w-sm">
               The AI notepad for back-to-back meetings. Notes, actions and memory. Without a meeting bot. Runs 100% locally on macOS and Windows.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-medium text-[#D1E043]">
@@ -33,10 +33,10 @@ export default function Footer() {
 
           {/* Product Links */}
           <div className="md:col-span-3 space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-[#F5F5F0]">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-[#FFFFFF]">
               Product
             </h4>
-            <ul className="space-y-2 text-[13px] text-[#C4C7C0]">
+            <ul className="space-y-2 text-[13px] text-[#A1A1A6]">
               <li>
                 <Link href="#features" className="hover:text-[#FFFFFF] transition-colors">
                   Core Features
@@ -62,10 +62,10 @@ export default function Footer() {
 
           {/* Resources & Open Source */}
           <div className="md:col-span-4 space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-[#F5F5F0]">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-[#FFFFFF]">
               Community &amp; Code
             </h4>
-            <ul className="space-y-2 text-[13px] text-[#C4C7C0]">
+            <ul className="space-y-2 text-[13px] text-[#A1A1A6]">
               <li>
                 <a
                   href={repoUrl}
@@ -103,7 +103,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Strip */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#959891]">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A]">
           <p>© {new Date().getFullYear()} Bacham. Open source under the MIT License.</p>
           <div className="flex items-center gap-2">
             <span>Built for people in back-to-back meetings.</span>

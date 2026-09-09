@@ -43,7 +43,7 @@ export default function WhyItExists() {
   ];
 
   return (
-    <section id="comparison" className="py-24 md:py-32 bg-[#353935]">
+    <section id="comparison" className="py-24 md:py-32 bg-[#000000]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}
@@ -57,10 +57,10 @@ export default function WhyItExists() {
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#D1E043] select-none mb-2 block">
             The Bacham Advantage
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#F5F5F0] leading-tight mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#FFFFFF] leading-tight mb-4">
             Why professionals are ditching cloud meeting bots
           </h2>
-          <p className="text-base sm:text-lg text-[#C4C7C0] leading-relaxed">
+          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed">
             Stop sending awkward bots to client calls. Take notes with complete privacy, zero monthly fees, and 100% local processing.
           </p>
         </motion.div>
@@ -74,7 +74,7 @@ export default function WhyItExists() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl bg-[#2C302C] border border-white/10 p-7 sm:p-8 flex flex-col justify-between shadow-lg"
+            className="rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between shadow-lg"
           >
             <div>
               <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-6">
@@ -82,8 +82,8 @@ export default function WhyItExists() {
                   <Bot size={18} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-[#F5F5F0]">Traditional Cloud Bots</h3>
-                  <p className="text-xs text-[#959891]">Otter, Fireflies, Grain, etc.</p>
+                  <h3 className="text-base font-semibold text-[#FFFFFF]">Traditional Cloud Bots</h3>
+                  <p className="text-xs text-[#8E8E93]">Otter, Fireflies, Grain, etc.</p>
                 </div>
               </div>
 
@@ -92,10 +92,10 @@ export default function WhyItExists() {
                   <div key={item.title} className="flex items-start gap-3">
                     <XCircle size={18} className="text-red-400/90 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-[14px] font-semibold text-[#F5F5F0] mb-0.5">
+                      <h4 className="text-[14px] font-semibold text-[#FFFFFF] mb-0.5">
                         {item.title}
                       </h4>
-                      <p className="text-[13px] text-[#A9ACA4] leading-relaxed">
+                      <p className="text-[13px] text-[#A1A1A6] leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
@@ -115,7 +115,7 @@ export default function WhyItExists() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl bg-[#2D332D] border-2 border-[#D1E043]/40 p-7 sm:p-8 flex flex-col justify-between shadow-2xl relative"
+            className="rounded-2xl bg-[#121214] border-2 border-[#D1E043]/40 p-7 sm:p-8 flex flex-col justify-between shadow-2xl relative"
           >
             <div>
               <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-6">
@@ -124,12 +124,12 @@ export default function WhyItExists() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-[#F5F5F0]">Bacham Local Notepad</h3>
+                    <h3 className="text-base font-semibold text-[#FFFFFF]">Bacham Local Notepad</h3>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#D1E043] text-[#1E1E1E]">
                       100% Private
                     </span>
                   </div>
-                  <p className="text-xs text-[#C4C7C0]">On-Device Native Audio Pipeline</p>
+                  <p className="text-xs text-[#D1D1D6]">On-Device Native Audio Pipeline</p>
                 </div>
               </div>
 
@@ -138,10 +138,10 @@ export default function WhyItExists() {
                   <div key={item.title} className="flex items-start gap-3">
                     <CheckCircle2 size={18} className="text-[#D1E043] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-[14px] font-semibold text-[#F5F5F0] mb-0.5">
+                      <h4 className="text-[14px] font-semibold text-[#FFFFFF] mb-0.5">
                         {item.title}
                       </h4>
-                      <p className="text-[13px] text-[#C4C7C0] leading-relaxed">
+                      <p className="text-[13px] text-[#D1D1D6] leading-relaxed">
                         {item.desc}
                       </p>
                     </div>

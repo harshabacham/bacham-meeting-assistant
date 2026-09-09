@@ -46,7 +46,7 @@ export default function NotepadIntro() {
   ];
 
   return (
-    <section className="relative py-20 border-y border-white/10 bg-[#353935] overflow-hidden">
+    <section className="relative py-20 border-y border-white/10 bg-[#000000] overflow-hidden">
       {/* Subtle Ruled Notebook Horizontal Lines Background */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-40"
@@ -65,7 +65,7 @@ export default function NotepadIntro() {
             <span className="text-[12px] font-semibold text-[#D1E043] uppercase tracking-wider mb-3 block">
               The Notepad Philosophy
             </span>
-            <h2 className="font-serif text-3xl sm:text-5xl font-normal tracking-tight text-[#F5F5F0] leading-[1.08]">
+            <h2 className="font-serif text-3xl sm:text-5xl font-normal tracking-tight text-[#FFFFFF] leading-[1.08]">
               Effortless notes, enhanced instantly.
             </h2>
           </div>
@@ -79,7 +79,7 @@ export default function NotepadIntro() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="py-5 flex items-center gap-4 text-[16px] sm:text-[17px] text-[#E2E4DE] leading-snug"
+                className="py-5 flex items-center gap-4 text-[16px] sm:text-[17px] text-[#D1D1D6] leading-snug"
               >
                 <div className="shrink-0">{item.icon}</div>
                 <div>{item.text}</div>

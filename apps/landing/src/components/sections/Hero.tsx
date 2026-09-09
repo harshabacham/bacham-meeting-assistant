@@ -8,13 +8,13 @@ export default function Hero() {
   const [activeTab, setActiveTab] = useState<"enhanced" | "raw">("enhanced");
 
   return (
-    <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-[#353935]">
+    <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-[#000000]">
       <div className="max-w-7xl mx-auto px-4 md:px-10">
         
         {/* 2-Column Split: Editorial Copy on Left, Visual Layered Mockup on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-[52%_48%] gap-12 lg:gap-8 items-center">
           
-          {/* Left Column: Granola-Style Typography on #353935 */}
+          {/* Left Column: Granola-Style Typography on #000000 */}
           <div className="flex flex-col items-start text-left">
             
             {/* Pill Badge */}
@@ -28,10 +28,10 @@ export default function Hero() {
               <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#D1E043] text-[#1E1E1E]">
                 New
               </span>
-              <span className="text-[13.5px] font-medium text-[#F5F5F0]">
+              <span className="text-[13.5px] font-medium text-[#FFFFFF]">
                 Bacham for Mac &amp; Windows
               </span>
-              <ArrowRight size={13} className="text-[#C4C7C0] group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight size={13} className="text-[#A1A1A6] group-hover:translate-x-0.5 transition-transform" />
             </motion.a>
 
             {/* Massive Serif Display Headline */}
@@ -39,7 +39,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-serif text-5xl sm:text-7xl lg:text-[82px] font-normal leading-[0.93] tracking-[-0.03em] text-[#F5F5F0] max-w-[11ch] text-balance mb-6"
+              className="font-serif text-5xl sm:text-7xl lg:text-[82px] font-normal leading-[0.93] tracking-[-0.03em] text-[#FFFFFF] max-w-[11ch] text-balance mb-6"
             >
               The AI notepad for back-to-back meetings
             </motion.h1>
@@ -49,7 +49,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className="text-lg sm:text-xl text-[#E2E4DE] font-normal leading-snug mb-8 max-w-md"
+              className="text-lg sm:text-xl text-[#D1D1D6] font-normal leading-snug mb-8 max-w-md"
             >
               <p>Notes, actions and memory.</p>
               <p>Without a meeting bot.</p>
@@ -71,7 +71,7 @@ export default function Hero() {
               </a>
 
               {/* Platform availability note */}
-              <div className="flex items-center gap-2 text-[13px] text-[#C4C7C0] pt-1">
+              <div className="flex items-center gap-2 text-[13px] text-[#A1A1A6] pt-1">
                 <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
                 <span>Available for macOS, Windows, Chrome &amp; Local Ollama</span>
               </div>
@@ -98,8 +98,8 @@ export default function Hero() {
               </div>
 
               {/* Layer 1B: Dark abstract burst / energy poster (Right background) */}
-              <div className="absolute -right-4 top-2 w-48 sm:w-56 h-80 sm:h-96 rounded-2xl bg-[#1E211E] overflow-hidden shadow-2xl rotate-6 transform -z-10 border border-white/10">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-600/35 via-red-900/25 to-black/90" />
+              <div className="absolute -right-4 top-2 w-48 sm:w-56 h-80 sm:h-96 rounded-2xl bg-[#0D0D0E] overflow-hidden shadow-2xl rotate-6 transform -z-10 border border-white/10">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-600/35 via-red-900/25 to-black/95" />
                 <div className="absolute inset-0 opacity-40 mix-blend-screen bg-[radial-gradient(#ff9e42_1px,transparent_1px)] [background-size:8px_8px]" />
                 <div className="absolute top-4 right-4 text-white/40 font-mono text-[10px] tracking-widest">
                   100% PRIVATE
@@ -107,7 +107,7 @@ export default function Hero() {
               </div>
 
               {/* Layer 1C: Watermark typographic backdrop card (Bottom background) */}
-              <div className="absolute -bottom-6 left-12 w-64 h-32 rounded-xl bg-[#282C28] -z-10 rotate-2 border border-white/10 p-4 flex items-end justify-between opacity-80">
+              <div className="absolute -bottom-6 left-12 w-64 h-32 rounded-xl bg-[#121214] -z-10 rotate-2 border border-white/10 p-4 flex items-end justify-between opacity-80">
                 <span className="font-serif text-5xl text-white/10 font-bold select-none">2026</span>
                 <span className="font-mono text-xs text-white/30 tracking-widest uppercase">Local Engine</span>
               </div>
@@ -266,7 +266,7 @@ export default function Hero() {
               </div>
 
               {/* Layer 3: Overlaid Floating Video Call Overlay Widget */}
-              <div className="absolute -bottom-4 -right-2 sm:-right-5 z-20 w-32 sm:w-36 bg-[#161618] border border-white/10 rounded-xl p-2 shadow-2xl flex flex-col gap-1.5">
+              <div className="absolute -bottom-4 -right-2 sm:-right-5 z-20 w-32 sm:w-36 bg-[#0D0D0E] border border-white/10 rounded-xl p-2 shadow-2xl flex flex-col gap-1.5">
                 
                 {/* Participant 1 Video Tile */}
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-[#242428] border border-white/5 flex items-center justify-center">
