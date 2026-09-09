@@ -64,17 +64,17 @@ export default function Navbar() {
           }`}
         >
           {/* Left: Brand Logo Wordmark */}
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
+          <div className="flex items-center">
+            <Link href="/" className="inline-flex items-center gap-2 group cursor-pointer select-none">
               <Image
-                src="/logo.png"
+                src="/logo-clean.png"
                 alt="Bacham"
-                width={26}
-                height={26}
-                className="object-contain transition-transform group-hover:scale-105"
+                width={17}
+                height={20}
+                className="w-auto h-[20px] -mt-[1.5px] object-contain transition-transform group-hover:scale-105"
                 priority
               />
-              <span className="font-serif text-[21px] font-normal tracking-[-0.02em] text-[#FFFFFF]">
+              <span className="font-serif text-[21px] font-normal leading-none tracking-[-0.02em] text-[#FFFFFF]">
                 Bacham
               </span>
             </Link>

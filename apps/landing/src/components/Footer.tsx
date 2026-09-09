@@ -14,9 +14,15 @@ export default function Footer() {
           
           {/* Brand Info */}
           <div className="md:col-span-5 space-y-3">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <Image src="/logo.png" alt="Bacham Logo" width={26} height={26} className="object-contain transition-transform group-hover:scale-105" />
-              <span className="font-serif text-2xl font-normal tracking-tight text-[#FFFFFF]">
+            <Link href="/" className="inline-flex items-center gap-2 group">
+              <Image
+                src="/logo-clean.png"
+                alt="Bacham Logo"
+                width={20}
+                height={24}
+                className="w-auto h-[22px] -mt-[1px] object-contain transition-transform group-hover:scale-105"
+              />
+              <span className="font-serif text-2xl font-normal leading-none tracking-tight text-[#FFFFFF]">
                 Bacham
               </span>
             </Link>
