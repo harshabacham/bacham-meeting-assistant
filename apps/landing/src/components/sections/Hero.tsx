@@ -82,10 +82,10 @@ export default function Hero() {
               <span
                 className="text-[#D1E043]"
                 style={{
-                  fontFamily: 'var(--font-syne)',
-                  fontWeight: 800,
-                  fontSize: '0.9em',
-                  letterSpacing: '-0.01em',
+                  fontFamily: 'var(--font-dancing)',
+                  fontWeight: 700,
+                  fontSize: '1.15em',
+                  letterSpacing: '0.01em',
                 }}
               >
                 Bacham remembers the rest.
