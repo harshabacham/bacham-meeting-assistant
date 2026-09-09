@@ -44,7 +44,7 @@ export default function WhyItExists() {
   ];
 
   return (
-    <section id="comparison" className="py-24 md:py-32 bg-[#000000] relative overflow-hidden">
+    <section id="why-it-exists" className="py-24 md:py-32 bg-[#000000] relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}
@@ -58,10 +58,10 @@ export default function WhyItExists() {
           <span className="text-[11.5px] font-black uppercase tracking-wider text-[#D1E043] select-none mb-2 block">
             The Bacham Advantage
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#FFFFFF] leading-tight mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-[44px] font-normal tracking-[-0.02em] text-[#FFFFFF] leading-[1.15] mb-4">
             Why professionals and students are kicking out meeting bots
           </h2>
-          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed">
+          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed max-w-2xl mx-auto">
             Stop sending awkward bots to client calls. Capture notes with dual-stream clarity, zero monthly fees, and 100% local privacy.
           </p>
 
@@ -83,10 +83,10 @@ export default function WhyItExists() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="rounded-2xl bg-[#0D0D0E] border border-white/10 p-7 sm:p-8 flex flex-col justify-between shadow-lg relative overflow-hidden"
           >
-            <NoBotsSticker className="absolute -top-3 right-4 rotate-6 z-20" />
+            <NoBotsSticker className="absolute -top-3 right-4 rotate-6 z-20 scale-90" />
 
             <div>
-              <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-6 pt-4 sm:pt-2">
                 <div className="w-9 h-9 rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 flex items-center justify-center shrink-0">
                   <Bot size={18} />
                 </div>
@@ -126,11 +126,11 @@ export default function WhyItExists() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="rounded-2xl bg-[#121214] border-2 border-[#D1E043]/40 p-7 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden"
           >
-            <WashiTape color="lime" className="absolute -top-2 right-12 rotate-[2deg] z-20" />
-            <LocalSsdSticker className="absolute -top-3 left-4 -rotate-3 z-20" />
+            <WashiTape color="lime" className="absolute -top-2 left-10 -rotate-[2deg] z-20" />
+            <LocalSsdSticker className="absolute -top-3.5 right-6 rotate-2 z-20 scale-90" />
 
             <div>
-              <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-6 pt-3 sm:pt-0">
+              <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-6 pt-4 sm:pt-2">
                 <div className="w-9 h-9 rounded-xl bg-[#D1E043] text-[#1E1E1E] flex items-center justify-center shrink-0 shadow-xs font-bold">
                   <EyeOff size={18} />
                 </div>

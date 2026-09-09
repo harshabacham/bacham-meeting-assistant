@@ -14,7 +14,7 @@ export function EcosystemBar() {
 
   const models = [
     { name: "Whisper v3 (Local)", desc: "100% Offline Speech-to-Text" },
-    { name: "Ollama (DeepSeek / Llama 3)", desc: "Local On-Device Reasoning" },
+    { name: "Ollama (Local Models)", desc: "DeepSeek, Llama 3 & Gemma" },
     { name: "Anthropic Claude 3.5", desc: "Executive Synthesis via BYOK" },
     { name: "OpenAI GPT-4o", desc: "Zero Data Retention API" },
     { name: "Groq LPU", desc: "Sub-Second Live Streaming" },

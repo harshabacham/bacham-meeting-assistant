@@ -63,15 +63,15 @@ export default function FeaturesGrid() {
             <WashiTape color="lime" className="absolute -top-2 right-12 rotate-[2deg] z-20" />
 
             <div>
-              <div className="flex items-center justify-between gap-3 mb-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-white/10 text-[#D1E043] border border-white/15 flex items-center justify-center shrink-0 shadow-2xs">
                   <Mic size={18} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <DualStreamSticker className="scale-90 -rotate-2" />
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-[#D1D1D6] border border-white/15">
+                <div className="flex items-center gap-3">
+                  <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-[#D1D1D6] border border-white/15">
                     Dual-Stream WASAPI &amp; CoreAudio
                   </span>
+                  <DualStreamSticker className="scale-85 -rotate-2 shrink-0" />
                 </div>
               </div>
 

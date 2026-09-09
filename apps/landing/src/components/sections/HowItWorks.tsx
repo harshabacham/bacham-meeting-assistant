@@ -171,15 +171,15 @@ export default function HowItWorks() {
 
             {/* Right: Tactile Notepad Preview Mockup with Stickers */}
             <div className="relative w-full bg-[#FAF9F5] border border-[#E8E6DE] rounded-2xl p-6 shadow-2xl flex flex-col justify-between text-[#1E1E1E]">
-              <WashiTape color="lime" className="absolute -top-2 right-10 rotate-[3deg] z-20" />
+              <WashiTape color="lime" className="absolute -top-2 left-10 rotate-[-2deg] z-20" />
               {activeStage === "after" && (
-                <StudyModeSticker className="absolute -bottom-4 -right-4 z-30 scale-85 rotate-6" />
+                <StudyModeSticker className="absolute -top-4 right-6 z-30 scale-85 rotate-3" />
               )}
               {activeStage === "during" && (
-                <DualStreamSticker className="absolute -bottom-4 -right-4 z-30 scale-85 -rotate-6" />
+                <DualStreamSticker className="absolute -top-4 right-6 z-30 scale-85 -rotate-3" />
               )}
               {activeStage === "before" && (
-                <LocalSsdSticker className="absolute -bottom-4 -right-4 z-30 scale-85 rotate-3" />
+                <LocalSsdSticker className="absolute -top-4 right-6 z-30 scale-85 rotate-2" />
               )}
 
               <div>

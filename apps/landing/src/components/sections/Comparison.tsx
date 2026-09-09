@@ -277,7 +277,7 @@ export default function Comparison() {
   const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
 
   return (
-    <section id="comparison" className="py-24 md:py-32 bg-[#000000] border-t border-white/10 relative overflow-hidden">
+    <section id="comparison" className="py-24 md:py-32 bg-[#000000] border-t border-white/10 relative overflow-hidden scroll-mt-16">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#D1E043]/[0.03] rounded-full blur-[140px] pointer-events-none" />
 
@@ -293,13 +293,13 @@ export default function Comparison() {
           >
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#D1E043]/10 border border-[#D1E043]/25 text-[#D1E043] text-xs font-bold uppercase tracking-wider mb-4 shadow-[0_0_20px_rgba(209,224,67,0.15)]">
               <Code2 size={13} className="text-[#D1E043]" />
-              <span>100% Free & Open Source Alternative</span>
+              <span>100% Free &amp; Open Source Alternative</span>
             </div>
 
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white leading-tight tracking-[-0.02em] mb-4">
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white leading-tight tracking-[-0.02em] mb-4 text-balance">
               See how Bacham stacks up against the rest
             </h2>
-            <p className="text-[#A1A1A6] text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
+            <p className="text-[#A1A1A6] text-base sm:text-lg leading-relaxed max-w-2xl mx-auto text-balance">
               Commercial meeting tools charge up to <span className="text-white font-medium">$380/year</span> and send your private audio to corporate servers. Bacham is completely <span className="text-[#D1E043] font-semibold">open source</span>, 100% local, and free forever.
             </p>
           </motion.div>
