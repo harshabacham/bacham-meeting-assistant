@@ -1,109 +1,107 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Lock, Shield, HardDrive, WifiOff, Code2, CheckCircle2 } from "lucide-react";
 
 export default function Privacy() {
-  const lineVariants: any = {
-    hidden: { pathLength: 0, opacity: 0 },
-    show: { 
-      pathLength: 1, 
-      opacity: 1,
-      transition: { duration: 1.5, ease: "easeInOut" }
-    }
-  };
-
-  const nodeVariants: any = {
-    hidden: { scale: 0, opacity: 0 },
-    show: { scale: 1, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 15 } }
-  };
+  const pillars = [
+    {
+      icon: WifiOff,
+      title: "100% Offline Air-Gapped Operation",
+      desc: "Bacham doesn't require an internet connection to transcribe speech, detect decisions, or organize meeting notes when using local Whisper and Ollama.",
+    },
+    {
+      icon: HardDrive,
+      title: "Local SQLite Storage & Embeddings",
+      desc: "Transcripts, summaries, action items, and slide images stay encrypted on your local drive. You own your data in standard SQLite and JSON formats.",
+    },
+    {
+      icon: Code2,
+      title: "Auditable Open-Source Architecture",
+      desc: "No hidden telemetry trackers or proprietary telemetry daemons. The entire Tauri Rust and TypeScript codebase is open and inspectable on GitHub.",
+    },
+  ];
 
   return (
-    <section id="privacy" className="py-32 border-t border-white/5 bg-transparent overflow-hidden">
-      <div className="container mx-auto px-6 text-center">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
-          className="mb-20"
-        >
-          <h2 className="text-3xl md:text-5xl font-serif tracking-tight text-[#F5F5F5] mb-6">
-            Architecture, not marketing.
-          </h2>
-          <p className="text-xl font-mono text-[#A6FF00]">
-            No cloud. No server. No tracking.
+    <section id="privacy" className="py-24 md:py-32 border-t border-white/[0.06] bg-transparent relative">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none mb-2">
+            Data Sovereignty
           </p>
-        </motion.div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FAF9F5] leading-tight mb-4">
+            Security by Architecture, Not Marketing Promises
+          </h2>
+          <p className="text-base sm:text-lg text-[#8E9099] leading-relaxed">
+            Your conversations contain trade secrets, financial models, and strategic plans. Bacham is built to ensure they never leave your computer.
+          </p>
+        </div>
 
-        {/* Animated SVG Diagram */}
-        <div className="max-w-4xl mx-auto relative h-64 md:h-80 flex items-center justify-center">
-          <motion.svg 
-            viewBox="0 0 1000 300" 
-            className="w-full h-full absolute inset-0 z-0"
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            {/* Base faded lines */}
-            <path d="M 150 150 L 350 150 L 650 150 L 850 150" stroke="rgba(255,255,255,0.05)" strokeWidth="2" fill="none" />
-            <path d="M 650 150 L 650 250 L 850 250" stroke="rgba(255,255,255,0.05)" strokeWidth="2" fill="none" />
-
-            {/* Animated primary flow */}
-            <motion.path 
-              variants={lineVariants}
-              d="M 150 150 L 350 150 L 650 150 L 850 150" 
-              stroke="#A6FF00" 
-              strokeWidth="3" 
-              fill="none" 
-              strokeLinecap="round"
-            />
-            
-            <motion.path 
-              variants={lineVariants}
-              d="M 650 150 L 650 250 L 850 250" 
-              stroke="#A6FF00" 
-              strokeWidth="2" 
-              strokeDasharray="6 6"
-              fill="none" 
-              strokeLinecap="round"
-            />
-          </motion.svg>
-
-          {/* Nodes */}
-          <div className="absolute inset-0 flex items-center justify-between z-10 px-4 md:px-0 max-w-[800px] mx-auto w-full">
-            <Node title="Browser Ext" delay={0} />
-            <Node title="Desktop App" delay={0.4} />
-            <Node title="Local SQLite" delay={0.8} />
-            <Node title="Done." delay={1.2} highlight />
+        {/* Visual Architecture Pipeline */}
+        <div className="rounded-2xl bg-[#111317] border border-white/[0.08] p-6 sm:p-8 mb-12 shadow-xl">
+          <div className="text-xs font-mono text-[#8E9099] uppercase tracking-wider mb-6 flex items-center justify-between pb-3 border-b border-white/[0.06]">
+            <span>Local Ingestion Pipeline</span>
+            <span className="text-[#E2B774] font-semibold flex items-center gap-1.5">
+              <Lock size={12} />
+              Sandboxed On-Device
+            </span>
           </div>
 
-          <div className="absolute inset-0 flex items-end justify-end z-10 px-4 md:px-0 max-w-[800px] mx-auto w-full pb-2 md:pb-6">
-             <div className="mr-8">
-               <Node title="Gemini API (Optional)" delay={1.0} small />
-             </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
+              <span className="text-[10px] font-mono text-[#E2B774]">01 · SOURCE</span>
+              <h4 className="text-sm font-bold text-[#FAF9F5] mt-2 mb-1">Hardware Capture</h4>
+              <p className="text-xs text-[#8E9099]">Direct WASAPI &amp; CoreAudio loopback stream without virtual cable bloat.</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
+              <span className="text-[10px] font-mono text-[#E2B774]">02 · INFERENCE</span>
+              <h4 className="text-sm font-bold text-[#FAF9F5] mt-2 mb-1">Local Whisper Engine</h4>
+              <p className="text-xs text-[#8E9099]">Zero cloud streaming. Speech-to-text converted directly into local RAM.</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between">
+              <span className="text-[10px] font-mono text-[#E2B774]">03 · SYNTHESIS</span>
+              <h4 className="text-sm font-bold text-[#FAF9F5] mt-2 mb-1">Local Ollama / BYOK</h4>
+              <p className="text-xs text-[#8E9099]">Extracts decisions &amp; action items on your hardware or via personal API keys.</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#E2B774]/10 border border-[#E2B774]/30 flex flex-col justify-between">
+              <span className="text-[10px] font-mono text-[#E2B774]">04 · VAULT</span>
+              <h4 className="text-sm font-bold text-[#FAF9F5] mt-2 mb-1">Encrypted SQLite DB</h4>
+              <p className="text-xs text-[#8E9099]">All notes, embeddings, and snapshots stored exclusively on your SSD.</p>
+            </div>
+
           </div>
         </div>
+
+        {/* 3 Pillars */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {pillars.map((p, idx) => {
+            const Icon = p.icon;
+            return (
+              <motion.div
+                key={p.title}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+                className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/15 transition-all"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#E2B774]/15 text-[#E2B774] border border-[#E2B774]/20 flex items-center justify-center mb-4">
+                  <Icon size={18} />
+                </div>
+                <h3 className="text-base font-bold text-[#FAF9F5] mb-2">{p.title}</h3>
+                <p className="text-xs sm:text-[13px] text-[#8E9099] leading-relaxed">{p.desc}</p>
+              </motion.div>
+            );
+          })}
+        </div>
+
       </div>
     </section>
   );
-
-  function Node({ title, delay, highlight, small }: { title: string, delay: number, highlight?: boolean, small?: boolean }) {
-    return (
-      <motion.div 
-        variants={nodeVariants}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true }}
-        transition={{ delay, type: "spring", stiffness: 100, damping: 15 }}
-        className={`
-          flex items-center justify-center text-center
-          ${small ? 'px-4 py-2 text-xs' : 'px-6 py-3 text-sm md:text-base'}
-          ${highlight ? 'bg-[#A6FF00] text-[#111111] font-bold' : 'bg-[#1E1E1E] text-[#F5F5F5] border border-white/10'}
-          rounded-xl shadow-lg
-        `}
-      >
-        {title}
-      </motion.div>
-    );
-  }
 }

@@ -1,16 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-bg: #111111;
-  --color-brand-surface: #1E1E1E;
-  --color-brand-accent: #A6FF00;
-  --color-brand-text: #F5F5F5;
-  --color-brand-text-muted: #A0A0A0;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+
+  --color-brand-bg: #090A0C;
+  --color-brand-surface: #121316;
+  --color-brand-surface-raised: #18191E;
+  --color-brand-border: rgba(255, 255, 255, 0.08);
+  --color-brand-border-highlight: rgba(255, 255, 255, 0.15);
+  --color-brand-accent: #E2B774;
+  --color-brand-accent-dim: rgba(226, 183, 116, 0.12);
+  --color-brand-text: #FAF9F5;
+  --color-brand-text-muted: #8E9099;
 }
 
 :root {
-  --background: var(--color-brand-bg);
-  --foreground: var(--color-brand-text);
+  --background: #090A0C;
+  --foreground: #FAF9F5;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -27,13 +35,46 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.glass-nav {
-  background: rgba(17, 17, 17, 0.7);
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090A0C;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.glass-pill {
+  background: rgba(18, 19, 22, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(18, 19, 22, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
 }

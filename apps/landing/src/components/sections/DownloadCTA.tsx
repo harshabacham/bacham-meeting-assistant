@@ -1,46 +1,138 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, AppWindow, Code2, BookOpen } from "lucide-react";
+import { Download, Apple, Laptop, Terminal, ExternalLink, ShieldCheck } from "lucide-react";
+import { ChromeIcon } from "@/components/ui/ChromeIcon";
 
 export default function DownloadCTA() {
+  const releasesUrl = "https://github.com/harshabacham/bacham-meeting-assistant/releases";
+
+  const platforms = [
+    {
+      name: "Windows 10 / 11",
+      icon: Laptop,
+      format: ".msi / .exe Installer",
+      badge: "Desktop Shortcut & Tray Autostart",
+      href: releasesUrl,
+      recommended: true,
+    },
+    {
+      name: "macOS",
+      icon: Apple,
+      format: "Universal DMG (Apple Silicon & Intel)",
+      badge: "CoreAudio Loopback",
+      href: releasesUrl,
+      recommended: false,
+    },
+    {
+      name: "Linux",
+      icon: Terminal,
+      format: ".deb / AppImage",
+      badge: "ALSA & PulseAudio Support",
+      href: releasesUrl,
+      recommended: false,
+    },
+    {
+      name: "Chrome Extension",
+      icon: ChromeIcon,
+      format: "Web Store / CRX Package",
+      badge: "Google Meet & Tab Capture",
+      href: releasesUrl,
+      recommended: false,
+    },
+  ];
+
   return (
-    <section id="download" className="py-32 border-t border-white/5 bg-transparent">
-      <div className="container mx-auto px-6 text-center">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6 }}
-        >
-          <h2 className="text-4xl md:text-6xl font-serif tracking-tight text-[#F5F5F5] mb-8">
-            Ready to upgrade your study sessions?
-          </h2>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <a href="/downloads/bacham-desktop.dmg" download className="w-full sm:w-auto px-8 py-4 bg-[#BAFF29] text-[#0A0A0C] font-semibold rounded-full flex items-center justify-center gap-2 hover:bg-[#c9ff4d] transition-colors shadow-lime">
-              <Download size={20} />
-              Download Desktop
-            </a>
-            <a href="/downloads/bacham-extension.zip" download className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-[#F5F5F5] font-semibold rounded-full flex items-center justify-center gap-2 hover:bg-white/10 transition-colors">
-              <AppWindow size={20} />
-              Chrome Extension
-            </a>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 text-[#A0A0A0] text-sm mb-16">
-            <a href="#github" className="flex items-center gap-2 hover:text-[#F5F5F5] transition-colors">
-              <Code2 size={16} /> GitHub
-            </a>
-            <a href="#docs" className="flex items-center gap-2 hover:text-[#F5F5F5] transition-colors">
-              <BookOpen size={16} /> Documentation
-            </a>
-          </div>
-
-          <p className="text-xs text-white/30 max-w-sm mx-auto uppercase tracking-wider">
-            System Requirements: macOS 13.0 or later.
+    <section id="downloads" className="py-24 md:py-32 border-t border-white/[0.06] bg-[#0A0B0E]/60 relative">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none mb-2">
+            Get Started Free
           </p>
-        </motion.div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FAF9F5] leading-tight mb-4">
+            Download Bacham For Your Operating System
+          </h2>
+          <p className="text-base sm:text-lg text-[#8E9099] leading-relaxed">
+            Install the native desktop application and companion Chrome Extension. No registration or credit card required.
+          </p>
+        </div>
+
+        {/* Platform Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          {platforms.map((p, idx) => {
+            const Icon = p.icon;
+            return (
+              <motion.div
+                key={p.name}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.08, duration: 0.4 }}
+                className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden group ${
+                  p.recommended
+                    ? "bg-[#14161B] border-[#E2B774]/40 shadow-[0_8px_30px_rgba(226,183,116,0.08)]"
+                    : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/15"
+                }`}
+              >
+                {p.recommended && (
+                  <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-[#E2B774]/20 text-[#E2B774] border border-[#E2B774]/30">
+                    Recommended
+                  </span>
+                )}
+
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#FAF9F5] mb-4 group-hover:border-[#E2B774]/40 transition-colors">
+                    <Icon size={20} className={p.recommended ? "text-[#E2B774]" : "text-[#FAF9F5]"} />
+                  </div>
+
+                  <h3 className="text-base font-bold text-[#FAF9F5] mb-1">{p.name}</h3>
+                  <p className="text-xs text-[#8E9099] mb-3">{p.format}</p>
+
+                  <span className="inline-block text-[10px] font-medium text-[#8E9099] px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.05]">
+                    {p.badge}
+                  </span>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/[0.05]">
+                  <a
+                    href={p.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      p.recommended
+                        ? "bg-[#E2B774] hover:bg-[#d8a863] text-[#090A0C] shadow-sm"
+                        : "bg-white/[0.05] hover:bg-white/[0.1] text-[#FAF9F5] border border-white/[0.08]"
+                    }`}
+                  >
+                    <Download size={13} strokeWidth={2.5} />
+                    <span>Download</span>
+                    <ExternalLink size={11} className="opacity-50" />
+                  </a>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Verification Guarantee */}
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8E9099] max-w-4xl mx-auto">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} className="text-[#E2B774] shrink-0" />
+            <span>Open Source under MIT License · SHA-256 Checksums available on GitHub</span>
+          </div>
+          <a
+            href={releasesUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#E2B774] hover:underline font-semibold flex items-center gap-1 shrink-0"
+          >
+            <span>View All Releases &amp; Changelog</span>
+            <ExternalLink size={12} />
+          </a>
+        </div>
+
       </div>
     </section>
   );
