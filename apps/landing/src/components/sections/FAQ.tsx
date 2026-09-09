@@ -22,6 +22,10 @@ const faqs = [
     a: "You have complete freedom. You can run offline models via Ollama or supply your own personal API keys for Anthropic Claude 3.5 Sonnet, OpenAI GPT-4o, Groq, or Google Gemini. Bacham charges zero markup on your API usage.",
   },
   {
+    q: "How does the 1-click study flashcards & quiz generator work?",
+    a: "Bacham analyzes technical concepts, key decisions, and speaker explanations throughout your calls or university lectures. In one click, it synthesizes interactive spaced-repetition flashcards and multiple-choice quizzes linked directly to exact conversational timestamps ([00:15]) for instant audio replay.",
+  },
+  {
     q: "Where is my data stored and can I export it?",
     a: "All transcripts, audio files, embeddings, and notes are stored strictly in your local SQLite database on your SSD. You can export meeting summaries to Markdown, PDF, Notion, or Slack with one click.",
   },

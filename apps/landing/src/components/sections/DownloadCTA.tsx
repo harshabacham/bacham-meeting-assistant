@@ -66,8 +66,8 @@ export default function DownloadCTA() {
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#FFFFFF] leading-tight mb-4">
             Download Bacham for your device
           </h2>
-          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed">
-            Install the native desktop application and companion Chrome extension. 100% free, MIT open-source, zero credit card required.
+          <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed max-w-2xl mx-auto">
+            Dual-stream audio capture. Notes, timestamped actions, and 1-click study flashcards. Without an uninvited meeting bot. 100% on your SSD.
           </p>
 
           <DoodleAnnotation

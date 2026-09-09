@@ -23,7 +23,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-xs sm:text-[13.5px] text-[#A1A1A6] leading-relaxed max-w-sm">
-              The AI notepad for back-to-back meetings. Notes, actions and memory. Without a meeting bot. Runs 100% locally on macOS and Windows.
+              The AI notepad for back-to-back meetings &amp; lectures. Dual-stream audio capture. Notes, timestamped actions, and 1-click study flashcards. Without an uninvited meeting bot. 100% on your SSD.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-medium text-[#D1E043]">
               <ShieldCheck size={15} />
@@ -106,7 +106,7 @@ export default function Footer() {
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#71717A]">
           <p>© {new Date().getFullYear()} Bacham. Open source under the MIT License.</p>
           <div className="flex items-center gap-2">
-            <span>Built for people in back-to-back meetings.</span>
+            <span>Built for people in back-to-back meetings &amp; lectures.</span>
           </div>
         </div>
 

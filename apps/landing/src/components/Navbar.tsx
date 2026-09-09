@@ -92,7 +92,7 @@ export default function Navbar() {
               </Link>
             ))}
             <div className="pt-3 mt-1 border-t border-white/10 flex items-center justify-between">
-              <span className="text-xs text-[#8E8E93]">Zero Bots · 100% Local</span>
+              <span className="text-xs text-[#8E8E93]">Dual-Stream · Zero Bots · 100% on your SSD</span>
               <Link
                 href="#downloads"
                 onClick={() => setMobileMenuOpen(false)}
