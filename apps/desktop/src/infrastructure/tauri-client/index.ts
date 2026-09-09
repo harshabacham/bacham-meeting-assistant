@@ -543,6 +543,12 @@ export const TauriClient = {
             callback(event.payload);
         });
     },
+    isExtensionConnected: () => invoke<boolean>('is_extension_connected'),
+    onExtensionStatusChanged: (callback: (connected: boolean) => void) => {
+        return listen<boolean>('extension-status-changed', (event) => {
+            callback(event.payload);
+        });
+    },
 
     // ── Missing Mocks/Backend methods ──────────────────────────────────────
     translateTranscript: (lectureId: string, targetLanguage: string) => invoke<void>('translate_transcript', { lectureId, targetLanguage }),

@@ -3,8 +3,9 @@ import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { useAnimatedTheme } from '@/components/ui/animated-theme-toggler';
 import { 
   Sun, Moon, Monitor, Globe, 
-  Calendar, Check, SlidersHorizontal, ChevronDown, Power
+  Calendar, Check, SlidersHorizontal, ChevronDown, Power, Chrome, ExternalLink
 } from 'lucide-react';
+import { TauriClient } from '@/infrastructure/tauri-client';
 import { enable as enableAutostart, disable as disableAutostart, isEnabled as isAutostartEnabled } from '@tauri-apps/plugin-autostart';
 
 export const GeneralSettingsTab: React.FC = () => {
@@ -30,6 +31,41 @@ export const GeneralSettingsTab: React.FC = () => {
       isMounted = false;
     };
   }, []);
+
+  const [isExtensionConnected, setIsExtensionConnected] = React.useState(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    TauriClient.isExtensionConnected()
+      .then((connected) => {
+        if (isMounted) setIsExtensionConnected(connected);
+      })
+      .catch(() => {
+        if (isMounted) setIsExtensionConnected(false);
+      });
+
+    let unlisten: (() => void) | undefined;
+    TauriClient.onExtensionStatusChanged((connected) => {
+      if (isMounted) setIsExtensionConnected(connected);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+
+    return () => {
+      isMounted = false;
+      if (unlisten) unlisten();
+    };
+  }, []);
+
+  const handleOpenExtensionDocs = async () => {
+    const url = 'https://github.com/harshabacham/bacham-meeting-assistant#browser-extension';
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(url);
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
 
   const handleToggleAutostart = async (checked: boolean) => {
     setAutostartEnabled(checked);
@@ -190,6 +226,44 @@ export const GeneralSettingsTab: React.FC = () => {
             />
             <div className="w-11 h-6 bg-surface-raised border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner disabled:opacity-50"></div>
           </label>
+        </div>
+      </div>
+
+      {/* Browser Extension Companion */}
+      <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              <Chrome size={16} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-foreground">Browser Extension Companion</h3>
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                  isExtensionConnected
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    : 'bg-surface-raised text-muted-foreground border-border'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    isExtensionConnected ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'
+                  }`} />
+                  {isExtensionConnected ? 'Connected (ws://127.0.0.1:1421)' : 'Not Connected'}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Captures Google Meet, Zoom web audio, and active browser tab notes directly into your local database.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleOpenExtensionDocs}
+            className="px-3.5 py-1.5 rounded-xl border border-border bg-surface-raised hover:bg-surface-hover hover:border-foreground/20 text-xs font-semibold text-foreground transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <span>{isExtensionConnected ? 'Companion Docs' : 'Install Extension'}</span>
+            <ExternalLink size={13} className="text-muted-foreground" />
+          </button>
         </div>
       </div>
 

@@ -16,6 +16,7 @@ import {
   ArrowRight,
   HelpCircle,
   RefreshCw,
+  Monitor,
 } from 'lucide-react';
 import { MicrophoneGuideModal } from '../components/MicrophoneGuideModal';
 import { offlineMediaVault } from '@/infrastructure/storage/offlineMediaVault';
@@ -90,6 +91,18 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
   const [offlinePendingCount, setOfflinePendingCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isDesktopConnected, setIsDesktopConnected] = useState<boolean>(false);
+  const [dismissedDesktopBanner, setDismissedDesktopBanner] = useState<boolean>(true);
+
+  useEffect(() => {
+    chrome.storage?.local?.get(['dismissed_desktop_prompt'], (res) => {
+      setDismissedDesktopBanner(!!res?.dismissed_desktop_prompt);
+    });
+  }, []);
+
+  const handleDismissDesktopBanner = () => {
+    setDismissedDesktopBanner(true);
+    chrome.storage?.local?.set({ dismissed_desktop_prompt: true });
+  };
 
   const checkDesktopStatus = React.useCallback(async () => {
     try {
@@ -254,6 +267,51 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
       {/* Main Content Area */}
       <div className="flex-1 px-5 space-y-4 overflow-y-auto pr-4">
         
+        {/* Companion App Banner (If desktop app is not connected and banner wasn't dismissed) */}
+        <AnimatePresence>
+          {!isDesktopConnected && !dismissedDesktopBanner && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-1"
+            >
+              <div className="p-3.5 rounded-xl bg-[#141517] border border-white/[0.08] shadow-sm flex flex-col gap-2 relative">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-[#BAFF29]/10 text-[#BAFF29] border border-[#BAFF29]/20 flex items-center justify-center shrink-0">
+                      <Monitor size={12} />
+                    </div>
+                    <span className="text-[12px] font-bold text-white tracking-tight">Get Bacham Desktop App</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDismissDesktopBanner}
+                    className="text-white/40 hover:text-white transition-colors cursor-pointer p-0.5 rounded"
+                    title="Dismiss"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                <p className="text-[10.5px] text-white/60 leading-relaxed">
+                  Connect the desktop app for automated local AI summaries, notes workspace, and calendar sync.
+                </p>
+                <div className="flex items-center gap-2 pt-0.5">
+                  <a
+                    href="https://github.com/harshabacham/bacham-meeting-assistant/releases"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-1.5 px-3 rounded-lg bg-[#BAFF29] text-[#0A0A0C] text-[11px] font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-all cursor-pointer shadow-xs"
+                  >
+                    <span>Download Desktop App</span>
+                    <ArrowRight size={11} />
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* 2. Top Capture Config Bar: Video/Audio Switch + Mic Toggle */}
         <div className="flex items-center gap-2 relative z-30">
           

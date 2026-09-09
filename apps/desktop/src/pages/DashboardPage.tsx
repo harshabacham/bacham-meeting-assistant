@@ -8,7 +8,7 @@ import { useAuthStore } from "@/shared/stores/authStore";
 import { useLearningContext } from "@/shared/hooks/useLearningContext";
 import { ArrowIcon } from "@/components/ui/skiper-ui/skiper99";
 import { Folder } from "@/components/ui/Folder";
-import { Clock, ChevronRight, Bookmark, Zap, BookOpen, CheckSquare } from "lucide-react";
+import { Clock, ChevronRight, Bookmark, Zap, BookOpen, CheckSquare, Chrome, X, ArrowRight } from "lucide-react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import { ComingUpCalendarWidget } from "@/components/dashboard/ComingUpCalendarWidget";
@@ -152,6 +152,43 @@ export function DashboardPage() {
     init();
   }, [fetchLectures, fetchFolders]);
 
+  const [isExtensionConnected, setIsExtensionConnected] = useState<boolean>(true);
+  const [dismissedExtensionBanner, setDismissedExtensionBanner] = useState<boolean>(() => {
+    return localStorage.getItem('bacham_dismissed_extension_banner') === 'true';
+  });
+
+  useEffect(() => {
+    TauriClient.isExtensionConnected()
+      .then((connected) => setIsExtensionConnected(connected))
+      .catch(() => setIsExtensionConnected(false));
+
+    let unlisten: (() => void) | undefined;
+    TauriClient.onExtensionStatusChanged((connected) => {
+      setIsExtensionConnected(connected);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, []);
+
+  const handleDismissExtensionBanner = () => {
+    setDismissedExtensionBanner(true);
+    localStorage.setItem('bacham_dismissed_extension_banner', 'true');
+  };
+
+  const handleOpenExtensionLink = async () => {
+    const url = 'https://github.com/harshabacham/bacham-meeting-assistant#browser-extension';
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell');
+      await open(url);
+    } catch {
+      window.open(url, '_blank');
+    }
+  };
+
   const { tasks: globalTasks, loading: loadingTasks, toggleTaskStatus } = useGlobalTasks();
   const myTasks = useMemo(() => {
     return globalTasks.filter(t => 
@@ -264,6 +301,59 @@ export function DashboardPage() {
               ) : null}
             </AnimatePresence>
           </motion.div>
+
+          {/* ── Chrome Extension Companion Banner ───────────────────── */}
+          <AnimatePresence>
+            {!isExtensionConnected && !dismissedExtensionBanner && (
+              <motion.div
+                initial={shouldReduceMotion ? {} : { opacity: 0, y: -6, height: 0 }}
+                animate={shouldReduceMotion ? {} : { opacity: 1, y: 0, height: 'auto' }}
+                exit={shouldReduceMotion ? {} : { opacity: 0, y: -6, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 shadow-[0_1px_3px_rgba(28,28,26,0.04)] relative">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center shrink-0 text-[var(--accent)]">
+                      <Chrome size={18} />
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-[var(--text-primary)]">
+                          Connect Bacham Chrome Extension
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--border)]">
+                          Companion
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-[var(--text-secondary)] truncate">
+                        Capture Google Meet, Zoom web, and browser tabs directly into your notes workspace.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleOpenExtensionLink}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0A0A0C] text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span>Install Extension</span>
+                      <ArrowRight size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDismissExtensionBanner}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] transition-colors cursor-pointer"
+                      title="Dismiss"
+                      aria-label="Dismiss extension companion banner"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ── Grid Layout ────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">

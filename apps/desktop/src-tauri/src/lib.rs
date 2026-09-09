@@ -228,6 +228,7 @@ pub fn run() {
             commands::native::fetch_url_with_auth,
             commands::native::fetch_custom,
             commands::capture::trigger_extension_recording,
+            crate::ws_server::is_extension_connected,
             commands::db_health_check,
             commands::logger_write,
             // Lectures

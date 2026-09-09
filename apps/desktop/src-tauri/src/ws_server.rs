@@ -90,6 +90,7 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
         let mut clients = WS_CLIENTS.lock().await;
         clients.push(tx.clone());
     }
+    let _ = state.app_handle.emit("extension-status-changed", true);
 
     let write_task = tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -155,6 +156,18 @@ async fn handle_connection(stream: TcpStream, state: WsServerState) {
             _ => {}
         }
     }
-    
+
     write_task.abort();
+    {
+        let mut clients = WS_CLIENTS.lock().await;
+        clients.retain(|c| !c.is_closed());
+        let has_clients = !clients.is_empty();
+        let _ = state.app_handle.emit("extension-status-changed", has_clients);
+    }
+}
+
+#[tauri::command]
+pub async fn is_extension_connected() -> Result<bool, String> {
+    let clients = WS_CLIENTS.lock().await;
+    Ok(!clients.is_empty())
 }
