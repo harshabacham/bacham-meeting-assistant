@@ -14,17 +14,14 @@ export default function Footer() {
           
           {/* Brand Info */}
           <div className="md:col-span-5 space-y-3">
-            <Link href="/" className="inline-flex items-center gap-2 group">
+            <Link href="/" className="inline-flex items-center group cursor-pointer select-none">
               <Image
-                src="/logo-clean.png"
+                src="/bacham-logo.png"
                 alt="Bacham Logo"
-                width={20}
-                height={24}
-                className="w-auto h-[22px] -mt-[1px] object-contain transition-transform group-hover:scale-105"
+                width={120}
+                height={32}
+                className="w-auto h-8 object-contain transition-transform group-hover:scale-105"
               />
-              <span className="font-serif text-2xl font-normal leading-none tracking-tight text-[#FFFFFF]">
-                Bacham
-              </span>
             </Link>
             <p className="text-xs sm:text-[13.5px] text-[#A1A1A6] leading-relaxed max-w-sm">
               The AI notepad for back-to-back meetings &amp; lectures. Dual-stream audio capture. Notes, timestamped actions, and 1-click study flashcards. Without an uninvited meeting bot. 100% on your SSD.
