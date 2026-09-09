@@ -13,10 +13,15 @@ pub mod ws_server;
 pub mod upload_server;
 pub mod integrations;
 
-use tauri::Manager;
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Manager,
+};
 
 pub fn run() {
     let is_native_messaging = std::env::args().any(|arg| arg.starts_with("chrome-extension://"));
+    let start_minimized = std::env::args().any(|arg| arg == "--minimized" || arg == "--autostart");
 
     let mut builder = tauri::Builder::default();
 
@@ -42,6 +47,10 @@ pub fn run() {
     }));
 
     builder = builder
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--minimized"])
+        ))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -54,6 +63,48 @@ pub fn run() {
     let builder = builder.setup(move |app| {
             let handle = app.handle().clone();
             
+            // Build system tray icon and menu
+            let open_item = MenuItemBuilder::with_id("open", "Open Bacham").build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
+            let tray_menu = MenuBuilder::new(app)
+                .items(&[&open_item, &quit_item])
+                .build()?;
+
+            let _tray = TrayIconBuilder::new()
+                .menu(&tray_menu)
+                .tooltip("Bacham Meeting Assistant")
+                .on_menu_event(|app, event| {
+                    match event.id().as_ref() {
+                        "open" => {
+                            if let Some(w) = app.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.unminimize();
+                                let _ = w.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.unminimize();
+                            let _ = w.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
             // Resolve DB Path from custom marker file if configured, otherwise default to Documents/BACHAM
             let default_bacham_dir = handle.path().document_dir().expect("Failed to resolve Documents dir").join("BACHAM");
             let bacham_dir = if let Ok(config_dir) = handle.path().app_config_dir() {
@@ -75,32 +126,34 @@ pub fn run() {
             let _ = crate::storage::initialize_layout(bacham_dir.clone());
             let db_path = bacham_dir.join("Data").join("bacham.sqlite");
             
-            // Ensure main window is present and visible
-            if let Some(main_window) = app.get_webview_window("main") {
-                let _ = main_window.show();
-                let _ = main_window.unminimize();
-                let _ = main_window.set_focus();
-            } else {
-                let main_window = tauri::webview::WebviewWindowBuilder::new(
-                    app,
-                    "main",
-                    tauri::WebviewUrl::default()
-                )
-                .title("BACHAM")
-                .inner_size(1200.0, 800.0)
-                .decorations(false)
-                .transparent(true)
-                .visible(true)
-                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .on_new_window(move |_url, _features| {
-                    tauri::webview::NewWindowResponse::Allow
-                })
-                .build()
-                .expect("Failed to build main window");
-                
-                let _ = main_window.show();
-                let _ = main_window.unminimize();
-                let _ = main_window.set_focus();
+            // Show main window immediately only if not starting minimized in background
+            if !start_minimized {
+                if let Some(main_window) = app.get_webview_window("main") {
+                    let _ = main_window.show();
+                    let _ = main_window.unminimize();
+                    let _ = main_window.set_focus();
+                } else {
+                    let main_window = tauri::webview::WebviewWindowBuilder::new(
+                        app,
+                        "main",
+                        tauri::WebviewUrl::default()
+                    )
+                    .title("BACHAM")
+                    .inner_size(1200.0, 800.0)
+                    .decorations(false)
+                    .transparent(true)
+                    .visible(true)
+                    .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .on_new_window(move |_url, _features| {
+                        tauri::webview::NewWindowResponse::Allow
+                    })
+                    .build()
+                    .expect("Failed to build main window");
+                    
+                    let _ = main_window.show();
+                    let _ = main_window.unminimize();
+                    let _ = main_window.set_focus();
+                }
             }
 
             #[cfg(target_os = "windows")]

@@ -3,11 +3,48 @@ import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { useAnimatedTheme } from '@/components/ui/animated-theme-toggler';
 import { 
   Sun, Moon, Monitor, Globe, 
-  Calendar, Check, SlidersHorizontal, ChevronDown
+  Calendar, Check, SlidersHorizontal, ChevronDown, Power
 } from 'lucide-react';
+import { enable as enableAutostart, disable as disableAutostart, isEnabled as isAutostartEnabled } from '@tauri-apps/plugin-autostart';
 
 export const GeneralSettingsTab: React.FC = () => {
   const { settings, updateSettings } = useSettingsStore();
+
+  const [autostartEnabled, setAutostartEnabled] = React.useState(false);
+  const [isLoadingAutostart, setIsLoadingAutostart] = React.useState(true);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    isAutostartEnabled()
+      .then((enabled) => {
+        if (isMounted) {
+          setAutostartEnabled(enabled);
+          setIsLoadingAutostart(false);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not check autostart status:", err);
+        if (isMounted) setIsLoadingAutostart(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleToggleAutostart = async (checked: boolean) => {
+    setAutostartEnabled(checked);
+    try {
+      if (checked) {
+        await enableAutostart();
+      } else {
+        await disableAutostart();
+      }
+    } catch (err) {
+      console.error("Failed to toggle system autostart:", err);
+      // Revert if failed
+      setAutostartEnabled(!checked);
+    }
+  };
 
   const { setTheme } = useAnimatedTheme({
     theme: (settings?.theme as any) || 'dark',
@@ -124,6 +161,34 @@ export const GeneralSettingsTab: React.FC = () => {
               onChange={(e) => updateSettings({ autoStartRecording: e.target.checked })}
             />
             <div className="w-11 h-6 bg-surface-raised border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+          </label>
+        </div>
+      </div>
+
+      {/* System Startup & Background */}
+      <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+              <Power size={16} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Launch on System Startup</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Automatically start Bacham quietly in the system tray when Windows boots so meetings are never missed
+              </p>
+            </div>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input 
+              type="checkbox" 
+              className="sr-only peer" 
+              disabled={isLoadingAutostart}
+              checked={autostartEnabled}
+              onChange={(e) => handleToggleAutostart(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-surface-raised border border-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner disabled:opacity-50"></div>
           </label>
         </div>
       </div>
