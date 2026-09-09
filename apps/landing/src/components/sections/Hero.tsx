@@ -62,7 +62,7 @@ export default function Hero() {
                 className="group inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 transition-all shadow-2xs cursor-pointer"
               >
                 <span className="px-2 py-0.5 text-[11px] font-black rounded-full bg-[#D1E043] text-[#1E1E1E] uppercase tracking-wider">
-                  NEW v0.1.0
+                  NEW v1.0.0
                 </span>
                 <span className="text-[13px] font-medium text-[#FFFFFF]">
                   Real-Time Meeting &amp; Lecture Copilot
@@ -73,26 +73,15 @@ export default function Hero() {
               <NoBotsSticker className="rotate-2" />
             </div>
 
-            {/* Display Headline */}
+            {/* Display Headline - Unified font family across entire hook */}
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-serif text-3xl sm:text-4xl lg:text-[48px] font-normal leading-[1.1] tracking-[-0.02em] text-[#FFFFFF] max-w-[20ch] text-balance mb-5"
+              className="font-serif text-3xl sm:text-4xl lg:text-[48px] font-normal leading-[1.12] tracking-[-0.02em] text-[#FFFFFF] max-w-[20ch] text-balance mb-5"
             >
               Your meetings had more than words.{' '}
-              <span
-                className="text-[#D1E043]"
-                style={{
-                  fontFamily: 'var(--font-caveat), cursive',
-                  fontWeight: 700,
-                  fontSize: '1.2em',
-                  letterSpacing: '0.01em',
-                  lineHeight: '1.2',
-                  display: 'inline-block',
-                  marginTop: '4px',
-                }}
-              >
+              <span className="text-[#D1E043] block mt-1">
                 Bacham remembers the rest.
               </span>
             </motion.h1>
@@ -166,7 +155,7 @@ export default function Hero() {
               <div className="absolute -left-6 top-8 w-44 sm:w-52 h-72 sm:h-80 rounded-2xl bg-[#CCD948] overflow-hidden shadow-2xl -rotate-6 transform -z-10 border border-[#b8c63b]/60">
                 <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#1E1E1E_1px,transparent_1px)] [background-size:12px_12px]" />
                 <div className="absolute bottom-4 left-4 font-mono text-[11px] text-[#1E1E1E]/70 uppercase tracking-widest font-bold">
-                  Bacham / v0.1.0
+                  Bacham / v1.0.0
                 </div>
                 <div className="absolute top-6 -right-6 w-24 h-24 rounded-full border-2 border-[#1E1E1E]/15" />
               </div>
