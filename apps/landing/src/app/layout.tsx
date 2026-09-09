@@ -75,6 +75,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${dancingScript.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Double+Ink&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-full flex flex-col bg-[#000000] text-[#FFFFFF] font-sans selection:bg-[#D1E043]/40 selection:text-[#000000] relative overflow-x-hidden">
         {/* Subtle Pure Black Ambient Lighting */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">

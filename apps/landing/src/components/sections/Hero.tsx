@@ -82,9 +82,9 @@ export default function Hero() {
               <span
                 className="text-[#D1E043]"
                 style={{
-                  fontFamily: 'var(--font-dancing)',
-                  fontWeight: 700,
-                  fontSize: '1.15em',
+                  fontFamily: '"Bitcount Prop Double Ink", sans-serif',
+                  fontWeight: 400,
+                  fontSize: '1.1em',
                   letterSpacing: '0.01em',
                 }}
               >
