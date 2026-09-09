@@ -1,479 +1,236 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
-  ArrowDown,
-  Calendar,
-  Users,
-  FolderPlus,
-  Mic,
-  Video,
-  PhoneOff,
   CheckCircle2,
-  Clock,
   Play,
-  RotateCcw,
-  Sparkles,
+  Mic,
+  Monitor,
+  Zap,
+  Camera,
+  FileText,
+  Clock,
 } from "lucide-react";
-import {
-  NoBotsSticker,
-  LocalSsdSticker,
-  StudyModeSticker,
-  DualStreamSticker,
-  WashiTape,
-  DoodleAnnotation,
-  StarburstSticker,
-} from "@/components/ui/CartoonStickers";
+
+const MIC_BARS   = [3,7,14,22,10,30,18,6,26,14,34,10,22,6,38,18,10,30,14,6,22,34,10,18,6,28,16,8,24,12];
+const SYS_BARS   = [6,14,10,22,34,6,18,30,14,6,26,38,10,22,14,6,30,18,6,34,14,10,22,6,18,10,28,20,8,16];
+
+const ARTIFACTS = [
+  { id:"decision",   icon:CheckCircle2, label:"Decision detected",    detail:"Use Supabase for auth · MVP scope",     time:"02:31", accent:"#4ADE80", pos:"top-[18%] left-[4%]",    floatDir:1,  delay:0.8 },
+  { id:"screenshot", icon:Camera,       label:"Screenshot captured",  detail:"Tab: Figma · 1920×1080",               time:"04:12", accent:"#60A5FA", pos:"top-[14%] right-[4%]",   floatDir:-1, delay:1.6 },
+  { id:"action",     icon:Zap,          label:"Action item",          detail:"@Maya — finalize loopback buffer",     time:"07:45", accent:"#D1E043", pos:"bottom-[28%] left-[3%]",  floatDir:1,  delay:2.2 },
+  { id:"notes",      icon:FileText,     label:"Live notes updated",   detail:"4 decisions · 3 tasks · 2 open Qs",   time:"09:03", accent:"#C084FC", pos:"bottom-[26%] right-[3%]", floatDir:-1, delay:2.8 },
+];
+
+const FULL_HEADLINE = "Your meetings had more than words.";
+const FULL_SUBHEAD  = "Bacham remembers the rest.";
 
 export default function Hero() {
-  const [activeTab, setActiveTab] = useState<"notes" | "transcript" | "flashcards">("notes");
-  const [revealedAnswer, setRevealedAnswer] = useState(false);
-  const [actionItemChecked, setActionItemChecked] = useState<Record<number, boolean>>({
-    0: false,
-    1: true,
-    2: false,
-  });
+  const [hlChars,  setHlChars]  = useState(0);
+  const [shChars,  setShChars]  = useState(0);
+  const [hlDone,   setHlDone]   = useState(false);
+  const [shDone,   setShDone]   = useState(false);
+  const [recSecs,  setRecSecs]  = useState(0);
+  const [waveSeed, setWaveSeed] = useState(0);
 
-  const toggleAction = (idx: number) => {
-    setActionItemChecked((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setHlChars(n => {
+        if (n >= FULL_HEADLINE.length) { clearInterval(id); setHlDone(true); return n; }
+        return n + 1;
+      });
+    }, 36);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!hlDone) return;
+    const id = setInterval(() => {
+      setShChars(n => {
+        if (n >= FULL_SUBHEAD.length) { clearInterval(id); setShDone(true); return n; }
+        return n + 1;
+      });
+    }, 52);
+    return () => clearInterval(id);
+  }, [hlDone]);
+
+  useEffect(() => {
+    const id = setInterval(() => setRecSecs(s => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setWaveSeed(s => s + 1), 110);
+    return () => clearInterval(id);
+  }, []);
+
+  const fmtTime = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2,"0")}:${String(s % 60).padStart(2,"0")}`;
+
+  const barH = (base: number, seed: number, i: number) => {
+    const jitter = Math.sin(seed * 0.7 + i * 1.3) * 0.45 + 0.55;
+    return Math.max(3, Math.round(base * jitter));
   };
 
   return (
-    <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-[#000000]">
-      <div className="max-w-7xl mx-auto px-4 md:px-10">
-        
-        {/* 2-Column Split: Editorial Copy on Left, Visual Layered Mockup on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-[52%_48%] gap-12 lg:gap-8 items-center">
-          
-          {/* Left Column: Granola-Style Typography + Trendy Cartoon Hook */}
-          <div className="flex flex-col items-start text-left relative z-10">
-            
-            {/* Pill Badge + Trending Sticker */}
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="inline-flex items-center gap-2.5 pl-2 pr-3.5 py-1.5 rounded-full bg-white/8 border border-white/12"
-              >
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-[#D1E043] text-[#1E1E1E] uppercase tracking-widest">OPEN SOURCE</span>
-                <span className="text-[12px] font-medium text-[#A1A1A6] tracking-wide">Local-first · Bot-free</span>
-              </motion.div>
+    <section className="relative min-h-screen flex flex-col overflow-hidden bg-[#000000] select-none">
 
-              <NoBotsSticker className="rotate-2" />
+      {/* Scanline overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 opacity-[0.035]"
+        style={{ backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.08) 2px,rgba(255,255,255,0.08) 3px)", backgroundSize:"100% 3px" }}
+      />
+
+      {/* Radial glow */}
+      <div className="pointer-events-none absolute inset-0 z-0"
+        style={{ background:"radial-gradient(ellipse 70% 55% at 50% 45%,rgba(209,224,67,0.05) 0%,transparent 70%)" }}
+      />
+
+      {/* TOP BAR */}
+      <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} transition={{duration:0.5}}
+        className="relative z-20 flex items-center justify-between px-5 md:px-10 pt-6">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+          </span>
+          <span className="font-mono text-[11px] font-bold tracking-[0.2em] text-[#888888] uppercase">Recording Locally</span>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[12px] text-[#555555]">
+          <Clock size={11} /><span>{fmtTime(recSecs)}</span>
+        </div>
+      </motion.div>
+
+      {/* FLOATING ARTIFACT CARDS */}
+      {ARTIFACTS.map((a) => {
+        const Icon = a.icon;
+        return (
+          <motion.div key={a.id}
+            initial={{opacity:0,scale:0.85,y:12}} animate={{opacity:1,scale:1,y:0}}
+            transition={{duration:0.6,delay:a.delay,ease:[0.16,1,0.3,1]}}
+            className={`absolute z-30 hidden lg:flex flex-col gap-1.5 ${a.pos}`}
+            style={{ animation:`floatY${a.floatDir > 0 ? "Up":"Down"} 4.5s ease-in-out infinite`, animationDelay:`${a.delay*0.5}s` }}
+          >
+            <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl backdrop-blur-md border"
+              style={{ background:"rgba(14,14,16,0.85)", borderColor:`${a.accent}28`, boxShadow:`0 0 0 1px ${a.accent}14,0 8px 32px rgba(0,0,0,0.5)` }}
+            >
+              <span className="mt-0.5 shrink-0 w-5 h-5 rounded-md flex items-center justify-center" style={{background:`${a.accent}18`}}>
+                <Icon size={11} style={{color:a.accent}} />
+              </span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-bold uppercase tracking-widest" style={{color:a.accent}}>{a.label}</span>
+                <span className="text-[11.5px] text-[#B0B0B8] leading-snug mt-0.5 max-w-[180px]">{a.detail}</span>
+              </div>
             </div>
+            <div className="flex justify-end">
+              <span className="font-mono text-[9.5px] px-2 py-0.5 rounded-full border"
+                style={{color:a.accent,borderColor:`${a.accent}30`,background:`${a.accent}0D`}}>{a.time}</span>
+            </div>
+          </motion.div>
+        );
+      })}
 
-            {/* Headline — Recommended SaaS Hero Hook */}
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-serif text-5xl sm:text-6xl lg:text-[72px] font-normal leading-[0.95] tracking-[-0.03em] text-[#FFFFFF] max-w-[18ch] text-balance mb-6"
-            >
-              Your meetings had more than words.{' '}
-              <em className="italic text-[#D1E043]">Bacham remembers the rest.</em>
-            </motion.h1>
+      {/* MAIN CENTER */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 py-16">
 
-            {/* Subheadline */}
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className="text-base sm:text-[17px] text-[#C0C0C8] font-normal leading-relaxed mb-8 max-w-[480px]"
-            >
-              Capture the tab, window, screen, video, and audio you choose. Get{' '}
-              <strong className="text-white font-semibold">live notes, screenshots, action items, decisions, and replayable proof</strong>
-              —without adding a bot or pushing your meetings to the cloud.
-            </motion.p>
+        {/* Badge */}
+        <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.5,delay:0.1}}
+          className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/5 mb-10">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D1E043] animate-pulse" />
+          <span className="text-[11px] font-semibold text-[#888888] tracking-widest uppercase">Open Source · Local-first · Bot-free</span>
+        </motion.div>
 
-            {/* Dual CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6"
-            >
-              <a
-                href="#downloads"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-[15px] shadow-lg hover:shadow-xl transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <span>Get Early Access</span>
-                <ArrowRight size={15} strokeWidth={2.6} />
-              </a>
+        {/* Headline typewriter */}
+        <h1 className="font-serif text-[clamp(2.6rem,7vw,5.5rem)] font-normal leading-[1.0] tracking-[-0.03em] text-white max-w-[16ch] text-balance mb-0">
+          {FULL_HEADLINE.slice(0,hlChars)}
+          {!hlDone && <span className="inline-block w-[3px] h-[0.85em] bg-white ml-0.5 align-middle animate-pulse rounded-[1px]" />}
+        </h1>
 
-              <a
-                href="#demo"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-[#FFFFFF] font-semibold text-[15px] transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <Play size={14} strokeWidth={2.5} className="text-[#D1E043]" />
-                <span>Watch 45-sec Demo</span>
-              </a>
-            </motion.div>
-
-            {/* Trust bar */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.36 }}
-              className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] text-[#6E6E78]"
-            >
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-[#D1E043]" />
-                Open source
-              </span>
-              <span className="text-[#3A3A3A]">·</span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-[#D1E043]" />
-                Local-first
-              </span>
-              <span className="text-[#3A3A3A]">·</span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-[#D1E043]" />
-                No bot joins your meeting
-              </span>
-            </motion.div>
-
-          </div>
-
-          {/* Right Column: Layered Art + Tactile Notepad + Stickers */}
-          <div className="relative w-full flex items-center justify-center lg:justify-end">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="relative w-full max-w-[480px] aspect-[4/5] sm:aspect-[4/5] flex items-center justify-center"
-            >
-              
-              {/* Background Cartoon Stickers & Stamps */}
-              <StarburstSticker text="100% SSD LOCAL" className="absolute -top-10 -right-6 z-30" />
-              <DualStreamSticker className="absolute -bottom-8 -left-6 z-30 -rotate-6 hidden sm:inline-flex" />
-              <StudyModeSticker className="absolute top-1/2 -right-10 z-30 rotate-12 hidden md:inline-flex" />
-
-              {/* Layer 1A: Chartreuse textured art card (Left background) */}
-              <div className="absolute -left-6 top-8 w-44 sm:w-52 h-72 sm:h-80 rounded-2xl bg-[#CCD948] overflow-hidden shadow-2xl -rotate-6 transform -z-10 border border-[#b8c63b]/60">
-                <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#1E1E1E_1px,transparent_1px)] [background-size:12px_12px]" />
-                <div className="absolute bottom-4 left-4 font-mono text-[11px] text-[#1E1E1E]/70 uppercase tracking-widest font-bold">
-                  Bacham / v0.1.0
-                </div>
-                <div className="absolute top-6 -right-6 w-24 h-24 rounded-full border-2 border-[#1E1E1E]/15" />
-              </div>
-
-              {/* Layer 1B: Dark abstract burst poster (Right background) */}
-              <div className="absolute -right-4 top-2 w-48 sm:w-56 h-80 sm:h-96 rounded-2xl bg-[#0D0D0E] overflow-hidden shadow-2xl rotate-6 transform -z-10 border border-white/10">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-600/35 via-red-900/25 to-black/95" />
-                <div className="absolute inset-0 opacity-40 mix-blend-screen bg-[radial-gradient(#ff9e42_1px,transparent_1px)] [background-size:8px_8px]" />
-                <div className="absolute top-4 right-4 text-white/40 font-mono text-[10px] tracking-widest">
-                  100% PRIVATE
-                </div>
-              </div>
-
-              {/* Layer 1C: Watermark typographic backdrop card (Bottom background) */}
-              <div className="absolute -bottom-6 left-12 w-64 h-32 rounded-xl bg-[#121214] -z-10 rotate-2 border border-white/10 p-4 flex items-end justify-between opacity-80">
-                <span className="font-serif text-5xl text-white/10 font-bold select-none">2026</span>
-                <span className="font-mono text-xs text-white/30 tracking-widest uppercase">Local Engine</span>
-              </div>
-
-              {/* Layer 2: Center Floating Paper Notepad Window with Washi Tape */}
-              <div className="relative z-10 w-full bg-[#FAF9F5] border border-[#E8E6DE] rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] p-5 sm:p-6 backdrop-blur-sm">
-                
-                {/* Trendy Washi Tape over window header */}
-                <WashiTape color="lime" className="absolute -top-2 left-10 rotate-[-2deg] z-20" />
-                <WashiTape color="pink" className="absolute -top-2 right-12 rotate-[3deg] z-20" />
-
-                {/* macOS Window Controls + Live Status */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff736a] border border-black/10" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e] border border-black/10" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#19c332] border border-black/10" />
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#EAE8DF] border border-[#DDD9CE] text-[10px] font-mono text-[#4F6322] font-semibold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-                    <span>WASAPI Loopback Active</span>
-                  </div>
-                </div>
-
-                {/* Real Meeting Title from sampleMeetingData */}
-                <h3 className="font-serif text-2xl font-normal text-[#1E1E1E] mb-1.5 tracking-tight">
-                  Bacham — Architecture &amp; Strategy
-                </h3>
-
-                {/* Meta Badges */}
-                <div className="flex items-center gap-2 pb-3 mb-3 border-b border-[#E8E6DE]/70">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[#E8E6DE] bg-white text-[11px] text-[#666666]">
-                    <Calendar size={11} className="text-[#666666]" />
-                    <span>Today</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[#E8E6DE] bg-white text-[11px] text-[#666666]">
-                    <Users size={11} className="text-[#666666]" />
-                    <span>Alex, Maya, David</span>
-                  </div>
-                  <div className="w-5 h-5 rounded-full border border-[#E8E6DE] bg-white flex items-center justify-center text-[#666666]">
-                    <FolderPlus size={11} />
-                  </div>
-                </div>
-
-                {/* Notepad Body Content (Switchable between Notes, Transcript, Flashcards) */}
-                <div className="min-h-[240px] max-h-[255px] overflow-y-auto pr-1 text-[12px] leading-relaxed text-[#1E1E1E]">
-                  <AnimatePresence mode="wait">
-                    
-                    {/* TAB 1: Real AI Notes & Timestamped Action Items */}
-                    {activeTab === "notes" && (
-                      <motion.div
-                        key="notes"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-3 font-sans"
-                      >
-                        <div>
-                          <p className="font-semibold text-[#1E1E1E] text-[12px] mb-1 flex items-center gap-1.5">
-                            <span className="text-[#4F6322]">🎯</span>
-                            <span>Executive Architecture Summary</span>
-                          </p>
-                          <ul className="space-y-1 text-[#444444] pl-2">
-                            <li className="flex items-start gap-1.5">
-                              <span className="text-[#1E1E1E] font-bold">•</span>
-                              <span><strong>Dual-Stream Audio Pipeline:</strong> Captures both system loopback and mic with zero echo artifacts.</span>
-                            </li>
-                            <li className="flex items-start gap-1.5">
-                              <span className="text-[#1E1E1E] font-bold">•</span>
-                              <span><strong>Local-First Storage:</strong> SQLite + FTS5 vector indexing on device for instant semantic search.</span>
-                            </li>
-                          </ul>
-                        </div>
-
-                        {/* Interactive Timestamped Action Items */}
-                        <div className="pt-1">
-                          <p className="font-semibold text-[#1E1E1E] text-[12px] mb-1.5 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5">
-                              <span className="text-[#4F6322]">⚡</span>
-                              <span>Timestamped Action Items (Click to Replay)</span>
-                            </span>
-                            <span className="text-[10px] text-[#888888] font-mono">Audio Jump</span>
-                          </p>
-                          
-                          <div className="space-y-1.5">
-                            {[
-                              { time: "00:32", owner: "@Maya", task: "Finalize low-latency loopback buffer for Win & Mac" },
-                              { time: "00:50", owner: "@David", task: "Benchmark local Whisper quantization vs Gemini latency" },
-                              { time: "01:30", owner: "@Alex", task: "Ship first-time onboarding tour & interactive mic tester" },
-                            ].map((item, idx) => (
-                              <div
-                                key={idx}
-                                onClick={() => toggleAction(idx)}
-                                className={`p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                                  actionItemChecked[idx]
-                                    ? "bg-[#F3F1E8] border-[#DDD9CE] opacity-65 line-through"
-                                    : "bg-white border-[#E8E6DE] hover:border-[#4F6322]"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <input
-                                    type="checkbox"
-                                    checked={actionItemChecked[idx]}
-                                    onChange={() => {}}
-                                    className="w-3.5 h-3.5 accent-[#4F6322] cursor-pointer"
-                                  />
-                                  <span className="text-[11.5px] truncate">
-                                    <strong className="text-[#1E1E1E]">{item.owner}:</strong> {item.task}
-                                  </span>
-                                </div>
-                                <span className="text-[10px] font-mono font-bold text-[#4F6322] px-1.5 py-0.5 rounded bg-[#EAE8DF] shrink-0 flex items-center gap-1">
-                                  <Play size={8} fill="currentColor" />
-                                  <span>{item.time}</span>
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* TAB 2: Real Meeting Transcript Dialogue */}
-                    {activeTab === "transcript" && (
-                      <motion.div
-                        key="transcript"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-2.5 font-sans pt-1"
-                      >
-                        {[
-                          { time: "00:02", speaker: "Alex (Product Lead)", text: "Welcome everyone. Aligning on core technical architecture for Bacham — our real-time meeting and lecture AI copilot." },
-                          { time: "00:15", speaker: "Maya (Systems Architect)", text: "Dual-stream audio solved: native loopback cleanly separates system audio and user voice into a unified transcript." },
-                          { time: "00:50", speaker: "David (AI Research)", text: "Continuous chunking from local Whisper identifies key decisions and deliverables in real time." },
-                          { time: "01:30", speaker: "Alex (Product Lead)", text: "Ensure flashcards & quizzes tie directly to timestamps so teams can review in seconds!" },
-                        ].map((line, idx) => (
-                          <div key={idx} className="p-2 rounded-lg bg-white border border-[#E8E6DE] text-[11.5px]">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-[#1E1E1E] text-[11.5px]">{line.speaker}</span>
-                              <span className="text-[10px] font-mono text-[#888888] flex items-center gap-1">
-                                <Clock size={9} />
-                                <span>{line.time}</span>
-                              </span>
-                            </div>
-                            <p className="text-[#555555] leading-relaxed">{line.text}</p>
-                          </div>
-                        ))}
-                      </motion.div>
-                    )}
-
-                    {/* TAB 3: Real Flashcards & Study Mode (Bacham Superpower) */}
-                    {activeTab === "flashcards" && (
-                      <motion.div
-                        key="flashcards"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-3 font-sans pt-1"
-                      >
-                        <div className="p-3.5 rounded-xl bg-white border-2 border-[#D1E043] shadow-sm relative overflow-hidden">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#4F6322] px-2 py-0.5 rounded-full bg-[#D1E043]/30">
-                              ⚡ AI Flashcard #1 of 3
-                            </span>
-                            <span className="text-[10px] font-mono text-[#888888]">From [00:15]</span>
-                          </div>
-
-                          <h4 className="font-semibold text-[13px] text-[#1E1E1E] mb-2 leading-snug">
-                            What is Bacham&apos;s dual-channel audio capture architecture?
-                          </h4>
-
-                          {revealedAnswer ? (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              className="pt-2 border-t border-[#E8E6DE] text-[11.5px] text-[#333333] leading-relaxed"
-                            >
-                              <strong className="text-[#4F6322]">Answer:</strong> Bacham simultaneously captures output system audio (remote attendees) and input microphone audio (user voice), synchronizing them into a single timeline with zero echo artifacts.
-                            </motion.div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setRevealedAnswer(true)}
-                              className="w-full py-2 rounded-lg bg-[#FAF9F5] hover:bg-[#EAE8DF] border border-[#DDD9CE] text-[11px] font-bold text-[#4F6322] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                            >
-                              <Sparkles size={12} />
-                              <span>Click to Reveal Answer</span>
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-[#666666] pt-1">
-                          <span className="flex items-center gap-1">
-                            <RotateCcw size={11} />
-                            <span>Spaced Repetition Active</span>
-                          </span>
-                          <span className="font-bold text-[#4F6322] cursor-pointer hover:underline">
-                            Take 2-min Quiz →
-                          </span>
-                        </div>
-                      </motion.div>
-                    )}
-
-                  </AnimatePresence>
-                </div>
-
-                {/* Bottom Segmented Toggle Pill (Notes | Transcript | Flashcards) */}
-                <div className="mt-4 pt-3 border-t border-[#E8E6DE]/70 flex flex-col sm:flex-row items-center justify-between gap-2">
-                  <div className="inline-flex p-1 rounded-full bg-[#EAE8DF] border border-[#DDD9CE] gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("notes")}
-                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-                        activeTab === "notes"
-                          ? "bg-white text-[#1E1E1E] shadow-2xs font-bold"
-                          : "text-[#666666] hover:text-[#1E1E1E]"
-                      }`}
-                    >
-                      AI Notes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("transcript")}
-                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-                        activeTab === "transcript"
-                          ? "bg-white text-[#1E1E1E] shadow-2xs font-bold"
-                          : "text-[#666666] hover:text-[#1E1E1E]"
-                      }`}
-                    >
-                      Transcript
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("flashcards")}
-                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 ${
-                        activeTab === "flashcards"
-                          ? "bg-[#D1E043] text-[#1E1E1E] shadow-2xs font-bold"
-                          : "text-[#666666] hover:text-[#1E1E1E]"
-                      }`}
-                    >
-                      <span>Study Deck</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4F6322]" />
-                    </button>
-                  </div>
-
-                  <span className="text-[10px] font-mono text-[#888888]">
-                    100% Local SQLite
-                  </span>
-                </div>
-
-              </div>
-
-              {/* Layer 3: Overlaid Floating Video Call Overlay Widget with No-Bot Badge */}
-              <div className="absolute -bottom-4 -right-2 sm:-right-5 z-20 w-32 sm:w-36 bg-[#0D0D0E] border border-white/10 rounded-xl p-2 shadow-2xl flex flex-col gap-1.5">
-                
-                {/* Participant 1 Video Tile */}
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-[#1C1C20] border border-white/5 flex items-center justify-center">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-rose-400 flex items-center justify-center text-white font-bold text-xs shadow-inner">
-                    AL
-                  </div>
-                  <span className="absolute bottom-1 left-1.5 text-[8.5px] font-medium text-white/90 bg-black/60 px-1 rounded">
-                    Alex
-                  </span>
-                  <div className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-                </div>
-
-                {/* Participant 2 Video Tile */}
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-[#1C1C20] border border-white/5 flex items-center justify-center">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-emerald-400 flex items-center justify-center text-white font-bold text-xs shadow-inner">
-                    MY
-                  </div>
-                  <span className="absolute bottom-1 left-1.5 text-[8.5px] font-medium text-white/90 bg-black/60 px-1 rounded">
-                    Maya
-                  </span>
-                </div>
-
-                {/* Mini Call Controls + No Bot Notice */}
-                <div className="flex items-center justify-between pt-0.5 px-0.5">
-                  <div className="flex items-center gap-1">
-                    <span className="w-4 h-4 rounded-full bg-[#242428] text-white flex items-center justify-center text-[8px]">
-                      <Mic size={8} />
-                    </span>
-                    <span className="w-4 h-4 rounded-full bg-[#242428] text-white flex items-center justify-center text-[8px]">
-                      <Video size={8} />
-                    </span>
-                    <span className="w-4 h-4 rounded-full bg-[#EF4444] text-white flex items-center justify-center text-[8px]">
-                      <PhoneOff size={8} />
-                    </span>
-                  </div>
-                  <span className="text-[7.5px] font-mono text-[#D1E043] font-bold">NO BOTS</span>
-                </div>
-
-              </div>
-
-            </motion.div>
-          </div>
-
+        {/* Subhead typewriter — lime italic */}
+        <div className="font-serif text-[clamp(2.4rem,6.5vw,5.0rem)] font-normal leading-[1.0] tracking-[-0.03em] text-[#D1E043] italic max-w-[16ch] text-balance mb-8 mt-1 min-h-[1.1em]">
+          {hlDone && (
+            <>
+              {FULL_SUBHEAD.slice(0,shChars)}
+              {!shDone && <span className="inline-block w-[3px] h-[0.85em] bg-[#D1E043] ml-0.5 align-middle animate-pulse rounded-[1px]" />}
+            </>
+          )}
         </div>
 
+        {/* Body copy */}
+        <motion.p initial={{opacity:0,y:10}} animate={{opacity:shDone?1:0,y:shDone?0:10}}
+          transition={{duration:0.6}} className="text-[15px] sm:text-[17px] text-[#808088] leading-relaxed max-w-[52ch] mb-10">
+          Capture the tab, window, screen, video, and audio you choose.
+          Get{" "}<strong className="text-[#C8C8D0] font-semibold">live notes, action items, decisions, and replayable proof</strong>
+          {" "}— without a bot or the cloud.
+        </motion.p>
+
+        {/* Dual CTAs */}
+        <motion.div initial={{opacity:0,y:10}} animate={{opacity:shDone?1:0,y:shDone?0:10}}
+          transition={{duration:0.6,delay:0.1}} className="flex flex-col sm:flex-row items-center gap-3 mb-10">
+          <a href="#downloads"
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#0D0D0E] font-bold text-[14.5px] shadow-[0_0_40px_rgba(209,224,67,0.25)] hover:shadow-[0_0_60px_rgba(209,224,67,0.35)] transition-all active:scale-[0.97]">
+            <span>Get Early Access</span><ArrowRight size={15} strokeWidth={2.6} />
+          </a>
+          <a href="#demo"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/[0.06] hover:bg-white/10 border border-white/12 text-[#CCCCCC] font-semibold text-[14.5px] transition-all active:scale-[0.97]">
+            <Play size={13} strokeWidth={2.5} className="text-[#D1E043]" fill="#D1E043" />
+            <span>Watch 45-sec Demo</span>
+          </a>
+        </motion.div>
+
+        {/* Trust bar */}
+        <motion.div initial={{opacity:0}} animate={{opacity:shDone?1:0}} transition={{duration:0.6,delay:0.2}}
+          className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-[12px] text-[#505058]">
+          {["Open source","Local-first","No bot joins your meeting"].map((item,i)=>(
+            <span key={i} className="flex items-center gap-1.5">
+              <CheckCircle2 size={11} className="text-[#D1E043]" />{item}
+            </span>
+          ))}
+        </motion.div>
       </div>
+
+      {/* BOTTOM WAVEFORM */}
+      <div className="relative z-10 w-full px-4 md:px-8 pb-8">
+        <div className="flex justify-between items-center mb-2 px-1">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest" style={{color:"#D1E043"}}>
+            <Mic size={9} style={{color:"#D1E043"}} /><span>Mic Channel</span>
+          </div>
+          <div className="text-[10px] font-mono text-[#333333] tracking-widest uppercase">Dual-stream Active</div>
+          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest" style={{color:"#60A5FA"}}>
+            <span>System Audio</span><Monitor size={9} style={{color:"#60A5FA"}} />
+          </div>
+        </div>
+
+        <div className="w-full overflow-hidden rounded-xl border border-white/5 bg-[#060608] px-3 py-3 flex flex-col gap-1.5">
+          <div className="flex items-center justify-center gap-[2px] h-10">
+            {MIC_BARS.map((base,i)=>(
+              <motion.div key={`mic-${i}`} className="rounded-full shrink-0"
+                style={{width:3,background:"linear-gradient(180deg,#D1E043,#8FA62A)",opacity:0.8}}
+                animate={{height:barH(base,waveSeed,i)}} transition={{duration:0.1,ease:"linear"}} />
+            ))}
+          </div>
+          <div className="w-full h-px bg-white/5" />
+          <div className="flex items-center justify-center gap-[2px] h-10">
+            {SYS_BARS.map((base,i)=>(
+              <motion.div key={`sys-${i}`} className="rounded-full shrink-0"
+                style={{width:3,background:"linear-gradient(180deg,#60A5FA,#2563EB)",opacity:0.7}}
+                animate={{height:barH(base,waveSeed+7,i)}} transition={{duration:0.1,ease:"linear"}} />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mt-2.5 text-[10px] font-mono text-[#333333] tracking-widest">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D1E043]" />
+          Mic + System Loopback · Local Whisper · SQLite
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes floatYUp   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }
+        @keyframes floatYDown { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(10px)} }
+      `}</style>
     </section>
   );
 }
