@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader, Dancing_Script } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader, Dancing_Script, Rock_Salt } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,6 +22,12 @@ const dancingScript = Dancing_Script({
   variable: "--font-dancing",
   subsets: ["latin"],
   weight: ["700"],
+});
+
+const rockSalt = Rock_Salt({
+  variable: "--font-rock-salt",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -72,13 +78,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${dancingScript.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${dancingScript.variable} ${rockSalt.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Double+Ink&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-full flex flex-col bg-[#000000] text-[#FFFFFF] font-sans selection:bg-[#D1E043]/40 selection:text-[#000000] relative overflow-x-hidden">
         {/* Subtle Pure Black Ambient Lighting */}

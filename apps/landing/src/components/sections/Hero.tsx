@@ -82,10 +82,13 @@ export default function Hero() {
               <span
                 className="text-[#D1E043]"
                 style={{
-                  fontFamily: '"Bitcount Prop Double Ink", sans-serif',
+                  fontFamily: 'var(--font-rock-salt)',
                   fontWeight: 400,
-                  fontSize: '1.1em',
-                  letterSpacing: '0.01em',
+                  fontSize: '0.65em',
+                  letterSpacing: '0.02em',
+                  lineHeight: '1.5',
+                  display: 'inline-block',
+                  marginTop: '4px',
                 }}
               >
                 Bacham remembers the rest.
