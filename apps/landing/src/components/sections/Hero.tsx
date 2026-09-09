@@ -76,23 +76,26 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-serif text-5xl sm:text-7xl lg:text-[80px] font-normal leading-[0.93] tracking-[-0.03em] text-[#FFFFFF] max-w-[12ch] text-balance mb-6"
+              className="font-serif text-5xl sm:text-7xl lg:text-[80px] font-normal leading-[0.93] tracking-[-0.03em] text-[#FFFFFF] max-w-[14ch] text-balance mb-6"
             >
-              The AI notepad for back-to-back meetings &amp; lectures.
+              Every word captured. Every action tracked. Nothing leaves your device.
             </motion.h1>
 
-            {/* Subtitle with exact hook according to tool */}
+            {/* Subtitle — feature-accurate hook */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className="text-base sm:text-lg text-[#D1D1D6] font-normal leading-relaxed mb-8 max-w-lg space-y-1.5"
+              className="text-base sm:text-lg text-[#D1D1D6] font-normal leading-relaxed mb-8 max-w-lg space-y-2"
             >
               <p>
-                <strong className="text-white font-semibold">Dual-stream audio capture.</strong> Notes, timestamped actions, and 1-click study flashcards.
+                Bacham captures both sides of your audio — mic &amp; system loopback — transcribes locally with Whisper, and surfaces{' '}
+                <strong className="text-white font-semibold">timestamped action items &amp; 1-click flashcards</strong>{' '}
+                in real time.
               </p>
-              <p className="text-[#A1A1A6]">
-                Without an uninvited meeting bot. 100% on your SSD.
+              <p className="text-[#8E8E93]">
+                No bot joins your call. No data hits the cloud.{' '}
+                <span className="text-[#D1E043] font-semibold">Lives entirely on your SSD.</span>
               </p>
             </motion.div>
 
