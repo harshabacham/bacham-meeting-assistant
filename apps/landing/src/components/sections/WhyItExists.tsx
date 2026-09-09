@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { XCircle, CheckCircle2, ShieldCheck, EyeOff, Bot } from "lucide-react";
-import { NoBotsSticker, LocalSsdSticker, WashiTape, DoodleAnnotation } from "@/components/ui/CartoonStickers";
+import { NoBotsSticker, LocalSsdSticker, WashiTape } from "@/components/ui/CartoonStickers";
 
 export default function WhyItExists() {
   const oldWayItems = [
@@ -64,12 +64,6 @@ export default function WhyItExists() {
           <p className="text-base sm:text-lg text-[#A1A1A6] leading-relaxed max-w-2xl mx-auto">
             Stop sending awkward bots to client calls. Capture notes with dual-stream clarity, zero monthly fees, and 100% local privacy.
           </p>
-
-          <DoodleAnnotation
-            text="← Compare the difference!"
-            direction="left"
-            className="absolute -bottom-6 left-8 hidden lg:inline-flex"
-          />
         </motion.div>
 
         {/* 2-Column Comparison Grid */}
