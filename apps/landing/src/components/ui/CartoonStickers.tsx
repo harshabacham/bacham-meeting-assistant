@@ -4,170 +4,161 @@ import { motion } from "framer-motion";
 import React from "react";
 
 /**
- * 1. No Bots Sticker — Red Warning Shield Badge
- * Hexagonal shield shape with a crossed-out robot icon.
+ * 1. No Bots Allowed Sticker
+ * Cute retro cartoon robot crossed out with bold "NO BOTS" badge.
  */
 export function NoBotsSticker({ className = "" }: { className?: string }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.1, rotate: -3 }}
+      whileHover={{ scale: 1.1, rotate: 0 }}
       whileTap={{ scale: 0.95 }}
-      className={`inline-flex select-none cursor-pointer group ${className}`}
+      className={`inline-flex select-none cursor-pointer group filter drop-shadow-[0_6px_0_rgba(0,0,0,0.9)] ${className}`}
       title="Zero annoying meeting bots!"
     >
-      {/* Shield / badge shape via clip-path */}
-      <div
-        className="relative bg-[#FF3B30] px-4 py-3 flex items-center gap-2.5 shadow-lg"
-        style={{
-          clipPath: "polygon(50% 0%, 100% 15%, 100% 75%, 50% 100%, 0% 75%, 0% 15%)",
-        }}
-      >
-        {/* Robot face with X */}
-        <div className="relative w-7 h-7 rounded bg-[#FFE600] flex items-center justify-center shrink-0">
-          <span className="text-[14px] font-black text-black leading-none">🤖</span>
-          {/* Strike-through */}
+      <div className="relative bg-[#FF5C5C] text-white border-2 border-black rounded-2xl px-3 py-2 flex items-center gap-2 shadow-[inset_0_-3px_0_rgba(0,0,0,0.25)] ring-4 ring-white/90">
+        {/* Cartoon Robot with X-Eyes */}
+        <div className="relative w-8 h-8 rounded-lg bg-[#FFE600] border-2 border-black flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+          {/* Antennas */}
+          <div className="absolute -top-1 w-1 h-1.5 bg-black" />
+          <div className="flex items-center gap-1.5 z-10">
+            <span className="text-[9px] font-black text-black">✕</span>
+            <span className="text-[9px] font-black text-black">✕</span>
+          </div>
+          <div className="absolute bottom-1 w-3.5 h-1 bg-black rounded-full" />
+          {/* Red slash */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-9 h-[3px] bg-[#FF3B30] rotate-45 rounded-full" />
+            <div className="w-10 h-0.5 bg-[#FF0033] rotate-45 border-t border-black" />
           </div>
         </div>
 
         <div className="flex flex-col leading-none">
-          <span className="text-[11px] font-black tracking-wider uppercase text-white drop-shadow-[0_1px_0_rgba(0,0,0,0.5)]">
+          <span className="text-[11px] font-black tracking-wider uppercase text-[#FFE600] drop-shadow-[0_1px_0_#000]">
             NO BOTS
           </span>
-          <span className="text-[8px] font-bold text-[#FFE0DE] tracking-tight">
+          <span className="text-[9px] font-bold text-white tracking-tight">
             100% BANNED
           </span>
         </div>
+
+        {/* Glossy corner shine */}
+        <div className="absolute top-1 left-1.5 w-4 h-1 bg-white/40 rounded-full" />
       </div>
     </motion.div>
   );
 }
 
 /**
- * 2. Local SSD Sticker — Retro Ticket / Admit One Style
- * Torn-edge ticket stub with perforated border.
+ * 2. 100% Local SSD / Floppy Sticker
+ * Cute retro smiling floppy disk with sunglasses.
  */
 export function LocalSsdSticker({ className = "" }: { className?: string }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.08, rotate: 2 }}
+      whileHover={{ scale: 1.1, rotate: 0 }}
       whileTap={{ scale: 0.95 }}
-      className={`inline-flex select-none cursor-pointer ${className}`}
+      className={`inline-flex select-none cursor-pointer filter drop-shadow-[0_6px_0_rgba(0,0,0,0.9)] ${className}`}
       title="All data stays on your SSD"
     >
-      <div className="relative bg-[#1A1A24] border-[3px] border-dashed border-[#00E5FF] rounded-lg px-3.5 py-2 flex items-center gap-2.5 shadow-[0_0_15px_rgba(0,229,255,0.25)]">
-        {/* SSD Chip Icon */}
-        <div className="w-7 h-7 bg-[#00E5FF]/20 border border-[#00E5FF] rounded flex items-center justify-center shrink-0">
-          <span className="text-[13px] leading-none">💾</span>
+      <div className="relative bg-[#00E5FF] text-black border-2 border-black rounded-2xl px-3 py-2 flex items-center gap-2.5 shadow-[inset_0_-3px_0_rgba(0,0,0,0.25)] ring-4 ring-white/90">
+        {/* Floppy disk character */}
+        <div className="relative w-8 h-8 bg-[#1A1A24] border-2 border-black rounded-md flex flex-col items-center justify-between p-1 shrink-0">
+          <div className="w-4 h-2 bg-white rounded-xs" />
+          {/* Cute sunglasses */}
+          <div className="flex items-center gap-0.5 my-auto">
+            <div className="w-2.5 h-2 bg-black rounded-xs border border-[#00E5FF]" />
+            <div className="w-0.5 h-0.5 bg-black" />
+            <div className="w-2.5 h-2 bg-black rounded-xs border border-[#00E5FF]" />
+          </div>
+          <div className="w-5 h-1.5 bg-[#FFE600] rounded-xs text-[6px] font-mono font-bold text-black text-center leading-none">
+            SSD
+          </div>
         </div>
 
         <div className="flex flex-col leading-none">
-          <span className="text-[10px] font-black tracking-widest uppercase text-[#00E5FF]">
-            YOUR SSD
+          <span className="text-[11px] font-black tracking-wider uppercase text-black">
+            YOUR SSD ONLY
           </span>
-          <span className="text-[8px] font-bold text-[#00E5FF]/60 tracking-tight">
+          <span className="text-[9px] font-extrabold text-[#004B57] tracking-tight">
             0% CLOUD LEAKS
           </span>
         </div>
 
-        {/* Perforated edge */}
-        <div className="absolute -right-[1px] top-1/2 -translate-y-1/2 flex flex-col gap-1">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full bg-black" />
-          ))}
-        </div>
+        <div className="absolute top-1 left-2 w-5 h-1 bg-white/60 rounded-full" />
       </div>
     </motion.div>
   );
 }
 
 /**
- * 3. Study Mode Sticker — Postage Stamp Style
- * Serrated-edge stamp with a star + lightning icon.
+ * 3. Study Mode & Flashcards Sticker
+ * Cartoon magic flashcard with sparkling stars.
  */
 export function StudyModeSticker({ className = "" }: { className?: string }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.1, rotate: 6 }}
+      whileHover={{ scale: 1.1, rotate: 0 }}
       whileTap={{ scale: 0.95 }}
-      className={`inline-flex select-none cursor-pointer ${className}`}
+      className={`inline-flex select-none cursor-pointer filter drop-shadow-[0_6px_0_rgba(0,0,0,0.9)] ${className}`}
       title="Turn any meeting into study cards & quizzes!"
     >
-      {/* Outer serrated stamp border */}
-      <div className="bg-white p-[3px] rounded-sm shadow-lg" style={{
-        maskImage: `
-          radial-gradient(circle at 0px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 8px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 16px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 24px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 32px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 40px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 48px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 56px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 64px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 72px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 80px 0px, transparent 3px, black 3.5px),
-          radial-gradient(circle at 88px 0px, transparent 3px, black 3.5px)
-        `,
-        WebkitMaskComposite: 'intersect' as any,
-        maskComposite: 'intersect',
-      }}>
-        <div className="bg-[#D1E043] px-3 py-2 flex items-center gap-2 rounded-xs">
-          <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shrink-0 border border-black/10">
-            <span className="text-[14px] leading-none">⚡</span>
-          </div>
-
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-black tracking-wider uppercase text-[#1A1A24]">
-              STUDY DECK
-            </span>
-            <span className="text-[8px] font-bold text-[#3B4708] tracking-tight">
-              1-CLICK QUIZ
-            </span>
-          </div>
+      <div className="relative bg-[#D1E043] text-black border-2 border-black rounded-2xl px-3 py-2 flex items-center gap-2 shadow-[inset_0_-3px_0_rgba(0,0,0,0.25)] ring-4 ring-white/90">
+        {/* Flashcard icon with lightning */}
+        <div className="relative w-8 h-8 bg-white border-2 border-black rounded-lg flex items-center justify-center shrink-0 shadow-xs">
+          <span className="text-base leading-none">⚡</span>
+          <span className="absolute -top-1 -right-1 text-[10px] text-[#A855F7] animate-spin font-black">★</span>
         </div>
+
+        <div className="flex flex-col leading-none">
+          <span className="text-[11px] font-black tracking-wider uppercase text-black">
+            STUDY DECK
+          </span>
+          <span className="text-[9px] font-extrabold text-[#3B4708] tracking-tight">
+            1-CLICK QUIZ
+          </span>
+        </div>
+
+        <div className="absolute top-1 left-2 w-5 h-1 bg-white/70 rounded-full" />
       </div>
     </motion.div>
   );
 }
 
 /**
- * 4. Dual-Stream Sticker — Cassette Tape / Polaroid Hybrid
- * Tilted polaroid-style card with a cassette inside.
+ * 4. Dual-Stream Audio Tape Sticker
+ * Cute retro cassette tape for dual-channel audio capture.
  */
 export function DualStreamSticker({ className = "" }: { className?: string }) {
   return (
     <motion.div
-      whileHover={{ scale: 1.12, rotate: -2 }}
+      whileHover={{ scale: 1.1, rotate: 0 }}
       whileTap={{ scale: 0.95 }}
-      className={`inline-flex select-none cursor-pointer ${className}`}
+      className={`inline-flex select-none cursor-pointer filter drop-shadow-[0_6px_0_rgba(0,0,0,0.9)] ${className}`}
       title="Mic + Speaker dual-stream capture"
     >
-      {/* Polaroid-ish card */}
-      <div className="bg-white p-1 pb-2.5 rounded shadow-xl">
-        <div className="bg-gradient-to-br from-[#FF99E6] to-[#D946EF] px-3 py-2 rounded-xs flex items-center gap-2">
-          {/* Mini cassette */}
-          <div className="w-7 h-6 bg-[#2A2A36] rounded flex items-center justify-center shrink-0">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full border border-white/70" />
-              <div className="w-2 h-2 rounded-full border border-white/70" />
+      <div className="relative bg-[#FF99E6] text-black border-2 border-black rounded-2xl px-3 py-2 flex items-center gap-2.5 shadow-[inset_0_-3px_0_rgba(0,0,0,0.25)] ring-4 ring-white/90">
+        {/* Cute Cassette */}
+        <div className="relative w-8 h-7 bg-[#2A2A36] border-2 border-black rounded-md flex flex-col items-center justify-center shrink-0">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full border border-white bg-black flex items-center justify-center">
+              <div className="w-0.5 h-0.5 rounded-full bg-white" />
+            </div>
+            <div className="w-2 h-2 rounded-full border border-white bg-black flex items-center justify-center">
+              <div className="w-0.5 h-0.5 rounded-full bg-white" />
             </div>
           </div>
-
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-black tracking-wider uppercase text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
-              DUAL MIX
-            </span>
-            <span className="text-[7px] font-bold text-white/70 tracking-tight">
-              MIC + SYSTEM
-            </span>
-          </div>
+          <div className="w-5 h-1 bg-[#D1E043] rounded-xs mt-1" />
         </div>
-        {/* Polaroid bottom label */}
-        <p className="text-[6px] font-mono text-center text-black/40 mt-1 tracking-widest uppercase">
-          dual-stream
-        </p>
+
+        <div className="flex flex-col leading-none">
+          <span className="text-[11px] font-black tracking-wider uppercase text-black">
+            DUAL-STREAM
+          </span>
+          <span className="text-[9px] font-extrabold text-[#701A57] tracking-tight">
+            MIC + SYSTEM AUDIO
+          </span>
+        </div>
+
+        <div className="absolute top-1 left-2 w-5 h-1 bg-white/60 rounded-full" />
       </div>
     </motion.div>
   );
@@ -259,8 +250,7 @@ export function DoodleAnnotation({
 }
 
 /**
- * 7. Starburst Stamp — Spinning Star Badge
- * Rotating starburst with jagged edges instead of a plain circle.
+ * 7. Trendy Starburst Stamp Sticker
  */
 export function StarburstSticker({
   text = "100% PRIVATE",
@@ -274,20 +264,13 @@ export function StarburstSticker({
       animate={{ rotate: 360 }}
       transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
       whileHover={{ scale: 1.15 }}
-      className={`w-16 h-16 flex items-center justify-center select-none cursor-pointer ${className}`}
+      className={`w-16 h-16 rounded-full bg-[#FFE600] border-2 border-black flex items-center justify-center p-1 select-none filter drop-shadow-[0_4px_0_rgba(0,0,0,0.9)] ring-4 ring-white/90 cursor-pointer ${className}`}
     >
-      {/* Starburst SVG */}
-      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0 drop-shadow-[0_3px_0_rgba(0,0,0,0.8)]">
-        <polygon
-          points="50,2 61,22 83,12 76,35 98,42 80,56 92,78 68,72 58,95 50,74 42,95 32,72 8,78 20,56 2,42 24,35 17,12 39,22"
-          fill="#FFE600"
-          stroke="#000"
-          strokeWidth="2"
-        />
-      </svg>
-      <span className="relative z-10 text-[7px] font-black text-black leading-tight uppercase tracking-tighter text-center px-1">
-        {text}
-      </span>
+      <div className="w-full h-full rounded-full border border-dashed border-black flex items-center justify-center text-center">
+        <span className="text-[8px] font-black text-black leading-tight uppercase tracking-tighter">
+          {text}
+        </span>
+      </div>
     </motion.div>
   );
 }

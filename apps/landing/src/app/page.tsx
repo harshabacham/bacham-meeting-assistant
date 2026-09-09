@@ -5,6 +5,7 @@ import WhyItExists from "@/components/sections/WhyItExists";
 import FeaturesGrid from "@/components/sections/FeaturesGrid";
 import HowItWorks from "@/components/sections/HowItWorks";
 import Privacy from "@/components/sections/Privacy";
+import Comparison from "@/components/sections/Comparison";
 import DownloadCTA from "@/components/sections/DownloadCTA";
 import FAQ from "@/components/sections/FAQ";
 
@@ -18,6 +19,7 @@ export default function Home() {
       <HowItWorks />
       <EcosystemBar />
       <Privacy />
+      <Comparison />
       <DownloadCTA />
       <FAQ />
     </div>
