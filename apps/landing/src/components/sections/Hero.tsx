@@ -78,7 +78,13 @@ export default function Hero() {
               transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
               className="font-serif text-5xl sm:text-7xl lg:text-[80px] font-normal leading-[0.93] tracking-[-0.03em] text-[#FFFFFF] max-w-[14ch] text-balance mb-6"
             >
-              Your meetings had more than words. Bacham remembers the rest.
+              Your meetings had more than words.{' '}
+              <span
+                className="block text-[#4ADE80]"
+                style={{ fontFamily: 'var(--font-caveat)', fontWeight: 700, letterSpacing: '-0.01em' }}
+              >
+                Bacham remembers the rest.
+              </span>
             </motion.h1>
 
             {/* Subtitle */}
