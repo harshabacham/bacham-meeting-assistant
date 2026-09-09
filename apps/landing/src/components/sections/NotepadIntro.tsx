@@ -7,51 +7,51 @@ export default function NotepadIntro() {
   const highlights = [
     {
       icon: (
-        <div className="w-11 h-11 rounded-xl bg-[#FAF9F5] border border-[#E8E6DE] flex items-center justify-center text-[#4F6322] shadow-2xs">
+        <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-[#D1E043] shadow-2xs">
           <BotOff size={22} strokeWidth={1.8} />
         </div>
       ),
       text: (
         <>
-          Uses your computer audio, <strong className="font-semibold text-[#1E1E1E]">so doesn’t invite a bot</strong>
+          Uses your computer audio, <strong className="font-semibold text-[#FFFFFF]">so doesn’t invite a bot</strong>
         </>
       ),
     },
     {
       icon: (
-        <div className="w-11 h-11 rounded-xl bg-[#FAF9F5] border border-[#E8E6DE] flex items-center justify-center text-[#4F6322] shadow-2xs">
+        <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-[#D1E043] shadow-2xs">
           <ShieldCheck size={22} strokeWidth={1.8} />
         </div>
       ),
       text: (
         <>
-          <strong className="font-semibold text-[#1E1E1E]">Private by default</strong>, 100% on-device Whisper &amp; Ollama
+          <strong className="font-semibold text-[#FFFFFF]">Private by default</strong>, 100% on-device Whisper &amp; Ollama
         </>
       ),
     },
     {
       icon: (
-        <div className="w-11 h-11 rounded-xl bg-[#FAF9F5] border border-[#E8E6DE] flex items-center justify-center text-[#4F6322] shadow-2xs">
+        <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-[#D1E043] shadow-2xs">
           <CheckCheck size={22} strokeWidth={1.8} />
         </div>
       ),
       text: (
         <>
-          Works with <strong className="font-semibold text-[#1E1E1E]">Zoom</strong>,{" "}
-          <strong className="font-semibold text-[#1E1E1E]">Google Meet</strong>,{" "}
-          <strong className="font-semibold text-[#1E1E1E]">Teams</strong> and every other meeting app.
+          Works with <strong className="font-semibold text-[#FFFFFF]">Zoom</strong>,{" "}
+          <strong className="font-semibold text-[#FFFFFF]">Google Meet</strong>,{" "}
+          <strong className="font-semibold text-[#FFFFFF]">Teams</strong> and every other meeting app.
         </>
       ),
     },
   ];
 
   return (
-    <section className="relative py-20 border-y border-[#E8E6DE] bg-[#FCFBF9] overflow-hidden">
+    <section className="relative py-20 border-y border-white/10 bg-[#353935] overflow-hidden">
       {/* Subtle Ruled Notebook Horizontal Lines Background */}
       <div 
-        className="absolute inset-0 pointer-events-none opacity-60"
+        className="absolute inset-0 pointer-events-none opacity-40"
         style={{
-          backgroundImage: "repeating-linear-gradient(to bottom, #E8E6DE 0px, #E8E6DE 1px, transparent 1px, transparent 4.5rem)",
+          backgroundImage: "repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 0px, rgba(255, 255, 255, 0.08) 1px, transparent 1px, transparent 4.5rem)",
           maskImage: "linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)",
           WebkitMaskImage: "linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)",
         }}
@@ -62,16 +62,16 @@ export default function NotepadIntro() {
           
           {/* Section Headline */}
           <div>
-            <span className="text-[12px] font-semibold text-[#4F6322] uppercase tracking-wider mb-3 block">
+            <span className="text-[12px] font-semibold text-[#D1E043] uppercase tracking-wider mb-3 block">
               The Notepad Philosophy
             </span>
-            <h2 className="font-serif text-3xl sm:text-5xl font-normal tracking-tight text-[#1E1E1E] leading-[1.08]">
+            <h2 className="font-serif text-3xl sm:text-5xl font-normal tracking-tight text-[#F5F5F0] leading-[1.08]">
               Effortless notes, enhanced instantly.
             </h2>
           </div>
 
           {/* 3 Notepad Row Bullet Items */}
-          <div className="flex flex-col divide-y divide-[#E8E6DE]">
+          <div className="flex flex-col divide-y divide-white/10">
             {highlights.map((item, idx) => (
               <motion.div
                 key={idx}
@@ -79,7 +79,7 @@ export default function NotepadIntro() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="py-5 flex items-center gap-4 text-[16px] sm:text-[17px] text-[#333333] leading-snug"
+                className="py-5 flex items-center gap-4 text-[16px] sm:text-[17px] text-[#E2E4DE] leading-snug"
               >
                 <div className="shrink-0">{item.icon}</div>
                 <div>{item.text}</div>

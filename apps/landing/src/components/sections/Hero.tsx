@@ -3,19 +3,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowDown, Calendar, Users, FolderPlus, Mic, Video, PhoneOff, CheckCircle2 } from "lucide-react";
-import Image from "next/image";
 
 export default function Hero() {
   const [activeTab, setActiveTab] = useState<"enhanced" | "raw">("enhanced");
 
   return (
-    <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-[#FCFBF9]">
+    <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-[#353935]">
       <div className="max-w-7xl mx-auto px-4 md:px-10">
         
         {/* 2-Column Split: Editorial Copy on Left, Visual Layered Mockup on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-[52%_48%] gap-12 lg:gap-8 items-center">
           
-          {/* Left Column: Granola-Style Typography */}
+          {/* Left Column: Granola-Style Typography on #353935 */}
           <div className="flex flex-col items-start text-left">
             
             {/* Pill Badge */}
@@ -24,15 +23,15 @@ export default function Hero() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="group inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1 rounded-full bg-[#F4F3EF] hover:bg-[#EAE8DF] border border-[#E8E6DE] transition-all mb-8 shadow-2xs cursor-pointer"
+              className="group inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 transition-all mb-8 shadow-2xs cursor-pointer"
             >
-              <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-[#D1E043] text-[#1E1E1E]">
+              <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#D1E043] text-[#1E1E1E]">
                 New
               </span>
-              <span className="text-[13.5px] font-medium text-[#1E1E1E]">
+              <span className="text-[13.5px] font-medium text-[#F5F5F0]">
                 Bacham for Mac &amp; Windows
               </span>
-              <ArrowRight size={13} className="text-[#666666] group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight size={13} className="text-[#C4C7C0] group-hover:translate-x-0.5 transition-transform" />
             </motion.a>
 
             {/* Massive Serif Display Headline */}
@@ -40,7 +39,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-serif text-5xl sm:text-7xl lg:text-[82px] font-normal leading-[0.93] tracking-[-0.03em] text-[#1E1E1E] max-w-[11ch] text-balance mb-6"
+              className="font-serif text-5xl sm:text-7xl lg:text-[82px] font-normal leading-[0.93] tracking-[-0.03em] text-[#F5F5F0] max-w-[11ch] text-balance mb-6"
             >
               The AI notepad for back-to-back meetings
             </motion.h1>
@@ -50,7 +49,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className="text-lg sm:text-xl text-[#1E1E1E]/90 font-normal leading-snug mb-8 max-w-md"
+              className="text-lg sm:text-xl text-[#E2E4DE] font-normal leading-snug mb-8 max-w-md"
             >
               <p>Notes, actions and memory.</p>
               <p>Without a meeting bot.</p>
@@ -65,15 +64,15 @@ export default function Hero() {
             >
               <a
                 href="#downloads"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#4F6322] hover:bg-[#43541c] text-white font-medium text-[15.5px] shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-semibold text-[15.5px] shadow-md hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
               >
                 <span>Download for free</span>
-                <ArrowDown size={16} strokeWidth={2.2} />
+                <ArrowDown size={16} strokeWidth={2.4} />
               </a>
 
               {/* Platform availability note */}
-              <div className="flex items-center gap-2 text-[13px] text-[#666666] pt-1">
-                <CheckCircle2 size={16} className="text-[#4F6322] shrink-0" />
+              <div className="flex items-center gap-2 text-[13px] text-[#C4C7C0] pt-1">
+                <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
                 <span>Available for macOS, Windows, Chrome &amp; Local Ollama</span>
               </div>
             </motion.div>
@@ -90,31 +89,31 @@ export default function Hero() {
             >
               
               {/* Layer 1A: Chartreuse / Lime textured art card (Left background) */}
-              <div className="absolute -left-6 top-8 w-44 sm:w-52 h-72 sm:h-80 rounded-2xl bg-[#CCD948] overflow-hidden shadow-lg -rotate-6 transform -z-10 border border-[#b8c63b]/50">
+              <div className="absolute -left-6 top-8 w-44 sm:w-52 h-72 sm:h-80 rounded-2xl bg-[#CCD948] overflow-hidden shadow-2xl -rotate-6 transform -z-10 border border-[#b8c63b]/60">
                 <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#1E1E1E_1px,transparent_1px)] [background-size:12px_12px]" />
-                <div className="absolute bottom-4 left-4 font-mono text-[11px] text-[#1E1E1E]/60 uppercase tracking-widest font-bold">
+                <div className="absolute bottom-4 left-4 font-mono text-[11px] text-[#1E1E1E]/70 uppercase tracking-widest font-bold">
                   Bacham / v0.1.0
                 </div>
-                <div className="absolute top-6 -right-6 w-24 h-24 rounded-full border-2 border-[#1E1E1E]/10" />
+                <div className="absolute top-6 -right-6 w-24 h-24 rounded-full border-2 border-[#1E1E1E]/15" />
               </div>
 
               {/* Layer 1B: Dark abstract burst / energy poster (Right background) */}
-              <div className="absolute -right-4 top-2 w-48 sm:w-56 h-80 sm:h-96 rounded-2xl bg-[#18181A] overflow-hidden shadow-xl rotate-6 transform -z-10 border border-[#333]/40">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-600/40 via-red-900/30 to-black/90" />
+              <div className="absolute -right-4 top-2 w-48 sm:w-56 h-80 sm:h-96 rounded-2xl bg-[#1E211E] overflow-hidden shadow-2xl rotate-6 transform -z-10 border border-white/10">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-600/35 via-red-900/25 to-black/90" />
                 <div className="absolute inset-0 opacity-40 mix-blend-screen bg-[radial-gradient(#ff9e42_1px,transparent_1px)] [background-size:8px_8px]" />
-                <div className="absolute top-4 right-4 text-white/30 font-mono text-[10px] tracking-widest">
+                <div className="absolute top-4 right-4 text-white/40 font-mono text-[10px] tracking-widest">
                   100% PRIVATE
                 </div>
               </div>
 
               {/* Layer 1C: Watermark typographic backdrop card (Bottom background) */}
-              <div className="absolute -bottom-6 left-12 w-64 h-32 rounded-xl bg-[#F4F1E8] -z-10 rotate-2 border border-[#E5E2D6] p-4 flex items-end justify-between opacity-80">
-                <span className="font-serif text-5xl text-[#1E1E1E]/10 font-bold select-none">2026</span>
-                <span className="font-mono text-xs text-[#1E1E1E]/30 tracking-widest uppercase">Local Engine</span>
+              <div className="absolute -bottom-6 left-12 w-64 h-32 rounded-xl bg-[#282C28] -z-10 rotate-2 border border-white/10 p-4 flex items-end justify-between opacity-80">
+                <span className="font-serif text-5xl text-white/10 font-bold select-none">2026</span>
+                <span className="font-mono text-xs text-white/30 tracking-widest uppercase">Local Engine</span>
               </div>
 
               {/* Layer 2: Center Floating macOS Notepad Window */}
-              <div className="relative z-10 w-full bg-[#FAF9F5] border border-[#E8E6DE] rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.12)] p-5 sm:p-6 backdrop-blur-sm">
+              <div className="relative z-10 w-full bg-[#FAF9F5] border border-[#E8E6DE] rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] p-5 sm:p-6 backdrop-blur-sm">
                 
                 {/* macOS Window Controls */}
                 <div className="flex items-center gap-2 mb-4">
@@ -236,7 +235,7 @@ export default function Hero() {
                   </AnimatePresence>
                 </div>
 
-                {/* Granola Bottom Segmented Toggle Pill */}
+                {/* Bottom Segmented Toggle Pill */}
                 <div className="mt-5 pt-3 border-t border-[#E8E6DE]/60 flex justify-center">
                   <div className="inline-flex p-1 rounded-full bg-[#EAE8DF] border border-[#DDD9CE]">
                     <button

@@ -77,25 +77,25 @@ export default function HowItWorks() {
   const CurrentIcon = currentStage.icon;
 
   return (
-    <section id="how-it-works" className="py-24 md:py-32 bg-[#FCFBF9] border-t border-[#E8E6DE]">
+    <section id="how-it-works" className="py-24 md:py-32 bg-[#353935] border-t border-white/10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
-        {/* Section Headline (Granola Style) */}
+        {/* Section Headline */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#4F6322] select-none mb-2 block">
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-[#D1E043] select-none mb-2 block">
             End-To-End Workflow
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#1E1E1E] leading-tight mb-4">
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#F5F5F0] leading-tight mb-4">
             Bacham helps you before, during and after your meetings.
           </h2>
-          <p className="text-base sm:text-lg text-[#666666] leading-relaxed">
+          <p className="text-base sm:text-lg text-[#C4C7C0] leading-relaxed">
             A frictionless workflow designed for people with back-to-back schedules.
           </p>
         </div>
 
         {/* 3 Segmented Stage Selector Pills */}
         <div className="flex justify-center mb-12">
-          <div className="inline-flex p-1.5 rounded-full bg-[#FAF9F5] border border-[#E8E6DE] shadow-2xs gap-1">
+          <div className="inline-flex p-1.5 rounded-full bg-white/10 border border-white/15 shadow-md gap-1">
             {stages.map((stage) => {
               const isActive = activeStage === stage.id;
               return (
@@ -105,8 +105,8 @@ export default function HowItWorks() {
                   onClick={() => setActiveStage(stage.id)}
                   className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all cursor-pointer ${
                     isActive
-                      ? "bg-white text-[#1E1E1E] shadow-xs font-semibold border border-[#E8E6DE]"
-                      : "text-[#666666] hover:text-[#1E1E1E]"
+                      ? "bg-[#D1E043] text-[#1E1E1E] shadow-sm font-bold"
+                      : "text-[#E2E4DE] hover:text-[#FFFFFF]"
                   }`}
                 >
                   {stage.label}
@@ -124,26 +124,26 @@ export default function HowItWorks() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-[#FAF9F5] border border-[#E8E6DE] rounded-3xl p-8 sm:p-12 shadow-2xs"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-[#2C302C] border border-white/10 rounded-3xl p-8 sm:p-12 shadow-xl"
           >
             {/* Left: Text & Key Highlights */}
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E8E6DE] text-[#4F6322] text-xs font-semibold mb-4 shadow-2xs">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[#D1E043] text-xs font-semibold mb-4 shadow-2xs">
                 <CurrentIcon size={14} />
                 <span>{currentStage.label}</span>
               </div>
 
-              <h3 className="font-serif text-3xl sm:text-4xl font-normal text-[#1E1E1E] mb-4 tracking-tight">
+              <h3 className="font-serif text-3xl sm:text-4xl font-normal text-[#F5F5F0] mb-4 tracking-tight">
                 {currentStage.title}
               </h3>
-              <p className="text-[#555555] text-base leading-relaxed mb-6">
+              <p className="text-[#C4C7C0] text-base leading-relaxed mb-6">
                 {currentStage.description}
               </p>
 
               <div className="space-y-3">
                 {currentStage.bulletPoints.map((bp, i) => (
-                  <div key={i} className="flex items-center gap-2.5 text-sm text-[#333333]">
-                    <CheckCircle2 size={16} className="text-[#4F6322] shrink-0" />
+                  <div key={i} className="flex items-center gap-2.5 text-sm text-[#E2E4DE]">
+                    <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
                     <span>{bp}</span>
                   </div>
                 ))}
@@ -151,10 +151,10 @@ export default function HowItWorks() {
             </div>
 
             {/* Right: Tactile Notepad Preview Mockup */}
-            <div className="w-full bg-white border border-[#E8E6DE] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div className="w-full bg-[#FAF9F5] border border-[#E8E6DE] rounded-2xl p-6 shadow-2xl flex flex-col justify-between text-[#1E1E1E]">
               <div>
                 <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#E8E6DE]">
-                  <span className="text-[11px] font-mono font-medium text-[#4F6322] uppercase tracking-wider">
+                  <span className="text-[11px] font-mono font-bold text-[#4F6322] uppercase tracking-wider">
                     {currentStage.previewContent.badge}
                   </span>
                   <div className="flex gap-1">
@@ -170,7 +170,7 @@ export default function HowItWorks() {
 
                 <div className="space-y-3">
                   {currentStage.previewContent.items.map((item, i) => (
-                    <div key={i} className="p-3.5 rounded-xl bg-[#FAF9F5] border border-[#E8E6DE] text-xs">
+                    <div key={i} className="p-3.5 rounded-xl bg-white border border-[#E8E6DE] text-xs shadow-2xs">
                       <span className="font-semibold text-[#1E1E1E] block mb-1">
                         {item.speaker}
                       </span>
@@ -184,7 +184,7 @@ export default function HowItWorks() {
 
               <div className="mt-6 pt-4 border-t border-[#E8E6DE] flex items-center justify-between text-xs text-[#666666]">
                 <span>100% On-Device Execution</span>
-                <span className="font-mono text-[#4F6322] font-medium">Local SQLite Vault</span>
+                <span className="font-mono text-[#4F6322] font-semibold">Local SQLite Vault</span>
               </div>
             </div>
 

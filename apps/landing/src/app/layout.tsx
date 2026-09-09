@@ -66,11 +66,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#FCFBF9] text-[#1E1E1E] font-sans selection:bg-[#D1E043]/50 selection:text-[#1E1E1E] relative overflow-x-hidden">
-        {/* Subtle Warm Paper Lighting */}
+      <body className="min-h-full flex flex-col bg-[#353935] text-[#F5F5F0] font-sans selection:bg-[#D1E043]/40 selection:text-[#1E1E1E] relative overflow-x-hidden">
+        {/* Subtle Dark Olive Ambient Lighting */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FAF7EE] via-[#FCFBF9]/60 to-transparent blur-[140px]" />
-          <div className="absolute top-[40%] -right-[200px] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#F4F1E8]/50 via-transparent to-transparent blur-[120px]" />
+          <div className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#454B45]/50 via-transparent to-transparent blur-[140px]" />
+          <div className="absolute top-[40%] -right-[200px] w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#2D312D]/60 via-transparent to-transparent blur-[120px]" />
         </div>
 
         <LenisProvider>

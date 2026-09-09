@@ -18,16 +18,16 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#FCFBF9]/80 backdrop-blur-md border-b border-[#E8E6DE]/60 transition-all">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#353935]/85 backdrop-blur-md border-b border-white/10 transition-all">
       <div className="max-w-7xl mx-auto px-4 md:px-10 h-16 flex items-center justify-between">
         
         {/* Left: Brand Logo Wordmark */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-[#FAF9F5] border border-[#E8E6DE] flex items-center justify-center p-1 shadow-xs group-hover:border-[#4F6322] transition-colors">
+            <div className="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center p-1 shadow-xs group-hover:border-[#D1E043] transition-colors">
               <Image src="/logo.png" alt="Bacham" width={22} height={22} className="object-contain" priority />
             </div>
-            <span className="font-serif text-[21px] font-normal tracking-[-0.02em] text-[#1E1E1E]">
+            <span className="font-serif text-[22px] font-normal tracking-[-0.02em] text-[#F5F5F0]">
               bacham
             </span>
           </Link>
@@ -39,7 +39,7 @@ export default function Navbar() {
             <Link
               key={link.label}
               href={link.href}
-              className="px-3.5 py-1.5 rounded-full text-[14.5px] font-normal text-[#1E1E1E]/80 hover:text-[#1E1E1E] hover:bg-[#F4F3EF] transition-colors duration-150"
+              className="px-3.5 py-1.5 rounded-full text-[14px] font-medium text-[#E2E4DE] hover:text-[#FFFFFF] hover:bg-white/10 transition-colors duration-150"
             >
               {link.label}
             </Link>
@@ -48,12 +48,12 @@ export default function Navbar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2.5">
-          {/* Subtle Download Pill Button (like Granola's top right download pill) */}
+          {/* Subtle Download Pill Button */}
           <Link
             href="#downloads"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F4F3EF] hover:bg-[#EAE8DF] text-[#1E1E1E] border border-[#E8E6DE] text-[13.5px] font-medium transition-all shadow-2xs hover:shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 text-[#F5F5F0] border border-white/15 text-[13.5px] font-medium transition-all shadow-2xs hover:shadow-xs"
           >
-            <Download size={14} className="text-[#4F6322]" />
+            <Download size={14} className="text-[#D1E043]" />
             <span>Download</span>
           </Link>
 
@@ -61,7 +61,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-full text-[#1E1E1E]/80 hover:text-[#1E1E1E] hover:bg-[#F4F3EF] transition-colors"
+            className="md:hidden p-2 rounded-full text-[#E2E4DE] hover:text-[#FFFFFF] hover:bg-white/10 transition-colors"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -78,25 +78,25 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden bg-[#FCFBF9] border-b border-[#E8E6DE] px-4 py-4 shadow-lg flex flex-col gap-1.5"
+            className="md:hidden bg-[#353935] border-b border-white/15 px-4 py-4 shadow-xl flex flex-col gap-1.5"
           >
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2.5 rounded-xl text-sm font-medium text-[#1E1E1E]/80 hover:text-[#1E1E1E] hover:bg-[#F4F3EF] transition-colors flex items-center justify-between"
+                className="px-3 py-2.5 rounded-xl text-sm font-medium text-[#E2E4DE] hover:text-[#FFFFFF] hover:bg-white/10 transition-colors flex items-center justify-between"
               >
                 <span>{link.label}</span>
-                <ArrowRight size={14} className="text-[#8E8D88]" />
+                <ArrowRight size={14} className="text-[#959891]" />
               </Link>
             ))}
-            <div className="pt-3 mt-1 border-t border-[#E8E6DE] flex items-center justify-between">
-              <span className="text-xs text-[#666666]">Zero Bots · 100% Local</span>
+            <div className="pt-3 mt-1 border-t border-white/10 flex items-center justify-between">
+              <span className="text-xs text-[#C4C7C0]">Zero Bots · 100% Local</span>
               <Link
                 href="#downloads"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-1.5 rounded-full bg-[#4F6322] text-white text-xs font-medium"
+                className="px-4 py-1.5 rounded-full bg-[#D1E043] text-[#1E1E1E] text-xs font-semibold"
               >
                 Download Free
               </Link>

@@ -5,14 +5,14 @@
   --font-mono: var(--font-geist-mono), monospace;
   --font-serif: var(--font-newsreader), Georgia, serif;
 
-  --color-paper-bg: #FCFBF9;
-  --color-paper-card: #FAF9F5;
-  --color-paper-card-elevated: #FFFFFF;
-  --color-paper-border: #E8E6DE;
-  --color-paper-border-strong: #D5D2C7;
-  --color-ink-primary: #1E1E1E;
-  --color-ink-secondary: #666666;
-  --color-ink-muted: #8E8D88;
+  --color-paper-bg: #353935;
+  --color-paper-card: #2C302C;
+  --color-paper-card-elevated: #3E433E;
+  --color-paper-border: rgba(255, 255, 255, 0.12);
+  --color-paper-border-strong: rgba(255, 255, 255, 0.22);
+  --color-ink-primary: #F5F5F0;
+  --color-ink-secondary: #C4C7C0;
+  --color-ink-muted: #959891;
   --color-accent-olive: #4F6322;
   --color-accent-olive-hover: #43541c;
   --color-accent-lime: #D1E043;
@@ -20,8 +20,8 @@
 }
 
 :root {
-  --background: #FCFBF9;
-  --foreground: #1E1E1E;
+  --background: #353935;
+  --foreground: #F5F5F0;
   --accent-olive: #4F6322;
   --notepad-row: 4.5rem;
 }
@@ -51,39 +51,39 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #FCFBF9;
+  background: #353935;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D8D6CE;
+  background: #4A504A;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4F6322;
+  background: #D1E043;
 }
 
 /* Ruled notebook line pattern */
 .ruled-paper {
   background-image: repeating-linear-gradient(
     to bottom,
-    #E8E6DE 0px,
-    #E8E6DE 1px,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 1px,
     transparent 1px,
     transparent var(--notepad-row, 4.5rem)
   );
 }
 
 .granola-card {
-  background: #FAF9F5;
-  border: 1px solid #E8E6DE;
+  background: #2C302C;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
 }
 
 .granola-card-hover {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .granola-card-hover:hover {
-  border-color: #4F6322;
-  box-shadow: 0 20px 40px -12px rgba(79, 99, 34, 0.12);
+  border-color: #D1E043;
+  box-shadow: 0 20px 40px -12px rgba(209, 224, 67, 0.15);
   transform: translateY(-2px);
 }
