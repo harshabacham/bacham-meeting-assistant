@@ -52,76 +52,88 @@ export default function Hero() {
             
             {/* Pill Badge + Trending Sticker */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
-              <motion.a
-                href="#downloads"
+              <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="group inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 transition-all shadow-2xs cursor-pointer"
+                className="inline-flex items-center gap-2.5 pl-2 pr-3.5 py-1.5 rounded-full bg-white/8 border border-white/12"
               >
-                <span className="px-2 py-0.5 text-[11px] font-black rounded-full bg-[#D1E043] text-[#1E1E1E] uppercase tracking-wider">
-                  NEW v0.1.0
-                </span>
-                <span className="text-[13px] font-medium text-[#FFFFFF]">
-                  Real-Time Meeting &amp; Lecture Copilot
-                </span>
-                <ArrowRight size={13} className="text-[#A1A1A6] group-hover:translate-x-0.5 transition-transform" />
-              </motion.a>
+                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-[#D1E043] text-[#1E1E1E] uppercase tracking-widest">OPEN SOURCE</span>
+                <span className="text-[12px] font-medium text-[#A1A1A6] tracking-wide">Local-first · Bot-free</span>
+              </motion.div>
 
               <NoBotsSticker className="rotate-2" />
             </div>
 
-            {/* Massive Serif Display Headline */}
+            {/* Headline — Recommended SaaS Hero Hook */}
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-serif text-5xl sm:text-7xl lg:text-[80px] font-normal leading-[0.93] tracking-[-0.03em] text-[#FFFFFF] max-w-[14ch] text-balance mb-6"
+              className="font-serif text-5xl sm:text-6xl lg:text-[72px] font-normal leading-[0.95] tracking-[-0.03em] text-[#FFFFFF] max-w-[18ch] text-balance mb-6"
             >
-              Every word captured. Every action tracked. Nothing leaves your device.
+              Your meetings had more than words.{' '}
+              <em className="italic text-[#D1E043]">Bacham remembers the rest.</em>
             </motion.h1>
 
-            {/* Subtitle — feature-accurate hook */}
-            <motion.div
+            {/* Subheadline */}
+            <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className="text-base sm:text-lg text-[#D1D1D6] font-normal leading-relaxed mb-8 max-w-lg space-y-2"
+              className="text-base sm:text-[17px] text-[#C0C0C8] font-normal leading-relaxed mb-8 max-w-[480px]"
             >
-              <p>
-                Bacham captures both sides of your audio — mic &amp; system loopback — transcribes locally with Whisper, and surfaces{' '}
-                <strong className="text-white font-semibold">timestamped action items &amp; 1-click flashcards</strong>{' '}
-                in real time.
-              </p>
-              <p className="text-[#8E8E93]">
-                No bot joins your call. No data hits the cloud.{' '}
-                <span className="text-[#D1E043] font-semibold">Lives entirely on your SSD.</span>
-              </p>
-            </motion.div>
+              Capture the tab, window, screen, video, and audio you choose. Get{' '}
+              <strong className="text-white font-semibold">live notes, screenshots, action items, decisions, and replayable proof</strong>
+              —without adding a bot or pushing your meetings to the cloud.
+            </motion.p>
 
-            {/* CTA Button Group & Trendy Sticker Accents */}
+            {/* Dual CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4"
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6"
             >
               <a
                 href="#downloads"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-[15.5px] shadow-lg hover:shadow-xl transition-all active:scale-[0.98] cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-[15px] shadow-lg hover:shadow-xl transition-all active:scale-[0.98] cursor-pointer"
               >
-                <span>Download for free</span>
-                <ArrowDown size={16} strokeWidth={2.6} />
+                <span>Get Early Access</span>
+                <ArrowRight size={15} strokeWidth={2.6} />
               </a>
 
-              <LocalSsdSticker className="-rotate-2" />
+              <a
+                href="#demo"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-[#FFFFFF] font-semibold text-[15px] transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <Play size={14} strokeWidth={2.5} className="text-[#D1E043]" />
+                <span>Watch 45-sec Demo</span>
+              </a>
             </motion.div>
 
-            {/* Platform availability note */}
-            <div className="flex items-center gap-2 text-[13px] text-[#A1A1A6] pt-1">
-              <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
-              <span>Available for macOS, Windows 10/11 &amp; Chrome Extension</span>
-            </div>
+            {/* Trust bar */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.36 }}
+              className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] text-[#6E6E78]"
+            >
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-[#D1E043]" />
+                Open source
+              </span>
+              <span className="text-[#3A3A3A]">·</span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-[#D1E043]" />
+                Local-first
+              </span>
+              <span className="text-[#3A3A3A]">·</span>
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-[#D1E043]" />
+                No bot joins your meeting
+              </span>
+            </motion.div>
 
           </div>
 

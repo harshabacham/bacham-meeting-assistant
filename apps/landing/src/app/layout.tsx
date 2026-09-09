@@ -19,8 +19,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Bacham — Every word captured. Every action tracked. Lives on your SSD.",
-  description: "Bacham captures both sides of your audio — mic & system loopback — transcribes locally with Whisper, and surfaces timestamped action items & 1-click flashcards in real time. No bot. No cloud.",
+  title: "Bacham — Your meetings had more than words. Bacham remembers the rest.",
+  description: "Capture the tab, window, screen, video, and audio you choose. Get live notes, screenshots, action items, decisions, and replayable proof—without a bot or the cloud. Open source · Local-first.",
   keywords: [
     "AI notepad",
     "meeting notepad",
