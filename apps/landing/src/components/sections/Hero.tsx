@@ -89,6 +89,7 @@ export default function Hero() {
                   lineHeight: '1.5',
                   display: 'inline-block',
                   marginTop: '4px',
+                  textTransform: 'lowercase',
                 }}
               >
                 Bacham remembers the rest.
