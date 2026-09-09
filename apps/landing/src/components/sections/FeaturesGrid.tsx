@@ -7,11 +7,8 @@ import {
   CalendarCheck2,
   Share2,
   Search,
-  Sparkles,
   ArrowRight,
   Database,
-  Cpu,
-  CheckCircle2,
 } from "lucide-react";
 import { ChromeIcon } from "@/components/ui/ChromeIcon";
 
@@ -22,13 +19,13 @@ export default function FeaturesGrid() {
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none mb-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none mb-2">
             Intelligence Architecture
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FAF9F5] leading-tight mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#F8F9FA] leading-tight mb-4">
             Everything You Need For Perfect Meeting Recall
           </h2>
-          <p className="text-base sm:text-lg text-[#8E9099] leading-relaxed">
+          <p className="text-base sm:text-lg text-white/70 leading-relaxed">
             Built from the ground up for privacy, speed, and deep executive clarity.
           </p>
         </div>
@@ -42,24 +39,24 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="md:col-span-2 rounded-2xl bg-[#111317] border border-white/[0.08] p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-all shadow-lg"
+            className="md:col-span-2 rounded-2xl bg-[#111317] border border-white/[0.08] p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#BAFF29]/30 transition-all shadow-lg"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#E2B774]/[0.05] rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#BAFF29]/[0.05] rounded-full blur-3xl pointer-events-none" />
 
             <div>
               <div className="flex items-center justify-between gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#E2B774]/10 text-[#E2B774] border border-[#E2B774]/20 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-[#BAFF29]/10 text-[#BAFF29] border border-[#BAFF29]/20 flex items-center justify-center shrink-0">
                   <Mic size={18} />
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/[0.04] text-[#8E9099] border border-white/[0.06]">
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/[0.04] text-white/70 border border-white/[0.06]">
                   Dual-Stream WASAPI &amp; CoreAudio
                 </span>
               </div>
 
-              <h3 className="text-xl font-bold text-[#FAF9F5] mb-2 tracking-tight">
+              <h3 className="text-xl font-bold text-[#F8F9FA] mb-2 tracking-tight">
                 Dual-Channel Audio &amp; Offline Whisper Ingestion
               </h3>
-              <p className="text-[13.5px] text-[#8E9099] leading-relaxed max-w-xl mb-6">
+              <p className="text-[13.5px] text-white/70 leading-relaxed max-w-xl mb-6">
                 Separates your microphone from incoming speaker audio with studio clarity. Whisper runs directly on your GPU/NPU with sub-second turnaround—zero audio streaming to the cloud.
               </p>
             </div>
@@ -67,10 +64,10 @@ export default function FeaturesGrid() {
             {/* Interactive Audio Pill Preview */}
             <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] flex items-center justify-between gap-4">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-mono text-[#FAF9F5] truncate">Mic: HyperX SoloCast · System: Zoom Output</span>
+                <span className="w-2 h-2 rounded-full bg-[#BAFF29] animate-pulse" />
+                <span className="text-xs font-mono text-[#F8F9FA] truncate">Mic: HyperX SoloCast · System: Zoom Output</span>
               </div>
-              <span className="text-[11px] font-mono text-[#E2B774] shrink-0">16kHz 16-bit PCM</span>
+              <span className="text-[11px] font-mono text-[#BAFF29] shrink-0 font-bold">16kHz 16-bit PCM</span>
             </div>
           </motion.div>
 
@@ -87,15 +84,15 @@ export default function FeaturesGrid() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#FAF9F5] mb-2 tracking-tight">
+              <h3 className="text-lg font-bold text-[#F8F9FA] mb-2 tracking-tight">
                 Visual Slide Memory &amp; Key Frames
               </h3>
-              <p className="text-[13px] text-[#8E9099] leading-relaxed mb-4">
+              <p className="text-[13px] text-white/70 leading-relaxed mb-4">
                 Smart perceptual hashing detects when someone changes slides, automatically capturing crisp snapshots synchronized with notes.
               </p>
             </div>
 
-            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-semibold text-blue-400 flex items-center gap-1">
+            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-bold text-blue-400 flex items-center gap-1">
               <span>Automatic Diff Detection</span>
               <ArrowRight size={12} />
             </div>
@@ -107,22 +104,22 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="md:col-span-1 rounded-2xl bg-[#111317] border border-white/[0.08] p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-white/20 transition-all shadow-lg"
+            className="md:col-span-1 rounded-2xl bg-[#111317] border border-white/[0.08] p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden group hover:border-[#BAFF29]/30 transition-all shadow-lg"
           >
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center shrink-0 mb-5">
-              <ChromeIcon className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-[#BAFF29]/10 text-[#BAFF29] border border-[#BAFF29]/20 flex items-center justify-center shrink-0 mb-5">
+              <ChromeIcon className="w-5 h-5 text-[#BAFF29]" />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#FAF9F5] mb-2 tracking-tight">
+              <h3 className="text-lg font-bold text-[#F8F9FA] mb-2 tracking-tight">
                 Chrome Extension Companion
               </h3>
-              <p className="text-[13px] text-[#8E9099] leading-relaxed mb-4">
-                1-click capture for Google Meet and browser tabs. Automatically syncs via local WebSocket (<span className="font-mono text-[11px] text-[#E2B774]">ws://127.0.0.1:1421</span>).
+              <p className="text-[13px] text-white/70 leading-relaxed mb-4">
+                1-click capture for Google Meet and browser tabs. Automatically syncs via local WebSocket (<span className="font-mono text-[11px] text-[#BAFF29]">ws://127.0.0.1:1421</span>).
               </p>
             </div>
 
-            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-semibold text-amber-400 flex items-center gap-1">
+            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-bold text-[#BAFF29] flex items-center gap-1">
               <span>Offline Media Vault &amp; Auto-Sync</span>
             </div>
           </motion.div>
@@ -140,15 +137,15 @@ export default function FeaturesGrid() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#FAF9F5] mb-2 tracking-tight">
+              <h3 className="text-lg font-bold text-[#F8F9FA] mb-2 tracking-tight">
                 Calendar Auto-Record Watchdog
               </h3>
-              <p className="text-[13px] text-[#8E9099] leading-relaxed mb-4">
+              <p className="text-[13px] text-white/70 leading-relaxed mb-4">
                 Syncs with Google Calendar and iCal feeds. Arms recording ahead of scheduled meetings so you never forget to press record.
               </p>
             </div>
 
-            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-semibold text-rose-400 flex items-center gap-1">
+            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-bold text-rose-400 flex items-center gap-1">
               <span>Pre-Meeting Briefs Generated</span>
             </div>
           </motion.div>
@@ -166,15 +163,15 @@ export default function FeaturesGrid() {
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#FAF9F5] mb-2 tracking-tight">
+              <h3 className="text-lg font-bold text-[#F8F9FA] mb-2 tracking-tight">
                 Push to Slack &amp; Notion
               </h3>
-              <p className="text-[13px] text-[#8E9099] leading-relaxed mb-4">
+              <p className="text-[13px] text-white/70 leading-relaxed mb-4">
                 Send action items and decisions straight to team channels or local Markdown files with clean Composio-ready integrations.
               </p>
             </div>
 
-            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-semibold text-purple-400 flex items-center gap-1">
+            <div className="pt-3 border-t border-white/[0.05] text-[11px] font-bold text-purple-400 flex items-center gap-1">
               <span>One-Click Team Sync</span>
             </div>
           </motion.div>
@@ -185,28 +182,28 @@ export default function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="md:col-span-3 rounded-2xl bg-[#111317] border border-[#E2B774]/25 p-7 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group hover:border-[#E2B774]/40 transition-all shadow-lg"
+            className="md:col-span-3 rounded-2xl bg-[#111317] border border-[#BAFF29]/25 p-7 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden group hover:border-[#BAFF29]/50 transition-all shadow-lg"
           >
             <div className="space-y-2 max-w-2xl">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#E2B774]/15 text-[#E2B774] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#BAFF29]/15 text-[#BAFF29] flex items-center justify-center shrink-0">
                   <Database size={16} />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#E2B774]">
+                <span className="text-xs font-black uppercase tracking-wider text-[#BAFF29]">
                   Local Vector Semantic Index
                 </span>
               </div>
-              <h3 className="text-xl font-bold text-[#FAF9F5] tracking-tight">
+              <h3 className="text-xl font-bold text-[#F8F9FA] tracking-tight">
                 Global Memory: Ask Questions Across Your Entire Meeting History
               </h3>
-              <p className="text-[13.5px] text-[#8E9099] leading-relaxed">
+              <p className="text-[13.5px] text-white/70 leading-relaxed">
                 Need to remember what was agreed upon three months ago? Query across all archived recordings with sub-second RAG search and exact timestamp jump links.
               </p>
             </div>
 
             <div className="w-full sm:w-auto shrink-0">
-              <div className="px-5 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-mono text-[#FAF9F5] flex items-center gap-3">
-                <Search size={14} className="text-[#E2B774]" />
+              <div className="px-5 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-mono text-[#F8F9FA] flex items-center gap-3">
+                <Search size={14} className="text-[#BAFF29]" />
                 <span>&quot;What did Sarah say about API rate limits?&quot;</span>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { XCircle, CheckCircle2, ShieldCheck, Zap, Lock, DollarSign, Bot, EyeOff } from "lucide-react";
+import { XCircle, CheckCircle2, ShieldCheck, EyeOff, Bot } from "lucide-react";
 
 export default function WhyItExists() {
   const oldWayItems = [
@@ -54,13 +54,13 @@ export default function WhyItExists() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none mb-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none mb-2">
             The Bacham Advantage
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FAF9F5] leading-tight mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#F8F9FA] leading-tight mb-4">
             Why Professionals Are Ditching Cloud Meeting Bots
           </h2>
-          <p className="text-base sm:text-lg text-[#8E9099] leading-relaxed">
+          <p className="text-base sm:text-lg text-white/70 leading-relaxed">
             Stop sending awkward bots to client calls. Capture everything invisibly with complete privacy and zero monthly fees.
           </p>
         </motion.div>
@@ -84,8 +84,8 @@ export default function WhyItExists() {
                   <Bot size={16} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#FAF9F5]">Traditional Cloud Bots</h3>
-                  <p className="text-xs text-[#8E9099]">Otter, Fireflies, Grain, etc.</p>
+                  <h3 className="text-base font-bold text-[#F8F9FA]">Traditional Cloud Bots</h3>
+                  <p className="text-xs text-white/50">Otter, Fireflies, Grain, etc.</p>
                 </div>
               </div>
 
@@ -94,10 +94,10 @@ export default function WhyItExists() {
                   <div key={item.title} className="flex items-start gap-3">
                     <XCircle size={18} className="text-red-400/80 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-[13.5px] font-semibold text-[#FAF9F5]/90 mb-0.5">
+                      <h4 className="text-[13.5px] font-semibold text-[#F8F9FA]/90 mb-0.5">
                         {item.title}
                       </h4>
-                      <p className="text-[12.5px] text-[#8E9099] leading-relaxed">
+                      <p className="text-[12.5px] text-white/60 leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
@@ -117,35 +117,35 @@ export default function WhyItExists() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl bg-[#121418] border border-[#E2B774]/30 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden shadow-[0_12px_40px_rgba(226,183,116,0.06)]"
+            className="rounded-2xl bg-[#121418] border border-[#BAFF29]/30 p-7 sm:p-8 flex flex-col justify-between relative overflow-hidden shadow-[0_12px_40px_rgba(186,255,41,0.06)]"
           >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-[#E2B774]/[0.08] rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-[#BAFF29]/[0.08] rounded-full blur-3xl pointer-events-none" />
 
             <div>
               <div className="flex items-center gap-2.5 pb-4 border-b border-white/[0.08] mb-6">
-                <div className="w-8 h-8 rounded-lg bg-[#E2B774]/15 text-[#E2B774] border border-[#E2B774]/30 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-[#BAFF29]/15 text-[#BAFF29] border border-[#BAFF29]/30 flex items-center justify-center shrink-0">
                   <EyeOff size={16} />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-[#FAF9F5]">Bacham Local Assistant</h3>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-[#E2B774]/15 text-[#E2B774] border border-[#E2B774]/30">
+                    <h3 className="text-base font-bold text-[#F8F9FA]">Bacham Local Assistant</h3>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#BAFF29]/15 text-[#BAFF29] border border-[#BAFF29]/30">
                       100% Private
                     </span>
                   </div>
-                  <p className="text-xs text-[#8E9099]">On-Device Native Audio Pipeline</p>
+                  <p className="text-xs text-white/50">On-Device Native Audio Pipeline</p>
                 </div>
               </div>
 
               <div className="space-y-5">
                 {bachamItems.map((item) => (
                   <div key={item.title} className="flex items-start gap-3">
-                    <CheckCircle2 size={18} className="text-[#E2B774] shrink-0 mt-0.5" />
+                    <CheckCircle2 size={18} className="text-[#BAFF29] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-[13.5px] font-semibold text-[#FAF9F5] mb-0.5">
+                      <h4 className="text-[13.5px] font-semibold text-[#F8F9FA] mb-0.5">
                         {item.title}
                       </h4>
-                      <p className="text-[12.5px] text-[#8E9099] leading-relaxed">
+                      <p className="text-[12.5px] text-white/70 leading-relaxed">
                         {item.desc}
                       </p>
                     </div>
@@ -154,7 +154,7 @@ export default function WhyItExists() {
               </div>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-white/[0.08] text-xs text-[#E2B774] font-mono flex items-center gap-1.5">
+            <div className="mt-8 pt-4 border-t border-white/[0.08] text-xs text-[#BAFF29] font-mono flex items-center gap-1.5 font-bold">
               <ShieldCheck size={14} />
               <span>Result: Zero participant awkwardness. 100% data ownership.</span>
             </div>

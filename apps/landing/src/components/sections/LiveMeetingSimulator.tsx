@@ -45,18 +45,18 @@ export function LiveMeetingSimulator() {
           <div className="w-3 h-3 rounded-full bg-[#FF5F56]/80 border border-[#E0443E]" />
           <div className="w-3 h-3 rounded-full bg-[#FFBD2E]/80 border border-[#DEA123]" />
           <div className="w-3 h-3 rounded-full bg-[#27C93F]/80 border border-[#1AAB29]" />
-          <span className="ml-3 text-[11.5px] font-medium text-[#8E9099] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="ml-3 text-[11.5px] font-medium text-white/60 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#BAFF29] animate-pulse" />
             Live Ingestion · Google Meet (Tab #4)
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="hidden sm:inline-flex items-center gap-1 text-[10.5px] font-semibold tracking-wider text-[#E2B774] bg-[#E2B774]/10 px-2 py-0.5 rounded-md border border-[#E2B774]/20">
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10.5px] font-bold tracking-wider text-[#BAFF29] bg-[#BAFF29]/10 px-2 py-0.5 rounded-md border border-[#BAFF29]/20">
             <Cpu size={10} />
             Whisper v3 Local
           </span>
-          <span className="text-[11px] text-[#8E9099] font-mono">00:28:44</span>
+          <span className="text-[11px] text-white/50 font-mono">00:28:44</span>
         </div>
       </div>
 
@@ -69,10 +69,10 @@ export function LiveMeetingSimulator() {
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-white/[0.05] mb-5">
               <div>
-                <h3 className="text-base font-bold text-[#FAF9F5] tracking-tight">
-                  Q3 Product Architecture & Roadmap Review
+                <h3 className="text-base font-bold text-[#F8F9FA] tracking-tight">
+                  Q3 Product Architecture &amp; Roadmap Review
                 </h3>
-                <p className="text-xs text-[#8E9099] mt-0.5 flex items-center gap-2">
+                <p className="text-xs text-white/50 mt-0.5 flex items-center gap-2">
                   <span>3 Participants</span>
                   <span>•</span>
                   <span>Audio Dual-Stream Active</span>
@@ -86,7 +86,7 @@ export function LiveMeetingSimulator() {
                     key={i}
                     animate={{ height: [`${Math.max(20, h * 0.3)}%`, `${h}%`, `${Math.max(15, h * 0.4)}%`] }}
                     transition={{ repeat: Infinity, duration: 1 + (i % 3) * 0.2, ease: "easeInOut" }}
-                    className="w-1 bg-[#E2B774]/70 rounded-full"
+                    className="w-1 bg-[#BAFF29]/80 rounded-full"
                   />
                 ))}
               </div>
@@ -101,10 +101,10 @@ export function LiveMeetingSimulator() {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-[#FAF9F5] text-xs">Alex (Lead Architect)</span>
-                    <span className="text-[10px] text-[#8E9099] font-mono">10:14:02</span>
+                    <span className="font-semibold text-[#F8F9FA] text-xs">Alex (Lead Architect)</span>
+                    <span className="text-[10px] text-white/50 font-mono">10:14:02</span>
                   </div>
-                  <p className="text-[#8E9099]">
+                  <p className="text-white/70">
                     We decided to run all meeting transcription strictly on-device using local Whisper models. That ensures confidential engineering discussions never touch 3rd-party servers.
                   </p>
                 </div>
@@ -112,16 +112,16 @@ export function LiveMeetingSimulator() {
 
               {/* Speaker 2 */}
               <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full bg-[#E2B774]/15 border border-[#E2B774]/30 text-[#E2B774] flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
+                <div className="w-7 h-7 rounded-full bg-[#BAFF29]/15 border border-[#BAFF29]/30 text-[#BAFF29] flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">
                   SA
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-[#FAF9F5] text-xs">Sarah (Product Lead)</span>
-                    <span className="text-[10px] text-[#8E9099] font-mono">10:14:38</span>
+                    <span className="font-semibold text-[#F8F9FA] text-xs">Sarah (Product Lead)</span>
+                    <span className="text-[10px] text-white/50 font-mono">10:14:38</span>
                   </div>
-                  <p className="text-[#8E9099]">
-                    Love it. Let&apos;s log the action item for <span className="text-[#E2B774] font-medium">@Harsha</span> to finalize the SQLite schema and verify the Chrome Extension WebSocket before launch.
+                  <p className="text-white/70">
+                    Love it. Let&apos;s log the action item for <span className="text-[#BAFF29] font-semibold">@Harsha</span> to finalize the SQLite schema and verify the Chrome Extension WebSocket before launch.
                   </p>
                 </div>
               </div>
@@ -133,10 +133,10 @@ export function LiveMeetingSimulator() {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-[#FAF9F5] text-xs">David (Infra)</span>
-                    <span className="text-[10px] text-[#8E9099] font-mono">10:15:10</span>
+                    <span className="font-semibold text-[#F8F9FA] text-xs">David (Infra)</span>
+                    <span className="text-[10px] text-white/50 font-mono">10:15:10</span>
                   </div>
-                  <p className="text-[#8E9099]">
+                  <p className="text-white/70">
                     Tested the build on Windows and Mac. Ingestion CPU usage stayed below 3% while capturing audio and slides.
                   </p>
                 </div>
@@ -145,9 +145,9 @@ export function LiveMeetingSimulator() {
           </div>
 
           {/* Bottom Live Streaming Indicator */}
-          <div className="mt-5 pt-3 border-t border-white/[0.04] flex items-center justify-between text-[11.5px] text-[#8E9099]">
+          <div className="mt-5 pt-3 border-t border-white/[0.04] flex items-center justify-between text-[11.5px] text-white/60">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#E2B774] animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-[#BAFF29] animate-ping" />
               <span>Transcribing live conversation stream...</span>
             </div>
             <span className="text-[10px] px-2 py-0.5 rounded bg-white/[0.04] text-white/50 border border-white/[0.05]">
@@ -167,21 +167,21 @@ export function LiveMeetingSimulator() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("summary")}
-                  className={`px-3 py-1 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-[11.5px] font-bold transition-all cursor-pointer ${
                     activeTab === "summary"
-                      ? "bg-[#E2B774] text-[#090A0C] shadow-sm"
-                      : "text-[#8E9099] hover:text-[#FAF9F5]"
+                      ? "bg-[#BAFF29] text-[#0A0A0C] shadow-sm"
+                      : "text-white/60 hover:text-[#F8F9FA]"
                   }`}
                 >
-                  Brief & Decisions
+                  Brief &amp; Decisions
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("actions")}
-                  className={`px-3 py-1 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-[11.5px] font-bold transition-all cursor-pointer ${
                     activeTab === "actions"
-                      ? "bg-[#E2B774] text-[#090A0C] shadow-sm"
-                      : "text-[#8E9099] hover:text-[#FAF9F5]"
+                      ? "bg-[#BAFF29] text-[#0A0A0C] shadow-sm"
+                      : "text-white/60 hover:text-[#F8F9FA]"
                   }`}
                 >
                   Tasks ({tasks.filter((t) => !t.done).length})
@@ -189,10 +189,10 @@ export function LiveMeetingSimulator() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("slides")}
-                  className={`px-3 py-1 rounded-md text-[11.5px] font-semibold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md text-[11.5px] font-bold transition-all cursor-pointer ${
                     activeTab === "slides"
-                      ? "bg-[#E2B774] text-[#090A0C] shadow-sm"
-                      : "text-[#8E9099] hover:text-[#FAF9F5]"
+                      ? "bg-[#BAFF29] text-[#0A0A0C] shadow-sm"
+                      : "text-white/60 hover:text-[#F8F9FA]"
                   }`}
                 >
                   Slides (2)
@@ -202,10 +202,10 @@ export function LiveMeetingSimulator() {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="text-[#8E9099] hover:text-[#FAF9F5] transition-colors p-1 rounded cursor-pointer"
+                className="text-white/50 hover:text-[#F8F9FA] transition-colors p-1 rounded cursor-pointer"
                 title="Copy Brief"
               >
-                {copied ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                {copied ? <CheckCircle2 size={14} className="text-[#BAFF29]" /> : <Copy size={14} />}
               </button>
             </div>
 
@@ -221,28 +221,28 @@ export function LiveMeetingSimulator() {
                 >
                   {/* Executive Summary */}
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#E2B774] block mb-1.5">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#BAFF29] block mb-1.5">
                       ✦ Executive Brief
                     </span>
-                    <ul className="space-y-1.5 text-[12px] text-[#FAF9F5]/90 leading-relaxed">
+                    <ul className="space-y-1.5 text-[12px] text-[#F8F9FA]/90 leading-relaxed">
                       <li className="flex items-start gap-1.5">
-                        <span className="text-[#E2B774] font-bold">•</span>
+                        <span className="text-[#BAFF29] font-bold">•</span>
                         <span>Zero-cloud architecture approved for all core client meeting ingestion.</span>
                       </li>
                       <li className="flex items-start gap-1.5">
-                        <span className="text-[#E2B774] font-bold">•</span>
+                        <span className="text-[#BAFF29] font-bold">•</span>
                         <span>Local Whisper v3 benchmarks confirmed sub-3% CPU overhead across platforms.</span>
                       </li>
                     </ul>
                   </div>
 
                   {/* Decisions Detected */}
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-[#E2B774]/20 space-y-2">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#E2B774] flex items-center gap-1.5">
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-[#BAFF29]/25 space-y-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#BAFF29] flex items-center gap-1.5">
                       <CheckCircle2 size={12} />
                       Decisions Made (Live Detected)
                     </span>
-                    <p className="text-[11.5px] text-[#FAF9F5]/80 leading-snug">
+                    <p className="text-[11.5px] text-[#F8F9FA]/80 leading-snug">
                       Ship initial release with offline Whisper + local SQLite fallback before expanding to optional self-hosted Ollama servers.
                     </p>
                   </div>
@@ -257,7 +257,7 @@ export function LiveMeetingSimulator() {
                   exit={{ opacity: 0, y: 4 }}
                   className="space-y-2.5"
                 >
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-[#8E9099] block mb-1">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 block mb-1">
                     Click to Toggle Completion:
                   </span>
                   {tasks.map((task) => (
@@ -267,25 +267,25 @@ export function LiveMeetingSimulator() {
                       className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 select-none ${
                         task.done
                           ? "bg-white/[0.01] border-white/[0.04] opacity-50"
-                          : "bg-white/[0.03] border-white/[0.08] hover:border-[#E2B774]/40"
+                          : "bg-white/[0.03] border-white/[0.08] hover:border-[#BAFF29]/40"
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={task.done}
                         onChange={() => {}}
-                        className="rounded border-white/20 mt-0.5 accent-[#E2B774] cursor-pointer"
+                        className="rounded border-white/20 mt-0.5 accent-[#BAFF29] cursor-pointer"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[12px] leading-snug ${task.done ? "line-through text-[#8E9099]" : "text-[#FAF9F5]"}`}>
+                        <p className={`text-[12px] leading-snug ${task.done ? "line-through text-white/50" : "text-[#F8F9FA]"}`}>
                           {task.text}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-[#8E9099]">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-white/60 font-medium">
                             @{task.owner}
                           </span>
-                          <span className={`text-[9.5px] font-semibold px-1.5 py-0.2 rounded ${
-                            task.priority === "High" ? "text-red-400 bg-red-500/10" : "text-amber-400 bg-amber-500/10"
+                          <span className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded ${
+                            task.priority === "High" ? "text-red-400 bg-red-500/10" : "text-[#BAFF29] bg-[#BAFF29]/10"
                           }`}>
                             {task.priority}
                           </span>
@@ -304,24 +304,24 @@ export function LiveMeetingSimulator() {
                   exit={{ opacity: 0, y: 4 }}
                   className="space-y-3"
                 >
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-[#8E9099] block">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/50 block">
                     Auto-Captured Key Frames:
                   </span>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black/40 p-2 space-y-1.5 group cursor-pointer hover:border-[#E2B774]/50 transition-colors">
-                      <div className="h-18 rounded bg-[#181A1F] flex items-center justify-center text-[10px] text-[#8E9099] font-mono">
+                    <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black/40 p-2 space-y-1.5 group cursor-pointer hover:border-[#BAFF29]/50 transition-colors">
+                      <div className="h-18 rounded bg-[#181A1F] flex items-center justify-center text-[10px] text-white/50 font-mono">
                         [Architecture Diagram]
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-[#8E9099]">
+                      <div className="flex items-center justify-between text-[10px] text-white/60">
                         <span>Slide 4</span>
                         <span className="font-mono">10:14:02</span>
                       </div>
                     </div>
-                    <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black/40 p-2 space-y-1.5 group cursor-pointer hover:border-[#E2B774]/50 transition-colors">
-                      <div className="h-18 rounded bg-[#181A1F] flex items-center justify-center text-[10px] text-[#8E9099] font-mono">
+                    <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-black/40 p-2 space-y-1.5 group cursor-pointer hover:border-[#BAFF29]/50 transition-colors">
+                      <div className="h-18 rounded bg-[#181A1F] flex items-center justify-center text-[10px] text-white/50 font-mono">
                         [Latency Benchmarks]
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-[#8E9099]">
+                      <div className="flex items-center justify-between text-[10px] text-white/60">
                         <span>Slide 7</span>
                         <span className="font-mono">10:22:15</span>
                       </div>
@@ -333,8 +333,8 @@ export function LiveMeetingSimulator() {
           </div>
 
           {/* Bottom Security Pill */}
-          <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-[#8E9099]">
-            <div className="flex items-center gap-1.5 text-emerald-400/90 font-medium">
+          <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-white/60">
+            <div className="flex items-center gap-1.5 text-[#BAFF29] font-medium">
               <Lock size={12} />
               <span>100% On-Device Reasoning</span>
             </div>
@@ -346,20 +346,20 @@ export function LiveMeetingSimulator() {
       </div>
 
       {/* Bottom Technical Guarantee Strip */}
-      <div className="px-6 py-2.5 bg-[#090A0C] border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-[11px] text-[#8E9099]">
+      <div className="px-6 py-2.5 bg-[#090A0C] border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-[11px] text-white/60">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
-            <HardDrive size={12} className="text-[#E2B774]" />
+            <HardDrive size={12} className="text-[#BAFF29]" />
             Local SQLite Memory
           </span>
           <span className="hidden sm:inline-block">•</span>
           <span className="hidden sm:flex items-center gap-1.5">
-            <Cpu size={12} className="text-[#E2B774]" />
+            <Cpu size={12} className="text-[#BAFF29]" />
             NVIDIA / Apple Metal Acceleration
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20 text-[10px]">
+          <span className="px-2 py-0.5 rounded bg-[#BAFF29]/10 text-[#BAFF29] font-bold border border-[#BAFF29]/20 text-[10px]">
             No Bots Joining Calls
           </span>
         </div>

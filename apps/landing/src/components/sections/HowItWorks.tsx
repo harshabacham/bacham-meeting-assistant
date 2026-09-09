@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Cpu, CheckSquare, ArrowRight, ShieldCheck, Play, Layers, Sparkles } from "lucide-react";
+import { Mic, Cpu, CheckSquare, ShieldCheck } from "lucide-react";
 
 export default function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
@@ -58,13 +58,13 @@ export default function HowItWorks() {
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none mb-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none mb-2">
             Seamless Three-Stage Flow
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FAF9F5] leading-tight mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#F8F9FA] leading-tight mb-4">
             How Bacham Elevates Your Meetings
           </h2>
-          <p className="text-base sm:text-lg text-[#8E9099] leading-relaxed">
+          <p className="text-base sm:text-lg text-white/70 leading-relaxed">
             From the moment your conversation begins to the moment decisions are executed.
           </p>
         </div>
@@ -81,24 +81,24 @@ export default function HowItWorks() {
                 onClick={() => setActiveStep(idx)}
                 className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[140px] ${
                   isActive
-                    ? "bg-[#14161A] border-[#E2B774]/40 shadow-[0_4px_25px_rgba(226,183,116,0.08)]"
+                    ? "bg-[#14161A] border-[#BAFF29]/40 shadow-[0_4px_25px_rgba(186,255,41,0.08)]"
                     : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/15"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs font-mono font-bold ${isActive ? "text-[#E2B774]" : "text-[#8E9099]"}`}>
+                  <span className={`text-xs font-mono font-bold ${isActive ? "text-[#BAFF29]" : "text-white/50"}`}>
                     {step.num}
                   </span>
                   <div className={`p-2 rounded-xl border ${
-                    isActive ? "bg-[#E2B774]/15 border-[#E2B774]/30 text-[#E2B774]" : "bg-white/[0.03] border-white/[0.06] text-[#8E9099]"
+                    isActive ? "bg-[#BAFF29]/15 border-[#BAFF29]/30 text-[#BAFF29]" : "bg-white/[0.03] border-white/[0.06] text-white/50"
                   }`}>
                     <Icon size={16} />
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-[#FAF9F5] mb-0.5">{step.title}</h3>
-                  <p className="text-xs text-[#8E9099]">{step.subtitle}</p>
+                  <h3 className="text-sm font-bold text-[#F8F9FA] mb-0.5">{step.title}</h3>
+                  <p className="text-xs text-white/60">{step.subtitle}</p>
                 </div>
               </button>
             );
@@ -107,7 +107,7 @@ export default function HowItWorks() {
 
         {/* Active Step Detailed Showcase */}
         <div className="rounded-2xl bg-[#111317] border border-white/[0.08] p-6 sm:p-10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#E2B774]/[0.04] rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-80 h-80 bg-[#BAFF29]/[0.04] rounded-full blur-3xl pointer-events-none" />
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -119,38 +119,38 @@ export default function HowItWorks() {
               className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
             >
               <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E2B774]/10 border border-[#E2B774]/20 text-[#E2B774] text-xs font-bold">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#BAFF29]/10 border border-[#BAFF29]/20 text-[#BAFF29] text-xs font-bold">
                   <span>Stage {steps[activeStep].num}</span>
                   <span>•</span>
                   <span>{steps[activeStep].subtitle}</span>
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#FAF9F5] tracking-tight">
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#F8F9FA] tracking-tight">
                   {steps[activeStep].title}
                 </h3>
 
-                <p className="text-sm sm:text-base text-[#8E9099] leading-relaxed">
+                <p className="text-sm sm:text-base text-white/70 leading-relaxed">
                   {steps[activeStep].description}
                 </p>
 
-                <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-[#FAF9F5]/90">
-                  <ShieldCheck size={16} className="text-[#E2B774]" />
+                <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-[#F8F9FA]/90">
+                  <ShieldCheck size={16} className="text-[#BAFF29]" />
                   <span>{steps[activeStep].highlight}</span>
                 </div>
               </div>
 
               <div className="lg:col-span-5">
-                <div className="p-6 rounded-xl bg-black/40 border border-white/[0.08] space-y-3 font-mono text-xs text-[#FAF9F5]">
+                <div className="p-6 rounded-xl bg-black/40 border border-white/[0.08] space-y-3 font-mono text-xs text-[#F8F9FA]">
                   <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
-                    <span className="text-[11px] text-[#E2B774] uppercase font-bold tracking-wider">
+                    <span className="text-[11px] text-[#BAFF29] uppercase font-bold tracking-wider">
                       {steps[activeStep].preview.tag}
                     </span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="w-2 h-2 rounded-full bg-[#BAFF29] animate-pulse" />
                   </div>
-                  <p className="text-[13px] text-[#FAF9F5] font-sans font-medium">
+                  <p className="text-[13px] text-[#F8F9FA] font-sans font-medium">
                     {steps[activeStep].preview.detail}
                   </p>
-                  <p className="text-[11px] text-[#8E9099]">
+                  <p className="text-[11px] text-white/50">
                     {steps[activeStep].preview.subDetail}
                   </p>
                 </div>

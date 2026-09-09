@@ -28,27 +28,27 @@ export default function Navbar() {
         
         {/* Left: Brand / Logo */}
         <Link href="/" className="flex items-center gap-2.5 pl-1 group cursor-pointer">
-          <div className="w-7 h-7 rounded-lg overflow-hidden relative shadow-sm border border-white/10 group-hover:border-[#E2B774]/50 transition-colors">
+          <div className="w-7 h-7 rounded-lg overflow-hidden relative shadow-sm border border-white/10 group-hover:border-[#BAFF29]/50 transition-colors">
             <Image src="/logo.png" alt="Bacham Logo" fill className="object-cover" priority />
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold tracking-tight text-[15px] text-[#FAF9F5]">
+            <span className="font-bold tracking-tight text-[15px] text-[#F8F9FA]">
               BACHAM
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/[0.05] text-[#8E9099] border border-white/[0.06]">
-              <ShieldCheck size={11} className="text-[#E2B774]" />
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#BAFF29]/10 text-[#BAFF29] border border-[#BAFF29]/20">
+              <ShieldCheck size={11} className="text-[#BAFF29]" />
               100% Local
             </span>
           </div>
         </Link>
 
         {/* Center: Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 text-[13.5px] font-medium text-[#8E9099]">
+        <nav className="hidden md:flex items-center gap-6 text-[13.5px] font-medium text-[#F8F9FA]/70">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="hover:text-[#FAF9F5] transition-colors duration-150 py-1"
+              className="hover:text-[#F8F9FA] transition-colors duration-150 py-1"
             >
               {link.label}
             </Link>
@@ -62,16 +62,16 @@ export default function Navbar() {
             href="https://github.com/harshabacham/bacham-meeting-assistant"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-[12.5px] font-medium text-[#FAF9F5] border border-white/[0.08] transition-all hover:border-white/20"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-[12.5px] font-medium text-[#F8F9FA] border border-white/[0.08] transition-all hover:border-[#BAFF29]/30"
           >
-            <Star size={13} className="text-[#E2B774] fill-[#E2B774]" />
+            <Star size={13} className="text-[#BAFF29] fill-[#BAFF29]" />
             <span>Star</span>
           </a>
 
           {/* Download CTA */}
           <Link
             href="#downloads"
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E2B774] hover:bg-[#d8a863] text-[#090A0C] text-[12.5px] font-bold shadow-[0_0_20px_rgba(226,183,116,0.25)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] text-[12.5px] font-black shadow-[0_0_20px_rgba(186,255,41,0.25)] transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <Download size={13} strokeWidth={2.5} />
             <span>Download</span>
@@ -81,7 +81,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 rounded-full text-[#8E9099] hover:text-[#FAF9F5] hover:bg-white/[0.05] transition-colors"
+            className="md:hidden p-1.5 rounded-full text-white/70 hover:text-[#F8F9FA] hover:bg-white/[0.05] transition-colors"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -105,7 +105,7 @@ export default function Navbar() {
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-xl text-sm font-medium text-[#8E9099] hover:text-[#FAF9F5] hover:bg-white/[0.05] transition-colors flex items-center justify-between"
+                className="px-3 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-[#F8F9FA] hover:bg-white/[0.05] transition-colors flex items-center justify-between"
               >
                 <span>{link.label}</span>
                 <ArrowRight size={14} className="opacity-40" />
@@ -117,15 +117,15 @@ export default function Navbar() {
                 href="https://github.com/harshabacham/bacham-meeting-assistant"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs font-semibold text-[#8E9099] hover:text-[#FAF9F5]"
+                className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-[#F8F9FA]"
               >
-                <Star size={13} className="text-[#E2B774] fill-[#E2B774]" />
+                <Star size={13} className="text-[#BAFF29] fill-[#BAFF29]" />
                 <span>GitHub Repository</span>
               </a>
               <Link
                 href="#downloads"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3.5 py-1.5 rounded-full bg-[#E2B774] text-[#090A0C] text-xs font-bold"
+                className="px-3.5 py-1.5 rounded-full bg-[#BAFF29] text-[#0A0A0C] text-xs font-black"
               >
                 Get App
               </Link>

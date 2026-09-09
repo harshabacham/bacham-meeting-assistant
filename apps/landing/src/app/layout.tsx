@@ -65,12 +65,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased dark`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#090A0C] text-[#FAF9F5] font-sans selection:bg-[#E2B774]/25 selection:text-[#FAF9F5] relative overflow-x-hidden">
+      <body className="min-h-full flex flex-col bg-[#0A0A0C] text-[#F8F9FA] font-sans selection:bg-[#BAFF29]/30 selection:text-[#F8F9FA] relative overflow-x-hidden">
         {/* Ambient Subtle Mesh Lighting */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#E2B774]/[0.08] via-transparent to-transparent blur-[120px]" />
-          <div className="absolute top-[35%] -left-[200px] w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.04] via-transparent to-transparent blur-[140px]" />
-          <div className="absolute top-[65%] -right-[200px] w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#E2B774]/[0.04] via-transparent to-transparent blur-[140px]" />
+          <div className="absolute -top-[200px] left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#BAFF29]/[0.06] via-transparent to-transparent blur-[130px]" />
+          <div className="absolute top-[35%] -left-[200px] w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/[0.03] via-transparent to-transparent blur-[140px]" />
+          <div className="absolute top-[65%] -right-[200px] w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#BAFF29]/[0.04] via-transparent to-transparent blur-[140px]" />
           {/* Fine subtle noise overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-60" />
         </div>

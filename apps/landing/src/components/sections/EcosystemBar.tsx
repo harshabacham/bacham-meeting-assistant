@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Video, Cpu, ShieldCheck, Sparkles } from "lucide-react";
+import { Video, Cpu, ShieldCheck } from "lucide-react";
 
 export function EcosystemBar() {
   const platforms = [
@@ -26,15 +26,15 @@ export function EcosystemBar() {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none">
               Universal Ecosystem
             </p>
-            <h2 className="text-xl sm:text-2xl font-bold text-[#FAF9F5] tracking-tight mt-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#F8F9FA] tracking-tight mt-1">
               Works seamlessly with your tools &amp; preferred AI backends.
             </h2>
           </div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#8E9099] bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/[0.06] shrink-0 self-start md:self-auto">
-            <ShieldCheck size={14} className="text-[#E2B774]" />
+          <div className="flex items-center gap-2 text-xs font-semibold text-white/70 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/[0.06] shrink-0 self-start md:self-auto">
+            <ShieldCheck size={14} className="text-[#BAFF29]" />
             <span>Zero Vendor Lock-In · Bring Your Own Keys</span>
           </div>
         </div>
@@ -48,13 +48,13 @@ export function EcosystemBar() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.05, duration: 0.4 }}
-              className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.06] hover:border-white/15 transition-all flex flex-col justify-between group"
+              className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.06] hover:border-[#BAFF29]/30 transition-all flex flex-col justify-between group"
             >
               <div className="flex items-center gap-2 mb-2">
-                <Video size={14} className="text-[#E2B774]/80 group-hover:text-[#E2B774] transition-colors" />
-                <span className="text-xs font-bold text-[#FAF9F5] truncate">{p.name}</span>
+                <Video size={14} className="text-[#BAFF29]/80 group-hover:text-[#BAFF29] transition-colors" />
+                <span className="text-xs font-bold text-[#F8F9FA] truncate">{p.name}</span>
               </div>
-              <span className="text-[10px] text-[#8E9099] font-mono leading-tight">{p.tag}</span>
+              <span className="text-[10px] text-white/50 font-mono leading-tight">{p.tag}</span>
             </motion.div>
           ))}
         </div>
@@ -72,9 +72,9 @@ export function EcosystemBar() {
             >
               <div className="flex items-center gap-2 mb-2">
                 <Cpu size={14} className="text-blue-400/80 group-hover:text-blue-400 transition-colors" />
-                <span className="text-xs font-bold text-[#FAF9F5] truncate">{m.name}</span>
+                <span className="text-xs font-bold text-[#F8F9FA] truncate">{m.name}</span>
               </div>
-              <span className="text-[10px] text-[#8E9099] leading-tight">{m.desc}</span>
+              <span className="text-[10px] text-white/50 leading-tight">{m.desc}</span>
             </motion.div>
           ))}
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, HelpCircle, MessageSquare } from "lucide-react";
+import { ChevronDown, MessageSquare } from "lucide-react";
 
 const faqs = [
   {
@@ -47,13 +47,13 @@ export default function FAQ() {
           {/* Left Column */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-32 space-y-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none">
                 Common Inquiries
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#FAF9F5] leading-tight">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#F8F9FA] leading-tight">
                 Frequently Asked Questions
               </h2>
-              <p className="text-base text-[#8E9099] leading-relaxed">
+              <p className="text-base text-white/70 leading-relaxed">
                 Everything you need to know about Bacham&apos;s privacy model, local AI engine, and extension integration.
               </p>
 
@@ -62,7 +62,7 @@ export default function FAQ() {
                   href="https://github.com/harshabacham/bacham-meeting-assistant/issues"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-[#E2B774] hover:underline"
+                  className="inline-flex items-center gap-2 text-xs font-bold text-[#BAFF29] hover:underline"
                 >
                   <MessageSquare size={14} />
                   <span>Have a question? Open an issue on GitHub</span>
@@ -80,7 +80,7 @@ export default function FAQ() {
                   key={faq.q}
                   className={`rounded-2xl border transition-all overflow-hidden ${
                     isOpen
-                      ? "bg-[#14161A] border-[#E2B774]/30 shadow-md"
+                      ? "bg-[#14161A] border-[#BAFF29]/30 shadow-md"
                       : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/15"
                   }`}
                 >
@@ -89,13 +89,13 @@ export default function FAQ() {
                     onClick={() => toggle(idx)}
                     className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer"
                   >
-                    <span className="text-[14.5px] sm:text-base font-bold text-[#FAF9F5] leading-snug">
+                    <span className="text-[14.5px] sm:text-base font-bold text-[#F8F9FA] leading-snug">
                       {faq.q}
                     </span>
                     <div className={`p-1.5 rounded-lg border transition-transform duration-200 shrink-0 ${
                       isOpen
-                        ? "bg-[#E2B774]/20 border-[#E2B774]/40 text-[#E2B774] rotate-180"
-                        : "bg-white/[0.03] border-white/[0.06] text-[#8E9099]"
+                        ? "bg-[#BAFF29]/20 border-[#BAFF29]/40 text-[#BAFF29] rotate-180"
+                        : "bg-white/[0.03] border-white/[0.06] text-white/50"
                     }`}>
                       <ChevronDown size={15} />
                     </div>
@@ -109,7 +109,7 @@ export default function FAQ() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       >
-                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 text-[13px] sm:text-[13.5px] text-[#8E9099] leading-relaxed border-t border-white/[0.04] mt-1 pt-4">
+                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 text-[13px] sm:text-[13.5px] text-white/70 leading-relaxed border-t border-white/[0.04] mt-1 pt-4">
                           {faq.a}
                         </div>
                       </motion.div>

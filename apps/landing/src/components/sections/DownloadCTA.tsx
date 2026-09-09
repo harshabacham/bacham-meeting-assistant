@@ -48,13 +48,13 @@ export default function DownloadCTA() {
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#E2B774] select-none mb-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#BAFF29] select-none mb-2">
             Get Started Free
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FAF9F5] leading-tight mb-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#F8F9FA] leading-tight mb-4">
             Download Bacham For Your Operating System
           </h2>
-          <p className="text-base sm:text-lg text-[#8E9099] leading-relaxed">
+          <p className="text-base sm:text-lg text-white/70 leading-relaxed">
             Install the native desktop application and companion Chrome Extension. No registration or credit card required.
           </p>
         </div>
@@ -72,25 +72,25 @@ export default function DownloadCTA() {
                 transition={{ delay: idx * 0.08, duration: 0.4 }}
                 className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden group ${
                   p.recommended
-                    ? "bg-[#14161B] border-[#E2B774]/40 shadow-[0_8px_30px_rgba(226,183,116,0.08)]"
+                    ? "bg-[#14161B] border-[#BAFF29]/40 shadow-[0_8px_30px_rgba(186,255,41,0.08)]"
                     : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/15"
                 }`}
               >
                 {p.recommended && (
-                  <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-[#E2B774]/20 text-[#E2B774] border border-[#E2B774]/30">
+                  <span className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#BAFF29]/20 text-[#BAFF29] border border-[#BAFF29]/30">
                     Recommended
                   </span>
                 )}
 
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#FAF9F5] mb-4 group-hover:border-[#E2B774]/40 transition-colors">
-                    <Icon size={20} className={p.recommended ? "text-[#E2B774]" : "text-[#FAF9F5]"} />
+                  <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[#F8F9FA] mb-4 group-hover:border-[#BAFF29]/40 transition-colors">
+                    <Icon size={20} className={p.recommended ? "text-[#BAFF29]" : "text-[#F8F9FA]"} />
                   </div>
 
-                  <h3 className="text-base font-bold text-[#FAF9F5] mb-1">{p.name}</h3>
-                  <p className="text-xs text-[#8E9099] mb-3">{p.format}</p>
+                  <h3 className="text-base font-bold text-[#F8F9FA] mb-1">{p.name}</h3>
+                  <p className="text-xs text-white/50 mb-3">{p.format}</p>
 
-                  <span className="inline-block text-[10px] font-medium text-[#8E9099] px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.05]">
+                  <span className="inline-block text-[10px] font-medium text-white/60 px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.05]">
                     {p.badge}
                   </span>
                 </div>
@@ -100,10 +100,10 @@ export default function DownloadCTA() {
                     href={p.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       p.recommended
-                        ? "bg-[#E2B774] hover:bg-[#d8a863] text-[#090A0C] shadow-sm"
-                        : "bg-white/[0.05] hover:bg-white/[0.1] text-[#FAF9F5] border border-white/[0.08]"
+                        ? "bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] shadow-sm"
+                        : "bg-white/[0.05] hover:bg-white/[0.1] text-[#F8F9FA] border border-white/[0.08]"
                     }`}
                   >
                     <Download size={13} strokeWidth={2.5} />
@@ -117,16 +117,16 @@ export default function DownloadCTA() {
         </div>
 
         {/* Verification Guarantee */}
-        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#8E9099] max-w-4xl mx-auto">
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/70 max-w-4xl mx-auto">
           <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-[#E2B774] shrink-0" />
+            <ShieldCheck size={16} className="text-[#BAFF29] shrink-0" />
             <span>Open Source under MIT License · SHA-256 Checksums available on GitHub</span>
           </div>
           <a
             href={releasesUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#E2B774] hover:underline font-semibold flex items-center gap-1 shrink-0"
+            className="text-[#BAFF29] hover:underline font-bold flex items-center gap-1 shrink-0"
           >
             <span>View All Releases &amp; Changelog</span>
             <ExternalLink size={12} />
