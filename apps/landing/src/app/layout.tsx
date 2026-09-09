@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader, Bangers } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,8 +18,8 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
 });
 
-const bangers = Bangers({
-  variable: "--font-bangers",
+const pressStart2P = Press_Start_2P({
+  variable: "--font-press-start",
   subsets: ["latin"],
   weight: ["400"],
 });
@@ -72,7 +72,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${bangers.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${pressStart2P.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[#000000] text-[#FFFFFF] font-sans selection:bg-[#D1E043]/40 selection:text-[#000000] relative overflow-x-hidden">
