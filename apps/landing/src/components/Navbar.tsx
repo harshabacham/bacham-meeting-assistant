@@ -25,16 +25,11 @@ function AppleIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   );
 }
 
-import { usePathname } from "next/navigation";
-
 export default function Navbar() {
-  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMac, setIsMac] = useState(false);
   const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
-
-  if (pathname === "/launch") return null;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -55,7 +50,6 @@ export default function Navbar() {
     { label: "How It Works", href: "#how-it-works" },
     { label: "Instructions", href: "#instructions" },
     { label: "v2.0 Roadmap", href: "#roadmap" },
-    { label: "Teaser", href: "/launch" },
     { label: "FAQ", href: "#faq" },
   ];
 

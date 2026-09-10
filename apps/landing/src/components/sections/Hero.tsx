@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDown,
@@ -108,25 +107,15 @@ export default function Hero() {
                 <ArrowDown size={16} strokeWidth={2.6} />
               </a>
 
-              <Link
-                href="/launch"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/15 text-white font-medium text-[14.5px] border border-white/15 transition-all active:scale-[0.98] hover:border-[#D1E043]/50 group cursor-pointer"
-              >
-                <div className="w-5 h-5 rounded-full bg-[#D1E043]/20 flex items-center justify-center text-[#D1E043] group-hover:scale-110 transition-transform">
-                  <Play size={11} className="fill-[#D1E043] ml-0.5" />
-                </div>
-                <span>Watch Teaser (0:52)</span>
-              </Link>
-
               <a
                 href="https://github.com/harshabacham/bacham-meeting-assistant"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-white/80 hover:text-white font-medium text-[14px] border border-white/10 transition-all active:scale-[0.98] hover:border-white/25 group cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/15 text-white font-medium text-[14.5px] border border-white/15 transition-all active:scale-[0.98] hover:border-[#D1E043]/50 group cursor-pointer"
               >
-                <SiGithub size={16} className="text-white/80 group-hover:text-white" />
-                <span>Star</span>
-                <Star size={13} className="text-[#D1E043] fill-[#D1E043] group-hover:scale-125 transition-transform" />
+                <SiGithub size={17} className="text-white/80 group-hover:text-white" />
+                <span>Star on GitHub</span>
+                <Star size={14} className="text-[#D1E043] fill-[#D1E043] group-hover:scale-125 transition-transform" />
               </a>
 
               <LocalSsdSticker className="-rotate-2" />

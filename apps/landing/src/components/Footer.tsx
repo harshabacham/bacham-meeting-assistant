@@ -1,16 +1,10 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Star, ShieldCheck } from "lucide-react";
 
 export default function Footer() {
-  const pathname = usePathname();
   const releasesUrl = "https://github.com/harshabacham/bacham-meeting-assistant/releases";
   const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
-
-  if (pathname === "/launch") return null;
 
   return (
     <footer className="border-t border-white/10 bg-[#000000] py-16 relative z-10">
@@ -68,12 +62,6 @@ export default function Footer() {
               <li>
                 <Link href="#comparison" className="hover:text-[#FFFFFF] transition-colors">
                   Bacham vs. Cloud Bots
-                </Link>
-              </li>
-              <li>
-                <Link href="/launch" className="hover:text-[#FFFFFF] transition-colors flex items-center gap-1.5">
-                  <span>Launch Teaser (v1.0.0)</span>
-                  <span className="text-[10px] font-mono text-[#D1E043] bg-[#D1E043]/15 px-1.5 py-0.2 rounded">4K</span>
                 </Link>
               </li>
               <li>

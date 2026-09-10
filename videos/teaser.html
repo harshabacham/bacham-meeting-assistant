@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bacham — Official SaaS Launch Teaser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #040406;
+      color: #FFFFFF;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    #stage {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      background: #050508;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform-origin: center center;
+    }
+
+    /* Ambient Glows */
+    .ambient-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1;
+    }
+    .glow-red {
+      background: radial-gradient(ellipse at 50% 35%, rgba(255, 68, 68, 0.28) 0%, transparent 68%);
+    }
+    .glow-green {
+      background: radial-gradient(ellipse at 50% 45%, rgba(209, 224, 67, 0.32) 0%, transparent 72%);
+    }
+    .glow-cyan {
+      background: radial-gradient(ellipse at 50% 50%, rgba(0, 245, 212, 0.24) 0%, transparent 68%);
+    }
+    .vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 45%, rgba(0, 0, 0, 0.92) 100%);
+      z-index: 2;
+    }
+
+    /* Grid Overlay */
+    .grid-pattern {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 44px 72px;
+    }
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .logo-img {
+      height: 42px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 24px rgba(209, 224, 67, 0.45));
+    }
+    .tag-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.75);
+    }
+    .controls-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .audio-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .audio-btn:hover {
+      background: rgba(209, 224, 67, 0.15);
+      border-color: #D1E043;
+      color: #D1E043;
+    }
+    .act-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #D1E043;
+      background: rgba(209, 224, 67, 0.12);
+      border: 1px solid rgba(209, 224, 67, 0.35);
+      padding: 8px 22px;
+      border-radius: 9999px;
+      letter-spacing: 0.06em;
+      box-shadow: 0 0 24px rgba(209, 224, 67, 0.15);
+    }
+
+    /* Main Viewport */
+    .viewport {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 80px;
+    }
+
+    /* Acts */
+    .act {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      max-width: 1200px;
+      opacity: 0;
+      transform: scale(0.96) translateY(12px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .act.active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+
+    /* Act 1 Styles */
+    .alert-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 24px;
+      border-radius: 9999px;
+      background: rgba(255, 68, 68, 0.15);
+      border: 1px solid rgba(255, 68, 68, 0.38);
+      color: #FF6B6B;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      margin-bottom: 30px;
+      animation: pulseAlert 1.6s infinite ease-in-out;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
+      50% { opacity: 0.85; transform: scale(0.98); box-shadow: 0 0 20px 4px rgba(255, 68, 68, 0.2); }
+    }
+    .act1-title {
+      font-family: 'Newsreader', serif;
+      font-size: 64px;
+      font-weight: 400;
+      line-height: 1.15;
+      margin-bottom: 40px;
+      max-width: 980px;
+    }
+    .bot-name {
+      color: #FF5C5C;
+      text-decoration: underline wavy rgba(255, 92, 92, 0.7);
+      text-underline-offset: 10px;
+    }
+    .toast-box {
+      background: rgba(20, 20, 24, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 22px;
+      padding: 22px 32px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.85);
+      margin-bottom: 36px;
+      backdrop-filter: blur(20px);
+    }
+    .toast-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(255, 68, 68, 0.2);
+      border: 1px solid rgba(255, 68, 68, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FF6B6B;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .toast-text {
+      text-align: left;
+    }
+    .toast-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-bottom: 4px;
+    }
+    .toast-sub {
+      font-size: 14px;
+      color: #A1A1A6;
+    }
+    .frustration-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 17px;
+      color: #A1A1A6;
+    }
+
+    /* Act 2 Styles */
+    .no-bots-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: #FF5C5C;
+      border: 3px solid #000000;
+      border-radius: 22px;
+      padding: 12px 28px;
+      box-shadow: 0 10px 0 rgba(0,0,0,0.95), inset 0 -4px 0 rgba(0,0,0,0.25);
+      margin-bottom: 28px;
+      transform: rotate(-2.5deg);
+    }
+    .no-bots-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #FFE600;
+      letter-spacing: 0.1em;
+    }
+    .no-bots-sub {
+      font-size: 14px;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+    .hero-logo {
+      height: 136px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 60px rgba(209, 224, 67, 0.65));
+      margin-bottom: 32px;
+      animation: floatLogo 4s ease-in-out infinite;
+    }
+    @keyframes floatLogo {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .act2-title {
+      font-family: 'Newsreader', serif;
+      font-size: 58px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+    }
+    .ssd-shield-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 34px;
+      border-radius: 9999px;
+      background: rgba(209, 224, 67, 0.14);
+      border: 1px solid rgba(209, 224, 67, 0.45);
+      color: #D1E043;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 17px;
+      font-weight: 600;
+      box-shadow: 0 0 40px rgba(209, 224, 67, 0.25);
+    }
+
+    /* Act 3 Styles */
+    .superpower-tabs {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 34px;
+    }
+    .sp-tab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      padding: 10px 22px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.65);
+      transition: all 0.3s ease;
+    }
+    .sp-tab.active {
+      background: #D1E043;
+      color: #000000;
+      font-weight: 700;
+      border-color: #D1E043;
+      box-shadow: 0 0 28px rgba(209, 224, 67, 0.45);
+    }
+    .sp-card {
+      width: 1020px;
+      background: #0E0E12;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 32px;
+      padding: 40px 52px;
+      box-shadow: 0 35px 70px rgba(0,0,0,0.88);
+      text-align: left;
+    }
+    .wave-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 52px;
+      margin: 14px 0 28px;
+    }
+    .wave-bar {
+      width: 7px;
+      border-radius: 9999px;
+      transition: height 0.12s ease;
+    }
+    .live-transcript-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .transcript-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .speaker-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #D1E043;
+      background: rgba(209, 224, 67, 0.14);
+      padding: 4px 12px;
+      border-radius: 6px;
+    }
+    .transcript-text {
+      font-size: 15px;
+      color: #FFFFFF;
+    }
+    .action-chip {
+      background: rgba(0, 245, 212, 0.15);
+      border: 1px solid rgba(0, 245, 212, 0.35);
+      color: #00F5D4;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+    }
+
+    /* Act 4 Styles */
+    .version-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      color: #D1E043;
+      background: rgba(209, 224, 67, 0.14);
+      border: 1px solid rgba(209, 224, 67, 0.4);
+      padding: 9px 24px;
+      border-radius: 9999px;
+      margin-bottom: 24px;
+      letter-spacing: 0.1em;
+      box-shadow: 0 0 30px rgba(209, 224, 67, 0.2);
+    }
+    .act4-heading {
+      font-family: 'Newsreader', serif;
+      font-size: 88px;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+    .act4-subheading {
+      font-family: 'Newsreader', serif;
+      font-size: 46px;
+      font-weight: 400;
+      color: #D1E043;
+      margin-bottom: 44px;
+    }
+    .cta-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .btn-main {
+      background: #D1E043;
+      color: #111111;
+      font-weight: 800;
+      font-size: 18px;
+      padding: 18px 40px;
+      border-radius: 9999px;
+      border: none;
+      box-shadow: 0 12px 36px rgba(209, 224, 67, 0.38);
+      cursor: pointer;
+    }
+    .btn-sub {
+      background: rgba(255, 255, 255, 0.1);
+      color: #FFFFFF;
+      font-weight: 600;
+      font-size: 17px;
+      padding: 18px 36px;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+    }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      position: relative;
+      z-index: 10;
+      padding: 24px 72px 44px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .progress-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, #D1E043 0%, #00F5D4 50%, #D1E043 100%);
+      width: 0%;
+      transition: width 0.08s linear;
+    }
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.75);
+    }
+    .play-pause-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .play-pause-btn:hover {
+      border-color: #D1E043;
+      color: #D1E043;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="ambient" class="ambient-glow glow-red"></div>
+    <div class="vignette"></div>
+    <div class="grid-pattern"></div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="logo-group">
+        <img src="bacham-logo.png" alt="Bacham" class="logo-img">
+        <span class="tag-badge">OFFICIAL TEASER · 1080P 60FPS</span>
+      </div>
+      <div class="controls-top">
+        <button id="audioToggle" class="audio-btn">
+          <span id="audioIcon">🔊</span>
+          <span id="audioLabel">AUDIO SYNTH: ON</span>
+        </button>
+        <div id="actIndicator" class="act-tag">ACT 1: THE PROBLEM</div>
+      </div>
+    </div>
+
+    <!-- Main Viewport -->
+    <div class="viewport">
+      <!-- ACT 1 -->
+      <div id="act1" class="act active">
+        <div class="alert-pill">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #FF4444; display: inline-block;"></span>
+          CONFIDENTIAL CLIENT MEETING
+        </div>
+        <h1 class="act1-title">
+          &ldquo;Wait... who invited <span class="bot-name">Meeting_Bot_409</span> to this call?&rdquo;
+        </h1>
+        <div class="toast-box">
+          <div class="toast-icon">✕</div>
+          <div class="toast-text">
+            <div class="toast-title">Notetaker Bot Joined Call</div>
+            <div class="toast-sub">Recording audio &amp; transmitting to third-party cloud...</div>
+          </div>
+        </div>
+        <div class="frustration-text">
+          <span style="color: rgba(255,255,255,0.5)">[00:48:12]</span> Scrubbing 1 hour of audio for 1 lost action item...
+        </div>
+      </div>
+
+      <!-- ACT 2 -->
+      <div id="act2" class="act">
+        <div class="no-bots-badge">
+          <span style="background: #FFE600; color: #000; font-weight: 900; padding: 2px 7px; border-radius: 6px; font-size: 13px;">✕ ✕</span>
+          <span class="no-bots-title">NO BOTS</span>
+          <span class="no-bots-sub">100% BANNED</span>
+        </div>
+        <img src="bacham-logo.png" alt="Bacham Logo" class="hero-logo">
+        <h2 class="act2-title">Every word captured. Every action tracked.</h2>
+        <div class="ssd-shield-badge">
+          <span>🛡️</span>
+          <span>100% On Your SSD · Zero Cloud Bots · Zero Telemetry</span>
+        </div>
+      </div>
+
+      <!-- ACT 3 -->
+      <div id="act3" class="act">
+        <div class="superpower-tabs">
+          <div id="tab0" class="sp-tab active">1. Dual-Stream Loopback</div>
+          <div id="tab1" class="sp-tab">2. Live AI Workspace</div>
+          <div id="tab2" class="sp-tab">3. 1-Click Flashcards</div>
+          <div id="tab3" class="sp-tab">4. Offline SQLite Brain</div>
+        </div>
+
+        <div class="sp-card">
+          <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-bottom: 8px;">
+            <span style="color: #00F5D4;">● STREAM 1: SYSTEM WASAPI LOOPBACK</span>
+            <span style="color: rgba(255,255,255,0.5)">16kHz 16-bit PCM · Zero Bot Ingress</span>
+          </div>
+          <div class="wave-row" id="wave1"></div>
+
+          <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-bottom: 8px;">
+            <span style="color: #D1E043;">🎤 STREAM 2: HOST MICROPHONE</span>
+            <span style="color: #D1E043; font-weight: 600;">ACTIVE ACOUSTIC ECHO CANCELLATION</span>
+          </div>
+          <div class="wave-row" id="wave2"></div>
+
+          <div class="live-transcript-box">
+            <div class="transcript-left">
+              <span class="speaker-tag">Harsha (Host)</span>
+              <span class="transcript-text">&ldquo;Let's finalize the Q3 API migration deadline for next Friday.&rdquo;</span>
+            </div>
+            <span class="action-chip">⚡ 4ms AI Flashcard Extracted</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACT 4 -->
+      <div id="act4" class="act">
+        <div class="version-pill">✨ PRE-RELEASE MILESTONE</div>
+        <h1 class="act4-heading">Version 1.0.0</h1>
+        <div class="act4-subheading">Launching Soon on macOS, Windows &amp; Chrome.</div>
+        <div class="cta-row">
+          <button class="btn-main">Get Early Access</button>
+          <button class="btn-sub">⭐ Star on GitHub</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Control Bar -->
+    <div class="bottom-bar">
+      <div id="progressTrack" class="progress-track">
+        <div id="progress" class="progress-fill"></div>
+      </div>
+      <div class="controls-row">
+        <button id="playPauseBtn" class="play-pause-btn">❚❚ PAUSE</button>
+        <span id="timeDisplay">00:00 / 00:52</span>
+        <span>PRO-RES 1080P · 60 FPS</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Scale stage to fit any screen
+    function resizeStage() {
+      const stage = document.getElementById('stage');
+      const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      stage.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', resizeStage);
+    resizeStage();
+
+    // Populate animated waveform bars
+    const wave1 = document.getElementById('wave1');
+    const wave2 = document.getElementById('wave2');
+    for (let i = 0; i < 56; i++) {
+      const b1 = document.createElement('div');
+      b1.className = 'wave-bar';
+      b1.style.background = '#00F5D4';
+      b1.style.height = '14px';
+      wave1.appendChild(b1);
+
+      const b2 = document.createElement('div');
+      b2.className = 'wave-bar';
+      b2.style.background = '#D1E043';
+      b2.style.height = '18px';
+      wave2.appendChild(b2);
+    }
+
+    // Web Audio Synthesis Sound Engine
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, duration, type = 'sine', gainVal = 0.08) {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playSubBass() {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(95, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.4);
+      } catch (e) {}
+    }
+
+    function playWhoosh() {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.45);
+      } catch (e) {}
+    }
+
+    function playChord() {
+      if (!audioEnabled) return;
+      [261.63, 329.63, 392.00, 523.25].forEach((f, idx) => {
+        setTimeout(() => playTone(f, 0.8, 'sine', 0.05), idx * 80);
+      });
+    }
+
+    // Audio button toggle
+    const audioToggle = document.getElementById('audioToggle');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
+    audioToggle.addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      if (audioEnabled) {
+        audioIcon.textContent = '🔊';
+        audioLabel.textContent = 'AUDIO SYNTH: ON';
+        getAudioContext();
+        playTone(440, 0.2);
+      } else {
+        audioIcon.textContent = '🔇';
+        audioLabel.textContent = 'AUDIO SYNTH: MUTED';
+      }
+    });
+
+    // Timeline state
+    let elapsed = 0;
+    const totalDuration = 52;
+    let isPlaying = true;
+    let currentAct = -1;
+
+    const ambient = document.getElementById('ambient');
+    const actIndicator = document.getElementById('actIndicator');
+    const progress = document.getElementById('progress');
+    const progressTrack = document.getElementById('progressTrack');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+
+    const act1 = document.getElementById('act1');
+    const act2 = document.getElementById('act2');
+    const act3 = document.getElementById('act3');
+    const act4 = document.getElementById('act4');
+
+    const tabs = [
+      document.getElementById('tab0'),
+      document.getElementById('tab1'),
+      document.getElementById('tab2'),
+      document.getElementById('tab3')
+    ];
+
+    function animateWaves(t) {
+      const bars1 = wave1.children;
+      const bars2 = wave2.children;
+      for (let i = 0; i < bars1.length; i++) {
+        bars1[i].style.height = `${14 + Math.sin(i * 0.45 + t * 6) * 24}px`;
+        bars2[i].style.height = `${16 + Math.cos(i * 0.55 + t * 7) * 28}px`;
+      }
+    }
+
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playPauseBtn.textContent = isPlaying ? '❚❚ PAUSE' : '▶ PLAY';
+      if (isPlaying) {
+        lastTime = performance.now();
+        requestAnimationFrame(tick);
+      }
+    });
+
+    progressTrack.addEventListener('click', (e) => {
+      const rect = progressTrack.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      elapsed = pct * totalDuration;
+      currentAct = -1; // force trigger act switch
+    });
+
+    let lastTime = performance.now();
+    function tick(now) {
+      if (!isPlaying) return;
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+      elapsed += dt;
+
+      if (elapsed > totalDuration) {
+        elapsed = totalDuration;
+        isPlaying = false;
+        playPauseBtn.textContent = '↻ REPLAY';
+      }
+
+      // Progress bar
+      const pct = (elapsed / totalDuration) * 100;
+      progress.style.width = `${pct}%`;
+
+      const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+      const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+      timeDisplay.textContent = `${m}:${s} / 00:52`;
+
+      // Act Switching
+      if (elapsed < 12) {
+        // ACT 1
+        if (currentAct !== 1) {
+          currentAct = 1;
+          ambient.className = 'ambient-glow glow-red';
+          actIndicator.textContent = 'ACT 1: THE PROBLEM';
+          act1.className = 'act active';
+          act2.className = 'act';
+          act3.className = 'act';
+          act4.className = 'act';
+          playTone(220, 0.4, 'sawtooth', 0.05);
+        }
+      } else if (elapsed < 24) {
+        // ACT 2
+        if (currentAct !== 2) {
+          currentAct = 2;
+          ambient.className = 'ambient-glow glow-green';
+          actIndicator.textContent = 'ACT 2: THE REVEAL';
+          act1.className = 'act';
+          act2.className = 'act active';
+          act3.className = 'act';
+          act4.className = 'act';
+          playSubBass();
+          playWhoosh();
+        }
+      } else if (elapsed < 42) {
+        // ACT 3
+        if (currentAct !== 3) {
+          currentAct = 3;
+          ambient.className = 'ambient-glow glow-cyan';
+          actIndicator.textContent = 'ACT 3: SUPERPOWERS';
+          act1.className = 'act';
+          act2.className = 'act';
+          act3.className = 'act active';
+          act4.className = 'act';
+          playWhoosh();
+        }
+        animateWaves(elapsed);
+
+        // Cycle through superpower tabs
+        const subIndex = Math.floor((elapsed - 24) / 4.5);
+        tabs.forEach((tab, idx) => {
+          if (idx === Math.min(subIndex, 3)) {
+            tab.className = 'sp-tab active';
+          } else {
+            tab.className = 'sp-tab';
+          }
+        });
+      } else {
+        // ACT 4
+        if (currentAct !== 4) {
+          currentAct = 4;
+          ambient.className = 'ambient-glow glow-green';
+          actIndicator.textContent = 'ACT 4: LAUNCHING SOON';
+          act1.className = 'act';
+          act2.className = 'act';
+          act3.className = 'act';
+          act4.className = 'act active';
+          playChord();
+        }
+      }
+
+      if (isPlaying) {
+        requestAnimationFrame(tick);
+      }
+    }
+
+    // Autoplay start
+    requestAnimationFrame((now) => {
+      lastTime = now;
+      requestAnimationFrame(tick);
+    });
+  </script>
+</body>
+</html>
