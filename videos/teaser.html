@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bacham — Official SaaS Launch Teaser</title>
+  <title>Bacham — Introducing Our Tool · Launching Soon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
     body {
-      background: #040406;
+      background: #030305;
       color: #FFFFFF;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
       width: 100vw;
       height: 100vh;
@@ -24,6 +24,7 @@
       align-items: center;
       justify-content: center;
       user-select: none;
+      -webkit-font-smoothing: antialiased;
     }
     #stage {
       position: relative;
@@ -37,74 +38,74 @@
       transform-origin: center center;
     }
 
-    /* Ambient Glows */
+    /* Ambient Anamorphic Lighting Aura */
     .ambient-glow {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease;
       z-index: 1;
     }
-    .glow-red {
-      background: radial-gradient(ellipse at 50% 35%, rgba(255, 68, 68, 0.28) 0%, transparent 68%);
+    .glow-problem {
+      background: radial-gradient(circle at 50% 38%, rgba(255, 68, 68, 0.22) 0%, rgba(255, 68, 68, 0.05) 45%, transparent 70%);
     }
-    .glow-green {
-      background: radial-gradient(ellipse at 50% 45%, rgba(209, 224, 67, 0.32) 0%, transparent 72%);
+    .glow-intro {
+      background: radial-gradient(circle at 50% 45%, rgba(209, 224, 67, 0.28) 0%, rgba(209, 224, 67, 0.08) 50%, transparent 75%);
     }
-    .glow-cyan {
-      background: radial-gradient(ellipse at 50% 50%, rgba(0, 245, 212, 0.24) 0%, transparent 68%);
+    .glow-demo {
+      background: radial-gradient(circle at 50% 50%, rgba(0, 245, 212, 0.18) 0%, rgba(209, 224, 67, 0.14) 45%, transparent 70%);
+    }
+    .glow-launch {
+      background: radial-gradient(circle at 50% 45%, rgba(209, 224, 67, 0.35) 0%, rgba(209, 224, 67, 0.12) 55%, transparent 80%);
     }
     .vignette {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(circle at center, transparent 45%, rgba(0, 0, 0, 0.92) 100%);
+      background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.94) 100%);
       z-index: 2;
     }
-
-    /* Grid Overlay */
-    .grid-pattern {
+    .film-grain {
       position: absolute;
       inset: 0;
-      background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-      background-size: 60px 60px;
       pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
       z-index: 3;
+      opacity: 0.65;
     }
 
     /* Top Bar */
     .top-bar {
       position: relative;
-      z-index: 10;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 44px 72px;
+      padding: 38px 64px 20px;
     }
     .logo-group {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 18px;
     }
-    .logo-img {
-      height: 42px;
+    .brand-logo-top {
+      height: 36px;
       width: auto;
       object-fit: contain;
-      filter: drop-shadow(0 0 24px rgba(209, 224, 67, 0.45));
+      filter: drop-shadow(0 0 16px rgba(209, 224, 67, 0.4));
     }
     .tag-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      letter-spacing: 0.1em;
-      padding: 6px 16px;
+      font-size: 12.5px;
+      letter-spacing: 0.12em;
+      padding: 5px 14px;
       border-radius: 9999px;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.75);
+      color: rgba(255, 255, 255, 0.7);
     }
-    .controls-top {
+    .top-controls {
       display: flex;
       align-items: center;
       gap: 16px;
@@ -113,12 +114,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       color: #FFFFFF;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      padding: 8px 18px;
+      font-size: 12.5px;
+      padding: 7px 18px;
       border-radius: 9999px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -128,17 +129,17 @@
       border-color: #D1E043;
       color: #D1E043;
     }
-    .act-tag {
+    .chapter-tag {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: #D1E043;
       background: rgba(209, 224, 67, 0.12);
       border: 1px solid rgba(209, 224, 67, 0.35);
-      padding: 8px 22px;
+      padding: 7px 20px;
       border-radius: 9999px;
       letter-spacing: 0.06em;
-      box-shadow: 0 0 24px rgba(209, 224, 67, 0.15);
+      box-shadow: 0 0 20px rgba(209, 224, 67, 0.15);
     }
 
     /* Main Viewport */
@@ -149,306 +150,504 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px 80px;
+      padding: 20px 80px 40px;
+      perspective: 1400px;
     }
 
-    /* Acts */
-    .act {
+    /* Chapters Container */
+    .chapter {
       position: absolute;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      max-width: 1200px;
+      width: 100%;
+      max-width: 1300px;
       opacity: 0;
-      transform: scale(0.96) translateY(12px);
-      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.96) translateY(16px);
+      transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
       pointer-events: none;
     }
-    .act.active {
+    .chapter.active {
       opacity: 1;
       transform: scale(1) translateY(0);
       pointer-events: auto;
     }
 
-    /* Act 1 Styles */
-    .alert-pill {
+    /* ============================================================
+       CHAPTER 1: THE TENSION / PROBLEM
+       ============================================================ */
+    .tension-pill {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       padding: 9px 24px;
       border-radius: 9999px;
       background: rgba(255, 68, 68, 0.15);
-      border: 1px solid rgba(255, 68, 68, 0.38);
+      border: 1px solid rgba(255, 68, 68, 0.4);
       color: #FF6B6B;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
+      font-size: 13.5px;
       letter-spacing: 0.08em;
-      margin-bottom: 30px;
-      animation: pulseAlert 1.6s infinite ease-in-out;
+      margin-bottom: 28px;
+      animation: alertPulse 1.8s infinite ease-in-out;
     }
-    @keyframes pulseAlert {
-      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
-      50% { opacity: 0.85; transform: scale(0.98); box-shadow: 0 0 20px 4px rgba(255, 68, 68, 0.2); }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(0.98); }
     }
-    .act1-title {
+    .ch1-heading {
       font-family: 'Newsreader', serif;
-      font-size: 64px;
+      font-size: 68px;
       font-weight: 400;
-      line-height: 1.15;
-      margin-bottom: 40px;
-      max-width: 980px;
+      line-height: 1.14;
+      margin-bottom: 38px;
+      max-width: 1020px;
+      color: #FFFFFF;
     }
-    .bot-name {
+    .bot-name-red {
       color: #FF5C5C;
-      text-decoration: underline wavy rgba(255, 92, 92, 0.7);
+      font-style: italic;
+      text-decoration: underline wavy rgba(255, 92, 92, 0.6);
       text-underline-offset: 10px;
     }
-    .toast-box {
-      background: rgba(20, 20, 24, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 22px;
-      padding: 22px 32px;
+    .bot-toast-card {
+      background: rgba(18, 18, 22, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 24px;
+      padding: 24px 36px;
       display: flex;
       align-items: center;
-      gap: 22px;
-      box-shadow: 0 30px 60px rgba(0,0,0,0.85);
-      margin-bottom: 36px;
-      backdrop-filter: blur(20px);
+      gap: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 68, 68, 0.2);
+      margin-bottom: 34px;
+      backdrop-filter: blur(24px);
+      max-width: 680px;
     }
-    .toast-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      background: rgba(255, 68, 68, 0.2);
-      border: 1px solid rgba(255, 68, 68, 0.45);
+    .bot-avatar-box {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(255, 68, 68, 0.18);
+      border: 1.5px solid rgba(255, 68, 68, 0.45);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #FF6B6B;
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
     }
-    .toast-text {
+    .bot-meta-info {
       text-align: left;
     }
-    .toast-title {
-      font-size: 18px;
-      font-weight: 600;
+    .bot-meta-title {
+      font-size: 19px;
+      font-weight: 700;
       color: #FFFFFF;
       margin-bottom: 4px;
     }
-    .toast-sub {
-      font-size: 14px;
+    .bot-meta-desc {
+      font-size: 14.5px;
       color: #A1A1A6;
     }
-    .frustration-text {
+    .frustration-bar {
       font-family: 'JetBrains Mono', monospace;
       font-size: 17px;
-      color: #A1A1A6;
+      color: #8E8E93;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    /* Act 2 Styles */
-    .no-bots-badge {
-      display: inline-flex;
+    /* ============================================================
+       CHAPTER 2: INTRODUCING BACHAM
+       ============================================================ */
+    .intro-eyebrow {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-size: 44px;
+      color: #D1E043;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+      opacity: 0.95;
+    }
+    .intro-logo-hero {
+      height: 154px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 70px rgba(209, 224, 67, 0.65));
+      margin-bottom: 28px;
+      animation: heroFloat 3.5s ease-in-out infinite;
+    }
+    @keyframes heroFloat {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-8px) scale(1.01); }
+    }
+
+    /* Tactile Cartoon Stickers */
+    .sticker-row {
+      display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 22px;
+      margin-bottom: 34px;
+    }
+    .no-bots-sticker {
       background: #FF5C5C;
-      border: 3px solid #000000;
+      border: 3.5px solid #000000;
       border-radius: 22px;
       padding: 12px 28px;
-      box-shadow: 0 10px 0 rgba(0,0,0,0.95), inset 0 -4px 0 rgba(0,0,0,0.25);
-      margin-bottom: 28px;
-      transform: rotate(-2.5deg);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 12px 0 rgba(0, 0, 0, 0.95), inset 0 -4px 0 rgba(0, 0, 0, 0.25);
+      transform: rotate(-3deg);
+      animation: stickerPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .no-bots-title {
-      font-size: 20px;
+    @keyframes stickerPop {
+      0% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
+      70% { transform: scale(1.08) rotate(-1deg); }
+      100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+    }
+    .no-bots-badge-text {
+      font-size: 21px;
       font-weight: 900;
       color: #FFE600;
       letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
-    .no-bots-sub {
-      font-size: 14px;
+    .no-bots-badge-sub {
+      font-size: 14.5px;
       font-weight: 800;
       color: #FFFFFF;
+      letter-spacing: 0.05em;
     }
-    .hero-logo {
-      height: 136px;
-      width: auto;
-      object-fit: contain;
-      filter: drop-shadow(0 0 60px rgba(209, 224, 67, 0.65));
-      margin-bottom: 32px;
-      animation: floatLogo 4s ease-in-out infinite;
-    }
-    @keyframes floatLogo {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-    .act2-title {
-      font-family: 'Newsreader', serif;
-      font-size: 58px;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-      margin-bottom: 28px;
-    }
-    .ssd-shield-badge {
-      display: inline-flex;
+    .ssd-shield-sticker {
+      background: rgba(209, 224, 67, 0.15);
+      border: 2px solid rgba(209, 224, 67, 0.45);
+      border-radius: 20px;
+      padding: 12px 26px;
+      display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 34px;
-      border-radius: 9999px;
-      background: rgba(209, 224, 67, 0.14);
-      border: 1px solid rgba(209, 224, 67, 0.45);
       color: #D1E043;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 17px;
-      font-weight: 600;
-      box-shadow: 0 0 40px rgba(209, 224, 67, 0.25);
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow: 0 0 35px rgba(209, 224, 67, 0.25);
+      transform: rotate(2deg);
+    }
+    .intro-manifesto {
+      font-family: 'Newsreader', serif;
+      font-size: 46px;
+      font-weight: 400;
+      line-height: 1.25;
+      color: #EDEDED;
+      max-width: 960px;
     }
 
-    /* Act 3 Styles */
+    /* ============================================================
+       CHAPTER 3: THE SUPERPOWERS IN MOTION (APPLE MOCKUP)
+       ============================================================ */
+    .demo-container {
+      width: 1180px;
+      background: #0E0E14;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 28px;
+      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: rotateX(2deg);
+      transition: transform 0.5s ease;
+    }
+    /* macOS Window Header */
+    .window-header {
+      background: rgba(25, 25, 32, 0.85);
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .window-controls {
+      display: flex;
+      gap: 9px;
+    }
+    .traffic-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #FF5F56; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green { background: #27C93F; }
+    .window-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .window-status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(209, 224, 67, 0.18);
+      color: #D1E043;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      border: 1px solid rgba(209, 224, 67, 0.4);
+    }
+
+    /* Window Body */
+    .window-body {
+      padding: 34px 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      text-align: left;
+    }
+
+    /* Feature Tabs */
     .superpower-tabs {
       display: flex;
-      gap: 16px;
-      margin-bottom: 34px;
+      gap: 14px;
     }
     .sp-tab {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      padding: 10px 22px;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 9px 20px;
       border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: rgba(255, 255, 255, 0.65);
       transition: all 0.3s ease;
     }
     .sp-tab.active {
       background: #D1E043;
-      color: #000000;
-      font-weight: 700;
+      color: #111111;
+      font-weight: 800;
       border-color: #D1E043;
-      box-shadow: 0 0 28px rgba(209, 224, 67, 0.45);
+      box-shadow: 0 0 24px rgba(209, 224, 67, 0.45);
     }
-    .sp-card {
-      width: 1020px;
-      background: #0E0E12;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 32px;
-      padding: 40px 52px;
-      box-shadow: 0 35px 70px rgba(0,0,0,0.88);
-      text-align: left;
+
+    /* Feature Interactive Views */
+    .feature-view {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Dual Stream Audio Rows */
+    .stream-block {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 20px 26px;
+    }
+    .stream-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      margin-bottom: 12px;
     }
     .wave-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      height: 52px;
-      margin: 14px 0 28px;
+      height: 44px;
     }
     .wave-bar {
       width: 7px;
       border-radius: 9999px;
-      transition: height 0.12s ease;
+      transition: height 0.1s ease;
     }
-    .live-transcript-box {
+
+    /* Live Transcript & 3D Flashcard Split */
+    .split-grid {
+      display: grid;
+      grid-template-cols: 1fr 1fr;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+    }
+    .transcript-panel {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 18px;
       padding: 20px 24px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 12px;
     }
-    .transcript-left {
+    .transcript-line {
       display: flex;
-      align-items: center;
-      gap: 14px;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+      line-height: 1.45;
     }
-    .speaker-tag {
+    .speaker-label {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
       color: #D1E043;
-      background: rgba(209, 224, 67, 0.14);
-      padding: 4px 12px;
+      background: rgba(209, 224, 67, 0.15);
+      padding: 3px 10px;
       border-radius: 6px;
-    }
-    .transcript-text {
-      font-size: 15px;
-      color: #FFFFFF;
-    }
-    .action-chip {
-      background: rgba(0, 245, 212, 0.15);
-      border: 1px solid rgba(0, 245, 212, 0.35);
-      color: #00F5D4;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      padding: 6px 14px;
-      border-radius: 9999px;
+      white-space: nowrap;
     }
 
-    /* Act 4 Styles */
-    .version-pill {
+    /* 3D Flashcard Component */
+    .flashcard-wrapper {
+      perspective: 1000px;
+      height: 130px;
+    }
+    .flashcard-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-style: preserve-3d;
+    }
+    .flashcard-inner.flipped {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      padding: 20px 24px;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-front {
+      background: linear-gradient(135deg, rgba(209, 224, 67, 0.15) 0%, rgba(209, 224, 67, 0.05) 100%);
+      border: 1.5px solid rgba(209, 224, 67, 0.4);
+      box-shadow: 0 10px 30px rgba(209, 224, 67, 0.1);
+    }
+    .card-back {
+      background: linear-gradient(135deg, rgba(0, 245, 212, 0.15) 0%, rgba(0, 245, 212, 0.05) 100%);
+      border: 1.5px solid rgba(0, 245, 212, 0.45);
+      transform: rotateY(180deg);
+      box-shadow: 0 10px 30px rgba(0, 245, 212, 0.12);
+    }
+    .card-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .card-text {
+      font-size: 15.5px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    /* ============================================================
+       CHAPTER 4: THE CLIMAX & LAUNCHING SOON
+       ============================================================ */
+    .milestone-pill {
       font-family: 'JetBrains Mono', monospace;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
       color: #D1E043;
-      background: rgba(209, 224, 67, 0.14);
-      border: 1px solid rgba(209, 224, 67, 0.4);
-      padding: 9px 24px;
+      background: rgba(209, 224, 67, 0.15);
+      border: 1.5px solid rgba(209, 224, 67, 0.45);
+      padding: 10px 26px;
       border-radius: 9999px;
-      margin-bottom: 24px;
-      letter-spacing: 0.1em;
-      box-shadow: 0 0 30px rgba(209, 224, 67, 0.2);
+      margin-bottom: 28px;
+      letter-spacing: 0.12em;
+      box-shadow: 0 0 35px rgba(209, 224, 67, 0.3);
+      animation: pillGlow 2s infinite ease-in-out;
     }
-    .act4-heading {
+    @keyframes pillGlow {
+      0%, 100% { box-shadow: 0 0 30px rgba(209, 224, 67, 0.25); }
+      50% { box-shadow: 0 0 50px rgba(209, 224, 67, 0.5); }
+    }
+    .ch4-version {
       font-family: 'Newsreader', serif;
-      font-size: 88px;
+      font-size: 96px;
       font-weight: 400;
-      letter-spacing: -0.02em;
-      margin-bottom: 14px;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+      color: #FFFFFF;
     }
-    .act4-subheading {
+    .ch4-launching-soon {
       font-family: 'Newsreader', serif;
-      font-size: 46px;
+      font-style: italic;
+      font-size: 64px;
       font-weight: 400;
       color: #D1E043;
-      margin-bottom: 44px;
+      margin-bottom: 24px;
+      letter-spacing: -0.01em;
     }
-    .cta-row {
+    .ch4-platforms {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 500;
+      color: #A1A1A6;
+      margin-bottom: 46px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .platform-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      padding: 6px 18px;
+      border-radius: 9999px;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .cta-button-row {
       display: flex;
       align-items: center;
       gap: 24px;
     }
-    .btn-main {
+    .btn-early-access {
       background: #D1E043;
-      color: #111111;
-      font-weight: 800;
-      font-size: 18px;
-      padding: 18px 40px;
+      color: #101010;
+      font-weight: 900;
+      font-size: 19px;
+      padding: 20px 48px;
       border-radius: 9999px;
       border: none;
-      box-shadow: 0 12px 36px rgba(209, 224, 67, 0.38);
+      box-shadow: 0 14px 45px rgba(209, 224, 67, 0.45);
       cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: transform 0.2s ease;
     }
-    .btn-sub {
+    .btn-github-star {
       background: rgba(255, 255, 255, 0.1);
       color: #FFFFFF;
-      font-weight: 600;
-      font-size: 17px;
-      padding: 18px 36px;
+      font-weight: 700;
+      font-size: 18px;
+      padding: 20px 42px;
       border-radius: 9999px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      display: flex;
+      align-items: center;
+      gap: 12px;
       cursor: pointer;
     }
 
-    /* Bottom Control Bar */
+    /* ============================================================
+       BOTTOM CONTROLS BAR (Halmarr High-Conversion Timeline)
+       ============================================================ */
     .bottom-bar {
       position: relative;
-      z-index: 10;
-      padding: 24px 72px 44px;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(16px);
+      z-index: 20;
+      padding: 22px 64px 38px;
+      background: rgba(4, 4, 6, 0.7);
+      backdrop-filter: blur(20px);
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
@@ -456,7 +655,7 @@
     }
     .progress-track {
       width: 100%;
-      height: 8px;
+      height: 7px;
       background: rgba(255, 255, 255, 0.12);
       border-radius: 9999px;
       position: relative;
@@ -477,21 +676,23 @@
       align-items: center;
       justify-content: space-between;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.75);
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.7);
     }
     .play-pause-btn {
-      background: none;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       color: #FFFFFF;
       font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
-      padding: 6px 16px;
+      font-weight: 600;
+      padding: 6px 18px;
       border-radius: 9999px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
+      transition: all 0.2s;
     }
     .play-pause-btn:hover {
       border-color: #D1E043;
@@ -501,152 +702,213 @@
 </head>
 <body>
   <div id="stage">
-    <div id="ambient" class="ambient-glow glow-red"></div>
+    <!-- Atmospheric Lighting -->
+    <div id="ambientAura" class="ambient-glow glow-problem"></div>
     <div class="vignette"></div>
-    <div class="grid-pattern"></div>
+    <div class="film-grain"></div>
 
-    <!-- Top Bar -->
+    <!-- Top Navigation -->
     <div class="top-bar">
       <div class="logo-group">
-        <img src="bacham-logo.png" alt="Bacham" class="logo-img">
-        <span class="tag-badge">OFFICIAL TEASER · 1080P 60FPS</span>
+        <img src="bacham-logo.png" alt="Bacham" class="brand-logo-top">
+        <span class="tag-badge">PRODUCT REVEAL TRAILER · 1080P 60FPS</span>
       </div>
-      <div class="controls-top">
+      <div class="top-controls">
         <button id="audioToggle" class="audio-btn">
           <span id="audioIcon">🔊</span>
-          <span id="audioLabel">AUDIO SYNTH: ON</span>
+          <span id="audioLabel">SYNTH AUDIO: ON</span>
         </button>
-        <div id="actIndicator" class="act-tag">ACT 1: THE PROBLEM</div>
+        <div id="chapterIndicator" class="chapter-tag">01 · THE PROBLEM</div>
       </div>
     </div>
 
-    <!-- Main Viewport -->
+    <!-- Main Dynamic Viewport -->
     <div class="viewport">
-      <!-- ACT 1 -->
-      <div id="act1" class="act active">
-        <div class="alert-pill">
-          <span style="width: 8px; height: 8px; border-radius: 50%; background: #FF4444; display: inline-block;"></span>
-          CONFIDENTIAL CLIENT MEETING
+      <!-- CHAPTER 1: THE PROBLEM -->
+      <div id="ch1" class="chapter active">
+        <div class="tension-pill">
+          <span style="width: 9px; height: 9px; border-radius: 50%; background: #FF4444; display: inline-block;"></span>
+          CONFIDENTIAL EXECUTIVE BOARDROOM
         </div>
-        <h1 class="act1-title">
-          &ldquo;Wait... who invited <span class="bot-name">Meeting_Bot_409</span> to this call?&rdquo;
+        <h1 class="ch1-heading">
+          &ldquo;Wait... who invited <span class="bot-name-red">Meeting_Bot_409</span> to this call?&rdquo;
         </h1>
-        <div class="toast-box">
-          <div class="toast-icon">✕</div>
-          <div class="toast-text">
-            <div class="toast-title">Notetaker Bot Joined Call</div>
-            <div class="toast-sub">Recording audio &amp; transmitting to third-party cloud...</div>
+        <div class="bot-toast-card">
+          <div class="bot-avatar-box">✕</div>
+          <div class="bot-meta-info">
+            <div class="bot-meta-title">Uninvited Bot Ingress Detected</div>
+            <div class="bot-meta-desc">Recording raw conversation audio &amp; streaming to third-party cloud servers...</div>
           </div>
         </div>
-        <div class="frustration-text">
-          <span style="color: rgba(255,255,255,0.5)">[00:48:12]</span> Scrubbing 1 hour of audio for 1 lost action item...
+        <div class="frustration-bar">
+          <span style="color: #FF5C5C;">[00:54:12]</span> Scrubbing 1 hour of rambling recording for 1 missed action item...
         </div>
       </div>
 
-      <!-- ACT 2 -->
-      <div id="act2" class="act">
-        <div class="no-bots-badge">
-          <span style="background: #FFE600; color: #000; font-weight: 900; padding: 2px 7px; border-radius: 6px; font-size: 13px;">✕ ✕</span>
-          <span class="no-bots-title">NO BOTS</span>
-          <span class="no-bots-sub">100% BANNED</span>
+      <!-- CHAPTER 2: INTRODUCING BACHAM -->
+      <div id="ch2" class="chapter">
+        <div class="intro-eyebrow">Introducing</div>
+        <img src="bacham-logo.png" alt="Bacham" class="intro-logo-hero">
+        <div class="sticker-row">
+          <div class="no-bots-sticker">
+            <span style="background: #FFE600; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 6px; font-size: 14px;">✕ ✕</span>
+            <span class="no-bots-badge-text">NO BOTS</span>
+            <span class="no-bots-badge-sub">100% BANNED</span>
+          </div>
+          <div class="ssd-shield-sticker">
+            <span>🛡️</span>
+            <span>100% On Your SSD · Zero Telemetry</span>
+          </div>
         </div>
-        <img src="bacham-logo.png" alt="Bacham Logo" class="hero-logo">
-        <h2 class="act2-title">Every word captured. Every action tracked.</h2>
-        <div class="ssd-shield-badge">
-          <span>🛡️</span>
-          <span>100% On Your SSD · Zero Cloud Bots · Zero Telemetry</span>
-        </div>
+        <p class="intro-manifesto">
+          The AI meeting &amp; lecture copilot that lives on your machine.<br>
+          <span style="color: #D1E043;">Every word captured. Zero uninvited bots.</span>
+        </p>
       </div>
 
-      <!-- ACT 3 -->
-      <div id="act3" class="act">
-        <div class="superpower-tabs">
-          <div id="tab0" class="sp-tab active">1. Dual-Stream Loopback</div>
-          <div id="tab1" class="sp-tab">2. Live AI Workspace</div>
-          <div id="tab2" class="sp-tab">3. 1-Click Flashcards</div>
-          <div id="tab3" class="sp-tab">4. Offline SQLite Brain</div>
-        </div>
-
-        <div class="sp-card">
-          <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-bottom: 8px;">
-            <span style="color: #00F5D4;">● STREAM 1: SYSTEM WASAPI LOOPBACK</span>
-            <span style="color: rgba(255,255,255,0.5)">16kHz 16-bit PCM · Zero Bot Ingress</span>
-          </div>
-          <div class="wave-row" id="wave1"></div>
-
-          <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-bottom: 8px;">
-            <span style="color: #D1E043;">🎤 STREAM 2: HOST MICROPHONE</span>
-            <span style="color: #D1E043; font-weight: 600;">ACTIVE ACOUSTIC ECHO CANCELLATION</span>
-          </div>
-          <div class="wave-row" id="wave2"></div>
-
-          <div class="live-transcript-box">
-            <div class="transcript-left">
-              <span class="speaker-tag">Harsha (Host)</span>
-              <span class="transcript-text">&ldquo;Let's finalize the Q3 API migration deadline for next Friday.&rdquo;</span>
+      <!-- CHAPTER 3: THE SUPERPOWERS IN MOTION -->
+      <div id="ch3" class="chapter">
+        <div class="demo-container">
+          <!-- macOS Window Titlebar -->
+          <div class="window-header">
+            <div class="window-controls">
+              <div class="traffic-dot dot-red"></div>
+              <div class="traffic-dot dot-yellow"></div>
+              <div class="traffic-dot dot-green"></div>
             </div>
-            <span class="action-chip">⚡ 4ms AI Flashcard Extracted</span>
+            <div class="window-title">
+              <span>Bacham Desktop</span>
+              <span style="color: rgba(255,255,255,0.25)">|</span>
+              <span>Q3 Roadmap &amp; Architecture Review</span>
+            </div>
+            <div class="window-status-pill">● RECORDING (LOCAL WASAPI)</div>
+          </div>
+
+          <!-- Window Content -->
+          <div class="window-body">
+            <div class="superpower-tabs">
+              <div id="spTab0" class="sp-tab active">1. Dual-Stream Audio Loopback</div>
+              <div id="spTab1" class="sp-tab">2. Live AI Diarization</div>
+              <div id="spTab2" class="sp-tab">3. 1-Click Flashcards</div>
+              <div id="spTab3" class="sp-tab">4. 4ms Offline SQLite Brain</div>
+            </div>
+
+            <!-- Dual Audio Visualizer -->
+            <div class="stream-block">
+              <div class="stream-meta">
+                <span style="color: #00F5D4; font-weight: 700;">● STREAM 1: SYSTEM WASAPI LOOPBACK (REMOTE VOICES)</span>
+                <span style="color: rgba(255,255,255,0.45)">16kHz 16-bit PCM · Zero Cloud Relay</span>
+              </div>
+              <div class="wave-row" id="sysWave"></div>
+
+              <div class="stream-meta" style="margin-top: 14px;">
+                <span style="color: #D1E043; font-weight: 700;">🎤 STREAM 2: HOST MICROPHONE (YOUR VOICE)</span>
+                <span style="color: #D1E043; font-weight: 700;">ZERO ECHO DETECTED</span>
+              </div>
+              <div class="wave-row" id="micWave"></div>
+            </div>
+
+            <!-- Real-time Notes & 3D Flashcard Split -->
+            <div class="split-grid">
+              <div class="transcript-panel">
+                <div class="transcript-line">
+                  <span class="speaker-label">Harsha (Host)</span>
+                  <span style="color: #FFFFFF;">&ldquo;We need to cut all external dependencies before the v1.0.0 public launch.&rdquo;</span>
+                </div>
+                <div class="transcript-line">
+                  <span class="speaker-label" style="color: #00F5D4; background: rgba(0, 245, 212, 0.15);">Alex (Team)</span>
+                  <span style="color: rgba(255,255,255,0.9);">&ldquo;Agreed. SQLite FTS5 index is benchmarked at 4ms offline latency.&rdquo;</span>
+                </div>
+              </div>
+
+              <!-- 3D Flipping Flashcard -->
+              <div class="flashcard-wrapper">
+                <div id="demoCard" class="flashcard-inner">
+                  <!-- Front -->
+                  <div class="card-face card-front">
+                    <span class="card-tag" style="color: #D1E043;">⚡ ACTION ITEM EXTRACTED</span>
+                    <div class="card-text">Finalize offline SQLite FTS5 migration for zero cloud dependencies.</div>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: rgba(255,255,255,0.45);">[Click or auto-flip to study]</span>
+                  </div>
+                  <!-- Back -->
+                  <div class="card-face card-back">
+                    <span class="card-tag" style="color: #00F5D4;">✨ STUDY FLASHCARD #42</span>
+                    <div class="card-text" style="color: #00F5D4;">Active Recall: Why is SQLite FTS5 faster than vector cloud APIs?</div>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #FFFFFF;">Zero HTTP overhead · 4ms local index</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ACT 4 -->
-      <div id="act4" class="act">
-        <div class="version-pill">✨ PRE-RELEASE MILESTONE</div>
-        <h1 class="act4-heading">Version 1.0.0</h1>
-        <div class="act4-subheading">Launching Soon on macOS, Windows &amp; Chrome.</div>
-        <div class="cta-row">
-          <button class="btn-main">Get Early Access</button>
-          <button class="btn-sub">⭐ Star on GitHub</button>
+      <!-- CHAPTER 4: THE CLIMAX & LAUNCHING SOON -->
+      <div id="ch4" class="chapter">
+        <div class="milestone-pill">✨ PRE-RELEASE MILESTONE</div>
+        <h1 class="ch4-version">Version 1.0.0</h1>
+        <div class="ch4-launching-soon">Launching Soon.</div>
+        <div class="ch4-platforms">
+          <span>Available Day 1 for:</span>
+          <span class="platform-chip">macOS</span>
+          <span class="platform-chip">Windows 10 / 11</span>
+          <span class="platform-chip">Chrome Extension</span>
+        </div>
+        <div class="cta-button-row">
+          <button class="btn-early-access">Get Early Access</button>
+          <button class="btn-github-star">
+            <span>⭐</span>
+            <span>Star on GitHub</span>
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Control Bar -->
+    <!-- Bottom Timeline Bar -->
     <div class="bottom-bar">
       <div id="progressTrack" class="progress-track">
-        <div id="progress" class="progress-fill"></div>
+        <div id="progressFill" class="progress-fill"></div>
       </div>
       <div class="controls-row">
         <button id="playPauseBtn" class="play-pause-btn">❚❚ PAUSE</button>
-        <span id="timeDisplay">00:00 / 00:52</span>
-        <span>PRO-RES 1080P · 60 FPS</span>
+        <span id="timeDisplay">00:00 / 00:54</span>
+        <span style="letter-spacing: 0.05em;">PRO-RES 1080P · 60 FPS · CINEMATIC CUT</span>
       </div>
     </div>
   </div>
 
   <script>
-    // Scale stage to fit any screen
-    function resizeStage() {
+    // Responsive stage scaling for any screen size
+    function scaleStage() {
       const stage = document.getElementById('stage');
       const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
       stage.style.transform = `scale(${scale})`;
     }
-    window.addEventListener('resize', resizeStage);
-    resizeStage();
+    window.addEventListener('resize', scaleStage);
+    scaleStage();
 
-    // Populate animated waveform bars
-    const wave1 = document.getElementById('wave1');
-    const wave2 = document.getElementById('wave2');
-    for (let i = 0; i < 56; i++) {
+    // Populate waveform visualizers
+    const sysWave = document.getElementById('sysWave');
+    const micWave = document.getElementById('micWave');
+    for (let i = 0; i < 58; i++) {
       const b1 = document.createElement('div');
       b1.className = 'wave-bar';
       b1.style.background = '#00F5D4';
-      b1.style.height = '14px';
-      wave1.appendChild(b1);
+      b1.style.height = '12px';
+      sysWave.appendChild(b1);
 
       const b2 = document.createElement('div');
       b2.className = 'wave-bar';
       b2.style.background = '#D1E043';
-      b2.style.height = '18px';
-      wave2.appendChild(b2);
+      b2.style.height = '14px';
+      micWave.appendChild(b2);
     }
 
-    // Web Audio Synthesis Sound Engine
+    // Audio Engine via Web Audio API
     let audioCtx = null;
-    let audioEnabled = true;
+    let soundEnabled = true;
 
-    function getAudioContext() {
+    function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -657,9 +919,9 @@
     }
 
     function playTone(freq, duration, type = 'sine', gainVal = 0.08) {
-      if (!audioEnabled) return;
+      if (!soundEnabled) return;
       try {
-        const ctx = getAudioContext();
+        const ctx = initAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = type;
@@ -673,46 +935,70 @@
       } catch (e) {}
     }
 
-    function playSubBass() {
-      if (!audioEnabled) return;
+    // Cinematic sub-bass boom
+    function playSubBassBoom() {
+      if (!soundEnabled) return;
       try {
-        const ctx = getAudioContext();
+        const ctx = initAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(95, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 1.2);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
+        osc.frequency.setValueAtTime(110, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(32, ctx.currentTime + 1.4);
+        gain.gain.setValueAtTime(0.24, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.6);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 1.4);
+        osc.stop(ctx.currentTime + 1.6);
       } catch (e) {}
     }
 
-    function playWhoosh() {
-      if (!audioEnabled) return;
+    // Tactile cartoon pop
+    function playStickerPop() {
+      if (!soundEnabled) return;
       try {
-        const ctx = getAudioContext();
+        const ctx = initAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(150, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.06, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+        osc.frequency.setValueAtTime(450, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.45);
+        osc.stop(ctx.currentTime + 0.2);
       } catch (e) {}
     }
 
-    function playChord() {
-      if (!audioEnabled) return;
-      [261.63, 329.63, 392.00, 523.25].forEach((f, idx) => {
-        setTimeout(() => playTone(f, 0.8, 'sine', 0.05), idx * 80);
+    // Whoosh transition sweep
+    function playWhooshSweep() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = initAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(950, ctx.currentTime + 0.45);
+        gain.gain.setValueAtTime(0.07, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+
+    // Major-9th milestone chord chime
+    function playMilestoneChord() {
+      if (!soundEnabled) return;
+      // D1E043 aesthetic harmony (Dmaj9: D4, F#4, A4, C#5, E5)
+      const freqs = [293.66, 369.99, 440.00, 554.37, 659.25];
+      freqs.forEach((f, idx) => {
+        setTimeout(() => playTone(f, 1.2, 'sine', 0.05), idx * 75);
       });
     }
 
@@ -721,49 +1007,50 @@
     const audioIcon = document.getElementById('audioIcon');
     const audioLabel = document.getElementById('audioLabel');
     audioToggle.addEventListener('click', () => {
-      audioEnabled = !audioEnabled;
-      if (audioEnabled) {
+      soundEnabled = !soundEnabled;
+      if (soundEnabled) {
         audioIcon.textContent = '🔊';
-        audioLabel.textContent = 'AUDIO SYNTH: ON';
-        getAudioContext();
+        audioLabel.textContent = 'SYNTH AUDIO: ON';
+        initAudio();
         playTone(440, 0.2);
       } else {
         audioIcon.textContent = '🔇';
-        audioLabel.textContent = 'AUDIO SYNTH: MUTED';
+        audioLabel.textContent = 'SYNTH AUDIO: MUTED';
       }
     });
 
-    // Timeline state
+    // Timeline and Chapter Orchestration
     let elapsed = 0;
-    const totalDuration = 52;
+    const totalDuration = 54;
     let isPlaying = true;
-    let currentAct = -1;
+    let activeChapterIndex = -1;
 
-    const ambient = document.getElementById('ambient');
-    const actIndicator = document.getElementById('actIndicator');
-    const progress = document.getElementById('progress');
+    const ambientAura = document.getElementById('ambientAura');
+    const chapterIndicator = document.getElementById('chapterIndicator');
+    const progressFill = document.getElementById('progressFill');
     const progressTrack = document.getElementById('progressTrack');
     const timeDisplay = document.getElementById('timeDisplay');
     const playPauseBtn = document.getElementById('playPauseBtn');
 
-    const act1 = document.getElementById('act1');
-    const act2 = document.getElementById('act2');
-    const act3 = document.getElementById('act3');
-    const act4 = document.getElementById('act4');
+    const ch1 = document.getElementById('ch1');
+    const ch2 = document.getElementById('ch2');
+    const ch3 = document.getElementById('ch3');
+    const ch4 = document.getElementById('ch4');
+    const demoCard = document.getElementById('demoCard');
 
-    const tabs = [
-      document.getElementById('tab0'),
-      document.getElementById('tab1'),
-      document.getElementById('tab2'),
-      document.getElementById('tab3')
+    const spTabs = [
+      document.getElementById('spTab0'),
+      document.getElementById('spTab1'),
+      document.getElementById('spTab2'),
+      document.getElementById('spTab3')
     ];
 
-    function animateWaves(t) {
-      const bars1 = wave1.children;
-      const bars2 = wave2.children;
-      for (let i = 0; i < bars1.length; i++) {
-        bars1[i].style.height = `${14 + Math.sin(i * 0.45 + t * 6) * 24}px`;
-        bars2[i].style.height = `${16 + Math.cos(i * 0.55 + t * 7) * 28}px`;
+    function updateWaveAnimations(t) {
+      const b1 = sysWave.children;
+      const b2 = micWave.children;
+      for (let i = 0; i < b1.length; i++) {
+        b1[i].style.height = `${12 + Math.sin(i * 0.45 + t * 6.5) * 22}px`;
+        b2[i].style.height = `${14 + Math.cos(i * 0.55 + t * 7.5) * 26}px`;
       }
     }
 
@@ -781,7 +1068,7 @@
       const clickX = e.clientX - rect.left;
       const pct = Math.max(0, Math.min(1, clickX / rect.width));
       elapsed = pct * totalDuration;
-      currentAct = -1; // force trigger act switch
+      activeChapterIndex = -1; // trigger chapter change
     });
 
     let lastTime = performance.now();
@@ -797,74 +1084,93 @@
         playPauseBtn.textContent = '↻ REPLAY';
       }
 
-      // Progress bar
+      // Update progress bar
       const pct = (elapsed / totalDuration) * 100;
-      progress.style.width = `${pct}%`;
+      progressFill.style.width = `${pct}%`;
 
       const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
       const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
-      timeDisplay.textContent = `${m}:${s} / 00:52`;
+      timeDisplay.textContent = `${m}:${s} / 00:54`;
 
-      // Act Switching
-      if (elapsed < 12) {
-        // ACT 1
-        if (currentAct !== 1) {
-          currentAct = 1;
-          ambient.className = 'ambient-glow glow-red';
-          actIndicator.textContent = 'ACT 1: THE PROBLEM';
-          act1.className = 'act active';
-          act2.className = 'act';
-          act3.className = 'act';
-          act4.className = 'act';
-          playTone(220, 0.4, 'sawtooth', 0.05);
+      // ==========================================
+      // CHAPTER 1: THE TENSION (00:00 - 00:11)
+      // ==========================================
+      if (elapsed < 11) {
+        if (activeChapterIndex !== 1) {
+          activeChapterIndex = 1;
+          ambientAura.className = 'ambient-glow glow-problem';
+          chapterIndicator.textContent = '01 · THE PROBLEM';
+          ch1.className = 'chapter active';
+          ch2.className = 'chapter';
+          ch3.className = 'chapter';
+          ch4.className = 'chapter';
+          playTone(180, 0.45, 'sawtooth', 0.04);
         }
-      } else if (elapsed < 24) {
-        // ACT 2
-        if (currentAct !== 2) {
-          currentAct = 2;
-          ambient.className = 'ambient-glow glow-green';
-          actIndicator.textContent = 'ACT 2: THE REVEAL';
-          act1.className = 'act';
-          act2.className = 'act active';
-          act3.className = 'act';
-          act4.className = 'act';
-          playSubBass();
-          playWhoosh();
+      }
+      // ==========================================
+      // CHAPTER 2: INTRODUCING BACHAM (00:11 - 00:23)
+      // ==========================================
+      else if (elapsed < 23) {
+        if (activeChapterIndex !== 2) {
+          activeChapterIndex = 2;
+          ambientAura.className = 'ambient-glow glow-intro';
+          chapterIndicator.textContent = '02 · INTRODUCING BACHAM';
+          ch1.className = 'chapter';
+          ch2.className = 'chapter active';
+          ch3.className = 'chapter';
+          ch4.className = 'chapter';
+          playWhooshSweep();
+          playSubBassBoom();
+          setTimeout(playStickerPop, 400);
         }
-      } else if (elapsed < 42) {
-        // ACT 3
-        if (currentAct !== 3) {
-          currentAct = 3;
-          ambient.className = 'ambient-glow glow-cyan';
-          actIndicator.textContent = 'ACT 3: SUPERPOWERS';
-          act1.className = 'act';
-          act2.className = 'act';
-          act3.className = 'act active';
-          act4.className = 'act';
-          playWhoosh();
+      }
+      // ==========================================
+      // CHAPTER 3: SUPERPOWERS IN MOTION (00:23 - 00:43)
+      // ==========================================
+      else if (elapsed < 43) {
+        if (activeChapterIndex !== 3) {
+          activeChapterIndex = 3;
+          ambientAura.className = 'ambient-glow glow-demo';
+          chapterIndicator.textContent = '03 · SUPERPOWERS';
+          ch1.className = 'chapter';
+          ch2.className = 'chapter';
+          ch3.className = 'chapter active';
+          ch4.className = 'chapter';
+          playWhooshSweep();
         }
-        animateWaves(elapsed);
+        updateWaveAnimations(elapsed);
 
-        // Cycle through superpower tabs
-        const subIndex = Math.floor((elapsed - 24) / 4.5);
-        tabs.forEach((tab, idx) => {
+        // Cycle through sub-tabs in Demo
+        const subIndex = Math.floor((elapsed - 23) / 5);
+        spTabs.forEach((tab, idx) => {
           if (idx === Math.min(subIndex, 3)) {
             tab.className = 'sp-tab active';
           } else {
             tab.className = 'sp-tab';
           }
         });
-      } else {
-        // ACT 4
-        if (currentAct !== 4) {
-          currentAct = 4;
-          ambient.className = 'ambient-glow glow-green';
-          actIndicator.textContent = 'ACT 4: LAUNCHING SOON';
-          act1.className = 'act';
-          act2.className = 'act';
-          act3.className = 'act';
-          act4.className = 'act active';
-          playChord();
+
+        // 3D Card Flip on Tab 2
+        if (subIndex >= 2 && subIndex < 4) {
+          demoCard.classList.add('flipped');
+        } else {
+          demoCard.classList.remove('flipped');
+        }
+      }
+      // ==========================================
+      // CHAPTER 4: CLIMAX & LAUNCHING SOON (00:43 - 00:54)
+      // ==========================================
+      else {
+        if (activeChapterIndex !== 4) {
+          activeChapterIndex = 4;
+          ambientAura.className = 'ambient-glow glow-launch';
+          chapterIndicator.textContent = '04 · LAUNCHING SOON';
+          ch1.className = 'chapter';
+          ch2.className = 'chapter';
+          ch3.className = 'chapter';
+          ch4.className = 'chapter active';
+          playMilestoneChord();
+          playSubBassBoom();
         }
       }
 
@@ -873,7 +1179,7 @@
       }
     }
 
-    // Autoplay start
+    // Initialize Autoplay
     requestAnimationFrame((now) => {
       lastTime = now;
       requestAnimationFrame(tick);
