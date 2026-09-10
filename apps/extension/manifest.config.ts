@@ -19,8 +19,8 @@ const { version } = packageJson;
  */
 export default defineManifest({
   manifest_version: 3,
-  name: 'BACHAM',
-  description: 'Local-first lecture capture engine. Captures browser tab audio, video, and screenshots and forwards them to the BACHAM Desktop Application.',
+  name: 'BACHAM — AI Meeting & Lecture Capture',
+  description: 'Privacy-first lecture and meeting capture. Records tab audio and slides, syncing with the local BACHAM desktop assistant.',
   version,
   minimum_chrome_version: '116',
 
@@ -52,9 +52,8 @@ export default defineManifest({
 
   content_scripts: [
     {
-      // Scoped to all HTTP/HTTPS pages: the user can start recording on any tab.
-      // The content script only reads document.title, window.location, and
-      // detects known lecture platforms (Zoom/Meet/YouTube) — never page content.
+      // Scoped to all HTTP/HTTPS pages: detects lecture/meeting tabs (Google Meet, Zoom, YouTube, Teams)
+      // and monitors slide visual changes to trigger notes snapshots. Never accesses credentials or form data.
       matches: ['*://*/*'],
       js: ['src/content/index.tsx'],
       run_at: 'document_end',
@@ -64,7 +63,6 @@ export default defineManifest({
   permissions: [
     'storage',
     'unlimitedStorage',
-    'desktopCapture',
     'tabCapture',
     'activeTab',
     'tabs',
@@ -75,10 +73,8 @@ export default defineManifest({
   ],
 
   host_permissions: [
-    '*://*/*',
     'http://127.0.0.1/*',
     'http://localhost/*',
-    'ws://127.0.0.1/*',
-    'ws://localhost/*',
+    'https://generativelanguage.googleapis.com/*',
   ],
 });

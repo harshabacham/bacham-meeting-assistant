@@ -12,8 +12,8 @@ const LEGAL_TRANSITIONS: Readonly<Record<SessionState, ReadonlySet<SessionState>
   idle: new Set<SessionState>(['idle', 'requesting-permission', 'connecting', 'stopping', 'error']),
   'requesting-permission': new Set<SessionState>(['idle', 'requesting-permission', 'connecting', 'stopping', 'error']),
   connecting: new Set<SessionState>(['idle', 'connecting', 'recording', 'stopping', 'error']),
-  recording: new Set<SessionState>(['recording', 'paused', 'stopping', 'error', 'idle']),
-  paused: new Set<SessionState>(['paused', 'recording', 'stopping', 'error', 'idle']),
+  recording: new Set<SessionState>(['recording', 'paused', 'stopping', 'error']),
+  paused: new Set<SessionState>(['paused', 'recording', 'stopping', 'error']),
   stopping: new Set<SessionState>(['stopping', 'idle', 'error']),
   error: new Set<SessionState>(['error', 'idle', 'stopping']),
 };
