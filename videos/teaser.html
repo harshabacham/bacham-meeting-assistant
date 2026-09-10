@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bacham — Official Motion Graphics Launch Trailer</title>
+  <title>Bacham — 3D Isometric Clay Launch Trailer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -26,78 +26,123 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 16:9 Cinema Canvas (1920 x 1080 Full HD) */
-    #cinemaStage {
+    /* 16:9 Master Cinema Stage (1920 x 1080) */
+    #stage {
       position: relative;
       width: 1920px;
       height: 1080px;
-      background: #040406;
+      background: #050608;
       overflow: hidden;
       transform-origin: center center;
     }
 
-    /* Film Environment Elements */
-    .anamorphic-glow {
+    /* 3D Isometric Studio Camera ($35mm, Y-rot: -20deg, X-rot: 15deg) */
+    #isoWorld {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 1;
-    }
-    .glow-state-red {
-      background: radial-gradient(ellipse at 50% 40%, rgba(255, 68, 68, 0.28) 0%, rgba(255, 68, 68, 0.05) 50%, transparent 75%);
-    }
-    .glow-state-green {
-      background: radial-gradient(ellipse at 50% 50%, rgba(209, 224, 67, 0.32) 0%, rgba(209, 224, 67, 0.08) 55%, transparent 80%);
-    }
-    .glow-state-cyan {
-      background: radial-gradient(ellipse at 40% 60%, rgba(0, 245, 212, 0.22) 0%, rgba(209, 224, 67, 0.15) 50%, transparent 75%);
-    }
-    .glow-state-climax {
-      background: radial-gradient(ellipse at 50% 45%, rgba(209, 224, 67, 0.45) 0%, rgba(209, 224, 67, 0.15) 60%, transparent 85%);
-    }
-
-    .vignette-layer {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.95) 100%);
-      z-index: 2;
-    }
-    .cinema-lines {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-      background-size: 100% 4px, 6px 100%;
-      z-index: 3;
-      opacity: 0.55;
-    }
-
-    /* Screen Shake Container */
-    #cameraViewport {
-      position: absolute;
-      inset: 0;
-      z-index: 10;
+      perspective: 1600px;
       display: flex;
       align-items: center;
       justify-content: center;
-      perspective: 1400px;
-      transition: transform 0.08s ease-out;
+      transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1.0);
     }
-    .shake-impact {
-      animation: cameraShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    .iso-plane {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+      transform: rotateX(15deg) rotateY(-20deg);
+      transition: transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1.0);
     }
-    @keyframes cameraShake {
-      10%, 90% { transform: translate3d(-3px, 4px, 0) rotate(-0.5deg); }
-      20%, 80% { transform: translate3d(5px, -3px, 0) rotate(0.6deg); }
-      30%, 50%, 70% { transform: translate3d(-6px, 2px, 0) rotate(-0.7deg); }
-      40%, 60% { transform: translate3d(6px, -2px, 0) rotate(0.5deg); }
+
+    /* Studio Lighting & Ambient Occlusion */
+    .studio-ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      transition: all 0.9s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+      z-index: 1;
+    }
+    .ambient-red {
+      background: radial-gradient(ellipse at 50% 40%, rgba(255, 90, 31, 0.22) 0%, rgba(255, 68, 68, 0.05) 50%, transparent 75%);
+    }
+    .ambient-green {
+      background: radial-gradient(ellipse at 50% 45%, rgba(209, 224, 67, 0.3) 0%, rgba(209, 224, 67, 0.06) 55%, transparent 80%);
+    }
+    .ambient-cyan {
+      background: radial-gradient(ellipse at 45% 55%, rgba(0, 245, 212, 0.2) 0%, rgba(209, 224, 67, 0.12) 50%, transparent 75%);
+    }
+    .ambient-gold {
+      background: radial-gradient(ellipse at 50% 45%, rgba(209, 224, 67, 0.42) 0%, rgba(255, 189, 46, 0.12) 60%, transparent 85%);
+    }
+    .vignette-ring {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 40%, rgba(3, 4, 6, 0.95) 100%);
+      z-index: 2;
+    }
+    .grid-isometric-floor {
+      position: absolute;
+      width: 2400px;
+      height: 2400px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 80px 80px;
+      transform: rotateX(90deg) translateZ(-400px);
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* Screen Shake Container */
+    .shake-active {
+      animation: cameraThud 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+    @keyframes cameraThud {
+      10%, 90% { transform: translate3d(-4px, 5px, 0) rotate(-0.5deg); }
+      20%, 80% { transform: translate3d(6px, -4px, 0) rotate(0.6deg); }
+      30%, 50%, 70% { transform: translate3d(-7px, 3px, 0) rotate(-0.8deg); }
+      40%, 60% { transform: translate3d(7px, -3px, 0) rotate(0.6deg); }
       100% { transform: translate3d(0, 0, 0) rotate(0); }
     }
 
-    /* Scenes */
-    .scene {
+    /* Kinetic Subtitle Bar (Cinema Bottom Third) */
+    .cinema-subtitles {
+      position: absolute;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      width: 90%;
+      max-width: 1400px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .vo-caption-box {
+      display: inline-block;
+      background: rgba(8, 9, 13, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(20px);
+      padding: 14px 34px;
+      border-radius: 9999px;
+      font-size: 21px;
+      font-weight: 600;
+      color: #EDEDED;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+      letter-spacing: -0.01em;
+      transition: all 0.3s ease;
+    }
+    .vo-highlight {
+      color: #D1E043;
+      font-weight: 800;
+    }
+
+    /* Scene Orchestration */
+    .scene-container {
       position: absolute;
       width: 100%;
       height: 100%;
@@ -107,654 +152,864 @@
       justify-content: center;
       text-align: center;
       opacity: 0;
-      transform: scale(0.94);
-      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.92) translateZ(-60px);
+      transition: opacity 0.55s cubic-bezier(0.25, 0.1, 0.25, 1.0), transform 0.65s cubic-bezier(0.25, 0.1, 0.25, 1.0);
       pointer-events: none;
+      z-index: 10;
     }
-    .scene.active {
+    .scene-container.active {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) translateZ(0);
       pointer-events: auto;
     }
 
     /* ============================================================
-       SCENE 1: KINETIC HOOK (00:00 - 00:07)
+       3D CLAYMORPHISM & TOY-TECH SHARED STYLES
        ============================================================ */
-    .hook-badge {
+    .clay-card {
+      background: #14151C;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 36px;
+      box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.85),
+        inset 0 4px 6px rgba(255, 255, 255, 0.14),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+    .clay-glass {
+      background: rgba(22, 23, 31, 0.75);
+      backdrop-filter: blur(28px);
+      border: 1.5px solid rgba(255, 255, 255, 0.16);
+      border-radius: 32px;
+      box-shadow: 
+        0 30px 80px rgba(0, 0, 0, 0.8),
+        inset 0 2px 4px rgba(255, 255, 255, 0.15),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    }
+    .clay-pill-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 8px 22px;
+      border-radius: 9999px;
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 28px;
-      border-radius: 9999px;
-      background: rgba(255, 68, 68, 0.16);
-      border: 1.5px solid rgba(255, 68, 68, 0.45);
-      color: #FF5C5C;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
+      gap: 10px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 34px;
-      box-shadow: 0 0 40px rgba(255, 68, 68, 0.25);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.2);
     }
-    .hook-kinetic-text {
+
+    /* Kinetic Scene Headline */
+    .kinetic-title-huge {
       font-family: 'Newsreader', serif;
-      font-size: 84px;
+      font-size: 78px;
       font-weight: 400;
-      line-height: 1.08;
+      line-height: 1.1;
       letter-spacing: -0.02em;
       color: #FFFFFF;
-      max-width: 1280px;
-      margin-bottom: 44px;
+      margin-bottom: 28px;
+      max-width: 1200px;
     }
-    .strike-bot {
-      color: #FF5C5C;
-      font-style: italic;
-      text-decoration: underline wavy rgba(255, 92, 92, 0.8);
-      text-underline-offset: 14px;
-    }
-    .bot-card-pop {
-      background: rgba(20, 20, 26, 0.96);
-      border: 1.5px solid rgba(255, 68, 68, 0.4);
-      border-radius: 28px;
-      padding: 26px 44px;
+
+    /* ============================================================
+       SCENE 1: THE DEAF & BLIND NOTETAKER (00:00 - 00:07)
+       ============================================================ */
+    .desk-diorama {
+      position: relative;
+      width: 1040px;
+      height: 480px;
       display: flex;
       align-items: center;
-      gap: 26px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95);
-      backdrop-filter: blur(28px);
-      animation: botPulse 1.5s infinite ease-in-out;
+      justify-content: space-around;
+      transform-style: preserve-3d;
     }
-    @keyframes botPulse {
-      0%, 100% { box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 0 0 rgba(255, 68, 68, 0.4); }
-      50% { box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 35px 6px rgba(255, 68, 68, 0.25); }
+    /* Clay Developer Avatar */
+    .clay-avatar-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      transform: translateZ(40px);
     }
-    .bot-symbol {
-      width: 64px;
-      height: 64px;
-      border-radius: 18px;
-      background: rgba(255, 68, 68, 0.22);
-      border: 2px solid rgba(255, 68, 68, 0.5);
-      color: #FF6B6B;
-      font-size: 30px;
-      font-weight: 900;
+    .clay-head {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #FFD2A6 0%, #E5A872 70%, #BA7846 100%);
+      box-shadow: 0 16px 35px rgba(0,0,0,0.6), inset 0 6px 10px rgba(255,255,255,0.4);
+      position: relative;
+    }
+    .clay-glasses {
+      position: absolute;
+      top: 40px;
+      left: 18px;
+      right: 18px;
+      height: 32px;
+      border: 5px solid #1E202B;
+      border-radius: 12px;
+      background: rgba(209, 224, 67, 0.15);
+    }
+    .clay-body {
+      width: 140px;
+      height: 110px;
+      border-radius: 36px 36px 20px 20px;
+      background: radial-gradient(circle at 35% 30%, #D1E043 0%, #AEC025 80%, #7E8D14 100%);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7), inset 0 6px 8px rgba(255,255,255,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
+      color: #111;
+      font-weight: 900;
+      font-size: 20px;
     }
-    .bot-card-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: #FFFFFF;
-      margin-bottom: 4px;
-      text-align: left;
-    }
-    .bot-card-desc {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 15px;
-      color: #A1A1A6;
-      text-align: left;
-    }
-
-    /* ============================================================
-       SCENE 2: THE REVEAL ("MEET BACHAM") (00:07 - 00:16)
-       ============================================================ */
-    .reveal-eyebrow {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-size: 52px;
-      color: #D1E043;
-      letter-spacing: -0.01em;
-      margin-bottom: 18px;
-      text-shadow: 0 0 30px rgba(209, 224, 67, 0.4);
-    }
-    .reveal-logo-hero {
-      height: 172px;
-      width: auto;
-      object-fit: contain;
-      filter: drop-shadow(0 0 85px rgba(209, 224, 67, 0.75));
-      margin-bottom: 34px;
-      transform: scale(1);
-      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .stickers-cluster {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-      margin-bottom: 38px;
-    }
-    .cartoon-stamp-nobots {
-      background: #FF5C5C;
-      border: 4px solid #000000;
+    /* Floating Code Screen with Error 402 */
+    .floating-code-screen {
+      width: 440px;
+      padding: 26px;
       border-radius: 26px;
-      padding: 16px 36px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 14px 0 rgba(0, 0, 0, 0.95), inset 0 -4px 0 rgba(0, 0, 0, 0.3);
-      transform: rotate(-3.5deg);
+      background: #0E0F14;
+      border: 2px solid rgba(255, 90, 31, 0.5);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 90, 31, 0.25);
+      text-align: left;
+      transform: translateZ(80px) rotateY(-8deg);
+      animation: floatScreen 3s ease-in-out infinite;
     }
-    .stamp-badge-x {
-      background: #FFE600;
-      color: #000000;
-      font-weight: 900;
-      padding: 3px 10px;
-      border-radius: 8px;
-      font-size: 16px;
+    @keyframes floatScreen {
+      0%, 100% { transform: translateZ(80px) rotateY(-8deg) translateY(0); }
+      50% { transform: translateZ(80px) rotateY(-8deg) translateY(-10px); }
     }
-    .stamp-text-primary {
-      font-size: 24px;
-      font-weight: 900;
-      color: #FFE600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    .stamp-text-secondary {
-      font-size: 16px;
-      font-weight: 900;
+    .error-pill {
+      background: #FF5A1F;
       color: #FFFFFF;
-      letter-spacing: 0.06em;
-    }
-    .shield-badge-ssd {
-      background: rgba(209, 224, 67, 0.16);
-      border: 2px solid rgba(209, 224, 67, 0.5);
-      border-radius: 24px;
-      padding: 16px 34px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      color: #D1E043;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 18px;
+      font-size: 13px;
       font-weight: 800;
-      box-shadow: 0 0 45px rgba(209, 224, 67, 0.3);
-      transform: rotate(2.5deg);
+      padding: 4px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 12px;
     }
-    .reveal-manifesto {
-      font-family: 'Newsreader', serif;
-      font-size: 52px;
-      font-weight: 400;
-      line-height: 1.22;
-      color: #FFFFFF;
-      max-width: 1100px;
+    .code-lines-ghost {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      margin-bottom: 10px;
     }
 
-    /* ============================================================
-       SCENE 3: 4 DEEP FEATURE SHOWCASES (00:16 - 00:36)
-       ============================================================ */
-    .ae-stage-3d {
-      width: 1400px;
-      height: 760px;
-      background: #0B0B10;
-      border: 1.5px solid rgba(255, 255, 255, 0.18);
-      border-radius: 36px;
-      box-shadow: 0 50px 120px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
-      overflow: hidden;
+    /* Clumsy Oblivious Toy Robot */
+    .clumsy-robot-box {
       display: flex;
       flex-direction: column;
-      transform: rotateX(4deg) rotateY(-2deg);
-      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .ae-header-bar {
-      background: rgba(22, 22, 30, 0.92);
-      padding: 18px 30px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 12px;
+      transform: translateZ(30px) rotateY(160deg); /* Facing away */
+      animation: robotWobble 2.5s ease-in-out infinite;
     }
-    .traffic-dots-group {
-      display: flex;
-      gap: 10px;
+    @keyframes robotWobble {
+      0%, 100% { transform: translateZ(30px) rotateY(160deg) translateY(0); }
+      50% { transform: translateZ(30px) rotateY(160deg) translateY(-8px); }
     }
-    .traffic-dot {
+    .robot-head {
+      width: 90px;
+      height: 80px;
+      border-radius: 22px;
+      background: radial-gradient(circle at 35% 30%, #A1A4B2 0%, #686B7C 75%, #464855 100%);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.6), inset 0 4px 6px rgba(255,255,255,0.4);
+      position: relative;
+    }
+    .robot-antenna {
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 20px;
+      background: #FF5A1F;
+      border-radius: 4px;
+    }
+    .robot-antenna-bulb {
+      position: absolute;
+      top: -26px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 14px;
       height: 14px;
       border-radius: 50%;
+      background: #FF5A1F;
+      box-shadow: 0 0 15px #FF5A1F;
     }
-    .td-red { background: #FF5F56; }
-    .td-yellow { background: #FFBD2E; }
-    .td-green { background: #27C93F; }
-    .header-center-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.7);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .status-badge-recording {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      font-weight: 800;
-      background: rgba(209, 224, 67, 0.18);
-      color: #D1E043;
-      padding: 4px 14px;
-      border-radius: 9999px;
-      border: 1px solid rgba(209, 224, 67, 0.45);
-      letter-spacing: 0.08em;
-    }
-
-    .ae-content-body {
-      flex: 1;
-      padding: 38px 52px;
+    .robot-notepad {
+      width: 100px;
+      height: 130px;
+      background: #FFF;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      padding: 12px;
       display: flex;
       flex-direction: column;
+      gap: 8px;
+      transform: rotate(6deg);
+    }
+    .scribble-line {
+      height: 5px;
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+
+    /* ============================================================
+       SCENE 2: THE REVEAL & TARGETED TAB CAPTURE (00:07 - 00:15)
+       ============================================================ */
+    .reveal-glass-dock {
+      width: 960px;
+      padding: 44px 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      position: relative;
+    }
+    .bubbly-logo-center {
+      height: 140px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 65px rgba(209, 224, 67, 0.7));
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .targeted-tab-band {
+      width: 100%;
+      background: rgba(14, 15, 20, 0.92);
+      border: 3px solid #D1E043;
+      border-radius: 24px;
+      padding: 24px 34px;
+      display: flex;
+      align-items: center;
       justify-content: space-between;
+      box-shadow: 0 0 50px rgba(209, 224, 67, 0.35);
+      position: relative;
+    }
+    .tab-info-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
       text-align: left;
     }
-
-    /* Kinetic Feature Pills */
-    .feature-nav-pills {
-      display: flex;
-      gap: 16px;
+    .meet-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #00F5D4;
+      box-shadow: 0 0 15px #00F5D4;
     }
-    .feat-pill {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 14px;
-      font-weight: 700;
-      padding: 10px 24px;
+    /* 3D Toy Switch */
+    .toy-toggle-switch {
+      width: 140px;
+      height: 60px;
+      background: #1C1D26;
       border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1.5px solid rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.65);
-      transition: all 0.3s ease;
+      padding: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      cursor: pointer;
     }
-    .feat-pill.active {
-      background: #D1E043;
-      color: #000000;
-      font-weight: 900;
-      border-color: #D1E043;
-      box-shadow: 0 0 30px rgba(209, 224, 67, 0.5);
-      transform: scale(1.04);
+    .toy-toggle-knob {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #D1E043 0%, #A6B71B 80%, #6E7B0A 100%);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.6), inset 0 3px 5px rgba(255,255,255,0.4);
+      position: absolute;
+      left: 6px;
+      transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .toy-toggle-knob.switched {
+      left: 84px;
     }
 
-    /* Showcase 1: Dual Audio Visualizer */
-    .audio-streams-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1.5px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      padding: 26px 36px;
+    /* ============================================================
+       SCENE 3: LIVE NOTES + SCREEN SNAPSHOTS (00:15 - 00:23)
+       ============================================================ */
+    .timeline-diorama {
+      width: 1280px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 36px;
+      align-items: center;
     }
-    .stream-header-row {
+    /* Left: Live Notes Glass Panel */
+    .live-notes-glass {
+      padding: 34px 40px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .notes-header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13.5px;
-      margin-bottom: 12px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
     }
-    .stream-wave-visual {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      height: 48px;
-    }
-    .wave-line-bar {
-      width: 8px;
-      border-radius: 9999px;
-      transition: height 0.08s ease;
-    }
-
-    /* Showcase 2 & 3: Split Notes & 3D Flipping Flashcard */
-    .split-superpowers {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 28px;
-    }
-    .smart-notes-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1.5px solid rgba(255, 255, 255, 0.08);
-      border-radius: 22px;
-      padding: 24px 30px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .note-row {
+    .bullet-entry {
       display: flex;
       align-items: flex-start;
       gap: 14px;
-      font-size: 16px;
+      font-size: 16.5px;
       line-height: 1.45;
     }
-    .speaker-pill-tag {
+    .speaker-clay-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 800;
       color: #D1E043;
       background: rgba(209, 224, 67, 0.16);
       padding: 4px 12px;
-      border-radius: 6px;
+      border-radius: 8px;
       white-space: nowrap;
     }
 
-    /* 3D Flashcard Module */
-    .card-3d-stage {
-      perspective: 1200px;
-      height: 140px;
-    }
-    .card-3d-flipper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      border-radius: 22px;
-      transform-style: preserve-3d;
-      transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .card-3d-flipper.flipped {
-      transform: rotateY(180deg);
-    }
-    .flipper-face {
-      position: absolute;
-      inset: 0;
-      border-radius: 22px;
-      padding: 22px 28px;
-      backface-visibility: hidden;
+    /* Right: Toy Camera & Screen Snapshot */
+    .toy-camera-stage {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      position: relative;
     }
-    .ff-front {
-      background: linear-gradient(135deg, rgba(209, 224, 67, 0.18) 0%, rgba(209, 224, 67, 0.04) 100%);
-      border: 2px solid rgba(209, 224, 67, 0.45);
-      box-shadow: 0 15px 40px rgba(209, 224, 67, 0.15);
+    .toy-camera {
+      width: 130px;
+      height: 90px;
+      background: radial-gradient(circle at 35% 30%, #3B82F6 0%, #2563EB 70%, #1D4ED8 100%);
+      border-radius: 26px;
+      box-shadow: 0 16px 35px rgba(0,0,0,0.7), inset 0 4px 6px rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
     }
-    .ff-back {
-      background: linear-gradient(135deg, rgba(0, 245, 212, 0.18) 0%, rgba(0, 245, 212, 0.04) 100%);
+    .toy-lens {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #1E293B 0%, #0F172A 100%);
+      border: 4px solid #93C5FD;
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.8);
+    }
+    .camera-flash-beam {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(209, 224, 67, 0.4) 40%, transparent 70%);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.2);
+      transition: all 0.25s ease-out;
+    }
+    .camera-flash-beam.flashing {
+      opacity: 1;
+      transform: scale(1.4);
+    }
+    /* Floating Snapshot Card */
+    .snapshot-card {
+      width: 420px;
+      padding: 22px;
+      background: #0E0F14;
       border: 2px solid rgba(0, 245, 212, 0.5);
-      transform: rotateY(180deg);
-      box-shadow: 0 15px 40px rgba(0, 245, 212, 0.18);
+      border-radius: 22px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 35px rgba(0, 245, 212, 0.2);
+      text-align: left;
     }
-    .ff-label {
+    .snapshot-timestamp-pill {
+      background: #00F5D4;
+      color: #000;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    .ff-heading {
-      font-size: 17px;
-      font-weight: 700;
-      color: #FFFFFF;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-bottom: 12px;
     }
 
     /* ============================================================
-       SCENE 4: GRAND FINALE & LAUNCHING SOON (00:36 - 00:48)
+       SCENE 4: AUTOMATIC ACTION ITEMS WITH PROOF (00:23 - 00:31)
        ============================================================ */
-    .finale-milestone-pill {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 17px;
-      font-weight: 800;
-      color: #D1E043;
-      background: rgba(209, 224, 67, 0.16);
-      border: 2px solid rgba(209, 224, 67, 0.5);
-      padding: 12px 34px;
-      border-radius: 9999px;
-      margin-bottom: 30px;
-      letter-spacing: 0.14em;
-      box-shadow: 0 0 50px rgba(209, 224, 67, 0.4);
-      animation: finaleGlowPulse 2s infinite ease-in-out;
+    .kanban-stage {
+      width: 1100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
     }
-    @keyframes finaleGlowPulse {
-      0%, 100% { box-shadow: 0 0 40px rgba(209, 224, 67, 0.3); transform: scale(1); }
-      50% { box-shadow: 0 0 70px rgba(209, 224, 67, 0.65); transform: scale(1.03); }
+    .action-card-3d {
+      width: 820px;
+      background: #111218;
+      border: 2px solid rgba(209, 224, 67, 0.45);
+      border-radius: 30px;
+      padding: 32px 42px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.9), 0 0 40px rgba(209, 224, 67, 0.18);
+      text-align: left;
+      position: relative;
     }
-    .finale-version-text {
-      font-family: 'Newsreader', serif;
-      font-size: 120px;
-      font-weight: 400;
-      line-height: 0.95;
-      letter-spacing: -0.03em;
-      color: #FFFFFF;
-      margin-bottom: 18px;
-    }
-    .finale-launching-soon {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-size: 78px;
-      font-weight: 400;
-      color: #D1E043;
-      letter-spacing: -0.01em;
-      margin-bottom: 36px;
-      text-shadow: 0 0 45px rgba(209, 224, 67, 0.5);
-    }
-    .platforms-cluster {
+    .action-card-header {
       display: flex;
       align-items: center;
-      gap: 20px;
-      margin-bottom: 52px;
+      justify-content: space-between;
+      margin-bottom: 16px;
     }
-    .plat-chip {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1.5px solid rgba(255, 255, 255, 0.22);
-      padding: 10px 28px;
+    .action-assignee {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .clay-mini-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #8B5CF6 0%, #6D28D9 80%);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #FFF;
+      font-size: 14px;
+    }
+    .action-due-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #FF5A1F;
+      background: rgba(255, 90, 31, 0.15);
+      border: 1px solid rgba(255, 90, 31, 0.4);
+      padding: 4px 14px;
       border-radius: 9999px;
-      font-size: 20px;
+      font-weight: 700;
+    }
+    .action-task-text {
+      font-size: 22px;
       font-weight: 700;
       color: #FFFFFF;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      margin-bottom: 24px;
     }
-    .finale-cta-actions {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-    }
-    .cta-early-access {
-      background: #D1E043;
-      color: #0B0B0E;
-      font-weight: 900;
-      font-size: 22px;
-      padding: 22px 56px;
+    /* View Proof Button & Video Popup */
+    .view-proof-btn {
+      background: #8B5CF6;
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 12px 28px;
       border-radius: 9999px;
       border: none;
-      box-shadow: 0 18px 50px rgba(209, 224, 67, 0.5);
-      letter-spacing: -0.01em;
+      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.45);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
     }
-    .cta-github-stars {
-      background: rgba(255, 255, 255, 0.12);
-      color: #FFFFFF;
-      font-weight: 800;
-      font-size: 20px;
-      padding: 22px 48px;
-      border-radius: 9999px;
-      border: 1.5px solid rgba(255, 255, 255, 0.25);
+    .proof-video-popup {
+      position: absolute;
+      top: -110px;
+      right: 40px;
+      width: 280px;
+      height: 150px;
+      background: #000;
+      border: 2px solid #00F5D4;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 30px rgba(0, 245, 212, 0.3);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform: scale(0.8) rotate(3deg);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .proof-video-popup.visible {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+
+    /* ============================================================
+       SCENE 5: THE TRUST SHIELD (NO BOTS, LOCAL-FIRST) (00:31 - 00:38)
+       ============================================================ */
+    .vault-stage {
+      width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 34px;
+      position: relative;
+    }
+    /* Matte Black Laptop with Fold */
+    .matte-laptop {
+      width: 580px;
+      height: 340px;
+      background: #0C0D12;
+      border: 3px solid rgba(255, 255, 255, 0.16);
+      border-radius: 28px;
+      box-shadow: 0 35px 90px rgba(0,0,0,0.95);
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 14px;
+      justify-content: center;
+    }
+    /* Big Friendly 3D Clay Padlock */
+    .clay-padlock {
+      width: 140px;
+      height: 160px;
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: scale(0.6);
+      opacity: 0;
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .clay-padlock.locked {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+    .padlock-shackle {
+      width: 76px;
+      height: 80px;
+      border: 16px solid #D1E043;
+      border-bottom: none;
+      border-radius: 40px 40px 0 0;
+      box-shadow: inset 0 3px 5px rgba(255,255,255,0.4);
+    }
+    .padlock-body {
+      width: 130px;
+      height: 100px;
+      background: radial-gradient(circle at 35% 30%, #D1E043 0%, #A8B81B 75%, #697406 100%);
+      border-radius: 24px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8), inset 0 4px 8px rgba(255,255,255,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .padlock-keyhole {
+      width: 16px;
+      height: 28px;
+      background: #111;
+      border-radius: 8px;
+    }
+    /* Trust Badges */
+    .trust-badges-row {
+      display: flex;
+      gap: 20px;
+    }
+    .badge-nobots {
+      background: rgba(255, 90, 31, 0.15);
+      border: 2px solid rgba(255, 90, 31, 0.45);
+      color: #FF5A1F;
+    }
+    .badge-ssd {
+      background: rgba(209, 224, 67, 0.15);
+      border: 2px solid rgba(209, 224, 67, 0.45);
+      color: #D1E043;
+    }
+
+    /* ============================================================
+       SCENE 6: THE GRAND PAYOFF & "LAUNCHING SOON" (00:38 - 00:45)
+       ============================================================ */
+    .finale-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .finale-bubbly-logo {
+      height: 180px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 85px rgba(209, 224, 67, 0.85));
+      margin-bottom: 24px;
+      animation: finaleFloat 3s ease-in-out infinite;
+    }
+    @keyframes finaleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .payoff-subheading {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-size: 50px;
+      font-weight: 400;
+      color: #EDEDED;
+      margin-bottom: 38px;
+    }
+    .launching-soon-banner {
+      background: linear-gradient(90deg, #D1E043 0%, #00F5D4 50%, #D1E043 100%);
+      color: #050608;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      font-weight: 900;
+      padding: 16px 48px;
+      border-radius: 9999px;
+      letter-spacing: 0.1em;
+      box-shadow: 0 0 50px rgba(209, 224, 67, 0.5);
+      margin-bottom: 30px;
+    }
+    .repo-link-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      padding: 8px 26px;
+      border-radius: 9999px;
     }
   </style>
 </head>
 <body>
-  <div id="cinemaStage">
-    <!-- Cinema Atmospheric Environment -->
-    <div id="anamorphicGlow" class="anamorphic-glow glow-state-red"></div>
-    <div class="vignette-layer"></div>
-    <div class="cinema-lines"></div>
+  <div id="stage">
+    <!-- Studio Ambient Lighting -->
+    <div id="studioAmbient" class="studio-ambient ambient-red"></div>
+    <div class="vignette-ring"></div>
 
-    <!-- 3D Camera Shake Viewport -->
-    <div id="cameraViewport">
-      <!-- ==========================================
-           SCENE 1: KINETIC HOOK (00:00 - 00:07)
-           ========================================== -->
-      <div id="sc1" class="scene active">
-        <div class="hook-badge">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #FF4444; display: inline-block;"></span>
-          CONFIDENTIAL EXECUTIVE BOARDROOM
-        </div>
-        <h1 class="hook-kinetic-text">
-          &ldquo;Wait... who invited <span class="strike-bot">Meeting_Bot_409</span> to this call?&rdquo;
-        </h1>
-        <div class="bot-card-pop">
-          <div class="bot-symbol">✕</div>
-          <div>
-            <div class="bot-card-title">Uninvited Bot Ingress Detected</div>
-            <div class="bot-card-desc">Streaming raw conversation audio to third-party cloud servers...</div>
+    <!-- 3D Isometric World -->
+    <div id="isoWorld">
+      <div class="grid-isometric-floor"></div>
+
+      <div id="isoPlane" class="iso-plane">
+        <!-- ==========================================
+             SCENE 1: THE FRUSTRATION (00:00 - 00:07)
+             ========================================== -->
+        <div id="sc1" class="scene-container active">
+          <div class="clay-pill-tag" style="background: rgba(255, 90, 31, 0.18); border: 2px solid rgba(255, 90, 31, 0.5); color: #FF5A1F; margin-bottom: 24px;">
+            ● 01 · THE PROBLEM
           </div>
-        </div>
-      </div>
+          <h1 class="kinetic-title-huge">
+            Your meeting notes only hear half the story.
+          </h1>
 
-      <!-- ==========================================
-           SCENE 2: THE REVEAL ("MEET BACHAM") (00:07 - 00:16)
-           ========================================== -->
-      <div id="sc2" class="scene">
-        <div class="reveal-eyebrow">Introducing</div>
-        <img src="bacham-logo.png" alt="Bacham" id="heroWordmark" class="reveal-logo-hero">
-        <div class="stickers-cluster">
-          <div class="cartoon-stamp-nobots">
-            <span class="stamp-badge-x">✕ ✕</span>
-            <span class="stamp-text-primary">NO BOTS</span>
-            <span class="stamp-text-secondary">100% BANNED</span>
-          </div>
-          <div class="shield-badge-ssd">
-            <span>🛡️</span>
-            <span>100% On Your SSD · Zero Telemetry</span>
-          </div>
-        </div>
-        <p class="reveal-manifesto">
-          The AI meeting &amp; lecture copilot that lives on your machine.<br>
-          <span style="color: #D1E043;">Every word captured. Zero uninvited bots.</span>
-        </p>
-      </div>
-
-      <!-- ==========================================
-           SCENE 3: 4 DEEP FEATURE SHOWCASES (00:16 - 00:36)
-           ========================================== -->
-      <div id="sc3" class="scene">
-        <div class="ae-stage-3d">
-          <div class="ae-header-bar">
-            <div class="traffic-dots-group">
-              <div class="traffic-dot td-red"></div>
-              <div class="traffic-dot td-yellow"></div>
-              <div class="traffic-dot td-green"></div>
-            </div>
-            <div class="header-center-title">
-              <span>Bacham Desktop</span>
-              <span style="color: rgba(255,255,255,0.25)">|</span>
-              <span>Q3 Roadmap &amp; Architecture Review</span>
-            </div>
-            <div class="status-badge-recording">● RECORDING (LOCAL WASAPI)</div>
-          </div>
-
-          <div class="ae-content-body">
-            <div class="feature-nav-pills">
-              <div id="fp0" class="feat-pill active">1. Dual-Stream Audio Loopback</div>
-              <div id="fp1" class="feat-pill">2. Live AI Diarization</div>
-              <div id="fp2" class="feat-pill">3. 1-Click Flashcards</div>
-              <div id="fp3" class="feat-pill">4. 4ms Offline SQLite Brain</div>
-            </div>
-
-            <!-- Dual Audio Visualizer -->
-            <div class="audio-streams-card">
-              <div class="stream-header-row">
-                <span style="color: #00F5D4; font-weight: 800;">● STREAM 1: SYSTEM WASAPI LOOPBACK (REMOTE VOICES)</span>
-                <span style="color: rgba(255,255,255,0.45)">16kHz 16-bit PCM · Zero Bot Ingress</span>
+          <div class="desk-diorama">
+            <!-- Developer Avatar -->
+            <div class="clay-avatar-box">
+              <div class="clay-head">
+                <div class="clay-glasses"></div>
               </div>
-              <div class="stream-wave-visual" id="waveRow1"></div>
-
-              <div class="stream-header-row" style="margin-top: 14px;">
-                <span style="color: #D1E043; font-weight: 800;">🎤 STREAM 2: HOST MICROPHONE (YOUR VOICE)</span>
-                <span style="color: #D1E043; font-weight: 800;">ACTIVE ACOUSTIC ECHO CANCELLATION</span>
-              </div>
-              <div class="stream-wave-visual" id="waveRow2"></div>
+              <div class="clay-body">DEV</div>
             </div>
 
-            <!-- Live Notes & 3D Flashcard Split -->
-            <div class="split-superpowers">
-              <div class="smart-notes-card">
-                <div class="note-row">
-                  <span class="speaker-pill-tag">Harsha (Host)</span>
-                  <span style="color: #FFFFFF;">&ldquo;We need to cut all external dependencies before the v1.0.0 public launch.&rdquo;</span>
-                </div>
-                <div class="note-row">
-                  <span class="speaker-pill-tag" style="color: #00F5D4; background: rgba(0, 245, 212, 0.16);">Alex (Team)</span>
-                  <span style="color: rgba(255,255,255,0.9);">&ldquo;Agreed. SQLite FTS5 index is benchmarked at 4ms offline latency.&rdquo;</span>
+            <!-- Glowing Code Screen with Error 402 -->
+            <div class="floating-code-screen">
+              <span class="error-pill">CRITICAL ERROR 402</span>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #FF5A1F; font-weight: 700; margin-bottom: 12px;">
+                Checkout_API.ts: failed to sync payload
+              </div>
+              <div class="code-lines-ghost" style="width: 80%;"></div>
+              <div class="code-lines-ghost" style="width: 60%;"></div>
+              <div class="code-lines-ghost" style="width: 90%;"></div>
+            </div>
+
+            <!-- Clumsy Oblivious Robot with Scribble Notepad -->
+            <div class="clumsy-robot-box">
+              <div class="robot-head">
+                <div class="robot-antenna"></div>
+                <div class="robot-antenna-bulb"></div>
+              </div>
+              <div class="robot-notepad">
+                <span style="font-size: 10px; font-weight: 800; color: #64748B;">BLIND NOTES</span>
+                <div class="scribble-line"></div>
+                <div class="scribble-line"></div>
+                <div class="scribble-line"></div>
+                <div class="scribble-line" style="width: 60%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             SCENE 2: THE REVEAL & TARGETED CAPTURE (00:07 - 00:15)
+             ========================================== -->
+        <div id="sc2" class="scene-container">
+          <div class="clay-glass reveal-glass-dock">
+            <div class="clay-pill-tag" style="background: rgba(209, 224, 67, 0.18); border: 2px solid rgba(209, 224, 67, 0.5); color: #D1E043;">
+              ✨ 02 · MEET BACHAM
+            </div>
+            <img src="bacham-logo.png" alt="Bacham" class="bubbly-logo-center">
+            
+            <div class="targeted-tab-band">
+              <div class="tab-info-group">
+                <div class="meet-dot"></div>
+                <div>
+                  <div style="font-size: 19px; font-weight: 800; color: #FFF;">Google Meet · Q3 Sprint Architecture</div>
+                  <div style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px; color: #D1E043; font-weight: 600;">VIDEO + AUDIO IN PERFECT SYNC</div>
                 </div>
               </div>
 
-              <!-- 3D Flipping Flashcard -->
-              <div class="card-3d-stage">
-                <div id="cardFlipper" class="card-3d-flipper">
-                  <div class="flipper-face ff-front">
-                    <span class="ff-label" style="color: #D1E043;">⚡ ACTION ITEM EXTRACTED</span>
-                    <div class="ff-heading">Finalize offline SQLite FTS5 migration for zero cloud dependencies.</div>
-                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.45);">[Transforming into study flashcard...]</span>
-                  </div>
-                  <div class="flipper-face ff-back">
-                    <span class="ff-label" style="color: #00F5D4;">✨ STUDY FLASHCARD #42</span>
-                    <div class="ff-heading" style="color: #00F5D4;">Active Recall: Why is SQLite FTS5 faster than vector cloud APIs?</div>
-                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #FFFFFF;">Zero HTTP latency · Instant 4ms local index</span>
-                  </div>
+              <!-- Animated Toggle Switch -->
+              <div id="tabToggle" class="toy-toggle-switch">
+                <div id="toggleKnob" class="toy-toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             SCENE 3: LIVE NOTES + SCREEN SNAPSHOTS (00:15 - 00:23)
+             ========================================== -->
+        <div id="sc3" class="scene-container">
+          <div class="timeline-diorama">
+            <!-- Left: Live Editable Notes -->
+            <div class="clay-glass live-notes-glass">
+              <div class="notes-header-row">
+                <span style="color: #D1E043; font-weight: 800;">● 1. REAL-TIME LIVE NOTES</span>
+                <span style="color: rgba(255,255,255,0.45)">ZERO LATENCY</span>
+              </div>
+              <div class="bullet-entry">
+                <span class="speaker-clay-badge">Harsha</span>
+                <span style="color: #FFF;">&ldquo;API refactor complete. Screen snapshot taken at slide 4.&rdquo;</span>
+              </div>
+              <div class="bullet-entry">
+                <span class="speaker-clay-badge" style="color: #00F5D4; background: rgba(0, 245, 212, 0.15);">Alex</span>
+                <span style="color: rgba(255,255,255,0.9);">&ldquo;Deploying WASAPI loopback test on desktop client.&rdquo;</span>
+              </div>
+            </div>
+
+            <!-- Right: Toy Camera & Snapshot Card -->
+            <div class="toy-camera-stage">
+              <div class="toy-camera">
+                <div class="toy-lens"></div>
+                <div id="cameraFlash" class="camera-flash-beam"></div>
+              </div>
+
+              <div class="snapshot-card">
+                <span class="snapshot-timestamp-pill">📸 SNAPSHOT @ 22:17</span>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px;">
+                  Slide 4: Zero-Bot WASAPI Architecture
+                </div>
+                <div style="height: 60px; background: rgba(255,255,255,0.06); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; color: #00F5D4; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+                  [HI-RES FRAME BUFFER CAPTURED]
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ==========================================
-           SCENE 4: GRAND FINALE & LAUNCHING SOON (00:36 - 00:48)
-           ========================================== -->
-      <div id="sc4" class="scene">
-        <div class="finale-milestone-pill">✨ PRE-RELEASE MILESTONE</div>
-        <h1 class="finale-version-text">Version 1.0.0</h1>
-        <div class="finale-launching-soon">Launching Soon.</div>
-        <div class="platforms-cluster">
-          <div class="plat-chip">macOS</div>
-          <div class="plat-chip">Windows 10 / 11</div>
-          <div class="plat-chip">Chrome Extension</div>
-        </div>
-        <div class="finale-cta-actions">
-          <button class="cta-early-access">Get Early Access</button>
-          <div class="cta-github-stars">
-            <span>⭐</span>
-            <span>Star on GitHub</span>
+        <!-- ==========================================
+             SCENE 4: AUTOMATIC ACTION ITEMS WITH PROOF (00:23 - 00:31)
+             ========================================== -->
+        <div id="sc4" class="scene-container">
+          <div class="kanban-stage">
+            <div class="clay-pill-tag" style="background: rgba(139, 92, 246, 0.2); border: 2px solid rgba(139, 92, 246, 0.5); color: #C4B5FD;">
+              ⚡ 3. AUTOMATIC ACTION ITEMS
+            </div>
+
+            <div class="action-card-3d">
+              <div class="action-card-header">
+                <div class="action-assignee">
+                  <div class="clay-mini-avatar">K</div>
+                  <span style="font-weight: 800; font-size: 16px; color: #FFF;">Karan</span>
+                </div>
+                <span class="action-due-tag">DUE FRIDAY</span>
+              </div>
+
+              <div class="action-task-text">
+                &ldquo;Fix checkout API error and verify with WASAPI audio test.&rdquo;
+              </div>
+
+              <button class="view-proof-btn">
+                <span>▶</span>
+                <span>[View Video Proof]</span>
+              </button>
+
+              <!-- Video Proof Mini Popup -->
+              <div id="proofVideo" class="proof-video-popup">
+                <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #00F5D4;">
+                  <span>PROOF REPLAY</span>
+                  <span>00:10</span>
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #D1E043; font-size: 24px;">
+                  ▶
+                </div>
+                <div style="font-size: 11px; color: rgba(255,255,255,0.6);">Linked to Call Frame #142</div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- ==========================================
+             SCENE 5: THE TRUST SHIELD (00:31 - 00:38)
+             ========================================== -->
+        <div id="sc5" class="scene-container">
+          <div class="vault-stage">
+            <div class="matte-laptop">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.5);">
+                100% LOCAL SSD VAULT
+              </div>
+
+              <!-- Big Friendly 3D Clay Padlock -->
+              <div id="padlock" class="clay-padlock">
+                <div class="padlock-shackle"></div>
+                <div class="padlock-body">
+                  <div class="padlock-keyhole"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="trust-badges-row">
+              <div class="clay-pill-tag badge-nobots">
+                <span>✕ ✕</span>
+                <span>NO BOTS IN CALLS</span>
+              </div>
+              <div class="clay-pill-tag badge-ssd">
+                <span>🛡️</span>
+                <span>100% ON-DEVICE STORAGE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             SCENE 6: THE GRAND PAYOFF & LAUNCHING SOON (00:38 - 00:45)
+             ========================================== -->
+        <div id="sc6" class="scene-container">
+          <div class="finale-stage">
+            <img src="bacham-logo.png" alt="Bacham" class="finale-bubbly-logo">
+            <h2 class="payoff-subheading">What was said. What was shown.</h2>
+            <div class="launching-soon-banner">
+              ✨ LAUNCHING SOON · GET EARLY ACCESS
+            </div>
+            <div class="repo-link-pill">
+              ⭐ github.com/harshabacham/bacham-meeting-assistant
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cinematic Subtitles Bottom Third -->
+    <div class="cinema-subtitles">
+      <div id="captionBox" class="vo-caption-box">
+        &ldquo;Ever notice how meeting AI notetakers hear everything you say... but miss what you show?&rdquo;
       </div>
     </div>
   </div>
 
   <script>
-    // Scale 1920x1080 canvas to fit any screen
-    function fitCinemaStage() {
-      const stage = document.getElementById('cinemaStage');
+    // Scale 1920x1080 canvas responsively
+    function fitStage() {
+      const stage = document.getElementById('stage');
       const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
       stage.style.transform = `scale(${scale})`;
     }
-    window.addEventListener('resize', fitCinemaStage);
-    fitCinemaStage();
+    window.addEventListener('resize', fitStage);
+    fitStage();
 
-    // Generate Audio Waveform Bars
-    const waveRow1 = document.getElementById('waveRow1');
-    const waveRow2 = document.getElementById('waveRow2');
-    for (let i = 0; i < 64; i++) {
-      const b1 = document.createElement('div');
-      b1.className = 'wave-line-bar';
-      b1.style.background = '#00F5D4';
-      b1.style.height = '14px';
-      waveRow1.appendChild(b1);
-
-      const b2 = document.createElement('div');
-      b2.className = 'wave-line-bar';
-      b2.style.background = '#D1E043';
-      b2.style.height = '16px';
-      waveRow2.appendChild(b2);
-    }
-
-    function animateWaves(t) {
-      const bars1 = waveRow1.children;
-      const bars2 = waveRow2.children;
-      for (let i = 0; i < bars1.length; i++) {
-        bars1[i].style.height = `${12 + Math.sin(i * 0.4 + t * 7) * 26}px`;
-        bars2[i].style.height = `${14 + Math.cos(i * 0.5 + t * 8) * 30}px`;
-      }
-    }
-
-    // After Effects Sound Design Engine
+    // Web Audio Synthesis Sound Engine
     let audioCtx = null;
-    function getAudio() {
+    function getAudioCtx() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -766,7 +1021,7 @@
 
     function playTone(freq, duration, type = 'sine', gainVal = 0.08) {
       try {
-        const ctx = getAudio();
+        const ctx = getAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = type;
@@ -780,93 +1035,96 @@
       } catch (e) {}
     }
 
-    function playSubBassThud() {
+    function playSubBassImpact80Hz() {
       try {
-        const ctx = getAudio();
+        const ctx = getAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(115, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1.2);
-        gain.gain.setValueAtTime(0.28, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
+        osc.frequency.setValueAtTime(80, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(28, ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.3);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 1.4);
+        osc.stop(ctx.currentTime + 1.3);
       } catch (e) {}
     }
 
-    function playStickerThud() {
+    function playShutterClick() {
       try {
-        const ctx = getAudio();
+        const ctx = getAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(480, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.16, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.2);
+        osc.stop(ctx.currentTime + 0.15);
       } catch (e) {}
     }
 
-    function playWhooshRiser() {
+    function playVaultLock() {
       try {
-        const ctx = getAudio();
+        const ctx = getAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(130, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(980, ctx.currentTime + 0.45);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.5);
+        osc.stop(ctx.currentTime + 0.55);
       } catch (e) {}
     }
 
-    function playTriumphalChime() {
-      const freqs = [293.66, 369.99, 440.00, 554.37, 659.25, 880.00];
-      freqs.forEach((f, idx) => {
-        setTimeout(() => playTone(f, 1.4, 'sine', 0.04), idx * 80);
+    function playOrchestralChime() {
+      const notes = [293.66, 369.99, 440.00, 554.37, 659.25];
+      notes.forEach((f, idx) => {
+        setTimeout(() => playTone(f, 1.3, 'sine', 0.05), idx * 80);
       });
     }
 
     // Camera Shake Trigger
-    const cameraViewport = document.getElementById('cameraViewport');
-    function triggerCameraShake() {
-      cameraViewport.classList.remove('shake-impact');
-      void cameraViewport.offsetWidth; // reflow
-      cameraViewport.classList.add('shake-impact');
+    const stage = document.getElementById('stage');
+    function shakeCamera() {
+      stage.classList.remove('shake-active');
+      void stage.offsetWidth;
+      stage.classList.add('shake-active');
     }
 
-    // Timeline Orchestration (Total 48 Seconds)
-    let elapsed = 0;
-    const totalDuration = 48;
-    let currentScene = -1;
+    // Elements
+    const studioAmbient = document.getElementById('studioAmbient');
+    const isoPlane = document.getElementById('isoPlane');
+    const captionBox = document.getElementById('captionBox');
 
-    const anamorphicGlow = document.getElementById('anamorphicGlow');
     const sc1 = document.getElementById('sc1');
     const sc2 = document.getElementById('sc2');
     const sc3 = document.getElementById('sc3');
     const sc4 = document.getElementById('sc4');
-    const cardFlipper = document.getElementById('cardFlipper');
+    const sc5 = document.getElementById('sc5');
+    const sc6 = document.getElementById('sc6');
 
-    const featPills = [
-      document.getElementById('fp0'),
-      document.getElementById('fp1'),
-      document.getElementById('fp2'),
-      document.getElementById('fp3')
-    ];
+    const toggleKnob = document.getElementById('toggleKnob');
+    const cameraFlash = document.getElementById('cameraFlash');
+    const proofVideo = document.getElementById('proofVideo');
+    const padlock = document.getElementById('padlock');
+
+    // 45-Second Master Timeline Orchestration
+    let elapsed = 0;
+    const totalDuration = 45;
+    let activeScene = -1;
 
     let lastTime = performance.now();
-    function renderFrame(now) {
+    function tick(now) {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
       elapsed += dt;
@@ -875,89 +1133,164 @@
         elapsed = totalDuration;
       }
 
-      // SCENE 1: THE TENSION HOOK (00:00 - 00:07)
+      // ==========================================
+      // SCENE 1: THE FRUSTRATION (00:00 - 00:07)
+      // ==========================================
       if (elapsed < 7) {
-        if (currentScene !== 1) {
-          currentScene = 1;
-          anamorphicGlow.className = 'anamorphic-glow glow-state-red';
-          sc1.className = 'scene active';
-          sc2.className = 'scene';
-          sc3.className = 'scene';
-          sc4.className = 'scene';
-          playTone(200, 0.4, 'sawtooth', 0.04);
-        }
-      }
-      // SCENE 2: THE REVEAL ("MEET BACHAM") (00:07 - 00:16)
-      else if (elapsed < 16) {
-        if (currentScene !== 2) {
-          currentScene = 2;
-          anamorphicGlow.className = 'anamorphic-glow glow-state-green';
-          sc1.className = 'scene';
-          sc2.className = 'scene active';
-          sc3.className = 'scene';
-          sc4.className = 'scene';
-          playWhooshRiser();
-          playSubBassThud();
+        if (activeScene !== 1) {
+          activeScene = 1;
+          studioAmbient.className = 'studio-ambient ambient-red';
+          isoPlane.style.transform = 'rotateX(15deg) rotateY(-20deg) scale(1)';
+          sc1.className = 'scene-container active';
+          sc2.className = 'scene-container';
+          sc3.className = 'scene-container';
+          sc4.className = 'scene-container';
+          sc5.className = 'scene-container';
+          sc6.className = 'scene-container';
+
+          captionBox.innerHTML = `&ldquo;Ever notice how meeting AI notetakers hear everything you say... <span class="vo-highlight">but miss what you show on screen?</span>&rdquo;`;
+          playTone(220, 0.4, 'sawtooth', 0.05);
           setTimeout(() => {
-            playStickerThud();
-            triggerCameraShake();
-          }, 450);
+            playSubBassImpact80Hz();
+            shakeCamera();
+          }, 3800);
         }
       }
-      // SCENE 3: 4 DEEP FEATURE SHOWCASES (00:16 - 00:36)
-      else if (elapsed < 36) {
-        if (currentScene !== 3) {
-          currentScene = 3;
-          anamorphicGlow.className = 'anamorphic-glow glow-state-cyan';
-          sc1.className = 'scene';
-          sc2.className = 'scene';
-          sc3.className = 'scene active';
-          sc4.className = 'scene';
-          playWhooshRiser();
-        }
-        animateWaves(elapsed);
+      // ==========================================
+      // SCENE 2: THE REVEAL & TAB CAPTURE (00:07 - 00:15)
+      // ==========================================
+      else if (elapsed < 15) {
+        if (activeScene !== 2) {
+          activeScene = 2;
+          studioAmbient.className = 'studio-ambient ambient-green';
+          isoPlane.style.transform = 'rotateX(20deg) rotateY(-12deg) scale(1.05)';
+          sc1.className = 'scene-container';
+          sc2.className = 'scene-container active';
+          sc3.className = 'scene-container';
+          sc4.className = 'scene-container';
+          sc5.className = 'scene-container';
+          sc6.className = 'scene-container';
 
-        // Cycle through sub-feature tabs (5s each)
-        const subIndex = Math.floor((elapsed - 16) / 5);
-        featPills.forEach((p, idx) => {
-          if (idx === Math.min(subIndex, 3)) {
-            p.className = 'feat-pill active';
-          } else {
-            p.className = 'feat-pill';
-          }
-        });
+          captionBox.innerHTML = `&ldquo;<span class="vo-highlight">Meet Bacham.</span> The open-source meeting assistant that captures what was said... and what was shown.&rdquo;`;
+          playTone(440, 0.2);
+          playSubBassImpact80Hz();
 
-        // 3D Card Flip on Tab 2 & 3
-        if (subIndex >= 2 && subIndex < 4) {
-          cardFlipper.classList.add('flipped');
-        } else {
-          cardFlipper.classList.remove('flipped');
+          setTimeout(() => {
+            toggleKnob.classList.add('switched');
+            playTone(880, 0.15, 'triangle', 0.12);
+            shakeCamera();
+          }, 2400);
         }
       }
-      // SCENE 4: GRAND FINALE & LAUNCHING SOON (00:36 - 00:48)
+      // ==========================================
+      // SCENE 3: LIVE NOTES + SCREEN SNAPSHOTS (00:15 - 00:23)
+      // ==========================================
+      else if (elapsed < 23) {
+        if (activeScene !== 3) {
+          activeScene = 3;
+          studioAmbient.className = 'studio-ambient ambient-cyan';
+          isoPlane.style.transform = 'rotateX(12deg) rotateY(-25deg) scale(1)';
+          sc1.className = 'scene-container';
+          sc2.className = 'scene-container';
+          sc3.className = 'scene-container active';
+          sc4.className = 'scene-container';
+          sc5.className = 'scene-container';
+          sc6.className = 'scene-container';
+
+          captionBox.innerHTML = `&ldquo;Take live notes while the meeting happens, while Bacham automatically snaps <span class="vo-highlight">critical screen moments</span> with zero lag.&rdquo;`;
+
+          // Camera Shutter Flash at 00:18
+          setTimeout(() => {
+            cameraFlash.classList.add('flashing');
+            playShutterClick();
+            shakeCamera();
+            setTimeout(() => cameraFlash.classList.remove('flashing'), 250);
+          }, 2800);
+        }
+      }
+      // ==========================================
+      // SCENE 4: ACTION ITEMS WITH PROOF (00:23 - 00:31)
+      // ==========================================
+      else if (elapsed < 31) {
+        if (activeScene !== 4) {
+          activeScene = 4;
+          studioAmbient.className = 'studio-ambient ambient-green';
+          isoPlane.style.transform = 'rotateX(18deg) rotateY(-15deg) scale(1.04)';
+          sc1.className = 'scene-container';
+          sc2.className = 'scene-container';
+          sc3.className = 'scene-container';
+          sc4.className = 'scene-container active';
+          sc5.className = 'scene-container';
+          sc6.className = 'scene-container';
+
+          captionBox.innerHTML = `&ldquo;Tasks are extracted automatically, <span class="vo-highlight">each linked to the exact video proof</span>.&rdquo;`;
+          playTone(520, 0.25, 'triangle', 0.08);
+
+          // Video Proof Popup at 00:27
+          setTimeout(() => {
+            proofVideo.classList.add('visible');
+            playTone(660, 0.2);
+            shakeCamera();
+          }, 3200);
+        }
+      }
+      // ==========================================
+      // SCENE 5: THE TRUST SHIELD (00:31 - 00:38)
+      // ==========================================
+      else if (elapsed < 38) {
+        if (activeScene !== 5) {
+          activeScene = 5;
+          studioAmbient.className = 'studio-ambient ambient-green';
+          isoPlane.style.transform = 'rotateX(10deg) rotateY(0deg) scale(1.08)';
+          sc1.className = 'scene-container';
+          sc2.className = 'scene-container';
+          sc3.className = 'scene-container';
+          sc4.className = 'scene-container';
+          sc5.className = 'scene-container active';
+          sc6.className = 'scene-container';
+
+          captionBox.innerHTML = `&ldquo;<span class="vo-highlight">No awkward bots joining calls.</span> Your data stays 100% on your computer.&rdquo;`;
+
+          // Vault lock snaps shut at 00:33
+          setTimeout(() => {
+            padlock.classList.add('locked');
+            playVaultLock();
+            playSubBassImpact80Hz();
+            shakeCamera();
+          }, 2000);
+        }
+      }
+      // ==========================================
+      // SCENE 6: GRAND PAYOFF & LAUNCHING SOON (00:38 - 00:45)
+      // ==========================================
       else {
-        if (currentScene !== 4) {
-          currentScene = 4;
-          anamorphicGlow.className = 'anamorphic-glow glow-state-climax';
-          sc1.className = 'scene';
-          sc2.className = 'scene';
-          sc3.className = 'scene';
-          sc4.className = 'scene active';
-          playTriumphalChime();
-          playSubBassThud();
-          triggerCameraShake();
+        if (activeScene !== 6) {
+          activeScene = 6;
+          studioAmbient.className = 'studio-ambient ambient-gold';
+          isoPlane.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1.1)';
+          sc1.className = 'scene-container';
+          sc2.className = 'scene-container';
+          sc3.className = 'scene-container';
+          sc4.className = 'scene-container';
+          sc5.className = 'scene-container';
+          sc6.className = 'scene-container active';
+
+          captionBox.innerHTML = `&ldquo;Bacham. The complete visual memory for your meetings. <span class="vo-highlight">Launching soon. Get early access!</span>&rdquo;`;
+          playOrchestralChime();
+          playSubBassImpact80Hz();
+          shakeCamera();
         }
       }
 
       if (elapsed < totalDuration) {
-        requestAnimationFrame(renderFrame);
+        requestAnimationFrame(tick);
       }
     }
 
-    // Auto start
+    // Auto Play Sequence
     requestAnimationFrame((now) => {
       lastTime = now;
-      requestAnimationFrame(renderFrame);
+      requestAnimationFrame(tick);
     });
   </script>
 </body>
