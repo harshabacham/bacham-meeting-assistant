@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight,
   ArrowDown,
   Calendar,
   Users,
@@ -52,26 +51,19 @@ export default function Hero() {
           {/* Left Column: Granola-Style Typography + Trendy Cartoon Hook */}
           <div className="flex flex-col items-start text-left relative z-10">
             
-            {/* Pill Badge + Trending Sticker */}
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <motion.a
-                href="#downloads"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="group inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 transition-all shadow-2xs cursor-pointer"
-              >
-                <span className="px-2 py-0.5 text-[11px] font-black rounded-full bg-[#D1E043] text-[#1E1E1E] uppercase tracking-wider">
-                  NEW v1.0.0
-                </span>
-                <span className="text-[13px] font-medium text-[#FFFFFF]">
-                  Real-Time Meeting &amp; Lecture Copilot
-                </span>
-                <ArrowRight size={13} className="text-[#A1A1A6] group-hover:translate-x-0.5 transition-transform" />
-              </motion.a>
+            {/* Version & No-Bots Sticker */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="flex items-center gap-3 mb-6"
+            >
+              <span className="text-xs sm:text-[13px] text-[#A1A1A6] font-normal tracking-wide">
+                v1.0.0
+              </span>
 
               <NoBotsSticker className="rotate-2" />
-            </div>
+            </motion.div>
 
             {/* Display Headline - Unified font family across entire hook */}
             <motion.h1
