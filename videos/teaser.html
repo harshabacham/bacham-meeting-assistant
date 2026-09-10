@@ -3,838 +3,688 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bacham — Introducing Our Tool · Launching Soon</title>
+  <title>Bacham — Official Motion Graphics Launch Trailer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    body {
-      background: #030305;
-      color: #FFFFFF;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      overflow: hidden;
+    html, body {
       width: 100vw;
       height: 100vh;
+      overflow: hidden;
+      background: #000000;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       user-select: none;
       -webkit-font-smoothing: antialiased;
     }
-    #stage {
+
+    /* 16:9 Cinema Canvas (1920 x 1080 Full HD) */
+    #cinemaStage {
       position: relative;
       width: 1920px;
       height: 1080px;
-      background: #050508;
+      background: #040406;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       transform-origin: center center;
     }
 
-    /* Ambient Anamorphic Lighting Aura */
-    .ambient-glow {
+    /* Film Environment Elements */
+    .anamorphic-glow {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 1;
     }
-    .glow-problem {
-      background: radial-gradient(circle at 50% 38%, rgba(255, 68, 68, 0.22) 0%, rgba(255, 68, 68, 0.05) 45%, transparent 70%);
+    .glow-state-red {
+      background: radial-gradient(ellipse at 50% 40%, rgba(255, 68, 68, 0.28) 0%, rgba(255, 68, 68, 0.05) 50%, transparent 75%);
     }
-    .glow-intro {
-      background: radial-gradient(circle at 50% 45%, rgba(209, 224, 67, 0.28) 0%, rgba(209, 224, 67, 0.08) 50%, transparent 75%);
+    .glow-state-green {
+      background: radial-gradient(ellipse at 50% 50%, rgba(209, 224, 67, 0.32) 0%, rgba(209, 224, 67, 0.08) 55%, transparent 80%);
     }
-    .glow-demo {
-      background: radial-gradient(circle at 50% 50%, rgba(0, 245, 212, 0.18) 0%, rgba(209, 224, 67, 0.14) 45%, transparent 70%);
+    .glow-state-cyan {
+      background: radial-gradient(ellipse at 40% 60%, rgba(0, 245, 212, 0.22) 0%, rgba(209, 224, 67, 0.15) 50%, transparent 75%);
     }
-    .glow-launch {
-      background: radial-gradient(circle at 50% 45%, rgba(209, 224, 67, 0.35) 0%, rgba(209, 224, 67, 0.12) 55%, transparent 80%);
+    .glow-state-climax {
+      background: radial-gradient(ellipse at 50% 45%, rgba(209, 224, 67, 0.45) 0%, rgba(209, 224, 67, 0.15) 60%, transparent 85%);
     }
-    .vignette {
+
+    .vignette-layer {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.94) 100%);
+      background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.95) 100%);
       z-index: 2;
     }
-    .film-grain {
+    .cinema-lines {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 32px 32px;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 4px, 6px 100%;
       z-index: 3;
-      opacity: 0.65;
+      opacity: 0.55;
     }
 
-    /* Top Bar */
-    .top-bar {
-      position: relative;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 38px 64px 20px;
-    }
-    .logo-group {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-    }
-    .brand-logo-top {
-      height: 36px;
-      width: auto;
-      object-fit: contain;
-      filter: drop-shadow(0 0 16px rgba(209, 224, 67, 0.4));
-    }
-    .tag-badge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px;
-      letter-spacing: 0.12em;
-      padding: 5px 14px;
-      border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: rgba(255, 255, 255, 0.7);
-    }
-    .top-controls {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .audio-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #FFFFFF;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px;
-      padding: 7px 18px;
-      border-radius: 9999px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .audio-btn:hover {
-      background: rgba(209, 224, 67, 0.15);
-      border-color: #D1E043;
-      color: #D1E043;
-    }
-    .chapter-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13.5px;
-      font-weight: 700;
-      color: #D1E043;
-      background: rgba(209, 224, 67, 0.12);
-      border: 1px solid rgba(209, 224, 67, 0.35);
-      padding: 7px 20px;
-      border-radius: 9999px;
-      letter-spacing: 0.06em;
-      box-shadow: 0 0 20px rgba(209, 224, 67, 0.15);
-    }
-
-    /* Main Viewport */
-    .viewport {
-      position: relative;
+    /* Screen Shake Container */
+    #cameraViewport {
+      position: absolute;
+      inset: 0;
       z-index: 10;
-      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px 80px 40px;
       perspective: 1400px;
+      transition: transform 0.08s ease-out;
+    }
+    .shake-impact {
+      animation: cameraShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+    @keyframes cameraShake {
+      10%, 90% { transform: translate3d(-3px, 4px, 0) rotate(-0.5deg); }
+      20%, 80% { transform: translate3d(5px, -3px, 0) rotate(0.6deg); }
+      30%, 50%, 70% { transform: translate3d(-6px, 2px, 0) rotate(-0.7deg); }
+      40%, 60% { transform: translate3d(6px, -2px, 0) rotate(0.5deg); }
+      100% { transform: translate3d(0, 0, 0) rotate(0); }
     }
 
-    /* Chapters Container */
-    .chapter {
+    /* Scenes */
+    .scene {
       position: absolute;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       text-align: center;
-      width: 100%;
-      max-width: 1300px;
       opacity: 0;
-      transform: scale(0.96) translateY(16px);
-      transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.94);
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
       pointer-events: none;
     }
-    .chapter.active {
+    .scene.active {
       opacity: 1;
-      transform: scale(1) translateY(0);
+      transform: scale(1);
       pointer-events: auto;
     }
 
     /* ============================================================
-       CHAPTER 1: THE TENSION / PROBLEM
+       SCENE 1: KINETIC HOOK (00:00 - 00:07)
        ============================================================ */
-    .tension-pill {
+    .hook-badge {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      padding: 9px 24px;
+      gap: 12px;
+      padding: 10px 28px;
       border-radius: 9999px;
-      background: rgba(255, 68, 68, 0.15);
-      border: 1px solid rgba(255, 68, 68, 0.4);
-      color: #FF6B6B;
+      background: rgba(255, 68, 68, 0.16);
+      border: 1.5px solid rgba(255, 68, 68, 0.45);
+      color: #FF5C5C;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13.5px;
-      letter-spacing: 0.08em;
-      margin-bottom: 28px;
-      animation: alertPulse 1.8s infinite ease-in-out;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 34px;
+      box-shadow: 0 0 40px rgba(255, 68, 68, 0.25);
     }
-    @keyframes alertPulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.85; transform: scale(0.98); }
-    }
-    .ch1-heading {
+    .hook-kinetic-text {
       font-family: 'Newsreader', serif;
-      font-size: 68px;
+      font-size: 84px;
       font-weight: 400;
-      line-height: 1.14;
-      margin-bottom: 38px;
-      max-width: 1020px;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
       color: #FFFFFF;
+      max-width: 1280px;
+      margin-bottom: 44px;
     }
-    .bot-name-red {
+    .strike-bot {
       color: #FF5C5C;
       font-style: italic;
-      text-decoration: underline wavy rgba(255, 92, 92, 0.6);
-      text-underline-offset: 10px;
+      text-decoration: underline wavy rgba(255, 92, 92, 0.8);
+      text-underline-offset: 14px;
     }
-    .bot-toast-card {
-      background: rgba(18, 18, 22, 0.94);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 24px;
-      padding: 24px 36px;
+    .bot-card-pop {
+      background: rgba(20, 20, 26, 0.96);
+      border: 1.5px solid rgba(255, 68, 68, 0.4);
+      border-radius: 28px;
+      padding: 26px 44px;
       display: flex;
       align-items: center;
-      gap: 24px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 68, 68, 0.2);
-      margin-bottom: 34px;
-      backdrop-filter: blur(24px);
-      max-width: 680px;
+      gap: 26px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(28px);
+      animation: botPulse 1.5s infinite ease-in-out;
     }
-    .bot-avatar-box {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: rgba(255, 68, 68, 0.18);
-      border: 1.5px solid rgba(255, 68, 68, 0.45);
+    @keyframes botPulse {
+      0%, 100% { box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 0 0 rgba(255, 68, 68, 0.4); }
+      50% { box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 35px 6px rgba(255, 68, 68, 0.25); }
+    }
+    .bot-symbol {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: rgba(255, 68, 68, 0.22);
+      border: 2px solid rgba(255, 68, 68, 0.5);
+      color: #FF6B6B;
+      font-size: 30px;
+      font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #FF6B6B;
-      font-size: 26px;
+    }
+    .bot-card-title {
+      font-size: 22px;
       font-weight: 800;
-    }
-    .bot-meta-info {
-      text-align: left;
-    }
-    .bot-meta-title {
-      font-size: 19px;
-      font-weight: 700;
       color: #FFFFFF;
       margin-bottom: 4px;
+      text-align: left;
     }
-    .bot-meta-desc {
-      font-size: 14.5px;
-      color: #A1A1A6;
-    }
-    .frustration-bar {
+    .bot-card-desc {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 17px;
-      color: #8E8E93;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      font-size: 15px;
+      color: #A1A1A6;
+      text-align: left;
     }
 
     /* ============================================================
-       CHAPTER 2: INTRODUCING BACHAM
+       SCENE 2: THE REVEAL ("MEET BACHAM") (00:07 - 00:16)
        ============================================================ */
-    .intro-eyebrow {
+    .reveal-eyebrow {
       font-family: 'Newsreader', serif;
       font-style: italic;
-      font-size: 44px;
+      font-size: 52px;
       color: #D1E043;
-      margin-bottom: 16px;
       letter-spacing: -0.01em;
-      opacity: 0.95;
+      margin-bottom: 18px;
+      text-shadow: 0 0 30px rgba(209, 224, 67, 0.4);
     }
-    .intro-logo-hero {
-      height: 154px;
+    .reveal-logo-hero {
+      height: 172px;
       width: auto;
       object-fit: contain;
-      filter: drop-shadow(0 0 70px rgba(209, 224, 67, 0.65));
-      margin-bottom: 28px;
-      animation: heroFloat 3.5s ease-in-out infinite;
-    }
-    @keyframes heroFloat {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-8px) scale(1.01); }
-    }
-
-    /* Tactile Cartoon Stickers */
-    .sticker-row {
-      display: flex;
-      align-items: center;
-      gap: 22px;
+      filter: drop-shadow(0 0 85px rgba(209, 224, 67, 0.75));
       margin-bottom: 34px;
+      transform: scale(1);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .no-bots-sticker {
-      background: #FF5C5C;
-      border: 3.5px solid #000000;
-      border-radius: 22px;
-      padding: 12px 28px;
+    .stickers-cluster {
       display: flex;
       align-items: center;
-      gap: 14px;
-      box-shadow: 0 12px 0 rgba(0, 0, 0, 0.95), inset 0 -4px 0 rgba(0, 0, 0, 0.25);
-      transform: rotate(-3deg);
-      animation: stickerPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      gap: 28px;
+      margin-bottom: 38px;
     }
-    @keyframes stickerPop {
-      0% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
-      70% { transform: scale(1.08) rotate(-1deg); }
-      100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+    .cartoon-stamp-nobots {
+      background: #FF5C5C;
+      border: 4px solid #000000;
+      border-radius: 26px;
+      padding: 16px 36px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 14px 0 rgba(0, 0, 0, 0.95), inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+      transform: rotate(-3.5deg);
     }
-    .no-bots-badge-text {
-      font-size: 21px;
+    .stamp-badge-x {
+      background: #FFE600;
+      color: #000000;
+      font-weight: 900;
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .stamp-text-primary {
+      font-size: 24px;
       font-weight: 900;
       color: #FFE600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    .no-bots-badge-sub {
-      font-size: 14.5px;
-      font-weight: 800;
+    .stamp-text-secondary {
+      font-size: 16px;
+      font-weight: 900;
       color: #FFFFFF;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
     }
-    .ssd-shield-sticker {
-      background: rgba(209, 224, 67, 0.15);
-      border: 2px solid rgba(209, 224, 67, 0.45);
-      border-radius: 20px;
-      padding: 12px 26px;
+    .shield-badge-ssd {
+      background: rgba(209, 224, 67, 0.16);
+      border: 2px solid rgba(209, 224, 67, 0.5);
+      border-radius: 24px;
+      padding: 16px 34px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       color: #D1E043;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      font-weight: 700;
-      box-shadow: 0 0 35px rgba(209, 224, 67, 0.25);
-      transform: rotate(2deg);
+      font-size: 18px;
+      font-weight: 800;
+      box-shadow: 0 0 45px rgba(209, 224, 67, 0.3);
+      transform: rotate(2.5deg);
     }
-    .intro-manifesto {
+    .reveal-manifesto {
       font-family: 'Newsreader', serif;
-      font-size: 46px;
+      font-size: 52px;
       font-weight: 400;
-      line-height: 1.25;
-      color: #EDEDED;
-      max-width: 960px;
+      line-height: 1.22;
+      color: #FFFFFF;
+      max-width: 1100px;
     }
 
     /* ============================================================
-       CHAPTER 3: THE SUPERPOWERS IN MOTION (APPLE MOCKUP)
+       SCENE 3: 4 DEEP FEATURE SHOWCASES (00:16 - 00:36)
        ============================================================ */
-    .demo-container {
-      width: 1180px;
-      background: #0E0E14;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 28px;
-      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    .ae-stage-3d {
+      width: 1400px;
+      height: 760px;
+      background: #0B0B10;
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      border-radius: 36px;
+      box-shadow: 0 50px 120px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transform: rotateX(2deg);
-      transition: transform 0.5s ease;
+      transform: rotateX(4deg) rotateY(-2deg);
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    /* macOS Window Header */
-    .window-header {
-      background: rgba(25, 25, 32, 0.85);
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    .ae-header-bar {
+      background: rgba(22, 22, 30, 0.92);
+      padding: 18px 30px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .window-controls {
+    .traffic-dots-group {
       display: flex;
-      gap: 9px;
-    }
-    .traffic-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-    .dot-red { background: #FF5F56; }
-    .dot-yellow { background: #FFBD2E; }
-    .dot-green { background: #27C93F; }
-    .window-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.6);
-      display: flex;
-      align-items: center;
       gap: 10px;
     }
-    .window-status-pill {
-      font-size: 11px;
+    .traffic-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+    .td-red { background: #FF5F56; }
+    .td-yellow { background: #FFBD2E; }
+    .td-green { background: #27C93F; }
+    .header-center-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
       font-weight: 700;
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-badge-recording {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
       background: rgba(209, 224, 67, 0.18);
       color: #D1E043;
-      padding: 3px 10px;
+      padding: 4px 14px;
       border-radius: 9999px;
-      border: 1px solid rgba(209, 224, 67, 0.4);
+      border: 1px solid rgba(209, 224, 67, 0.45);
+      letter-spacing: 0.08em;
     }
 
-    /* Window Body */
-    .window-body {
-      padding: 34px 44px;
+    .ae-content-body {
+      flex: 1;
+      padding: 38px 52px;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      justify-content: space-between;
       text-align: left;
     }
 
-    /* Feature Tabs */
-    .superpower-tabs {
+    /* Kinetic Feature Pills */
+    .feature-nav-pills {
       display: flex;
-      gap: 14px;
+      gap: 16px;
     }
-    .sp-tab {
+    .feat-pill {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13.5px;
-      font-weight: 600;
-      padding: 9px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 10px 24px;
       border-radius: 9999px;
       background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
       color: rgba(255, 255, 255, 0.65);
       transition: all 0.3s ease;
     }
-    .sp-tab.active {
+    .feat-pill.active {
       background: #D1E043;
-      color: #111111;
-      font-weight: 800;
+      color: #000000;
+      font-weight: 900;
       border-color: #D1E043;
-      box-shadow: 0 0 24px rgba(209, 224, 67, 0.45);
+      box-shadow: 0 0 30px rgba(209, 224, 67, 0.5);
+      transform: scale(1.04);
     }
 
-    /* Feature Interactive Views */
-    .feature-view {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* Dual Stream Audio Rows */
-    .stream-block {
+    /* Showcase 1: Dual Audio Visualizer */
+    .audio-streams-card {
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 20px 26px;
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 26px 36px;
     }
-    .stream-meta {
+    .stream-header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
+      font-size: 13.5px;
       margin-bottom: 12px;
     }
-    .wave-row {
+    .stream-wave-visual {
       display: flex;
       align-items: center;
       gap: 8px;
-      height: 44px;
+      height: 48px;
     }
-    .wave-bar {
-      width: 7px;
+    .wave-line-bar {
+      width: 8px;
       border-radius: 9999px;
-      transition: height 0.1s ease;
+      transition: height 0.08s ease;
     }
 
-    /* Live Transcript & 3D Flashcard Split */
-    .split-grid {
+    /* Showcase 2 & 3: Split Notes & 3D Flipping Flashcard */
+    .split-superpowers {
       display: grid;
-      grid-template-cols: 1fr 1fr;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 20px;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
     }
-    .transcript-panel {
+    .smart-notes-card {
       background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 18px;
-      padding: 20px 24px;
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-radius: 22px;
+      padding: 24px 30px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
-    .transcript-line {
+    .note-row {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      font-size: 15px;
+      gap: 14px;
+      font-size: 16px;
       line-height: 1.45;
     }
-    .speaker-label {
+    .speaker-pill-tag {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 800;
       color: #D1E043;
-      background: rgba(209, 224, 67, 0.15);
-      padding: 3px 10px;
+      background: rgba(209, 224, 67, 0.16);
+      padding: 4px 12px;
       border-radius: 6px;
       white-space: nowrap;
     }
 
-    /* 3D Flashcard Component */
-    .flashcard-wrapper {
-      perspective: 1000px;
-      height: 130px;
+    /* 3D Flashcard Module */
+    .card-3d-stage {
+      perspective: 1200px;
+      height: 140px;
     }
-    .flashcard-inner {
+    .card-3d-flipper {
       position: relative;
       width: 100%;
       height: 100%;
-      border-radius: 18px;
-      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 22px;
       transform-style: preserve-3d;
+      transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .flashcard-inner.flipped {
+    .card-3d-flipper.flipped {
       transform: rotateY(180deg);
     }
-    .card-face {
+    .flipper-face {
       position: absolute;
       inset: 0;
-      border-radius: 18px;
-      padding: 20px 24px;
+      border-radius: 22px;
+      padding: 22px 28px;
       backface-visibility: hidden;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
-    .card-front {
-      background: linear-gradient(135deg, rgba(209, 224, 67, 0.15) 0%, rgba(209, 224, 67, 0.05) 100%);
-      border: 1.5px solid rgba(209, 224, 67, 0.4);
-      box-shadow: 0 10px 30px rgba(209, 224, 67, 0.1);
+    .ff-front {
+      background: linear-gradient(135deg, rgba(209, 224, 67, 0.18) 0%, rgba(209, 224, 67, 0.04) 100%);
+      border: 2px solid rgba(209, 224, 67, 0.45);
+      box-shadow: 0 15px 40px rgba(209, 224, 67, 0.15);
     }
-    .card-back {
-      background: linear-gradient(135deg, rgba(0, 245, 212, 0.15) 0%, rgba(0, 245, 212, 0.05) 100%);
-      border: 1.5px solid rgba(0, 245, 212, 0.45);
+    .ff-back {
+      background: linear-gradient(135deg, rgba(0, 245, 212, 0.18) 0%, rgba(0, 245, 212, 0.04) 100%);
+      border: 2px solid rgba(0, 245, 212, 0.5);
       transform: rotateY(180deg);
-      box-shadow: 0 10px 30px rgba(0, 245, 212, 0.12);
+      box-shadow: 0 15px 40px rgba(0, 245, 212, 0.18);
     }
-    .card-tag {
+    .ff-label {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11.5px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
-    .card-text {
-      font-size: 15.5px;
-      font-weight: 600;
+    .ff-heading {
+      font-size: 17px;
+      font-weight: 700;
       color: #FFFFFF;
     }
 
     /* ============================================================
-       CHAPTER 4: THE CLIMAX & LAUNCHING SOON
+       SCENE 4: GRAND FINALE & LAUNCHING SOON (00:36 - 00:48)
        ============================================================ */
-    .milestone-pill {
+    .finale-milestone-pill {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 17px;
+      font-weight: 800;
       color: #D1E043;
-      background: rgba(209, 224, 67, 0.15);
-      border: 1.5px solid rgba(209, 224, 67, 0.45);
-      padding: 10px 26px;
+      background: rgba(209, 224, 67, 0.16);
+      border: 2px solid rgba(209, 224, 67, 0.5);
+      padding: 12px 34px;
       border-radius: 9999px;
-      margin-bottom: 28px;
-      letter-spacing: 0.12em;
-      box-shadow: 0 0 35px rgba(209, 224, 67, 0.3);
-      animation: pillGlow 2s infinite ease-in-out;
+      margin-bottom: 30px;
+      letter-spacing: 0.14em;
+      box-shadow: 0 0 50px rgba(209, 224, 67, 0.4);
+      animation: finaleGlowPulse 2s infinite ease-in-out;
     }
-    @keyframes pillGlow {
-      0%, 100% { box-shadow: 0 0 30px rgba(209, 224, 67, 0.25); }
-      50% { box-shadow: 0 0 50px rgba(209, 224, 67, 0.5); }
+    @keyframes finaleGlowPulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(209, 224, 67, 0.3); transform: scale(1); }
+      50% { box-shadow: 0 0 70px rgba(209, 224, 67, 0.65); transform: scale(1.03); }
     }
-    .ch4-version {
+    .finale-version-text {
       font-family: 'Newsreader', serif;
-      font-size: 96px;
+      font-size: 120px;
       font-weight: 400;
+      line-height: 0.95;
       letter-spacing: -0.03em;
-      margin-bottom: 12px;
       color: #FFFFFF;
+      margin-bottom: 18px;
     }
-    .ch4-launching-soon {
+    .finale-launching-soon {
       font-family: 'Newsreader', serif;
       font-style: italic;
-      font-size: 64px;
+      font-size: 78px;
       font-weight: 400;
       color: #D1E043;
-      margin-bottom: 24px;
       letter-spacing: -0.01em;
+      margin-bottom: 36px;
+      text-shadow: 0 0 45px rgba(209, 224, 67, 0.5);
     }
-    .ch4-platforms {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 20px;
-      font-weight: 500;
-      color: #A1A1A6;
-      margin-bottom: 46px;
+    .platforms-cluster {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
+      margin-bottom: 52px;
     }
-    .platform-chip {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      padding: 6px 18px;
+    .plat-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1.5px solid rgba(255, 255, 255, 0.22);
+      padding: 10px 28px;
       border-radius: 9999px;
+      font-size: 20px;
+      font-weight: 700;
       color: #FFFFFF;
-      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     }
-    .cta-button-row {
+    .finale-cta-actions {
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 28px;
     }
-    .btn-early-access {
+    .cta-early-access {
       background: #D1E043;
-      color: #101010;
+      color: #0B0B0E;
       font-weight: 900;
-      font-size: 19px;
-      padding: 20px 48px;
+      font-size: 22px;
+      padding: 22px 56px;
       border-radius: 9999px;
       border: none;
-      box-shadow: 0 14px 45px rgba(209, 224, 67, 0.45);
-      cursor: pointer;
+      box-shadow: 0 18px 50px rgba(209, 224, 67, 0.5);
       letter-spacing: -0.01em;
-      transition: transform 0.2s ease;
     }
-    .btn-github-star {
-      background: rgba(255, 255, 255, 0.1);
-      color: #FFFFFF;
-      font-weight: 700;
-      font-size: 18px;
-      padding: 20px 42px;
-      border-radius: 9999px;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-    }
-
-    /* ============================================================
-       BOTTOM CONTROLS BAR (Halmarr High-Conversion Timeline)
-       ============================================================ */
-    .bottom-bar {
-      position: relative;
-      z-index: 20;
-      padding: 22px 64px 38px;
-      background: rgba(4, 4, 6, 0.7);
-      backdrop-filter: blur(20px);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .progress-track {
-      width: 100%;
-      height: 7px;
+    .cta-github-stars {
       background: rgba(255, 255, 255, 0.12);
-      border-radius: 9999px;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-    }
-    .progress-fill {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      background: linear-gradient(90deg, #D1E043 0%, #00F5D4 50%, #D1E043 100%);
-      width: 0%;
-      transition: width 0.08s linear;
-    }
-    .controls-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13.5px;
-      color: rgba(255, 255, 255, 0.7);
-    }
-    .play-pause-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.18);
       color: #FFFFFF;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 6px 18px;
+      font-weight: 800;
+      font-size: 20px;
+      padding: 22px 48px;
       border-radius: 9999px;
-      cursor: pointer;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
       display: flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .play-pause-btn:hover {
-      border-color: #D1E043;
-      color: #D1E043;
+      gap: 14px;
     }
   </style>
 </head>
 <body>
-  <div id="stage">
-    <!-- Atmospheric Lighting -->
-    <div id="ambientAura" class="ambient-glow glow-problem"></div>
-    <div class="vignette"></div>
-    <div class="film-grain"></div>
+  <div id="cinemaStage">
+    <!-- Cinema Atmospheric Environment -->
+    <div id="anamorphicGlow" class="anamorphic-glow glow-state-red"></div>
+    <div class="vignette-layer"></div>
+    <div class="cinema-lines"></div>
 
-    <!-- Top Navigation -->
-    <div class="top-bar">
-      <div class="logo-group">
-        <img src="bacham-logo.png" alt="Bacham" class="brand-logo-top">
-        <span class="tag-badge">PRODUCT REVEAL TRAILER · 1080P 60FPS</span>
-      </div>
-      <div class="top-controls">
-        <button id="audioToggle" class="audio-btn">
-          <span id="audioIcon">🔊</span>
-          <span id="audioLabel">SYNTH AUDIO: ON</span>
-        </button>
-        <div id="chapterIndicator" class="chapter-tag">01 · THE PROBLEM</div>
-      </div>
-    </div>
-
-    <!-- Main Dynamic Viewport -->
-    <div class="viewport">
-      <!-- CHAPTER 1: THE PROBLEM -->
-      <div id="ch1" class="chapter active">
-        <div class="tension-pill">
-          <span style="width: 9px; height: 9px; border-radius: 50%; background: #FF4444; display: inline-block;"></span>
+    <!-- 3D Camera Shake Viewport -->
+    <div id="cameraViewport">
+      <!-- ==========================================
+           SCENE 1: KINETIC HOOK (00:00 - 00:07)
+           ========================================== -->
+      <div id="sc1" class="scene active">
+        <div class="hook-badge">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #FF4444; display: inline-block;"></span>
           CONFIDENTIAL EXECUTIVE BOARDROOM
         </div>
-        <h1 class="ch1-heading">
-          &ldquo;Wait... who invited <span class="bot-name-red">Meeting_Bot_409</span> to this call?&rdquo;
+        <h1 class="hook-kinetic-text">
+          &ldquo;Wait... who invited <span class="strike-bot">Meeting_Bot_409</span> to this call?&rdquo;
         </h1>
-        <div class="bot-toast-card">
-          <div class="bot-avatar-box">✕</div>
-          <div class="bot-meta-info">
-            <div class="bot-meta-title">Uninvited Bot Ingress Detected</div>
-            <div class="bot-meta-desc">Recording raw conversation audio &amp; streaming to third-party cloud servers...</div>
+        <div class="bot-card-pop">
+          <div class="bot-symbol">✕</div>
+          <div>
+            <div class="bot-card-title">Uninvited Bot Ingress Detected</div>
+            <div class="bot-card-desc">Streaming raw conversation audio to third-party cloud servers...</div>
           </div>
-        </div>
-        <div class="frustration-bar">
-          <span style="color: #FF5C5C;">[00:54:12]</span> Scrubbing 1 hour of rambling recording for 1 missed action item...
         </div>
       </div>
 
-      <!-- CHAPTER 2: INTRODUCING BACHAM -->
-      <div id="ch2" class="chapter">
-        <div class="intro-eyebrow">Introducing</div>
-        <img src="bacham-logo.png" alt="Bacham" class="intro-logo-hero">
-        <div class="sticker-row">
-          <div class="no-bots-sticker">
-            <span style="background: #FFE600; color: #000; font-weight: 900; padding: 2px 8px; border-radius: 6px; font-size: 14px;">✕ ✕</span>
-            <span class="no-bots-badge-text">NO BOTS</span>
-            <span class="no-bots-badge-sub">100% BANNED</span>
+      <!-- ==========================================
+           SCENE 2: THE REVEAL ("MEET BACHAM") (00:07 - 00:16)
+           ========================================== -->
+      <div id="sc2" class="scene">
+        <div class="reveal-eyebrow">Introducing</div>
+        <img src="bacham-logo.png" alt="Bacham" id="heroWordmark" class="reveal-logo-hero">
+        <div class="stickers-cluster">
+          <div class="cartoon-stamp-nobots">
+            <span class="stamp-badge-x">✕ ✕</span>
+            <span class="stamp-text-primary">NO BOTS</span>
+            <span class="stamp-text-secondary">100% BANNED</span>
           </div>
-          <div class="ssd-shield-sticker">
+          <div class="shield-badge-ssd">
             <span>🛡️</span>
             <span>100% On Your SSD · Zero Telemetry</span>
           </div>
         </div>
-        <p class="intro-manifesto">
+        <p class="reveal-manifesto">
           The AI meeting &amp; lecture copilot that lives on your machine.<br>
           <span style="color: #D1E043;">Every word captured. Zero uninvited bots.</span>
         </p>
       </div>
 
-      <!-- CHAPTER 3: THE SUPERPOWERS IN MOTION -->
-      <div id="ch3" class="chapter">
-        <div class="demo-container">
-          <!-- macOS Window Titlebar -->
-          <div class="window-header">
-            <div class="window-controls">
-              <div class="traffic-dot dot-red"></div>
-              <div class="traffic-dot dot-yellow"></div>
-              <div class="traffic-dot dot-green"></div>
+      <!-- ==========================================
+           SCENE 3: 4 DEEP FEATURE SHOWCASES (00:16 - 00:36)
+           ========================================== -->
+      <div id="sc3" class="scene">
+        <div class="ae-stage-3d">
+          <div class="ae-header-bar">
+            <div class="traffic-dots-group">
+              <div class="traffic-dot td-red"></div>
+              <div class="traffic-dot td-yellow"></div>
+              <div class="traffic-dot td-green"></div>
             </div>
-            <div class="window-title">
+            <div class="header-center-title">
               <span>Bacham Desktop</span>
               <span style="color: rgba(255,255,255,0.25)">|</span>
               <span>Q3 Roadmap &amp; Architecture Review</span>
             </div>
-            <div class="window-status-pill">● RECORDING (LOCAL WASAPI)</div>
+            <div class="status-badge-recording">● RECORDING (LOCAL WASAPI)</div>
           </div>
 
-          <!-- Window Content -->
-          <div class="window-body">
-            <div class="superpower-tabs">
-              <div id="spTab0" class="sp-tab active">1. Dual-Stream Audio Loopback</div>
-              <div id="spTab1" class="sp-tab">2. Live AI Diarization</div>
-              <div id="spTab2" class="sp-tab">3. 1-Click Flashcards</div>
-              <div id="spTab3" class="sp-tab">4. 4ms Offline SQLite Brain</div>
+          <div class="ae-content-body">
+            <div class="feature-nav-pills">
+              <div id="fp0" class="feat-pill active">1. Dual-Stream Audio Loopback</div>
+              <div id="fp1" class="feat-pill">2. Live AI Diarization</div>
+              <div id="fp2" class="feat-pill">3. 1-Click Flashcards</div>
+              <div id="fp3" class="feat-pill">4. 4ms Offline SQLite Brain</div>
             </div>
 
             <!-- Dual Audio Visualizer -->
-            <div class="stream-block">
-              <div class="stream-meta">
-                <span style="color: #00F5D4; font-weight: 700;">● STREAM 1: SYSTEM WASAPI LOOPBACK (REMOTE VOICES)</span>
-                <span style="color: rgba(255,255,255,0.45)">16kHz 16-bit PCM · Zero Cloud Relay</span>
+            <div class="audio-streams-card">
+              <div class="stream-header-row">
+                <span style="color: #00F5D4; font-weight: 800;">● STREAM 1: SYSTEM WASAPI LOOPBACK (REMOTE VOICES)</span>
+                <span style="color: rgba(255,255,255,0.45)">16kHz 16-bit PCM · Zero Bot Ingress</span>
               </div>
-              <div class="wave-row" id="sysWave"></div>
+              <div class="stream-wave-visual" id="waveRow1"></div>
 
-              <div class="stream-meta" style="margin-top: 14px;">
-                <span style="color: #D1E043; font-weight: 700;">🎤 STREAM 2: HOST MICROPHONE (YOUR VOICE)</span>
-                <span style="color: #D1E043; font-weight: 700;">ZERO ECHO DETECTED</span>
+              <div class="stream-header-row" style="margin-top: 14px;">
+                <span style="color: #D1E043; font-weight: 800;">🎤 STREAM 2: HOST MICROPHONE (YOUR VOICE)</span>
+                <span style="color: #D1E043; font-weight: 800;">ACTIVE ACOUSTIC ECHO CANCELLATION</span>
               </div>
-              <div class="wave-row" id="micWave"></div>
+              <div class="stream-wave-visual" id="waveRow2"></div>
             </div>
 
-            <!-- Real-time Notes & 3D Flashcard Split -->
-            <div class="split-grid">
-              <div class="transcript-panel">
-                <div class="transcript-line">
-                  <span class="speaker-label">Harsha (Host)</span>
+            <!-- Live Notes & 3D Flashcard Split -->
+            <div class="split-superpowers">
+              <div class="smart-notes-card">
+                <div class="note-row">
+                  <span class="speaker-pill-tag">Harsha (Host)</span>
                   <span style="color: #FFFFFF;">&ldquo;We need to cut all external dependencies before the v1.0.0 public launch.&rdquo;</span>
                 </div>
-                <div class="transcript-line">
-                  <span class="speaker-label" style="color: #00F5D4; background: rgba(0, 245, 212, 0.15);">Alex (Team)</span>
+                <div class="note-row">
+                  <span class="speaker-pill-tag" style="color: #00F5D4; background: rgba(0, 245, 212, 0.16);">Alex (Team)</span>
                   <span style="color: rgba(255,255,255,0.9);">&ldquo;Agreed. SQLite FTS5 index is benchmarked at 4ms offline latency.&rdquo;</span>
                 </div>
               </div>
 
               <!-- 3D Flipping Flashcard -->
-              <div class="flashcard-wrapper">
-                <div id="demoCard" class="flashcard-inner">
-                  <!-- Front -->
-                  <div class="card-face card-front">
-                    <span class="card-tag" style="color: #D1E043;">⚡ ACTION ITEM EXTRACTED</span>
-                    <div class="card-text">Finalize offline SQLite FTS5 migration for zero cloud dependencies.</div>
-                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: rgba(255,255,255,0.45);">[Click or auto-flip to study]</span>
+              <div class="card-3d-stage">
+                <div id="cardFlipper" class="card-3d-flipper">
+                  <div class="flipper-face ff-front">
+                    <span class="ff-label" style="color: #D1E043;">⚡ ACTION ITEM EXTRACTED</span>
+                    <div class="ff-heading">Finalize offline SQLite FTS5 migration for zero cloud dependencies.</div>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.45);">[Transforming into study flashcard...]</span>
                   </div>
-                  <!-- Back -->
-                  <div class="card-face card-back">
-                    <span class="card-tag" style="color: #00F5D4;">✨ STUDY FLASHCARD #42</span>
-                    <div class="card-text" style="color: #00F5D4;">Active Recall: Why is SQLite FTS5 faster than vector cloud APIs?</div>
-                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #FFFFFF;">Zero HTTP overhead · 4ms local index</span>
+                  <div class="flipper-face ff-back">
+                    <span class="ff-label" style="color: #00F5D4;">✨ STUDY FLASHCARD #42</span>
+                    <div class="ff-heading" style="color: #00F5D4;">Active Recall: Why is SQLite FTS5 faster than vector cloud APIs?</div>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #FFFFFF;">Zero HTTP latency · Instant 4ms local index</span>
                   </div>
                 </div>
               </div>
@@ -843,72 +693,68 @@
         </div>
       </div>
 
-      <!-- CHAPTER 4: THE CLIMAX & LAUNCHING SOON -->
-      <div id="ch4" class="chapter">
-        <div class="milestone-pill">✨ PRE-RELEASE MILESTONE</div>
-        <h1 class="ch4-version">Version 1.0.0</h1>
-        <div class="ch4-launching-soon">Launching Soon.</div>
-        <div class="ch4-platforms">
-          <span>Available Day 1 for:</span>
-          <span class="platform-chip">macOS</span>
-          <span class="platform-chip">Windows 10 / 11</span>
-          <span class="platform-chip">Chrome Extension</span>
+      <!-- ==========================================
+           SCENE 4: GRAND FINALE & LAUNCHING SOON (00:36 - 00:48)
+           ========================================== -->
+      <div id="sc4" class="scene">
+        <div class="finale-milestone-pill">✨ PRE-RELEASE MILESTONE</div>
+        <h1 class="finale-version-text">Version 1.0.0</h1>
+        <div class="finale-launching-soon">Launching Soon.</div>
+        <div class="platforms-cluster">
+          <div class="plat-chip">macOS</div>
+          <div class="plat-chip">Windows 10 / 11</div>
+          <div class="plat-chip">Chrome Extension</div>
         </div>
-        <div class="cta-button-row">
-          <button class="btn-early-access">Get Early Access</button>
-          <button class="btn-github-star">
+        <div class="finale-cta-actions">
+          <button class="cta-early-access">Get Early Access</button>
+          <div class="cta-github-stars">
             <span>⭐</span>
             <span>Star on GitHub</span>
-          </button>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Bottom Timeline Bar -->
-    <div class="bottom-bar">
-      <div id="progressTrack" class="progress-track">
-        <div id="progressFill" class="progress-fill"></div>
-      </div>
-      <div class="controls-row">
-        <button id="playPauseBtn" class="play-pause-btn">❚❚ PAUSE</button>
-        <span id="timeDisplay">00:00 / 00:54</span>
-        <span style="letter-spacing: 0.05em;">PRO-RES 1080P · 60 FPS · CINEMATIC CUT</span>
       </div>
     </div>
   </div>
 
   <script>
-    // Responsive stage scaling for any screen size
-    function scaleStage() {
-      const stage = document.getElementById('stage');
+    // Scale 1920x1080 canvas to fit any screen
+    function fitCinemaStage() {
+      const stage = document.getElementById('cinemaStage');
       const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
       stage.style.transform = `scale(${scale})`;
     }
-    window.addEventListener('resize', scaleStage);
-    scaleStage();
+    window.addEventListener('resize', fitCinemaStage);
+    fitCinemaStage();
 
-    // Populate waveform visualizers
-    const sysWave = document.getElementById('sysWave');
-    const micWave = document.getElementById('micWave');
-    for (let i = 0; i < 58; i++) {
+    // Generate Audio Waveform Bars
+    const waveRow1 = document.getElementById('waveRow1');
+    const waveRow2 = document.getElementById('waveRow2');
+    for (let i = 0; i < 64; i++) {
       const b1 = document.createElement('div');
-      b1.className = 'wave-bar';
+      b1.className = 'wave-line-bar';
       b1.style.background = '#00F5D4';
-      b1.style.height = '12px';
-      sysWave.appendChild(b1);
+      b1.style.height = '14px';
+      waveRow1.appendChild(b1);
 
       const b2 = document.createElement('div');
-      b2.className = 'wave-bar';
+      b2.className = 'wave-line-bar';
       b2.style.background = '#D1E043';
-      b2.style.height = '14px';
-      micWave.appendChild(b2);
+      b2.style.height = '16px';
+      waveRow2.appendChild(b2);
     }
 
-    // Audio Engine via Web Audio API
-    let audioCtx = null;
-    let soundEnabled = true;
+    function animateWaves(t) {
+      const bars1 = waveRow1.children;
+      const bars2 = waveRow2.children;
+      for (let i = 0; i < bars1.length; i++) {
+        bars1[i].style.height = `${12 + Math.sin(i * 0.4 + t * 7) * 26}px`;
+        bars2[i].style.height = `${14 + Math.cos(i * 0.5 + t * 8) * 30}px`;
+      }
+    }
 
-    function initAudio() {
+    // After Effects Sound Design Engine
+    let audioCtx = null;
+    function getAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
@@ -919,9 +765,8 @@
     }
 
     function playTone(freq, duration, type = 'sine', gainVal = 0.08) {
-      if (!soundEnabled) return;
       try {
-        const ctx = initAudio();
+        const ctx = getAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = type;
@@ -935,36 +780,32 @@
       } catch (e) {}
     }
 
-    // Cinematic sub-bass boom
-    function playSubBassBoom() {
-      if (!soundEnabled) return;
+    function playSubBassThud() {
       try {
-        const ctx = initAudio();
+        const ctx = getAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(110, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(32, ctx.currentTime + 1.4);
-        gain.gain.setValueAtTime(0.24, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.6);
+        osc.frequency.setValueAtTime(115, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(0.28, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.4);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 1.6);
+        osc.stop(ctx.currentTime + 1.4);
       } catch (e) {}
     }
 
-    // Tactile cartoon pop
-    function playStickerPop() {
-      if (!soundEnabled) return;
+    function playStickerThud() {
       try {
-        const ctx = initAudio();
+        const ctx = getAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(450, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        osc.frequency.setValueAtTime(480, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.18);
+        gain.gain.setValueAtTime(0.16, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -973,17 +814,15 @@
       } catch (e) {}
     }
 
-    // Whoosh transition sweep
-    function playWhooshSweep() {
-      if (!soundEnabled) return;
+    function playWhooshRiser() {
       try {
-        const ctx = initAudio();
+        const ctx = getAudio();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(120, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(950, ctx.currentTime + 0.45);
-        gain.gain.setValueAtTime(0.07, ctx.currentTime);
+        osc.frequency.setValueAtTime(130, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(980, ctx.currentTime + 0.45);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -992,197 +831,133 @@
       } catch (e) {}
     }
 
-    // Major-9th milestone chord chime
-    function playMilestoneChord() {
-      if (!soundEnabled) return;
-      // D1E043 aesthetic harmony (Dmaj9: D4, F#4, A4, C#5, E5)
-      const freqs = [293.66, 369.99, 440.00, 554.37, 659.25];
+    function playTriumphalChime() {
+      const freqs = [293.66, 369.99, 440.00, 554.37, 659.25, 880.00];
       freqs.forEach((f, idx) => {
-        setTimeout(() => playTone(f, 1.2, 'sine', 0.05), idx * 75);
+        setTimeout(() => playTone(f, 1.4, 'sine', 0.04), idx * 80);
       });
     }
 
-    // Audio button toggle
-    const audioToggle = document.getElementById('audioToggle');
-    const audioIcon = document.getElementById('audioIcon');
-    const audioLabel = document.getElementById('audioLabel');
-    audioToggle.addEventListener('click', () => {
-      soundEnabled = !soundEnabled;
-      if (soundEnabled) {
-        audioIcon.textContent = '🔊';
-        audioLabel.textContent = 'SYNTH AUDIO: ON';
-        initAudio();
-        playTone(440, 0.2);
-      } else {
-        audioIcon.textContent = '🔇';
-        audioLabel.textContent = 'SYNTH AUDIO: MUTED';
-      }
-    });
-
-    // Timeline and Chapter Orchestration
-    let elapsed = 0;
-    const totalDuration = 54;
-    let isPlaying = true;
-    let activeChapterIndex = -1;
-
-    const ambientAura = document.getElementById('ambientAura');
-    const chapterIndicator = document.getElementById('chapterIndicator');
-    const progressFill = document.getElementById('progressFill');
-    const progressTrack = document.getElementById('progressTrack');
-    const timeDisplay = document.getElementById('timeDisplay');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-
-    const ch1 = document.getElementById('ch1');
-    const ch2 = document.getElementById('ch2');
-    const ch3 = document.getElementById('ch3');
-    const ch4 = document.getElementById('ch4');
-    const demoCard = document.getElementById('demoCard');
-
-    const spTabs = [
-      document.getElementById('spTab0'),
-      document.getElementById('spTab1'),
-      document.getElementById('spTab2'),
-      document.getElementById('spTab3')
-    ];
-
-    function updateWaveAnimations(t) {
-      const b1 = sysWave.children;
-      const b2 = micWave.children;
-      for (let i = 0; i < b1.length; i++) {
-        b1[i].style.height = `${12 + Math.sin(i * 0.45 + t * 6.5) * 22}px`;
-        b2[i].style.height = `${14 + Math.cos(i * 0.55 + t * 7.5) * 26}px`;
-      }
+    // Camera Shake Trigger
+    const cameraViewport = document.getElementById('cameraViewport');
+    function triggerCameraShake() {
+      cameraViewport.classList.remove('shake-impact');
+      void cameraViewport.offsetWidth; // reflow
+      cameraViewport.classList.add('shake-impact');
     }
 
-    playPauseBtn.addEventListener('click', () => {
-      isPlaying = !isPlaying;
-      playPauseBtn.textContent = isPlaying ? '❚❚ PAUSE' : '▶ PLAY';
-      if (isPlaying) {
-        lastTime = performance.now();
-        requestAnimationFrame(tick);
-      }
-    });
+    // Timeline Orchestration (Total 48 Seconds)
+    let elapsed = 0;
+    const totalDuration = 48;
+    let currentScene = -1;
 
-    progressTrack.addEventListener('click', (e) => {
-      const rect = progressTrack.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const pct = Math.max(0, Math.min(1, clickX / rect.width));
-      elapsed = pct * totalDuration;
-      activeChapterIndex = -1; // trigger chapter change
-    });
+    const anamorphicGlow = document.getElementById('anamorphicGlow');
+    const sc1 = document.getElementById('sc1');
+    const sc2 = document.getElementById('sc2');
+    const sc3 = document.getElementById('sc3');
+    const sc4 = document.getElementById('sc4');
+    const cardFlipper = document.getElementById('cardFlipper');
+
+    const featPills = [
+      document.getElementById('fp0'),
+      document.getElementById('fp1'),
+      document.getElementById('fp2'),
+      document.getElementById('fp3')
+    ];
 
     let lastTime = performance.now();
-    function tick(now) {
-      if (!isPlaying) return;
+    function renderFrame(now) {
       const dt = (now - lastTime) / 1000;
       lastTime = now;
       elapsed += dt;
 
       if (elapsed > totalDuration) {
         elapsed = totalDuration;
-        isPlaying = false;
-        playPauseBtn.textContent = '↻ REPLAY';
       }
 
-      // Update progress bar
-      const pct = (elapsed / totalDuration) * 100;
-      progressFill.style.width = `${pct}%`;
-
-      const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
-      const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
-      timeDisplay.textContent = `${m}:${s} / 00:54`;
-
-      // ==========================================
-      // CHAPTER 1: THE TENSION (00:00 - 00:11)
-      // ==========================================
-      if (elapsed < 11) {
-        if (activeChapterIndex !== 1) {
-          activeChapterIndex = 1;
-          ambientAura.className = 'ambient-glow glow-problem';
-          chapterIndicator.textContent = '01 · THE PROBLEM';
-          ch1.className = 'chapter active';
-          ch2.className = 'chapter';
-          ch3.className = 'chapter';
-          ch4.className = 'chapter';
-          playTone(180, 0.45, 'sawtooth', 0.04);
+      // SCENE 1: THE TENSION HOOK (00:00 - 00:07)
+      if (elapsed < 7) {
+        if (currentScene !== 1) {
+          currentScene = 1;
+          anamorphicGlow.className = 'anamorphic-glow glow-state-red';
+          sc1.className = 'scene active';
+          sc2.className = 'scene';
+          sc3.className = 'scene';
+          sc4.className = 'scene';
+          playTone(200, 0.4, 'sawtooth', 0.04);
         }
       }
-      // ==========================================
-      // CHAPTER 2: INTRODUCING BACHAM (00:11 - 00:23)
-      // ==========================================
-      else if (elapsed < 23) {
-        if (activeChapterIndex !== 2) {
-          activeChapterIndex = 2;
-          ambientAura.className = 'ambient-glow glow-intro';
-          chapterIndicator.textContent = '02 · INTRODUCING BACHAM';
-          ch1.className = 'chapter';
-          ch2.className = 'chapter active';
-          ch3.className = 'chapter';
-          ch4.className = 'chapter';
-          playWhooshSweep();
-          playSubBassBoom();
-          setTimeout(playStickerPop, 400);
+      // SCENE 2: THE REVEAL ("MEET BACHAM") (00:07 - 00:16)
+      else if (elapsed < 16) {
+        if (currentScene !== 2) {
+          currentScene = 2;
+          anamorphicGlow.className = 'anamorphic-glow glow-state-green';
+          sc1.className = 'scene';
+          sc2.className = 'scene active';
+          sc3.className = 'scene';
+          sc4.className = 'scene';
+          playWhooshRiser();
+          playSubBassThud();
+          setTimeout(() => {
+            playStickerThud();
+            triggerCameraShake();
+          }, 450);
         }
       }
-      // ==========================================
-      // CHAPTER 3: SUPERPOWERS IN MOTION (00:23 - 00:43)
-      // ==========================================
-      else if (elapsed < 43) {
-        if (activeChapterIndex !== 3) {
-          activeChapterIndex = 3;
-          ambientAura.className = 'ambient-glow glow-demo';
-          chapterIndicator.textContent = '03 · SUPERPOWERS';
-          ch1.className = 'chapter';
-          ch2.className = 'chapter';
-          ch3.className = 'chapter active';
-          ch4.className = 'chapter';
-          playWhooshSweep();
+      // SCENE 3: 4 DEEP FEATURE SHOWCASES (00:16 - 00:36)
+      else if (elapsed < 36) {
+        if (currentScene !== 3) {
+          currentScene = 3;
+          anamorphicGlow.className = 'anamorphic-glow glow-state-cyan';
+          sc1.className = 'scene';
+          sc2.className = 'scene';
+          sc3.className = 'scene active';
+          sc4.className = 'scene';
+          playWhooshRiser();
         }
-        updateWaveAnimations(elapsed);
+        animateWaves(elapsed);
 
-        // Cycle through sub-tabs in Demo
-        const subIndex = Math.floor((elapsed - 23) / 5);
-        spTabs.forEach((tab, idx) => {
+        // Cycle through sub-feature tabs (5s each)
+        const subIndex = Math.floor((elapsed - 16) / 5);
+        featPills.forEach((p, idx) => {
           if (idx === Math.min(subIndex, 3)) {
-            tab.className = 'sp-tab active';
+            p.className = 'feat-pill active';
           } else {
-            tab.className = 'sp-tab';
+            p.className = 'feat-pill';
           }
         });
 
-        // 3D Card Flip on Tab 2
+        // 3D Card Flip on Tab 2 & 3
         if (subIndex >= 2 && subIndex < 4) {
-          demoCard.classList.add('flipped');
+          cardFlipper.classList.add('flipped');
         } else {
-          demoCard.classList.remove('flipped');
+          cardFlipper.classList.remove('flipped');
         }
       }
-      // ==========================================
-      // CHAPTER 4: CLIMAX & LAUNCHING SOON (00:43 - 00:54)
-      // ==========================================
+      // SCENE 4: GRAND FINALE & LAUNCHING SOON (00:36 - 00:48)
       else {
-        if (activeChapterIndex !== 4) {
-          activeChapterIndex = 4;
-          ambientAura.className = 'ambient-glow glow-launch';
-          chapterIndicator.textContent = '04 · LAUNCHING SOON';
-          ch1.className = 'chapter';
-          ch2.className = 'chapter';
-          ch3.className = 'chapter';
-          ch4.className = 'chapter active';
-          playMilestoneChord();
-          playSubBassBoom();
+        if (currentScene !== 4) {
+          currentScene = 4;
+          anamorphicGlow.className = 'anamorphic-glow glow-state-climax';
+          sc1.className = 'scene';
+          sc2.className = 'scene';
+          sc3.className = 'scene';
+          sc4.className = 'scene active';
+          playTriumphalChime();
+          playSubBassThud();
+          triggerCameraShake();
         }
       }
 
-      if (isPlaying) {
-        requestAnimationFrame(tick);
+      if (elapsed < totalDuration) {
+        requestAnimationFrame(renderFrame);
       }
     }
 
-    // Initialize Autoplay
+    // Auto start
     requestAnimationFrame((now) => {
       lastTime = now;
-      requestAnimationFrame(tick);
+      requestAnimationFrame(renderFrame);
     });
   </script>
 </body>
