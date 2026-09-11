@@ -173,10 +173,59 @@ async fn handle_auth_callback(
         if let Ok(response) = res {
             if let Ok(json) = response.json::<serde_json::Value>().await {
                 if let Some(id_token) = json.get("id_token").and_then(|t| t.as_str()) {
-                    // Emit the id_token to the frontend
-                    if let Err(e) = state.app_handle.emit("oauth_id_token", id_token.to_string()) {
+                    let access_token = json.get("access_token").and_then(|t| t.as_str()).unwrap_or("");
+                    
+                    let mut payload = serde_json::json!({
+                        "id_token": id_token,
+                        "access_token": access_token
+                    });
+
+                    // Fetch user info from Google to have full profile data
+                    if !access_token.is_empty() {
+                        if let Ok(info_res) = client.get("https://www.googleapis.com/oauth2/v3/userinfo")
+                            .bearer_auth(access_token)
+                            .send()
+                            .await
+                        {
+                            if let Ok(info_json) = info_res.json::<serde_json::Value>().await {
+                                if let Some(obj) = payload.as_object_mut() {
+                                    if let Some(email) = info_json.get("email").and_then(|v| v.as_str()) {
+                                        obj.insert("email".to_string(), serde_json::Value::String(email.to_string()));
+                                    }
+                                    if let Some(name) = info_json.get("name").and_then(|v| v.as_str()) {
+                                        obj.insert("name".to_string(), serde_json::Value::String(name.to_string()));
+                                    }
+                                    if let Some(picture) = info_json.get("picture").and_then(|v| v.as_str()) {
+                                        obj.insert("picture".to_string(), serde_json::Value::String(picture.to_string()));
+                                    }
+                                    if let Some(sub) = info_json.get("sub").and_then(|v| v.as_str()) {
+                                        obj.insert("sub".to_string(), serde_json::Value::String(sub.to_string()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Emit token payload to frontend
+                    if let Err(e) = state.app_handle.emit("oauth_id_token", payload.to_string()) {
                         eprintln!("Failed to emit oauth_id_token event: {}", e);
                     }
+
+                    return Html(
+                        "<html><head><style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0d0d; color: white; margin: 0; }
+                        .box { text-align: center; padding: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); }
+                        h1 { margin-top: 0; color: #BAFF29; }
+                        p { color: #888; }
+                        </style></head><body>
+                        <div class='box'>
+                            <h1>Authentication Successful!</h1>
+                            <p>You can securely close this tab and return to the application.</p>
+                            <script>setTimeout(() => window.close(), 2500);</script>
+                        </div>
+                        </body></html>"
+                        .to_string()
+                    );
                 } else {
                     let err_desc = json.get("error_description")
                         .or_else(|| json.get("error"))
@@ -186,6 +235,21 @@ async fn handle_auth_callback(
                     if let Err(e) = state.app_handle.emit("oauth_error", err_desc.to_string()) {
                         eprintln!("Failed to emit oauth_error event: {}", e);
                     }
+                    return Html(format!(
+                        "<html><head><style>
+                        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0d0d; color: white; margin: 0; }}
+                        .box {{ text-align: center; padding: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); }}
+                        h1 {{ margin-top: 0; color: #FF5E5E; }}
+                        p {{ color: #888; }}
+                        </style></head><body>
+                        <div class='box'>
+                            <h1>Authentication Failed</h1>
+                            <p>Google returned an error: {}</p>
+                            <p>You can close this tab and try again.</p>
+                        </div>
+                        </body></html>",
+                        err_desc
+                    ));
                 }
             } else {
                 if let Err(e) = state.app_handle.emit("oauth_error", "Failed to parse Google token response".to_string()) {
@@ -202,13 +266,12 @@ async fn handle_auth_callback(
             "<html><head><style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0d0d; color: white; margin: 0; }
             .box { text-align: center; padding: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); }
-            h1 { margin-top: 0; color: #BAFF29; }
+            h1 { margin-top: 0; color: #FF5E5E; }
             p { color: #888; }
             </style></head><body>
             <div class='box'>
-                <h1>Authentication Successful!</h1>
-                <p>You can securely close this tab and return to the application.</p>
-                <script>setTimeout(() => window.close(), 2500);</script>
+                <h1>Authentication Failed</h1>
+                <p>Could not verify tokens with Google. Please check your internet connection and try again.</p>
             </div>
             </body></html>"
             .to_string()

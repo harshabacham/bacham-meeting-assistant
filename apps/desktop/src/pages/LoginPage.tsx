@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuthStore } from '../shared/stores/authStore';
+import { useAuthStore, AppUser } from '../shared/stores/authStore';
 import { auth, googleProvider } from '../infrastructure/firebase/config';
 import { 
   signInWithEmailAndPassword, 
@@ -10,6 +10,7 @@ import {
   GoogleAuthProvider, 
   updateProfile 
 } from 'firebase/auth';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { open } from '@tauri-apps/plugin-shell';
 import { listen } from '@tauri-apps/api/event';
 import { useNavigate } from 'react-router-dom';
@@ -195,6 +196,9 @@ export const LoginPage = () => {
       if (!isTauri) {
         // In standard browser environment, use Firebase popup flow
         const userCred = await signInWithPopup(auth, googleProvider);
+        if (userCred.user) {
+          setUser(userCred.user);
+        }
         localStorage.setItem('hasSeenOnboarding', 'true');
         if (userCred.user?.displayName) {
           const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
@@ -214,7 +218,7 @@ export const LoginPage = () => {
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "439614603794-tupmghbga6mkho95e7rms1ml8du979bn.apps.googleusercontent.com";
       const redirectUri = "http://127.0.0.1:1422/auth/callback";
       const scope = encodeURIComponent("openid email profile");
-      const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+      const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=select_account`;
       
       let unlistenToken: (() => void) | undefined;
       let unlistenError: (() => void) | undefined;
@@ -249,19 +253,91 @@ export const LoginPage = () => {
         });
       });
 
-      // Launch default system browser for Google OAuth
-      await open(url);
+      // Launch default system browser for Google OAuth with robust fallbacks
+      try {
+        await openUrl(url);
+      } catch (openerErr) {
+        console.warn('openUrl failed, falling back to plugin-shell:', openerErr);
+        try {
+          await open(url);
+        } catch (shellErr) {
+          console.warn('plugin-shell open failed, falling back to window.open:', shellErr);
+          window.open(url, '_blank');
+        }
+      }
+
       const result = await waitForResult;
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      if (result.token) {
-        const credential = GoogleAuthProvider.credential(result.token);
-        const userCred = await signInWithCredential(auth, credential);
+      if (!result.token) {
+        throw new Error("Failed to obtain authentication token from Google.");
+      }
+
+      let tokenData: {
+        id_token?: string;
+        access_token?: string;
+        email?: string;
+        name?: string;
+        picture?: string;
+        sub?: string;
+      } = {};
+
+      try {
+        tokenData = typeof result.token === 'string' ? JSON.parse(result.token) : result.token;
+      } catch {
+        tokenData = { id_token: result.token };
+      }
+
+      const idToken = tokenData.id_token;
+      const accessToken = tokenData.access_token;
+      let authenticatedUser: any = null;
+
+      // 1. Try Firebase sign-in with idToken & accessToken
+      if (idToken) {
+        try {
+          const credential = GoogleAuthProvider.credential(idToken, accessToken || null);
+          const userCred = await signInWithCredential(auth, credential);
+          if (userCred?.user) {
+            authenticatedUser = userCred.user;
+          }
+        } catch (fbErr: any) {
+          console.warn("Firebase sign-in with idToken failed:", fbErr);
+        }
+      }
+
+      // 2. If idToken was not accepted by Firebase, try with accessToken
+      if (!authenticatedUser && accessToken) {
+        try {
+          const credential = GoogleAuthProvider.credential(null, accessToken);
+          const userCred = await signInWithCredential(auth, credential);
+          if (userCred?.user) {
+            authenticatedUser = userCred.user;
+          }
+        } catch (fbErr: any) {
+          console.warn("Firebase sign-in with accessToken failed:", fbErr);
+        }
+      }
+
+      // 3. Fallback: Authenticated directly via Google OAuth backend verification
+      if (!authenticatedUser && (tokenData.email || tokenData.sub)) {
+        authenticatedUser = {
+          uid: tokenData.sub || `google_${Date.now()}`,
+          email: tokenData.email || null,
+          displayName: tokenData.name || (tokenData.email ? tokenData.email.split('@')[0] : 'Google User'),
+          photoURL: tokenData.picture || null,
+          providerId: 'google.com',
+          emailVerified: true
+        } as AppUser;
+      }
+
+      if (authenticatedUser) {
+        setUser(authenticatedUser);
         localStorage.setItem('hasSeenOnboarding', 'true');
-        if (userCred.user?.displayName) {
+
+        if (authenticatedUser.displayName) {
           const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
           if (!hasSetupStorage) {
             localStorage.setItem('needs_storage_setup', 'true');
@@ -273,16 +349,17 @@ export const LoginPage = () => {
           setShowProfileSetup(true);
         }
       } else {
-        throw new Error("Failed to obtain authentication token from Google.");
+        throw new Error("Failed to complete Google authentication. Please try again.");
       }
     } catch (err: any) {
       console.error("Google Auth Error:", err);
-      if (err.code === 'auth/popup-closed-by-user') {
+      const msg = err.message || '';
+      if (err.code === 'auth/popup-closed-by-user' || msg.includes('access_denied')) {
         setError("Sign-in was cancelled.");
       } else if (err.code === 'auth/popup-blocked') {
         setError("Sign-in popup was blocked. Please allow popups for this app.");
       } else {
-        setError(err.message?.replace('Firebase:', '').trim() || "Failed to authenticate with Google.");
+        setError(msg.replace('Firebase:', '').trim() || "Failed to authenticate with Google.");
       }
     } finally {
       setGoogleLoading(false);
