@@ -132,7 +132,7 @@ export const useCalendarStore = create<CalendarState>()(
       connectGoogleCalendarOAuth: async () => {
         set({ isSyncing: true, syncError: null, deviceFlowData: null });
         try {
-          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '439614603794-tupmghbga6mkho95e7rms1ml8du979bn.apps.googleusercontent.com';
+          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com';
           const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '';
 
           // 1. Request Device Code (Upgraded Scope)

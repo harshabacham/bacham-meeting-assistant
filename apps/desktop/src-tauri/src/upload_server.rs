@@ -1,6 +1,6 @@
 use axum::{
     body::Bytes,
-    extract::{Query, State},
+    extract::{Query, State, Json},
     http::{Method, StatusCode},
     response::Html,
     routing::{get, post},
@@ -43,6 +43,7 @@ pub async fn start_upload_server(app_handle: AppHandle) {
         .route("/health", get(handle_health))
         .route("/upload", post(handle_upload))
         .route("/auth/callback", get(handle_auth_callback))
+        .route("/auth/token", post(handle_auth_token_post))
         .layer(cors)
         .with_state(state);
 
@@ -149,24 +150,29 @@ async fn handle_auth_callback(
 
     if let Some(code) = params.code {
         // Exchange code for token here in the backend to bypass CORS
-        let client_id = std::env::var("VITE_GOOGLE_CLIENT_ID").unwrap_or_else(|_| "439614603794-tupmghbga6mkho95e7rms1ml8du979bn.apps.googleusercontent.com".to_string());
-        let client_secret = std::env::var("VITE_GOOGLE_CLIENT_SECRET").unwrap_or_else(|_| "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".to_string());
+        let client_id = std::env::var("VITE_GOOGLE_CLIENT_ID")
+            .unwrap_or_else(|_| "589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com".to_string());
+        let client_secret = std::env::var("VITE_GOOGLE_CLIENT_SECRET")
+            .unwrap_or_else(|_| "".to_string());
         
         let client = Client::builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .build()
             .unwrap_or_else(|_| Client::new());
 
-        let params = [
+        let mut form_params: Vec<(&str, &str)> = vec![
             ("client_id", client_id.as_str()),
-            ("client_secret", client_secret.as_str()),
             ("code", code.as_str()),
             ("grant_type", "authorization_code"),
             ("redirect_uri", "http://127.0.0.1:1422/auth/callback"),
         ];
 
+        if !client_secret.is_empty() {
+            form_params.push(("client_secret", client_secret.as_str()));
+        }
+
         let res = client.post("https://oauth2.googleapis.com/token")
-            .form(&params)
+            .form(&form_params)
             .send()
             .await;
 
@@ -212,17 +218,24 @@ async fn handle_auth_callback(
                     }
 
                     return Html(
-                        "<html><head><style>
-                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0d0d; color: white; margin: 0; }
-                        .box { text-align: center; padding: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); }
-                        h1 { margin-top: 0; color: #BAFF29; }
-                        p { color: #888; }
+                        "<html><head><title>BACHAM - Authenticated</title><style>
+                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0A0A0A; color: #FFFFFF; margin: 0; }
+                        .card { text-align: center; padding: 48px 40px; border-radius: 24px; background: #141414; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.6); max-width: 420px; width: 90%; }
+                        .badge { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: rgba(186, 255, 41, 0.15); border: 1px solid rgba(186, 255, 41, 0.3); margin-bottom: 20px; }
+                        .check { width: 28px; height: 28px; stroke: #BAFF29; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+                        h1 { margin: 0 0 10px 0; font-size: 22px; font-weight: 700; color: #FFFFFF; }
+                        p { color: #A0A0A0; font-size: 14px; margin: 0 0 24px 0; line-height: 1.5; }
+                        .pill { display: inline-block; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,0.06); font-size: 12px; color: #888; font-family: monospace; }
                         </style></head><body>
-                        <div class='box'>
-                            <h1>Authentication Successful!</h1>
-                            <p>You can securely close this tab and return to the application.</p>
-                            <script>setTimeout(() => window.close(), 2500);</script>
+                        <div class='card'>
+                            <div class='badge'>
+                                <svg class='check' viewBox='0 0 24 24'><polyline points='20 6 9 17 4 12'></polyline></svg>
+                            </div>
+                            <h1>Authentication Successful</h1>
+                            <p>You're signed in! You can safely close this browser window and return to <strong>BACHAM</strong>.</p>
+                            <div class='pill'>Closing automatically...</div>
                         </div>
+                        <script>setTimeout(() => { window.close(); }, 2000);</script>
                         </body></html>"
                         .to_string()
                     );
@@ -236,16 +249,16 @@ async fn handle_auth_callback(
                         eprintln!("Failed to emit oauth_error event: {}", e);
                     }
                     return Html(format!(
-                        "<html><head><style>
-                        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0d0d; color: white; margin: 0; }}
-                        .box {{ text-align: center; padding: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); }}
-                        h1 {{ margin-top: 0; color: #FF5E5E; }}
-                        p {{ color: #888; }}
+                        "<html><head><title>BACHAM - Sign In Error</title><style>
+                        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0A0A0A; color: white; margin: 0; }}
+                        .card {{ text-align: center; padding: 40px; border-radius: 20px; background: #141414; border: 1px solid rgba(255,255,255,0.1); max-width: 400px; }}
+                        h1 {{ color: #FF5E5E; margin-top: 0; font-size: 20px; }}
+                        p {{ color: #888; font-size: 13px; }}
                         </style></head><body>
-                        <div class='box'>
-                            <h1>Authentication Failed</h1>
-                            <p>Google returned an error: {}</p>
-                            <p>You can close this tab and try again.</p>
+                        <div class='card'>
+                            <h1>Sign-in Incomplete</h1>
+                            <p>{}</p>
+                            <p>You can close this tab and try again in BACHAM.</p>
                         </div>
                         </body></html>",
                         err_desc
@@ -263,15 +276,15 @@ async fn handle_auth_callback(
         }
 
         return Html(
-            "<html><head><style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0d0d; color: white; margin: 0; }
-            .box { text-align: center; padding: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); }
-            h1 { margin-top: 0; color: #FF5E5E; }
-            p { color: #888; }
+            "<html><head><title>BACHAM - Error</title><style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0A0A0A; color: white; margin: 0; }
+            .card { text-align: center; padding: 40px; border-radius: 20px; background: #141414; border: 1px solid rgba(255,255,255,0.1); max-width: 400px; }
+            h1 { color: #FF5E5E; margin-top: 0; font-size: 20px; }
+            p { color: #888; font-size: 13px; }
             </style></head><body>
-            <div class='box'>
+            <div class='card'>
                 <h1>Authentication Failed</h1>
-                <p>Could not verify tokens with Google. Please check your internet connection and try again.</p>
+                <p>Could not verify tokens with Google. Please check your connection and try again.</p>
             </div>
             </body></html>"
             .to_string()
@@ -280,4 +293,17 @@ async fn handle_auth_callback(
 
     let _ = state.app_handle.emit("oauth_error", "No authorization code received".to_string());
     Html("<html><body><h1>Invalid Request</h1><p>No authorization code received. You can close this tab.</p></body></html>".to_string())
+}
+
+async fn handle_auth_token_post(
+    State(state): State<ServerState>,
+    Json(payload): Json<serde_json::Value>,
+) -> StatusCode {
+    println!("Received auth token from external bridge/source: {}", payload);
+    if let Err(e) = state.app_handle.emit("oauth_id_token", payload.to_string()) {
+        eprintln!("Failed to emit oauth_id_token from bridge: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    } else {
+        StatusCode::OK
+    }
 }
