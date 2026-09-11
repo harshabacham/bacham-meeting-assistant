@@ -18,10 +18,24 @@ export default function DownloadCTA() {
     {
       name: "Windows 10 / 11",
       icon: Laptop,
-      format: ".msi / .exe Installer",
+      format: ".exe / .msi (64-bit)",
       badge: "Desktop Shortcut & Tray Autostart",
-      href: releasesUrl,
+      href: "/downloads/bacham-setup.exe",
+      download: "bacham-setup.exe",
       recommended: true,
+      direct: true,
+      altHref: "/downloads/bacham-setup.msi",
+      altText: "MSI Installer (.msi)",
+    },
+    {
+      name: "Chrome Extension",
+      icon: ChromeIcon,
+      format: "Packed CRX / ZIP Package",
+      badge: "Google Meet & Tab Audio",
+      href: "/downloads/bacham-extension.zip",
+      download: "bacham-extension.zip",
+      recommended: false,
+      direct: true,
     },
     {
       name: "macOS",
@@ -30,6 +44,8 @@ export default function DownloadCTA() {
       badge: "CoreAudio Loopback Support",
       href: releasesUrl,
       recommended: false,
+      direct: false,
+      comingSoon: true,
     },
     {
       name: "Linux",
@@ -38,14 +54,8 @@ export default function DownloadCTA() {
       badge: "ALSA & PulseAudio Support",
       href: releasesUrl,
       recommended: false,
-    },
-    {
-      name: "Chrome Extension",
-      icon: ChromeIcon,
-      format: "Web Store / CRX Package",
-      badge: "Google Meet & Tab Audio",
-      href: releasesUrl,
-      recommended: false,
+      direct: false,
+      comingSoon: true,
     },
   ];
 
@@ -117,20 +127,37 @@ export default function DownloadCTA() {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-white/10">
-                  <a
-                    href={p.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-full py-2.5 px-4 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                      p.recommended
-                        ? "bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] shadow-sm"
-                        : "bg-white/10 hover:bg-white/15 text-[#FFFFFF] border border-white/15"
-                    }`}
-                  >
-                    <Download size={13} strokeWidth={2.4} />
-                    <span>Download</span>
-                    <ExternalLink size={11} className="opacity-50" />
-                  </a>
+                  {p.direct ? (
+                    <div>
+                      <a
+                        href={p.href}
+                        download={p.download}
+                        className={`w-full py-2.5 px-4 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                          p.recommended
+                            ? "bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] shadow-sm"
+                            : "bg-white/10 hover:bg-white/15 text-[#FFFFFF] border border-white/15"
+                        }`}
+                      >
+                        <Download size={13} strokeWidth={2.4} />
+                        <span>Download {p.name.includes("Windows") ? "EXE" : "ZIP"}</span>
+                      </a>
+                      {p.altHref && (
+                        <div className="mt-2 text-center">
+                          <a
+                            href={p.altHref}
+                            download="bacham-setup.msi"
+                            className="text-[11px] text-[#A1A1A6] hover:text-[#D1E043] transition-colors"
+                          >
+                            or download {p.altText}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-full py-2.5 px-4 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 bg-white/5 text-[#8E8E93] border border-white/5 cursor-default select-none">
+                      <span>Coming Soon</span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

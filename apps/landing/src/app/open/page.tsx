@@ -53,15 +53,14 @@ export default function OpenAppPage() {
             <p className="text-white/60 text-sm mb-8 leading-relaxed">
               It looks like Bacham isn&apos;t running or installed on your system. Download the desktop app to get started.
             </p>
-            <Link 
-              href="https://github.com/harshabacham/bacham-meeting-assistant/releases" 
-              target="_blank"
-              rel="noopener noreferrer"
+            <a 
+              href="/downloads/bacham-setup.exe"
+              download="bacham-setup.exe"
               className="w-full bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] font-black py-3.5 px-6 rounded-xl transition-all shadow-[0_4px_20px_rgba(186,255,41,0.2)] flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download size={18} strokeWidth={2.5} />
-              <span>Download Bacham</span>
-            </Link>
+              <span>Download Bacham (.exe)</span>
+            </a>
             <button 
               type="button"
               onClick={() => {
