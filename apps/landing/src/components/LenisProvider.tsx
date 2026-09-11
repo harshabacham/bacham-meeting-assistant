@@ -3,10 +3,11 @@
 import { ReactLenis } from "@studio-freight/react-lenis";
 
 export default function LenisProvider({ children }: { children: React.ReactNode }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const LenisComponent = ReactLenis as any;
   return (
-    // @ts-ignore: React 19 vs 18 type conflict on children prop
-    <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
-      {children as any}
-    </ReactLenis>
+    <LenisComponent root options={{ lerp: 0.1, duration: 1.5, smoothWheel: true }}>
+      {children}
+    </LenisComponent>
   );
 }

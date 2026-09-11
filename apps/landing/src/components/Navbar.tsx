@@ -1,11 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { Menu, X, ArrowRight, Star } from "lucide-react";
 import { SiGithub } from "react-icons/si";
+
+function subscribe() {
+  return () => {};
+}
+
+function getIsMacSnapshot() {
+  if (typeof navigator !== "undefined" && navigator.userAgent) {
+    return navigator.userAgent.toLowerCase().includes("mac");
+  }
+  return false;
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 // Windows 4-pane icon matching Granola's Windows download button
 function WindowsIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
@@ -28,7 +43,7 @@ function AppleIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMac, setIsMac] = useState(false);
+  const isMac = useSyncExternalStore(subscribe, getIsMacSnapshot, getServerSnapshot);
   const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
 
   useEffect(() => {
@@ -37,10 +52,6 @@ export default function Navbar() {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
-
-    if (typeof window !== "undefined" && navigator.userAgent) {
-      setIsMac(navigator.userAgent.toLowerCase().includes("mac"));
-    }
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);

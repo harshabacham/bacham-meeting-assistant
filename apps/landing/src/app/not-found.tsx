@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Head from 'next/head';
 
 export default function NotFound() {
   return (
@@ -119,7 +118,7 @@ export default function NotFound() {
         <h1 className="geist-mono font-semibold heading-404 m-0">404</h1>
         <div className="divider shrink-0"></div>
         <p className="geist-mono font-semibold message-text m-0">
-          The path may be broken, but the journey isn't. Let's get you back.
+          The path may be broken, but the journey isn&apos;t. Let&apos;s get you back.
         </p>
       </div>
     </main>

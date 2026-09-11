@@ -1,10 +1,10 @@
 packages:
   - 'apps/*'
 allowBuilds:
-  '@firebase/util': set this to true or false
-  core-js: set this to true or false
   esbuild: true
-  protobufjs: set this to true or false
-  sharp: set this to true or false
-  sqlite3: set this to true or false
-  unrs-resolver: set this to true or false
+  sharp: true
+  sqlite3: true
+  unrs-resolver: true
+  protobufjs: true
+  '@firebase/util': true
+  core-js: true

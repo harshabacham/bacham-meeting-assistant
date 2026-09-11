@@ -1,4 +1,12 @@
 {
+  "name": "bacham-meeting-assistant",
+  "private": true,
+  "scripts": {
+    "build": "pnpm --filter landing build",
+    "dev": "pnpm --filter landing dev",
+    "start": "pnpm --filter landing start",
+    "lint": "pnpm --filter landing lint"
+  },
   "dependencies": {
     "jimp": "^1.6.1"
   }
