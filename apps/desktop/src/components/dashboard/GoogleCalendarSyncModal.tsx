@@ -38,27 +38,33 @@ export function GoogleCalendarSyncModal() {
   if (!isSyncModalOpen) return null;
 
   const renderError = (error: string) => {
-    const calendarApiRegex = /https:\/\/console\.developers\.google\.com[^\s]*/i;
-    const match = error.match(calendarApiRegex);
-    
-    if (match) {
-      const url = match[0];
+    if (
+      error.toLowerCase().includes("redirect_uri_mismatch") ||
+      error.toLowerCase().includes("redirect uri")
+    ) {
+      const consoleUrl = "https://console.cloud.google.com/apis/credentials?project=bacham-tech";
       return (
         <div className="w-full space-y-2 text-left">
           <p className="font-semibold text-destructive">
-            Google Calendar API is disabled in your project.
+            Google Redirect URI Mismatch (Error 400)
+          </p>
+          <p className="text-[11px] text-muted-foreground leading-normal">
+            Your Google Cloud OAuth client needs the local desktop redirect URI:
+            <code className="block my-1.5 p-1.5 bg-surface-raised border border-border/60 rounded text-foreground font-mono text-[10px] select-all">
+              http://127.0.0.1:1422/auth/callback
+            </code>
           </p>
           <button
             type="button"
             onClick={() => {
-              openUrl(url).catch(console.error);
+              openUrl(consoleUrl).catch(console.error);
             }}
-            className="w-full py-2 bg-destructive text-white rounded-lg font-bold hover:bg-destructive/95 hover:shadow transition-all flex items-center justify-center gap-1.5 active:scale-[0.99]"
+            className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-1.5 active:scale-[0.99] cursor-pointer"
           >
-            <span>Enable Google Calendar API</span>
+            <span>Open Google Cloud Credentials</span>
           </button>
           <p className="text-[10px] text-muted-foreground leading-normal mt-1">
-            Click the button above to enable the Calendar API in Google Cloud Console, then click Connect again.
+            Or scroll down and sync instantly with your <strong>Secret Address URL</strong> with zero setup.
           </p>
         </div>
       );

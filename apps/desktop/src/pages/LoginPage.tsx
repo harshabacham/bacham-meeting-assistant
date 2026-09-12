@@ -475,9 +475,25 @@ export const LoginPage = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="relative z-10 mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-2.5 text-xs text-red-700 text-center"
+              className="relative z-10 mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-700 text-left space-y-1.5"
             >
-              {error}
+              {error.toLowerCase().includes("redirect_uri_mismatch") || error.toLowerCase().includes("redirect uri") ? (
+                <>
+                  <p className="font-bold text-neutral-900">Google Cloud Setup Required:</p>
+                  <p className="text-[11px] leading-relaxed text-neutral-700">
+                    Add <code className="font-mono bg-white/80 px-1 py-0.5 rounded text-neutral-900 font-semibold select-all">http://127.0.0.1:1422/auth/callback</code> to Authorized redirect URIs in Google Cloud Console, or sign in with Email &amp; Password below.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openUrl("https://console.cloud.google.com/apis/credentials?project=bacham-tech").catch(console.error)}
+                    className="mt-1 text-[11px] font-bold text-neutral-900 underline hover:text-black cursor-pointer block"
+                  >
+                    Open Google Cloud Console &rarr;
+                  </button>
+                </>
+              ) : (
+                <div className="text-center">{error}</div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
