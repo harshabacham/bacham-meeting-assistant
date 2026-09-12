@@ -123,7 +123,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       
       chrome.notifications.create({
         type: 'basic',
-        iconUrl: 'icons/icon128.png',
+        iconUrl: 'icons/icon-128.png',
         title: 'Meeting Auto-Record',
         message: 'Auto-recording started for this meeting.',
       });

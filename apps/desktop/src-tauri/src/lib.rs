@@ -199,8 +199,16 @@ pub fn run() {
                 tauri::async_runtime::spawn(async move {
                     crate::ai::queue_worker::QueueWorker::spawn(handle_clone.clone(), pool.clone());
                     crate::services::search_indexer::SearchIndexer::run_backfill_background(pool.clone());
-                    crate::upload_server::start_upload_server(handle_clone.clone()).await;
-                    crate::ws_server::start_ws_server(handle_clone).await;
+                });
+
+                let upload_handle = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    crate::upload_server::start_upload_server(upload_handle).await;
+                });
+
+                let ws_handle = handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    crate::ws_server::start_ws_server(ws_handle).await;
                 });
             }
             

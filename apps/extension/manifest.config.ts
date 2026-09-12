@@ -70,6 +70,7 @@ export default defineManifest({
     'nativeMessaging',
     'offscreen',
     'sidePanel',
+    'notifications',
   ],
 
   host_permissions: [
