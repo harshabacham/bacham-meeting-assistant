@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { fetchLiveGoogleCalendarEvents, fetchLiveGoogleCalendarEventsOAuth } from '../utils/icalParser';
+import { listen } from '@tauri-apps/api/event';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 export interface CalendarEvent {
   id: string;
@@ -131,135 +133,110 @@ export const useCalendarStore = create<CalendarState>()(
 
       connectGoogleCalendarOAuth: async () => {
         set({ isSyncing: true, syncError: null, deviceFlowData: null });
-        try {
-          const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com';
-          const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET || '';
 
-          // 1. Request Device Code (Upgraded Scope)
-          const codeResponse = await fetch('https://oauth2.googleapis.com/device/code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `client_id=${clientId}&scope=https://www.googleapis.com/auth/calendar.events%20https://www.googleapis.com/auth/userinfo.email`
-          });
-          
-          if (!codeResponse.ok) {
-            throw new Error(`Google Device Flow failed: ${await codeResponse.text()}`);
-          }
-          const codeData = await codeResponse.json();
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com';
+        const redirectUri = encodeURIComponent("http://127.0.0.1:1422/auth/callback");
+        const scope = encodeURIComponent("openid email profile https://www.googleapis.com/auth/calendar.events");
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=select_account&access_type=offline`;
 
-          set({
-            deviceFlowData: {
-              userCode: codeData.user_code,
-              verificationUrl: codeData.verification_url,
-              deviceCode: codeData.device_code,
-              interval: codeData.interval,
-              expiresAt: Date.now() + (codeData.expires_in * 1000)
-            }
-          });
+        return new Promise<void>(async (resolve, reject) => {
+          let unlistenToken: (() => void) | undefined;
+          let unlistenError: (() => void) | undefined;
+          let timeoutId: any;
 
-          // 2. Poll for Token
-          let token: string | null = null;
-          let intervalTime = codeData.interval * 1000;
-          const expireTime = Date.now() + (codeData.expires_in * 1000);
+          const cleanup = () => {
+            if (unlistenToken) unlistenToken();
+            if (unlistenError) unlistenError();
+            if (timeoutId) clearTimeout(timeoutId);
+          };
 
-          while (Date.now() < expireTime) {
-            // Check if user cancelled
-            if (!get().deviceFlowData) {
-              throw new Error("OAuth Sign-In cancelled.");
-            }
-
-            const tokenBody = new URLSearchParams({
-              client_id: clientId,
-              client_secret: clientSecret || '',
-              device_code: codeData.device_code,
-              grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-            });
-
-            if (!clientSecret) tokenBody.delete('client_secret');
-
-            const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: tokenBody.toString()
-            });
-
-            const tokenData = await tokenResponse.json();
-
-            if (tokenResponse.ok && tokenData.access_token) {
-              token = tokenData.access_token;
-              break;
-            } else if (tokenData.error === 'authorization_pending') {
-              // keep polling
-            } else if (tokenData.error === 'slow_down') {
-              intervalTime += 2000;
-            } else if (tokenData.error !== 'authorization_pending') {
-              throw new Error(`OAuth error: ${tokenData.error_description || tokenData.error}`);
-            }
-
-            await new Promise(r => setTimeout(r, intervalTime));
-          }
-
-          if (!token) {
-            throw new Error("Authentication request timed out. Please try again.");
-          }
-
-          // Clear device flow state since we got the token
-          set({ deviceFlowData: null });
-
-          // Fetch user email
-          let email = "Connected User";
           try {
-            const userResponse = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${token}`);
-            if (userResponse.ok) {
-              const userData = await userResponse.json();
-              if (userData.email) email = userData.email;
+            unlistenToken = await listen<string>('oauth_id_token', async (event) => {
+              cleanup();
+              try {
+                let tokenData: any;
+                try {
+                  tokenData = typeof event.payload === 'string' ? JSON.parse(event.payload) : event.payload;
+                } catch {
+                  tokenData = { access_token: event.payload };
+                }
+
+                const token = tokenData.access_token;
+                if (!token) {
+                  throw new Error("No access token received from Google authentication.");
+                }
+
+                const email = tokenData.email || "Google Calendar User";
+
+                // Fetch events using OAuth
+                const fetched = await fetchLiveGoogleCalendarEventsOAuth(token);
+
+                const currentEvents = get().events;
+                const currentMap = new Map(currentEvents.map(e => [e.id, e]));
+                const mergedFetched = fetched.map(fe => {
+                  const existing = currentMap.get(fe.id);
+                  if (existing) {
+                    return {
+                      ...fe,
+                      color: existing.color || fe.color,
+                      isCompleted: existing.isCompleted !== undefined ? existing.isCompleted : fe.isCompleted,
+                      meetingUrl: existing.meetingUrl || fe.meetingUrl,
+                      reminderMinutes: existing.reminderMinutes !== undefined ? existing.reminderMinutes : fe.reminderMinutes,
+                    };
+                  }
+                  return fe;
+                });
+                const localEvents = currentEvents.filter(e => e.type === 'bacham' || e.id.startsWith('evt_') || e.id.startsWith('custom_'));
+                const mergedMap = new Map<string, CalendarEvent>();
+                mergedFetched.forEach(e => mergedMap.set(e.id, e));
+                localEvents.forEach(e => mergedMap.set(e.id, e));
+
+                set({
+                  isConnected: true,
+                  calendarEmail: email,
+                  accessToken: token,
+                  iCalUrl: null,
+                  isSyncing: false,
+                  lastSyncedAt: Date.now(),
+                  isSyncModalOpen: false,
+                  syncError: null,
+                  events: Array.from(mergedMap.values()),
+                });
+
+                resolve();
+              } catch (err: any) {
+                cleanup();
+                set({ isSyncing: false, syncError: err.message || "Failed to sync Google Calendar events." });
+                reject(err);
+              }
+            });
+
+            unlistenError = await listen<string>('oauth_error', (event) => {
+              cleanup();
+              const err = event.payload || "Google sign-in was cancelled or failed.";
+              set({ isSyncing: false, syncError: err });
+              reject(new Error(err));
+            });
+
+            // 2 minute timeout
+            timeoutId = setTimeout(() => {
+              cleanup();
+              set({ isSyncing: false, syncError: "Google sign-in timed out. Please try again." });
+              reject(new Error("Google sign-in timed out. Please try again."));
+            }, 120000);
+
+            // Open user's default system browser
+            try {
+              await openUrl(authUrl);
+            } catch {
+              window.open(authUrl, '_blank');
             }
-          } catch (e) {
-            console.error("Failed to fetch user email:", e);
+          } catch (err: any) {
+            cleanup();
+            set({ isSyncing: false, syncError: err.message || "Failed to initiate Google sign-in." });
+            reject(err);
           }
-
-          // Fetch events first before committing to connected state
-          const fetched = await fetchLiveGoogleCalendarEventsOAuth(token);
-          
-          const currentEvents = get().events;
-          const currentMap = new Map(currentEvents.map(e => [e.id, e]));
-          const mergedFetched = fetched.map(fe => {
-            const existing = currentMap.get(fe.id);
-            if (existing) {
-              return {
-                ...fe,
-                color: existing.color || fe.color,
-                isCompleted: existing.isCompleted !== undefined ? existing.isCompleted : fe.isCompleted,
-                meetingUrl: existing.meetingUrl || fe.meetingUrl,
-                reminderMinutes: existing.reminderMinutes !== undefined ? existing.reminderMinutes : fe.reminderMinutes,
-              };
-            }
-            return fe;
-          });
-          const localEvents = currentEvents.filter(e => e.type === 'bacham' || e.id.startsWith('evt_') || e.id.startsWith('custom_'));
-          const mergedMap = new Map<string, CalendarEvent>();
-          mergedFetched.forEach(e => mergedMap.set(e.id, e));
-          localEvents.forEach(e => mergedMap.set(e.id, e));
-
-          set({
-            isConnected: true,
-            calendarEmail: email,
-            accessToken: token,
-            iCalUrl: null,
-            isSyncing: false,
-            lastSyncedAt: Date.now(),
-            isSyncModalOpen: false,
-            syncError: null,
-            events: Array.from(mergedMap.values()),
-          });
-        } catch (err: any) {
-          console.error("Failed Google Calendar OAuth Login:", err);
-          set({
-            isSyncing: false,
-            syncError: err.message || "Failed to authenticate Google Account.",
-          });
-          throw err;
-        }
+        });
       },
 
       disconnectCalendar: async () => {

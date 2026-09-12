@@ -25,7 +25,6 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TauriClient } from '@/infrastructure/tauri-client';
 import { ProfileSetup } from '../components/ui/profile-setup';
 
 export const LoginPage = () => {
@@ -393,29 +392,9 @@ export const LoginPage = () => {
           <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
         </video>
 
-        {/* Top Window Controls */}
-        <div className="absolute top-0 left-0 right-0 h-10 z-50 flex items-center justify-between px-4 pointer-events-auto">
+        {/* Draggable Titlebar Region */}
+        <div className="absolute top-0 left-0 right-36 h-10 z-50 pointer-events-auto">
           <div data-tauri-drag-region className="flex-1 h-full" />
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => TauriClient.minimize()}
-              className="w-2.5 h-2.5 rounded-full bg-[#FFC15E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Minimize"
-            />
-            <button
-              type="button"
-              onClick={() => TauriClient.maximize()}
-              className="w-2.5 h-2.5 rounded-full bg-[#5EFF9F] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Maximize"
-            />
-            <button
-              type="button"
-              onClick={() => TauriClient.close()}
-              className="w-2.5 h-2.5 rounded-full bg-[#FF5E5E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Close"
-            />
-          </div>
         </div>
 
         <motion.div 
@@ -451,29 +430,9 @@ export const LoginPage = () => {
         <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
       </video>
 
-      {/* Draggable Titlebar Region & Window Controls */}
-      <div className="absolute top-0 left-0 right-0 h-10 z-50 flex items-center justify-between px-4 pointer-events-auto">
+      {/* Draggable Titlebar Region */}
+      <div className="absolute top-0 left-0 right-0 h-10 z-50 pointer-events-auto">
         <div data-tauri-drag-region className="flex-1 h-full" />
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => TauriClient.minimize()}
-            className="w-2.5 h-2.5 rounded-full bg-[#FFC15E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
-            title="Minimize"
-          />
-          <button
-            type="button"
-            onClick={() => TauriClient.maximize()}
-            className="w-2.5 h-2.5 rounded-full bg-[#5EFF9F] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
-            title="Maximize"
-          />
-          <button
-            type="button"
-            onClick={() => TauriClient.close()}
-            className="w-2.5 h-2.5 rounded-full bg-[#FF5E5E] hover:brightness-110 shadow-xs transition-all active:scale-95 cursor-pointer"
-            title="Close"
-          />
-        </div>
       </div>
 
       {/* Auth Card */}

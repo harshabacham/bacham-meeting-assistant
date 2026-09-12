@@ -178,9 +178,10 @@ async fn handle_auth_callback(
 
         if let Ok(response) = res {
             if let Ok(json) = response.json::<serde_json::Value>().await {
-                if let Some(id_token) = json.get("id_token").and_then(|t| t.as_str()) {
-                    let access_token = json.get("access_token").and_then(|t| t.as_str()).unwrap_or("");
-                    
+                let id_token = json.get("id_token").and_then(|t| t.as_str()).unwrap_or("");
+                let access_token = json.get("access_token").and_then(|t| t.as_str()).unwrap_or("");
+                
+                if !id_token.is_empty() || !access_token.is_empty() {
                     let mut payload = serde_json::json!({
                         "id_token": id_token,
                         "access_token": access_token

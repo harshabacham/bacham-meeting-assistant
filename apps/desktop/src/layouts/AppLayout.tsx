@@ -24,7 +24,6 @@ import { useFolderStore } from '@/shared/stores/folderStore';
 import { GlobalQuickLookModal } from '@/components/command_center/GlobalQuickLookModal';
 import { GoogleCalendarSyncModal } from '@/components/dashboard/GoogleCalendarSyncModal';
 import { GlobalAskAI } from '@/components/dashboard/GlobalAskAI';
-import { TauriClient } from '@/infrastructure/tauri-client';
 import { AutoRecordWatcher } from '@/components/AutoRecordWatcher';
 import { useFeedbackStore } from '@/shared/stores/feedbackStore';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
@@ -156,26 +155,6 @@ export function AppLayout() {
             {/* Invisible Drag Region across the very top */}
             <div data-tauri-drag-region className="absolute top-0 left-0 right-0 h-8 z-[5] pointer-events-auto" />
 
-            {/* Native-style Window Controls (Top Right) */}
-            <div className="absolute top-0 right-0 h-12 z-[100] flex items-center justify-end pr-6">
-                <div className="flex items-center gap-2">
-                    <button 
-                        onClick={() => TauriClient.minimize()} 
-                        className="w-3 h-3 rounded-full bg-[var(--text-muted)]/25 hover:bg-[var(--text-secondary)]/50 transition-all active:scale-90 cursor-pointer" 
-                        title="Minimize" 
-                    />
-                    <button 
-                        onClick={() => TauriClient.maximize()} 
-                        className="w-3 h-3 rounded-full bg-[var(--text-muted)]/25 hover:bg-[var(--text-secondary)]/50 transition-all active:scale-90 cursor-pointer" 
-                        title="Maximize" 
-                    />
-                    <button 
-                        onClick={() => TauriClient.close()} 
-                        className="w-3 h-3 rounded-full bg-[var(--text-muted)]/25 hover:bg-rose-500/80 transition-all active:scale-90 cursor-pointer" 
-                        title="Close" 
-                    />
-                </div>
-            </div>
             {/* Global Ambient Background Effects (Dark Mode Only) */}
             <div className="hidden dark:block absolute inset-0 bg-gradient-to-br from-transparent to-surface-raised/50 z-[-1] pointer-events-none" />
             

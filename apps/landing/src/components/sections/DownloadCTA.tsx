@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, Apple, Laptop, Terminal, ExternalLink, ShieldCheck } from "lucide-react";
+import { Download, Apple, Laptop, Terminal, ExternalLink, ShieldCheck, Info } from "lucide-react";
 import { ChromeIcon } from "@/components/ui/ChromeIcon";
 import {
   NoBotsSticker,
@@ -162,6 +162,19 @@ export default function DownloadCTA() {
               </motion.div>
             );
           })}
+        </div>
+
+        {/* Windows SmartScreen Notice */}
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-[#121214] border border-amber-500/30 max-w-4xl mx-auto shadow-lg relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400 shadow-inner">
+              <Info size={18} />
+            </div>
+            <div className="flex-1 text-xs sm:text-[13px] text-[#A1A1A6] leading-relaxed">
+              <span className="font-bold text-white block sm:inline mr-1.5">Windows SmartScreen Note:</span>
+              If Windows displays <span className="text-white font-medium">&quot;Windows protected your PC&quot;</span> on first launch, click <span className="text-[#D1E043] font-bold underline decoration-dotted">&quot;More info&quot;</span> and then select <span className="text-[#D1E043] font-bold">&quot;Run anyway&quot;</span>. This is standard for newly released open-source software until reputation is established.
+            </div>
+          </div>
         </div>
 
         {/* Verification Guarantee */}

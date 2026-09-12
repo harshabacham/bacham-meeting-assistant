@@ -9,6 +9,7 @@ import { SplashScreen } from "./components/ui/SplashScreen";
 import { AnimatePresence } from "framer-motion";
 import { ToastProvider } from './components/ui/ToastProvider';
 import { ConfirmProvider } from './components/ui/ConfirmProvider';
+import { Titlebar } from './components/layout/Titlebar';
 
 // Lazy loaded routes (Tier 1 Startup Optimization)
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
@@ -109,6 +110,7 @@ function App() {
         <ToastProvider>
           <ConfirmProvider />
           <BrowserRouter>
+            <Titlebar />
             <TauriNavigationListener />
             <AnimatePresence mode="wait">
               <Suspense fallback={<SplashScreen />}>

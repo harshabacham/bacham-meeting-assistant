@@ -1036,7 +1036,7 @@ Return only the polished transcript text:`;
                 </div>
 
                 {/* Right Action Controls */}
-                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-16 sm:pr-20 min-w-0 shrink-0">
+                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-36 sm:pr-40 min-w-0 shrink-0">
                     {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
                         data-tauri-drag-region="false"

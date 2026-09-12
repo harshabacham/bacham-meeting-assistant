@@ -30,6 +30,10 @@ const faqs = [
     a: "All transcripts, audio files, embeddings, and notes are stored strictly in your local SQLite database on your SSD. You can export meeting summaries to Markdown, PDF, Notion, or Slack with one click.",
   },
   {
+    q: "Why does Windows show 'Windows protected your PC' (SmartScreen) on first install?",
+    a: "Microsoft Defender SmartScreen displays this prompt for any freshly compiled open-source executable that has not yet accumulated thousands of downloads in Microsoft's cloud reputation database. Simply click 'More info' and then select 'Run anyway'. Bacham is 100% open source under the MIT license, and SHA-256 checksums are publicly verifiable on our GitHub.",
+  },
+  {
     q: "Is Bacham free and open source?",
     a: "Yes. Bacham is licensed under the MIT open-source license. You can inspect the source code, contribute on GitHub, and run unlimited meetings without recurring per-seat subscription fees.",
   },
