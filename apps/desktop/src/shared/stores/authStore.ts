@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (currentSaved) {
           try {
             const parsed = JSON.parse(currentSaved);
-            if (parsed && (parsed.providerId === 'google.com' || parsed.email)) {
+            if (parsed && (parsed.providerId === 'google.com' || parsed.providerId === 'local' || parsed.email)) {
               set({ user: parsed, isLoading: false });
               return;
             }

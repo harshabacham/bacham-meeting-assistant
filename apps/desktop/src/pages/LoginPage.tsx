@@ -164,7 +164,9 @@ export const LoginPage = () => {
         code === 'auth/user-not-found' || 
         code === 'auth/invalid-login-credentials'
       ) {
-        setError('Invalid email or password. Please verify your credentials.');
+        setError(isLogin 
+          ? 'Invalid email or password. If you do not have an account yet, click "Create Account" above.' 
+          : 'Invalid account details. Please verify and try again.');
       } else if (code === 'auth/email-already-in-use') {
         setError('An account with this email already exists. Please sign in instead.');
       } else if (code === 'auth/weak-password') {
@@ -215,37 +217,61 @@ export const LoginPage = () => {
     }
   };
 
+  const handleContinueAsGuest = () => {
+    const guestUser: AppUser = {
+      uid: 'local_guest_' + Date.now(),
+      email: 'local@bacham.internal',
+      displayName: 'Bacham User',
+      photoURL: null,
+      providerId: 'local',
+      emailVerified: true
+    };
+    setUser(guestUser);
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
+    if (!hasSetupStorage) {
+      localStorage.setItem('needs_storage_setup', 'true');
+      navigate('/setup-storage');
+    } else {
+      navigate('/');
+    }
+  };
+
   const handleGoogleAuth = async () => {
     setError('');
     setSuccessMessage('');
     setGoogleLoading(true);
 
-    const isTauri = typeof window !== 'undefined' && Boolean((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__);
-
     try {
-      if (!isTauri) {
-        // In standard browser environment, use Firebase popup flow
+      // 1. Try Firebase popup flow first (uses authorized domain bacham-tech.firebaseapp.com)
+      try {
         const userCred = await signInWithPopup(auth, googleProvider);
         if (userCred.user) {
           setUser(userCred.user);
-        }
-        localStorage.setItem('hasSeenOnboarding', 'true');
-        if (userCred.user?.displayName) {
-          const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
-          if (!hasSetupStorage) {
-            localStorage.setItem('needs_storage_setup', 'true');
-            navigate('/setup-storage');
+          localStorage.setItem('hasSeenOnboarding', 'true');
+          if (userCred.user?.displayName) {
+            const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
+            if (!hasSetupStorage) {
+              localStorage.setItem('needs_storage_setup', 'true');
+              navigate('/setup-storage');
+            } else {
+              navigate('/');
+            }
           } else {
-            navigate('/');
+            setShowProfileSetup(true);
           }
-        } else {
-          setShowProfileSetup(true);
+          setGoogleLoading(false);
+          return;
         }
-        setGoogleLoading(false);
-        return;
+      } catch (popupErr: any) {
+        console.warn("Firebase popup sign-in did not complete, trying browser loopback flow:", popupErr);
+        if (popupErr.code === 'auth/popup-closed-by-user') {
+          setGoogleLoading(false);
+          return;
+        }
       }
 
-      // In Tauri desktop environment: 1-Click System Browser OAuth via local upload_server
+      // 2. Fallback: 1-Click System Browser OAuth via local upload_server
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com";
       const redirectUri = encodeURIComponent("http://127.0.0.1:1422/auth/callback");
       const scope = encodeURIComponent("openid email profile");
@@ -446,7 +472,7 @@ export const LoginPage = () => {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/70 to-transparent rounded-t-3xl" />
 
         {/* Card Header */}
-        <div className="relative z-10 text-center mb-5">
+        <div className="relative z-10 text-center mb-4">
           {isForgotPassword ? (
             <>
               <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
@@ -462,11 +488,35 @@ export const LoginPage = () => {
                 {isLogin ? 'Welcome Back' : 'Create Account'}
               </h1>
               <p className="mt-1 text-xs text-neutral-600 font-normal">
-                {isLogin ? 'Sign in to access your workspace.' : 'Sign up to get started with BACHAM.'}
+                {isLogin ? 'Sign in to access your workspace.' : 'Sign up in seconds to start with BACHAM.'}
               </p>
             </>
           )}
         </div>
+
+        {/* Auth Mode Segmented Pill Tabs */}
+        {!isForgotPassword && (
+          <div className="relative z-10 mb-4 p-1 flex rounded-2xl bg-neutral-200/80 border border-black/5">
+            <button
+              type="button"
+              onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                isLogin ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
+              className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                !isLogin ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+        )}
 
         {/* Error Alert */}
         <AnimatePresence>
@@ -690,21 +740,30 @@ export const LoginPage = () => {
             {/* Google Authentication Button */}
             <div className="relative z-10">
               {googleLoading ? (
-                <div className="rounded-2xl border border-neutral-300 bg-white p-3.5 text-center shadow-xs space-y-2">
+                <div className="rounded-2xl border border-neutral-300 bg-white p-3.5 text-center shadow-xs space-y-2.5">
                   <div className="flex items-center justify-center gap-2 text-xs font-semibold text-neutral-900">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-900" />
-                    <span>Signing in with Google...</span>
+                    <span>Waiting for browser sign-in...</span>
                   </div>
-                  <p className="text-[11px] text-neutral-500 leading-snug px-2">
-                    Complete sign-in in your browser window. You'll automatically be logged in here.
+                  <p className="text-[11px] text-neutral-500 leading-snug px-1">
+                    If your browser displays <span className="font-mono font-medium text-neutral-700">redirect_uri_mismatch</span>, bypass Google below to continue:
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleCancelGoogleAuth}
-                    className="text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors py-0.5 cursor-pointer underline underline-offset-2"
-                  >
-                    Cancel
-                  </button>
+                  <div className="pt-2 flex flex-col gap-1.5 border-t border-neutral-200/80">
+                    <button
+                      type="button"
+                      onClick={handleContinueAsGuest}
+                      className="w-full py-2 px-3 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer shadow-sm"
+                    >
+                      Bypass &amp; Continue Offline &rarr;
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelGoogleAuth}
+                      className="text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors py-0.5 cursor-pointer underline underline-offset-2"
+                    >
+                      Cancel &amp; Return
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -722,6 +781,22 @@ export const LoginPage = () => {
                   <span>Sign in with Google</span>
                 </button>
               )}
+            </div>
+
+            {/* Offline / Local Mode Option */}
+            <div className="relative z-10 mt-3 pt-3 border-t border-neutral-300/70">
+              <button
+                type="button"
+                onClick={handleContinueAsGuest}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-400 bg-neutral-100 hover:bg-white py-2.5 text-xs font-semibold text-neutral-800 hover:text-neutral-900 transition-all active:scale-[0.98] shadow-2xs cursor-pointer"
+                title="Use Bacham 100% offline with zero sign-in required"
+              >
+                <UserIcon className="h-3.5 w-3.5 text-neutral-600" />
+                <span>⚡ Continue in Offline / Local Mode</span>
+              </button>
+              <p className="text-[10px] text-center text-neutral-500 mt-1">
+                Zero cloud setup required &bull; 100% private on your machine
+              </p>
             </div>
 
             {/* Mode Switch (Sign in / Sign up) */}
