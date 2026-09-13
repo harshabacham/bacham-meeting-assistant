@@ -1,10 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ShieldCheck, Lock, EyeOff, Server, Key } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Lock, EyeOff, Server, Key, Calendar, CheckCircle } from 'lucide-react';
 
 export const metadata = {
   title: 'Privacy Policy — BACHAM',
-  description: 'Privacy Policy for the BACHAM AI Meeting & Lecture Assistant Chrome Extension.',
+  description: 'Privacy Policy for the BACHAM AI Meeting & Lecture Assistant platform, desktop app, and browser extension.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -25,10 +25,10 @@ export default function PrivacyPolicyPage() {
             <ShieldCheck className="w-4 h-4" /> Privacy Policy
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            BACHAM Chrome Extension Privacy Policy
+            BACHAM Privacy Policy
           </h1>
           <p className="text-zinc-400 text-sm">
-            Last Updated: September 10, 2026 • Version 0.1.0
+            Last Updated: September 13, 2026 • Version 1.0.0
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
             </div>
             <h3 className="text-base font-semibold mb-2">100% Local-First</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              Recordings and notes process on your device. We do not operate cloud databases or external audio servers.
+              Recordings, speech-to-text transcripts, and notes process directly on your device. We do not operate external audio surveillance servers.
             </p>
           </div>
 
@@ -48,19 +48,19 @@ export default function PrivacyPolicyPage() {
             <div className="w-10 h-10 rounded-xl bg-[#BAFF29]/10 text-[#BAFF29] flex items-center justify-center mb-4">
               <EyeOff className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-semibold mb-2">Zero Tracking</h3>
+            <h3 className="text-base font-semibold mb-2">Zero Data Selling</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              No telemetry, tracking pixels, ad trackers, or browsing history collection of any kind.
+              We never sell your personal data, recordings, transcripts, or calendar items to advertisers, data brokers, or third parties.
             </p>
           </div>
 
           <div className="p-6 rounded-2xl bg-zinc-900/60 border border-white/5">
             <div className="w-10 h-10 rounded-xl bg-[#BAFF29]/10 text-[#BAFF29] flex items-center justify-center mb-4">
-              <Key className="w-5 h-5" />
+              <Calendar className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-semibold mb-2">BYOK Architecture</h3>
+            <h3 className="text-base font-semibold mb-2">Google Limited Use</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
-              Optional AI summaries run through your own personal Google Gemini API key directly from your browser.
+              Google Calendar access is used strictly to display and organize your meeting schedules, adhering to Google&apos;s Limited Use policy.
             </p>
           </div>
         </div>
@@ -68,58 +68,84 @@ export default function PrivacyPolicyPage() {
         {/* Detailed Sections */}
         <div className="space-y-12 text-zinc-300 leading-relaxed text-sm sm:text-base">
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">1. Single Purpose Declaration</h2>
+            <h2 className="text-2xl font-bold text-white">1. Introduction &amp; Scope</h2>
             <p>
-              The <strong>BACHAM — AI Meeting & Lecture Capture</strong> browser extension has a single, focused purpose: <em>to capture browser tab audio, video, and slide screenshots during lectures and meetings, and synchronize them with the local BACHAM desktop assistant.</em>
+              This Privacy Policy explains how <strong>BACHAM</strong> (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) collects, uses, and safeguards information when you use the <strong>BACHAM Desktop Application</strong>, the <strong>BACHAM Browser Extension</strong>, and our website (collectively, the &quot;Services&quot;).
+            </p>
+            <p>
+              BACHAM is built on a local-first philosophy: our primary design goal is that your confidential meetings, personal lectures, and audio recordings remain strictly on your own hardware.
             </p>
           </section>
 
+          {/* Google API Limited Use Section - REQUIRED BY GOOGLE */}
+          <section className="space-y-4 p-6 rounded-2xl bg-zinc-900/80 border border-[#BAFF29]/20">
+            <div className="flex items-center gap-2 text-[#BAFF29] font-bold text-lg">
+              <ShieldCheck className="w-5 h-5" />
+              <h2>2. Google API Services User Data Policy &amp; Limited Use Disclosure</h2>
+            </div>
+            <p className="text-zinc-200">
+              BACHAM&apos;s use and transfer to any other app of information received from Google APIs will adhere to the{' '}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#BAFF29] font-semibold underline hover:text-white"
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </p>
+            <div className="space-y-3 pt-2 text-sm text-zinc-300">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-[#BAFF29] shrink-0 mt-1" />
+                <span><strong>No Human Reading:</strong> No human at BACHAM ever reads or accesses your Google Calendar events or account data.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-[#BAFF29] shrink-0 mt-1" />
+                <span><strong>No Generalized AI Model Training:</strong> Information received from Google APIs is never used to train generalized artificial intelligence or machine learning models.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-[#BAFF29] shrink-0 mt-1" />
+                <span><strong>No Advertising or Sale:</strong> We do not sell Google user data or use it to serve advertisements.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-[#BAFF29] shrink-0 mt-1" />
+                <span><strong>Minimal Permissions:</strong> Google Calendar data is fetched only to show upcoming meetings inside your dashboard and associate notes with specific meetings.</span>
+              </div>
+            </div>
+          </section>
+
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">2. Permissions & Data Usage Disclosures</h2>
+            <h2 className="text-2xl font-bold text-white">3. Information We Access and How It Is Handled</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse border border-white/10 text-sm">
                 <thead>
                   <tr className="bg-zinc-900/80 text-zinc-200">
-                    <th className="p-3 border border-white/10">Permission</th>
-                    <th className="p-3 border border-white/10">Purpose & Usage</th>
-                    <th className="p-3 border border-white/10">Storage / Transmission</th>
+                    <th className="p-3 border border-white/10">Data Type</th>
+                    <th className="p-3 border border-white/10">Purpose</th>
+                    <th className="p-3 border border-white/10">Storage Location</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">tabCapture & activeTab</td>
-                    <td className="p-3">Captures tab audio and visual stream when you click Record.</td>
-                    <td className="p-3">Processed in local offscreen document; streamed only to local app (127.0.0.1).</td>
+                    <td className="p-3 font-semibold text-white">Google Account Profile (Email, Name)</td>
+                    <td className="p-3">Authenticates your user session and displays your profile name in the app header.</td>
+                    <td className="p-3">Local app state / secure storage. Never shared with third parties.</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">tabs</td>
-                    <td className="p-3">Reads active lecture title and URL to automatically label your session.</td>
-                    <td className="p-3">Stored locally in your browser session.</td>
+                    <td className="p-3 font-semibold text-white">Google Calendar Events</td>
+                    <td className="p-3">Displays your schedule in the Upcoming Meetings widget and links notes to meeting titles.</td>
+                    <td className="p-3">Stored locally on your device in your local database. Zero cloud sync to BACHAM servers.</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">storage & unlimitedStorage</td>
-                    <td className="p-3">Saves recording preferences, offline chunks, and local notes.</td>
-                    <td className="p-3">Sandboxed browser storage (IndexedDB & chrome.storage.local).</td>
+                    <td className="p-3 font-semibold text-white">Audio Recordings &amp; Transcripts</td>
+                    <td className="p-3">Transcribes spoken speech into editable notes during lectures or meetings.</td>
+                    <td className="p-3">Stored 100% locally on your local disk in your designated storage folder.</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">alarms</td>
-                    <td className="p-3">Maintains periodic slide change checks and companion heartbeats.</td>
-                    <td className="p-3">No external transmission.</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">nativeMessaging</td>
-                    <td className="p-3">Enables secure communication with the companion BACHAM Desktop Application.</td>
-                    <td className="p-3">Local IPC on the user&apos;s machine only.</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">sidePanel</td>
-                    <td className="p-3">Renders the notes and capture UI beside your meeting tab.</td>
-                    <td className="p-3">Internal browser UI.</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-mono text-[#BAFF29]">host_permissions</td>
-                    <td className="p-3">Local loopback (http://127.0.0.1/*) for companion app & Google Gemini API.</td>
-                    <td className="p-3">Local desktop app and official Google Generative AI endpoints only.</td>
+                    <td className="p-3 font-semibold text-white">AI API Keys (BYOK)</td>
+                    <td className="p-3">Allows you to connect your personal Google Gemini API key to generate summaries.</td>
+                    <td className="p-3">Stored encrypted in your local machine preferences. Sent only to Google AI endpoints.</td>
                   </tr>
                 </tbody>
               </table>
@@ -127,37 +153,53 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">3. Data We Never Collect</h2>
-            <ul className="list-disc pl-6 space-y-2 text-zinc-400">
-              <li>No personal identifiers, emails, names, or account passwords.</li>
-              <li>No keystrokes, form submissions, or private chat interactions.</li>
-              <li>No background browsing activity or history on non-recorded tabs.</li>
-              <li>No cookies, session tokens, or payment details.</li>
+            <h2 className="text-2xl font-bold text-white">4. Chrome Extension Specific Disclosures</h2>
+            <p>
+              The <strong>BACHAM Chrome Extension</strong> captures active browser tab audio and video streams solely when you explicitly toggle the recording button.
+            </p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>Local Stream Only:</strong> Media is streamed directly through an offscreen document to your local desktop assistant over loopback (<code>http://127.0.0.1:1422</code>).</li>
+              <li><strong>No Background Surveillance:</strong> The extension does not inspect web pages, inject ads, record keystrokes, or monitor tabs outside active recording sessions.</li>
+              <li><strong>Zero Remote Analytics:</strong> The extension contains zero third-party telemetry, trackers, or behavioral trackers.</li>
             </ul>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">4. User Rights & Data Deletion</h2>
+            <h2 className="text-2xl font-bold text-white">5. Data Retention &amp; User Control</h2>
             <p>
-              You maintain 100% ownership and control over your lecture recordings and notes. You can pause, stop, or discard any capture at any time. You can clear all cached notes and session history with one click in the extension settings or by removing the extension.
+              Because your notes, recordings, and calendar feeds reside on your local machine:
+            </p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li><strong>Full Control:</strong> You can delete any recording, meeting note, or calendar event from the app or your filesystem at any time.</li>
+              <li><strong>Disconnect Google Account:</strong> You can disconnect Google Calendar or your Google account at any time via the Settings &gt; Disconnect button. Upon disconnection, local tokens are immediately purged.</li>
+              <li><strong>Revoke Access:</strong> You can permanently revoke BACHAM&apos;s permissions anytime via your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-[#BAFF29] underline">Google Account Security page</a>.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold text-white">6. Security</h2>
+            <p>
+              We implement industry-standard security safeguards. OAuth 2.0 PKCE flow is utilized for authentication, and sensitive credentials (such as OAuth access tokens and AI API keys) are stored in secure local storage or system keychain mechanisms.
             </p>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">5. Contact & Open Source Verification</h2>
+            <h2 className="text-2xl font-bold text-white">7. Changes to This Policy</h2>
             <p>
-              BACHAM is completely open source. You can inspect every line of code on our GitHub repository:
+              If we modify this Privacy Policy, we will post the revised version with an updated &quot;Last Updated&quot; date on this page and through software release notes.
             </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-2xl font-bold text-white">8. Contact Us</h2>
             <p>
-              <a
-                href="https://github.com/harshabacham/bacham-meeting-assistant"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[#BAFF29] underline hover:text-[#a3e622]"
-              >
-                https://github.com/harshabacham/bacham-meeting-assistant
-              </a>
+              If you have any questions, concerns, or requests regarding this Privacy Policy or your data, please contact:
             </p>
+            <div className="p-4 rounded-xl bg-zinc-900/60 border border-white/5 space-y-1">
+              <p><strong>Maintainer:</strong> Harsha Bacham</p>
+              <p><strong>Email:</strong> <a href="mailto:bachamharsha4091@gmail.com" className="text-[#BAFF29] underline">bachamharsha4091@gmail.com</a></p>
+              <p><strong>Repository:</strong> <a href="https://github.com/harshabacham/bacham-meeting-assistant" target="_blank" rel="noopener noreferrer" className="text-[#BAFF29] underline">github.com/harshabacham/bacham-meeting-assistant</a></p>
+            </div>
           </section>
         </div>
       </div>

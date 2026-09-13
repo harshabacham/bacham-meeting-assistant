@@ -110,6 +110,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/terms" className="hover:text-[#FFFFFF] transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
                 <Link href="#faq" className="hover:text-[#FFFFFF] transition-colors">
                   Frequently Asked Questions
                 </Link>
