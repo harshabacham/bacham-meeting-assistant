@@ -1,7 +1,7 @@
 use axum::{
     body::Bytes,
     extract::{Query, State, Json},
-    http::{Method, StatusCode},
+    http::{Method, StatusCode, HeaderMap},
     response::Html,
     routing::{get, post},
     Router,
@@ -47,7 +47,7 @@ pub async fn start_upload_server(app_handle: AppHandle) {
         .layer(cors)
         .with_state(state);
 
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 1422));
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 1422));
     
     // Spawn the server using axum 0.7 style
     if let Ok(listener) = tokio::net::TcpListener::bind(addr).await {
@@ -126,6 +126,7 @@ async fn handle_health() -> &'static str {
 
 async fn handle_auth_callback(
     State(state): State<ServerState>,
+    headers: HeaderMap,
     Query(params): Query<AuthCallbackParams>,
 ) -> Html<String> {
     if let Some(error) = params.error {
@@ -155,7 +156,7 @@ async fn handle_auth_callback(
             .map(|s| s.to_string())
             .unwrap_or_else(|| {
                 std::env::var("VITE_GOOGLE_CLIENT_ID")
-                    .unwrap_or_else(|_| "1899930204-n7j45nfei7ie790d9php88jnda5k94k3.apps.googleusercontent.com".to_string())
+                    .unwrap_or_else(|_| "15417749463-hqib9o5nf3fgpcvu1f9bv0gbm6jt06rf.apps.googleusercontent.com".to_string())
             });
         let client_secret = option_env!("VITE_GOOGLE_CLIENT_SECRET")
             .filter(|s| !s.is_empty())
@@ -170,11 +171,17 @@ async fn handle_auth_callback(
             .build()
             .unwrap_or_else(|_| Client::new());
 
+        let host = headers
+            .get("host")
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("localhost:1422");
+        let redirect_uri = format!("http://{}/auth/callback", host);
+
         let mut form_params: Vec<(&str, &str)> = vec![
             ("client_id", client_id.as_str()),
             ("code", code.as_str()),
             ("grant_type", "authorization_code"),
-            ("redirect_uri", "http://127.0.0.1:1422/auth/callback"),
+            ("redirect_uri", redirect_uri.as_str()),
         ];
 
         if !client_secret.is_empty() {

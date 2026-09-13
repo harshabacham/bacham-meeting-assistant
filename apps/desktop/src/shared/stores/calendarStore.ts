@@ -134,8 +134,8 @@ export const useCalendarStore = create<CalendarState>()(
       connectGoogleCalendarOAuth: async () => {
         set({ isSyncing: true, syncError: null, deviceFlowData: null });
 
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1899930204-n7j45nfei7ie790d9php88jnda5k94k3.apps.googleusercontent.com';
-        const redirectUri = encodeURIComponent("http://127.0.0.1:1422/auth/callback");
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '15417749463-hqib9o5nf3fgpcvu1f9bv0gbm6jt06rf.apps.googleusercontent.com';
+        const redirectUri = encodeURIComponent('http://localhost:1422/auth/callback');
         const scope = encodeURIComponent("openid email profile https://www.googleapis.com/auth/calendar.events");
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=select_account&access_type=offline`;
 
