@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     icon: "/logo.png",
   },
   verification: {
-    google: "google3e544e99d39a80ed",
+    google: "Of6HiX9FfkHpoYseT5eEiYwQ3SFKMYZO6u6oNyAXsLs",
   },
 };
 
@@ -80,6 +80,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <meta name="google-site-verification" content="Of6HiX9FfkHpoYseT5eEiYwQ3SFKMYZO6u6oNyAXsLs" />
         <meta name="google-site-verification" content="google3e544e99d39a80ed" />
         <meta name="google-site-verification" content="google3e544e99d39a80ed.html" />
       </head>
