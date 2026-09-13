@@ -151,7 +151,7 @@ async fn handle_auth_callback(
     if let Some(code) = params.code {
         // Exchange code for token here in the backend to bypass CORS
         let client_id = std::env::var("VITE_GOOGLE_CLIENT_ID")
-            .unwrap_or_else(|_| "589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com".to_string());
+            .unwrap_or_else(|_| "1899930204-n7j45nfei7ie790d9php88jnda5k94k3.apps.googleusercontent.com".to_string());
         let client_secret = std::env::var("VITE_GOOGLE_CLIENT_SECRET")
             .unwrap_or_else(|_| "".to_string());
         

@@ -253,7 +253,7 @@ export const LoginPage = () => {
       }
 
       // 2. Fallback: 1-Click System Browser OAuth via local upload_server
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "589776240978-arn55bt34drpmii2j0k6io36isqk0k91.apps.googleusercontent.com";
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "1899930204-n7j45nfei7ie790d9php88jnda5k94k3.apps.googleusercontent.com";
       const redirectUri = encodeURIComponent("http://127.0.0.1:1422/auth/callback");
       const scope = encodeURIComponent("openid email profile");
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=select_account`;
@@ -516,7 +516,7 @@ export const LoginPage = () => {
                   </p>
                   <button
                     type="button"
-                    onClick={() => openUrl("https://console.cloud.google.com/apis/credentials?project=bacham-tech").catch(console.error)}
+                    onClick={() => openUrl("https://console.cloud.google.com/apis/credentials?project=bacham-opensource").catch(console.error)}
                     className="mt-1 text-[11px] font-bold text-neutral-900 underline hover:text-black cursor-pointer block"
                   >
                     Open Google Cloud Console &rarr;
