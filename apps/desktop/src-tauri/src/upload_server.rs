@@ -150,10 +150,20 @@ async fn handle_auth_callback(
 
     if let Some(code) = params.code {
         // Exchange code for token here in the backend to bypass CORS
-        let client_id = std::env::var("VITE_GOOGLE_CLIENT_ID")
-            .unwrap_or_else(|_| "1899930204-n7j45nfei7ie790d9php88jnda5k94k3.apps.googleusercontent.com".to_string());
-        let client_secret = std::env::var("VITE_GOOGLE_CLIENT_SECRET")
-            .unwrap_or_else(|_| "".to_string());
+        let client_id = option_env!("VITE_GOOGLE_CLIENT_ID")
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                std::env::var("VITE_GOOGLE_CLIENT_ID")
+                    .unwrap_or_else(|_| "1899930204-n7j45nfei7ie790d9php88jnda5k94k3.apps.googleusercontent.com".to_string())
+            });
+        let client_secret = option_env!("VITE_GOOGLE_CLIENT_SECRET")
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                std::env::var("VITE_GOOGLE_CLIENT_SECRET")
+                    .unwrap_or_else(|_| "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".to_string())
+            });
         
         let client = Client::builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
