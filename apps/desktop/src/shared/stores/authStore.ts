@@ -76,12 +76,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
         set({ user: firebaseUser, isLoading: false });
       } else {
-        // Firebase returned null. Check if we have an active Google OAuth / local session
+        // Firebase returned null. Check if we have an active Google OAuth session
         const currentSaved = localStorage.getItem('bacham_auth_user');
         if (currentSaved) {
           try {
             const parsed = JSON.parse(currentSaved);
-            if (parsed && (parsed.providerId === 'google.com' || parsed.providerId === 'local' || parsed.email)) {
+            if (parsed && (parsed.providerId === 'google.com' || parsed.email) && parsed.providerId !== 'local') {
               set({ user: parsed, isLoading: false });
               return;
             }

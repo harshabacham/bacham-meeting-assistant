@@ -217,25 +217,6 @@ export const LoginPage = () => {
     }
   };
 
-  const handleContinueAsGuest = () => {
-    const guestUser: AppUser = {
-      uid: 'local_guest_' + Date.now(),
-      email: 'local@bacham.internal',
-      displayName: 'Bacham User',
-      photoURL: null,
-      providerId: 'local',
-      emailVerified: true
-    };
-    setUser(guestUser);
-    localStorage.setItem('hasSeenOnboarding', 'true');
-    const hasSetupStorage = localStorage.getItem('hasSetupStoragePath') === 'true';
-    if (!hasSetupStorage) {
-      localStorage.setItem('needs_storage_setup', 'true');
-      navigate('/setup-storage');
-    } else {
-      navigate('/');
-    }
-  };
 
   const handleGoogleAuth = async () => {
     setError('');
@@ -746,22 +727,15 @@ export const LoginPage = () => {
                     <span>Waiting for browser sign-in...</span>
                   </div>
                   <p className="text-[11px] text-neutral-500 leading-snug px-1">
-                    If your browser displays <span className="font-mono font-medium text-neutral-700">redirect_uri_mismatch</span>, bypass Google below to continue:
+                    Complete sign-in in your browser window. Once authorized, you will automatically be signed in.
                   </p>
-                  <div className="pt-2 flex flex-col gap-1.5 border-t border-neutral-200/80">
-                    <button
-                      type="button"
-                      onClick={handleContinueAsGuest}
-                      className="w-full py-2 px-3 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer shadow-sm"
-                    >
-                      Bypass &amp; Continue Offline &rarr;
-                    </button>
+                  <div className="pt-2 flex justify-center border-t border-neutral-200/80">
                     <button
                       type="button"
                       onClick={handleCancelGoogleAuth}
-                      className="text-[11px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors py-0.5 cursor-pointer underline underline-offset-2"
+                      className="text-xs font-medium text-neutral-600 hover:text-neutral-900 transition-colors py-1 px-4 rounded-xl border border-neutral-300 hover:bg-neutral-50 cursor-pointer"
                     >
-                      Cancel &amp; Return
+                      Cancel Sign In
                     </button>
                   </div>
                 </div>
@@ -783,21 +757,7 @@ export const LoginPage = () => {
               )}
             </div>
 
-            {/* Offline / Local Mode Option */}
-            <div className="relative z-10 mt-3 pt-3 border-t border-neutral-300/70">
-              <button
-                type="button"
-                onClick={handleContinueAsGuest}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-400 bg-neutral-100 hover:bg-white py-2.5 text-xs font-semibold text-neutral-800 hover:text-neutral-900 transition-all active:scale-[0.98] shadow-2xs cursor-pointer"
-                title="Use Bacham 100% offline with zero sign-in required"
-              >
-                <UserIcon className="h-3.5 w-3.5 text-neutral-600" />
-                <span>⚡ Continue in Offline / Local Mode</span>
-              </button>
-              <p className="text-[10px] text-center text-neutral-500 mt-1">
-                Zero cloud setup required &bull; 100% private on your machine
-              </p>
-            </div>
+
 
             {/* Mode Switch (Sign in / Sign up) */}
             <div className="relative z-10 mt-4 text-center text-xs text-neutral-600">
