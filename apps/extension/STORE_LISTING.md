@@ -103,8 +103,7 @@ In the questionnaire:
 
 ### Privacy Policy URL
 Enter:
-`https://github.com/harshabacham/bacham-meeting-assistant/blob/main/apps/extension/PRIVACY_POLICY.md`  
-*(Or your custom domain: `https://bacham.app/privacy`)*
+`https://bacham.vercel.app/privacy`
 
 ---
 
