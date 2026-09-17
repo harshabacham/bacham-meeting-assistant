@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDown,
@@ -36,6 +36,30 @@ export default function Hero() {
     1: true,
     2: false,
   });
+  const [os, setOs] = useState<"windows" | "mac" | "linux" | "unknown">("unknown");
+  
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    if (userAgent.includes("mac")) {
+      setOs("mac");
+    } else if (userAgent.includes("win")) {
+      setOs("windows");
+    } else if (userAgent.includes("linux")) {
+      setOs("linux");
+    }
+  }, []);
+
+  const getDownloadLink = () => {
+    if (os === "windows") return "/downloads/bacham-setup.exe";
+    if (os === "mac") return "https://github.com/harshabacham/bacham-meeting-assistant/releases";
+    return "#downloads";
+  };
+
+  const getDownloadText = () => {
+    if (os === "windows") return "Download for Windows";
+    if (os === "mac") return "Download for macOS";
+    return "Download for free";
+  };
 
   const toggleAction = (idx: number) => {
     setActionItemChecked((prev) => ({ ...prev, [idx]: !prev[idx] }));
@@ -100,10 +124,10 @@ export default function Hero() {
               className="flex flex-wrap items-center gap-3.5 mb-4"
             >
               <a
-                href="#downloads"
+                href={getDownloadLink()}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-[15.5px] shadow-lg hover:shadow-xl transition-all active:scale-[0.98] cursor-pointer"
               >
-                <span>Download for free</span>
+                <span>{getDownloadText()}</span>
                 <ArrowDown size={16} strokeWidth={2.6} />
               </a>
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Download, Apple, Laptop, Terminal, ExternalLink, ShieldCheck, Info } from "lucide-react";
+import { Download, Laptop, Terminal, ExternalLink, ShieldCheck, Info } from "lucide-react";
+import { SiApple } from "react-icons/si";
 import { ChromeIcon } from "@/components/ui/ChromeIcon";
 import {
   NoBotsSticker,
@@ -39,13 +40,13 @@ export default function DownloadCTA() {
     },
     {
       name: "macOS",
-      icon: Apple,
+      icon: SiApple,
       format: "Universal DMG (Apple Silicon & Intel)",
       badge: "CoreAudio Loopback Support",
       href: releasesUrl,
       recommended: false,
       direct: false,
-      comingSoon: true,
+      comingSoon: false,
     },
     {
       name: "Linux",
