@@ -45,7 +45,7 @@ export default function DownloadCTA() {
       badge: "CoreAudio Loopback Support",
       href: releasesUrl,
       recommended: false,
-      direct: false,
+      direct: true,
       comingSoon: false,
     },
     {
@@ -140,7 +140,7 @@ export default function DownloadCTA() {
                         }`}
                       >
                         <Download size={13} strokeWidth={2.4} />
-                        <span>Download {p.name.includes("Windows") ? "EXE" : "ZIP"}</span>
+                        <span>Download {p.name.includes("Windows") ? "EXE" : p.name.includes("macOS") ? "DMG" : "ZIP"}</span>
                       </a>
                       {p.altHref && (
                         <div className="mt-2 text-center">
