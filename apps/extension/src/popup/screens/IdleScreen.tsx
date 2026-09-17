@@ -243,7 +243,7 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
       <div className="flex items-center justify-between px-5 pt-5 pb-2">
         <h1 className="text-[23px] font-extrabold text-white tracking-tight flex items-center gap-2">
           <span>REC Note</span>
-          <span className="w-2 h-2 rounded-full bg-[#BAFF29] shadow-[0_0_8px_rgba(186,255,41,0.6)]" />
+          <span className="w-2 h-2 rounded-full bg-[#BAFF29]" />
         </h1>
         
         {/* Desktop Companion Connection Pill */}
@@ -257,7 +257,7 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              isDesktopConnected ? 'bg-[#BAFF29] shadow-[0_0_6px_#BAFF29]' : 'bg-white/40'
+              isDesktopConnected ? 'bg-[#BAFF29]' : 'bg-white/40'
             }`}
           />
           <span>{isDesktopConnected ? 'App Connected' : 'Offline Vault'}</span>
@@ -311,16 +311,15 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* 2. Top Capture Config Bar: Video/Audio Switch + Mic Toggle */}
         <div className="flex items-center gap-2 relative z-30">
           
           {/* Segmented Mode Selector: Video + Audio vs Only Audio */}
-          <div className="flex-1 flex items-center p-1 rounded-xl bg-[#141517] border border-white/[0.06] shadow-xs">
+          <div className="flex-1 min-w-0 flex items-center p-1 rounded-xl bg-[#141517] border border-white/[0.06] shadow-xs">
             <button
               type="button"
               onClick={() => void updateConfig({ ...captureConfig, video: true, captureMode: 'tab' })}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+              className={`flex-1 min-w-0 py-1.5 px-2 rounded-lg text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
                 isVideoMode
                   ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-sm'
                   : 'text-white/50 hover:text-white hover:bg-white/5'
@@ -330,11 +329,10 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
               <Video size={13} className="shrink-0" />
               <span className="truncate">Video + Audio</span>
             </button>
-
             <button
               type="button"
               onClick={() => void updateConfig({ ...captureConfig, video: false, captureMode: 'audio' })}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
+              className={`flex-1 min-w-0 py-1.5 px-2 rounded-lg text-[11.5px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none ${
                 !isVideoMode
                   ? 'bg-[#BAFF29] text-[#0A0A0C] shadow-sm'
                   : 'text-white/50 hover:text-white hover:bg-white/5'
@@ -346,43 +344,33 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
             </button>
           </div>
 
-          {/* Microphone Split Toggle & Setup Instructions */}
-          <div className="relative flex items-center rounded-xl border border-white/[0.06] bg-[#141517] overflow-hidden shadow-xs">
-            <button
-              type="button"
-              onClick={async () => {
-                const nextState = !isMicEnabled;
-                await updateConfig({ ...captureConfig, includeMicrophone: nextState });
-                if (nextState && micPermissionState !== 'granted') {
-                  setMicGuideModalOpen(true);
-                }
-              }}
-              title={isMicEnabled ? 'Microphone Active (Click to Mute)' : 'Microphone Muted (Click to Turn On)'}
-              className={`flex items-center gap-1.5 px-3 py-2.5 transition-all text-[13px] font-semibold cursor-pointer ${
-                isMicEnabled
-                  ? 'bg-[#BAFF29]/15 text-[#BAFF29]'
-                  : 'text-white/40 hover:text-white/70 hover:bg-[#1A1C20]'
-              }`}
-            >
-              {isMicEnabled ? <Mic size={16} /> : <MicOff size={16} />}
-              {isMicEnabled && micPermissionState === 'denied' && (
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Microphone blocked by Chrome" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMicGuideModalOpen(true)}
-              title="Microphone & Audio Setup Instructions"
-              className="px-2 py-2.5 hover:bg-white/5 border-l border-white/[0.05] text-white/40 hover:text-[#BAFF29] transition-colors cursor-pointer"
-            >
-              <HelpCircle size={13} />
-            </button>
-          </div>
+          {/* Microphone Toggle (Simplified) */}
+          <button
+            type="button"
+            onClick={async () => {
+              const nextState = !isMicEnabled;
+              await updateConfig({ ...captureConfig, includeMicrophone: nextState });
+              if (nextState && micPermissionState !== 'granted') {
+                setMicGuideModalOpen(true);
+              }
+            }}
+            title={isMicEnabled ? 'Microphone Active (Click to Mute)' : 'Microphone Muted (Click to Turn On)'}
+            className={`relative p-2.5 shrink-0 rounded-xl border transition-colors shadow-xs cursor-pointer ${
+              isMicEnabled
+                ? 'border-[#BAFF29]/30 bg-[#BAFF29]/10 text-[#BAFF29] hover:bg-[#BAFF29]/20'
+                : 'border-white/[0.06] bg-[#141517] hover:bg-[#1A1C20] text-white/70 hover:text-white'
+            }`}
+          >
+            {isMicEnabled ? <Mic size={16} /> : <MicOff size={16} />}
+            {isMicEnabled && micPermissionState === 'denied' && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Microphone blocked by Chrome" />
+            )}
+          </button>
 
           {/* Settings / Sliders Button */}
           <button
             onClick={() => setSettingsModalOpen(!settingsModalOpen)}
-            className="p-2.5 rounded-xl border border-white/[0.06] bg-[#141517] hover:bg-[#1A1C20] text-white/70 hover:text-white transition-colors shadow-xs cursor-pointer"
+            className="p-2.5 shrink-0 rounded-xl border border-white/[0.06] bg-[#141517] hover:bg-[#1A1C20] text-white/70 hover:text-white transition-colors shadow-xs cursor-pointer"
             title="Recording Options"
           >
             <SlidersHorizontal size={16} />
@@ -395,7 +383,7 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onReturnToRecording && onReturnToRecording()}
-            className="w-full py-3 px-4 rounded-2xl bg-rose-600/90 hover:bg-rose-500 border border-rose-500/40 text-white font-bold text-[14px] flex items-center justify-between shadow-lg shadow-rose-600/25 transition-all cursor-pointer group"
+            className="w-full py-3 px-4 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white font-semibold text-[14px] flex items-center justify-between transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-2.5">
               <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
@@ -416,7 +404,7 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
             whileTap={{ scale: 0.98 }}
             onClick={handleStartCapture}
             disabled={isLoading}
-            className="w-full py-3.5 px-6 rounded-2xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] font-black text-[15px] flex items-center justify-center gap-2 shadow-lg shadow-[#BAFF29]/20 transition-all cursor-pointer"
+            className="w-full py-3.5 px-6 rounded-xl bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] font-bold text-[15px] flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(186,255,41,0.15)] transition-all cursor-pointer"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
@@ -514,9 +502,9 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
         {/* 5. Clean Rounded Notes Cards List */}
         <div className="space-y-3 pb-6">
           {savedNotes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed border-white/[0.05] text-center bg-[#141517]/50">
-              <span className="text-[13px] font-bold text-white/70">No notes recorded yet</span>
-              <span className="text-[11.5px] text-white/40 mt-1 max-w-[200px]">
+            <div className="flex flex-col items-center justify-center p-8 rounded-xl text-center text-white/50">
+              <span className="text-[13px] font-medium text-white/70">No notes recorded yet</span>
+              <span className="text-[11.5px] mt-1 max-w-[200px]">
                 Click "+ New REC Note" above to capture your first meeting!
               </span>
             </div>
@@ -535,9 +523,9 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
                       chrome.runtime.sendMessage({ type: 'OPEN_APP', payload: { route } }).catch(() => {});
                       onOpenApp?.();
                     }}
-                    className="p-4 rounded-2xl border border-white/[0.05] bg-[#141517] hover:border-[#BAFF29]/30 hover:bg-[#1A1C20] transition-all cursor-pointer shadow-xs flex flex-col justify-between min-h-[86px]"
+                    className="p-4 rounded-xl border border-white/[0.03] bg-[#141517] hover:border-white/[0.1] hover:bg-[#1A1C20] transition-all cursor-pointer flex flex-col justify-between min-h-[86px]"
                   >
-                    <h3 className="text-[14.5px] font-bold text-white leading-tight">
+                    <h3 className="text-[14px] font-semibold text-white leading-tight">
                       {note.title}
                     </h3>
                     <div className="flex items-center justify-between mt-3 text-[12px] text-white/40 font-medium">

@@ -99,6 +99,9 @@ export function useGlobalTasks() {
 
   useEffect(() => {
     fetchTasks();
+    const handler = () => fetchTasks();
+    window.addEventListener('bacham_tasks_updated', handler);
+    return () => window.removeEventListener('bacham_tasks_updated', handler);
   }, []);
 
   const toggleTaskStatus = async (task: GlobalActionItem) => {
@@ -115,6 +118,7 @@ export function useGlobalTasks() {
       const customTasks: GlobalActionItem[] = JSON.parse(localCustomRaw);
       const updatedCustom = customTasks.map(t => t.id === task.id ? { ...t, status: newStatus } : t);
       localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustom));
+      window.dispatchEvent(new Event('bacham_tasks_updated'));
     }
 
     if (task.id.startsWith('note_task_') && task.lectureId) {

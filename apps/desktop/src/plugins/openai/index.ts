@@ -37,6 +37,17 @@ const OpenAIPlugin: BachamPlugin = {
         throw new Error('Invalid OpenAI API Key format. Must start with "sk-".');
       }
       
+      try {
+        const response = await fetch('https://api.openai.com/v1/models', {
+          headers: { 'Authorization': `Bearer ${trimmed}` }
+        });
+        if (!response.ok) {
+          throw new Error('Invalid OpenAI API Key. Please check your credentials.');
+        }
+      } catch (e: any) {
+        throw new Error(e.message || 'Invalid API Key');
+      }
+      
       await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {

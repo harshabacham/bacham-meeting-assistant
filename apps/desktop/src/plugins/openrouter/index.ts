@@ -31,7 +31,24 @@ const OpenRouterPlugin: BachamPlugin = {
     type: 'api_key',
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
-      await AuthManager.setToken(PLUGIN_ID, token);
+      
+      const trimmed = token.trim();
+      if (!trimmed.startsWith('sk-or-v1-')) {
+        throw new Error('Invalid OpenRouter API Key format. Must start with sk-or-v1-');
+      }
+
+      try {
+        const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+          headers: { 'Authorization': `Bearer ${trimmed}` }
+        });
+        if (!response.ok) {
+          throw new Error('Invalid OpenRouter API Key. Please check your credentials.');
+        }
+      } catch (e: any) {
+        throw new Error(e.message || 'Invalid API Key');
+      }
+
+      await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {
       await AuthManager.removeToken(PLUGIN_ID);

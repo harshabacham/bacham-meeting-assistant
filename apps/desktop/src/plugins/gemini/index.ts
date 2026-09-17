@@ -32,12 +32,21 @@ const GeminiPlugin: BachamPlugin = {
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
       
-      // Basic validation just to ensure it's not purely whitespace
-      if (token.trim().length < 10) {
+      const trimmed = token.trim();
+      if (trimmed.length < 10) {
         throw new Error('API token appears too short or invalid.');
       }
       
-      await AuthManager.setToken(PLUGIN_ID, token);
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${trimmed}`);
+        if (!response.ok) {
+          throw new Error('Invalid Google Gemini API Key. Please check your credentials.');
+        }
+      } catch (e: any) {
+        throw new Error(e.message || 'Invalid API Key');
+      }
+      
+      await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {
       await AuthManager.removeToken(PLUGIN_ID);

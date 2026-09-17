@@ -32,12 +32,23 @@ const GrokPlugin: BachamPlugin = {
     authenticate: async (token?: string) => {
       if (!token) throw new Error('API token is required');
       
-      // xAI API keys typically start with xai-
-      if (!token.startsWith('xai-')) {
+      const trimmed = token.trim();
+      if (!trimmed.startsWith('xai-')) {
         throw new Error('Invalid Grok API Key format. Must start with xai-');
       }
       
-      await AuthManager.setToken(PLUGIN_ID, token);
+      try {
+        const response = await fetch('https://api.x.ai/v1/models', {
+          headers: { 'Authorization': `Bearer ${trimmed}` }
+        });
+        if (!response.ok) {
+          throw new Error('Invalid Grok API Key. Please check your credentials.');
+        }
+      } catch (e: any) {
+        throw new Error(e.message || 'Invalid API Key');
+      }
+      
+      await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {
       await AuthManager.removeToken(PLUGIN_ID);

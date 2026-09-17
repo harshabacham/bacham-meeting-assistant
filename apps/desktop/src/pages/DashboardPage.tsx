@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { pluginManager } from "@/core/integrations/PluginManager";
 import { useLectureStore } from "@/shared/stores/lectureStore";
 import { useFolderStore } from "@/shared/stores/folderStore";
 import { TauriClient, Flashcard } from "@/infrastructure/tauri-client";
@@ -179,6 +180,45 @@ export function DashboardPage() {
     localStorage.setItem('bacham_dismissed_extension_banner', 'true');
   };
 
+  const [hasAiConnection, setHasAiConnection] = useState<boolean>(true);
+  const [dismissedAiBanner, setDismissedAiBanner] = useState<boolean>(() => {
+    return localStorage.getItem('bacham_dismissed_ai_banner') === 'true';
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkAiConnections = async () => {
+      const aiPlugins = pluginManager.getPlugins().filter(p => p.manifest.category === 'AI Providers');
+      let connected = false;
+      for (const p of aiPlugins) {
+        if (p.auth?.type === 'none') {
+          connected = true;
+          break;
+        } else if (p.auth?.isConnected) {
+          try {
+            const isConn = await p.auth.isConnected();
+            if (isConn) {
+              connected = true;
+              break;
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+      if (isMounted) {
+        setHasAiConnection(connected);
+      }
+    };
+    checkAiConnections();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleDismissAiBanner = () => {
+    setDismissedAiBanner(true);
+    localStorage.setItem('bacham_dismissed_ai_banner', 'true');
+  };
+
   const handleOpenExtensionLink = async () => {
     const url = 'https://github.com/harshabacham/bacham-meeting-assistant#browser-extension';
     try {
@@ -263,9 +303,7 @@ export function DashboardPage() {
                 <h1 className="text-[27px] font-semibold text-[var(--text-primary)] tracking-tight leading-tight mt-1">
                   {t('dashboard.title')}
                 </h1>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  {t('dashboard.subtitle')} - {getTimeOfDay()}, {firstName}.
-                </p>
+
               </div>
             </div>
             <div className="flex items-center gap-5 mt-1 flex-wrap">
@@ -355,6 +393,59 @@ export function DashboardPage() {
             )}
           </AnimatePresence>
 
+          {/* ── Connect AI Provider Banner ───────────────────── */}
+          <AnimatePresence>
+            {!hasAiConnection && !dismissedAiBanner && (
+              <motion.div
+                initial={shouldReduceMotion ? {} : { opacity: 0, y: -6, height: 0 }}
+                animate={shouldReduceMotion ? {} : { opacity: 1, y: 0, height: 'auto' }}
+                exit={shouldReduceMotion ? {} : { opacity: 0, y: -6, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 shadow-[0_1px_3px_rgba(28,28,26,0.04)] relative mt-2">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center shrink-0 text-[var(--accent)]">
+                      <Zap size={18} />
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-[var(--text-primary)]">
+                          Connect an AI Provider
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--border)]">
+                          Required
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-[var(--text-secondary)] truncate">
+                        Add an API key to unlock automated meeting summaries, action item detection, and flashcards.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/settings?tab=integrations')}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0A0A0C] text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span>Connect API</span>
+                      <ArrowRight size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDismissAiBanner}
+                      className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)] transition-colors cursor-pointer"
+                      title="Dismiss"
+                      aria-label="Dismiss AI connection banner"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* ── Grid Layout ────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-2">
             
@@ -364,7 +455,7 @@ export function DashboardPage() {
               {continueLecture ? (
                 <button
                   onClick={() => navigate(`/lectures/${continueLecture.id}`)}
-                  className="flex-1 text-left group relative flex flex-col justify-center px-6 py-6 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer"
+                  className="w-full h-[160px] text-left group relative flex flex-col justify-center px-6 py-6 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer"
                   aria-label={`Continue lecture: ${continueLecture.title || "Untitled"}`}
                 >
                   <span className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-[var(--accent)]" aria-hidden="true" />
@@ -391,7 +482,7 @@ export function DashboardPage() {
                   </div>
                 </button>
               ) : (
-                <div className="flex-1 flex flex-col justify-center items-start gap-3 px-5 py-6 rounded-lg border border-[var(--border)] border-dashed bg-transparent">
+                <div className="w-full h-[160px] flex flex-col justify-center items-start gap-3 px-5 py-6 rounded-lg border border-[var(--border)] border-dashed bg-transparent">
                   <BookOpen size={18} className="text-[var(--text-muted)] opacity-50" aria-hidden="true" />
                   <div>
                     <p className="text-[13px] font-medium text-[var(--text-secondary)]">No lectures yet</p>
@@ -407,7 +498,7 @@ export function DashboardPage() {
               {dueCards.length > 0 ? (
                 <button
                   onClick={() => navigate("/lectures")}
-                  className="flex-1 text-left group flex items-center gap-5 px-6 py-6 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer"
+                  className="w-full h-[160px] text-left group flex items-center gap-5 px-6 py-6 rounded-xl bg-white dark:bg-[var(--surface)] border border-[#E5E4DC] dark:border-white/10 hover:border-[#D1D0C7] dark:hover:border-white/20 shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] hover:shadow-[0_10px_20px_-5px_rgba(28,28,26,0.07),0_3px_6px_-2px_rgba(28,28,26,0.03)] dark:shadow-none dark:hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.5)] hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer"
                 >
                   <div className="p-2.5 rounded bg-[var(--surface-raised)] shrink-0">
                     <Zap size={16} className="text-[var(--text-primary)]" aria-hidden="true" />
@@ -425,7 +516,7 @@ export function DashboardPage() {
                   </div>
                 </button>
               ) : (
-                <div className="flex-1 flex flex-col justify-center items-start gap-3 px-5 py-6 rounded-lg border border-[var(--border)] bg-transparent">
+                <div className="w-full h-[160px] flex flex-col justify-center items-start gap-3 px-5 py-6 rounded-lg border border-[var(--border)] bg-transparent">
                   <Zap size={18} className="text-[var(--text-muted)] opacity-30" aria-hidden="true" />
                   <div>
                     <p className="text-[13px] font-medium text-[var(--text-secondary)]">All caught up</p>
@@ -438,8 +529,8 @@ export function DashboardPage() {
             {/* Action Items for YOU */}
             <motion.div {...fadeUp} className="flex flex-col gap-3">
               <Eyebrow>{t('dashboard.action_items_for_you', 'Action items for you')}</Eyebrow>
-              <div className="flex-1 flex flex-col gap-2 p-4 rounded-xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[var(--surface)] shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] overflow-hidden h-full min-h-[160px]">
-                <div className="flex items-center justify-between mb-1">
+              <div className="w-full h-[160px] flex flex-col gap-2 p-4 rounded-xl border border-[#E5E4DC] dark:border-white/10 bg-white dark:bg-[var(--surface)] shadow-[0_1px_3px_rgba(28,28,26,0.04),0_1px_2px_rgba(28,28,26,0.02)] overflow-hidden">
+                <div className="flex items-center justify-between mb-1 shrink-0">
                   <div className="flex items-center gap-2">
                     <CheckSquare size={14} className="text-[var(--accent)]" />
                     <span className="text-[12px] font-semibold text-[var(--text-primary)] uppercase tracking-wider">{t('dashboard.your_tasks', 'Your Tasks')}</span>
@@ -455,46 +546,48 @@ export function DashboardPage() {
                 </div>
                 
                 {loadingTasks ? (
-                  <div className="flex-1 flex flex-col justify-center items-center gap-2 opacity-50">
+                  <div className="flex-1 flex flex-col justify-center items-center gap-2 opacity-50 min-h-0">
                     <div className="w-4 h-4 rounded-full border-2 border-[var(--border)] border-t-[var(--accent)] animate-spin" />
                   </div>
                 ) : myTasks.length === 0 ? (
-                  <div className="flex-1 flex flex-col justify-center items-center gap-2 mt-4 text-center">
+                  <div className="flex-1 flex flex-col justify-center items-center gap-2 mt-4 text-center min-h-0">
                     <CheckSquare size={20} className="text-[var(--text-muted)] opacity-30" />
                     <p className="text-[12px] text-[var(--text-muted)]">{t('dashboard.no_tasks', 'No action items assigned to you.')}</p>
                   </div>
                 ) : (
-                  myTasks.map(item => {
-                    const isDone = item.status === 'done';
-                    return (
-                      <div key={item.id} onClick={() => item.lectureId && navigate(`/lectures/${item.lectureId}`)} className={`flex items-start gap-3 p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors group cursor-pointer border border-transparent hover:border-[var(--border)] ${isDone ? 'opacity-50' : ''}`}>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleTaskStatus(item);
-                          }}
-                          className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                            isDone 
-                              ? 'bg-[var(--text-muted)] border-transparent text-[var(--bg)]' 
-                              : 'border-[var(--border)] group-hover:border-[var(--accent)]/50 text-transparent'
-                          }`}
-                        >
-                          {isDone && <CheckSquare className="w-2.5 h-2.5" />}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-[13px] font-medium truncate ${isDone ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]'}`}>
-                            {item.task}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[10px] text-[var(--text-muted)] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] truncate max-w-[120px]">
-                            {item.lectureTitle}
-                          </span>
-                          <span className="text-[10px] text-[var(--text-muted)] opacity-50">• {item.priority}</span>
+                  <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-1 pb-1 scrollbar-thin scrollbar-thumb-[var(--border)] scrollbar-track-transparent">
+                    {myTasks.map(item => {
+                      const isDone = item.status === 'done';
+                      return (
+                        <div key={item.id} onClick={() => item.lectureId && navigate(`/lectures/${item.lectureId}`)} className={`flex items-start gap-3 p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors group cursor-pointer border border-transparent hover:border-[var(--border)] ${isDone ? 'opacity-50' : ''}`}>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTaskStatus(item);
+                            }}
+                            className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                              isDone 
+                                ? 'bg-[var(--text-muted)] border-transparent text-[var(--bg)]' 
+                                : 'border-[var(--border)] group-hover:border-[var(--accent)]/50 text-transparent'
+                            }`}
+                          >
+                            {isDone && <CheckSquare className="w-2.5 h-2.5" />}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[13px] font-medium truncate ${isDone ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]'}`}>
+                              {item.task}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                            <span className="text-[10px] text-[var(--text-muted)] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] truncate max-w-[120px]">
+                              {item.lectureTitle}
+                            </span>
+                            <span className="text-[10px] text-[var(--text-muted)] opacity-50">• {item.priority}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </motion.div>

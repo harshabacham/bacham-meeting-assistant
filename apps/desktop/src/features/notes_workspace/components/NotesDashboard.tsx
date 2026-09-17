@@ -187,8 +187,8 @@ export function NotesDashboard({
     return (
         <div className="flex-1 flex flex-col h-full bg-[var(--bg)] text-[var(--text-primary)] overflow-hidden font-sans relative selection:bg-[var(--surface-hover)]">
 
-            {/* Sticky top bar - added pr-[140px] to prevent overlapping with window controls */}
-            <div className="h-11 shrink-0 flex items-center justify-between pl-5 pr-[140px] sticky top-0 bg-[var(--bg)] z-20 border-b border-[var(--border)]/40">
+            {/* Sticky top bar - added pr-[100px] to prevent overlapping with window controls */}
+            <div className="h-11 shrink-0 flex items-center justify-between pl-5 pr-[100px] sticky top-0 bg-[var(--bg)] z-20 border-b border-[var(--border)]/40">
                 <div className="flex items-center gap-1.5 min-w-0">
                     {activeFolderId && activeFolder ? (
                         <>

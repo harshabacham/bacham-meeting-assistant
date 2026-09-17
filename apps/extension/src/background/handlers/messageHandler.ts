@@ -724,6 +724,36 @@ export function createMessageHandler(
         return { success: true };
       }
 
+      case 'GET_OFFLINE_METADATA' as any: {
+        const { sessionId } = message.payload as { sessionId: string };
+        const stored = await storage.get(['currentSession']);
+        const raw = await chrome.storage.local.get(['bacham_saved_notes']);
+        const savedNotes = raw.bacham_saved_notes || [];
+        const matchingNote = Array.isArray(savedNotes)
+          ? savedNotes.find((n: any) => n.id === sessionId)
+          : null;
+        return { success: true, data: { currentSession: stored.currentSession, matchingNote } };
+      }
+
+      case 'MARK_OFFLINE_SYNC_PENDING' as any: {
+        const { sessionId } = message.payload as { sessionId: string };
+        const raw = await chrome.storage.local.get(['bacham_saved_notes']);
+        const savedNotes = raw.bacham_saved_notes || [];
+        const matchingNote = Array.isArray(savedNotes)
+          ? savedNotes.find((n: any) => n.id === sessionId)
+          : null;
+        
+        if (matchingNote) {
+          const updatedNotes = savedNotes.map((n: any) =>
+            n.id === sessionId ? { ...n, synced: false } : n
+          );
+          await chrome.storage.local.set({ bacham_saved_notes: updatedNotes, hasPendingOfflineSync: true });
+        } else {
+          await chrome.storage.local.set({ hasPendingOfflineSync: true });
+        }
+        return { success: true };
+      }
+
       default:
         log.warn(MODULE, 'Unknown message type', { type: message.type });
         return { success: false, error: `Unknown message type: ${String(message.type)}` };

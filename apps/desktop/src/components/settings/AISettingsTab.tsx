@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { pluginManager } from '@/core/integrations/PluginManager';
 import { 
@@ -12,6 +12,34 @@ export const AISettingsTab: React.FC = () => {
   const navigate = useNavigate();
 
   const aiPlugins = pluginManager.getPlugins().filter(p => p.manifest.category === 'AI Providers');
+
+  const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const updateStatuses = async () => {
+      const results: Record<string, boolean> = {};
+      for (const p of aiPlugins) {
+        if (p.auth?.type === 'none') {
+          results[p.manifest.id] = true;
+        } else if (p.auth?.isConnected) {
+          try {
+            results[p.manifest.id] = await p.auth.isConnected();
+          } catch {
+            results[p.manifest.id] = false;
+          }
+        } else {
+          // If no auth defined, assume it doesn't need one
+          results[p.manifest.id] = true;
+        }
+      }
+      if (isMounted) {
+        setConnectedMap(results);
+      }
+    };
+    updateStatuses();
+    return () => { isMounted = false; };
+  }, []);
 
   return (
     <div className="space-y-6 w-full max-w-4xl">
@@ -50,15 +78,20 @@ export const AISettingsTab: React.FC = () => {
           {aiPlugins.map((plugin) => {
             const isSelected = settings?.aiProvider === plugin.manifest.id;
             const isOffline = plugin.manifest.id === 'bacham.ollama' || plugin.manifest.id === 'bacham.lmstudio';
+            const isConnected = connectedMap[plugin.manifest.id];
 
             return (
               <div
                 key={plugin.manifest.id}
-                onClick={() => updateSettings({ aiProvider: plugin.manifest.id })}
-                className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                onClick={() => {
+                  if (isConnected) updateSettings({ aiProvider: plugin.manifest.id });
+                }}
+                className={`p-4 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
                   isSelected
-                    ? 'bg-primary/5 border-primary shadow-sm ring-1 ring-primary/30'
-                    : 'bg-surface-raised border-border hover:border-foreground/20 hover:bg-surface-hover'
+                    ? 'bg-primary/5 border-primary shadow-sm ring-1 ring-primary/30 cursor-pointer'
+                    : isConnected
+                      ? 'bg-surface-raised border-border hover:border-foreground/20 hover:bg-surface-hover cursor-pointer'
+                      : 'bg-surface border-border/40 opacity-60 cursor-not-allowed grayscale-[0.3]'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -73,8 +106,12 @@ export const AISettingsTab: React.FC = () => {
                     <span className="flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
                       <CheckCircle2 size={11} /> Active
                     </span>
-                  ) : (
+                  ) : isConnected ? (
                     <span className="text-[10px] text-muted-foreground">Select</span>
+                  ) : (
+                    <span className="text-[9px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Key Required
+                    </span>
                   )}
                 </div>
 

@@ -39,7 +39,7 @@ This builds, validates, and packages the extension into:
 ```markdown
 BACHAM is an open-source, privacy-first lecture and meeting capture engine designed for students, researchers, and professionals.
 
-Capture audio, video, and slide screenshots directly from your browser tabs (Google Meet, Zoom, Microsoft Teams, YouTube lectures, and webinars) and sync them with your local companion desktop assistant for instant transcription and smart structured notes.
+Capture audio, video, and slide screenshots directly from your browser tabs (including popular web conferencing and video platforms) and sync them with your local companion desktop assistant for instant transcription and smart structured notes.
 
 ✨ KEY FEATURES
 
@@ -59,7 +59,7 @@ Open BACHAM in Chrome's native side panel to see live notes, time-stamped action
 Optionally connect your personal Google Gemini API key to generate instant on-demand meeting summaries, key decisions, and action items directly in your browser.
 
 🎯 COMPATIBILITY
-Works seamlessly on Google Meet, Zoom Web, Microsoft Teams, Webex, YouTube educational lectures, Coursera, and any web-based conferencing or video platform.
+Works seamlessly on any web-based conferencing, educational, or video platform directly from your browser.
 
 🛠️ OPEN SOURCE
 BACHAM is free, transparent, and open-source.

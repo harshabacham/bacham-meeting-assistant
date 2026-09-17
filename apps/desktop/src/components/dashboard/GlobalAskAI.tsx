@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  CheckCircle2, Check, X, 
+  CheckCircle2, Check, X, Plus,
   Calendar, Clock, Video, CalendarPlus, FileText, Search,
   Play, Pause, RotateCcw, Copy, CheckSquare, ExternalLink, ArrowRight
 } from 'lucide-react';
@@ -637,7 +637,7 @@ Best regards,`;
               {!whisperQuery && activeTab === 'tasks' && (
                 <div className="flex flex-col gap-2 min-h-[160px] max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
                   {pendingTasks.length > 0 ? (
-                    pendingTasks.slice(0, 3).map((t) => (
+                    pendingTasks.map((t) => (
                       <div
                         key={t.id}
                         className="p-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex flex-col gap-1.5"
@@ -689,20 +689,20 @@ Best regards,`;
                     <div className="py-8 text-center text-xs text-[var(--text-muted)] flex flex-col items-center gap-1.5">
                       <CheckCircle2 size={16} className="text-emerald-400" />
                       <span>All action items cleared!</span>
+                      <button
+                        onClick={() => {
+                          setIsExpanded(false);
+                          navigate('/tasks');
+                        }}
+                        className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shadow-xs"
+                        title="Add Task"
+                      >
+                        <Plus size={14} className="text-[var(--accent)]" />
+                        <span className="font-semibold text-xs">Add Task</span>
+                      </button>
                     </div>
                   )}
 
-                  {pendingTasks.length > 3 && (
-                    <button
-                      onClick={() => {
-                        setIsExpanded(false);
-                        navigate('/tasks');
-                      }}
-                      className="text-center text-[11px] font-semibold text-[var(--accent)] hover:underline py-1"
-                    >
-                      View all {pendingTasks.length} tasks in Action Items →
-                    </button>
-                  )}
                 </div>
               )}
 

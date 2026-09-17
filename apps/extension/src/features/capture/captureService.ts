@@ -600,12 +600,12 @@ export function createCaptureService(
       });
 
       try {
-        const stored = await chrome.storage.local.get(['currentSession', 'bacham_saved_notes']);
-        const currSession = stored.currentSession;
-        const savedNotes = stored.bacham_saved_notes || [];
-        const matchingNote = Array.isArray(savedNotes)
-          ? savedNotes.find((n: any) => n.id === currentSessionId)
-          : null;
+        const response = await chrome.runtime.sendMessage({ 
+          type: 'GET_OFFLINE_METADATA', 
+          payload: { sessionId: currentSessionId } 
+        });
+        const currSession = response?.data?.currentSession;
+        const matchingNote = response?.data?.matchingNote;
 
         const startedAt = currSession?.startedAt || new Date().toISOString();
         const endedAt = new Date().toISOString();
@@ -628,14 +628,10 @@ export function createCaptureService(
         });
 
         // Mark note as unsynced in local storage and indicate pending sync
-        if (Array.isArray(savedNotes) && matchingNote) {
-          const updatedNotes = savedNotes.map((n: any) =>
-            n.id === currentSessionId ? { ...n, synced: false } : n
-          );
-          await chrome.storage.local.set({ bacham_saved_notes: updatedNotes, hasPendingOfflineSync: true });
-        } else {
-          await chrome.storage.local.set({ hasPendingOfflineSync: true });
-        }
+        await chrome.runtime.sendMessage({ 
+          type: 'MARK_OFFLINE_SYNC_PENDING', 
+          payload: { sessionId: currentSessionId } 
+        });
 
         log.info(MODULE, 'Successfully persisted offline recording into IndexedDB vault with zero data loss');
       } catch (vaultErr: any) {

@@ -16,12 +16,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps): React.R
   return (
     <div className="flex flex-col animate-fade-in" style={{ background: 'var(--bg)', minHeight: 460 }}>
       {/* Hero */}
-      <div className="flex flex-col items-center text-center px-6 pt-10 pb-6">
-        <div className="relative mb-5">
-          <div className="absolute inset-0 rounded-2xl" style={{ background: 'radial-gradient(circle, rgba(10,132,255,0.2) 0%, transparent 70%)', filter: 'blur(12px)', transform: 'scale(1.2)' }} />
-          <img src={logo} alt="BACHAM" className="relative w-16 h-16 rounded-2xl object-cover" style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }} />
-        </div>
-        <h1 className="text-[24px] font-bold leading-tight mb-1.5" style={{ color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+      <div className="flex flex-col items-center text-center px-6 pt-12 pb-8">
+        <img src={logo} alt="BACHAM" className="w-16 h-16 rounded-2xl object-cover mb-4" />
+        <h1 className="text-[22px] font-semibold leading-tight mb-1" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
           BACHAM
         </h1>
         <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
@@ -30,44 +27,36 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps): React.R
       </div>
 
       {/* Feature list */}
-      <div className="flex-1 px-4">
-        <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
-          {features.map(({ icon: Icon, color, label, desc }, idx) => (
-            <div key={label}>
-              {idx > 0 && <div style={{ height: 1, background: 'var(--separator)', marginLeft: 52 }} />}
-              <div className="flex items-center px-4 py-3.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mr-3.5 flex-shrink-0" style={{ background: `${color}18` }}>
-                  <Icon size={15} style={{ color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium leading-tight" style={{ color: 'var(--text-primary)' }}>{label}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
-                </div>
-              </div>
+      <div className="flex-1 px-8 flex flex-col justify-center gap-6">
+        {features.map(({ icon: Icon, color, label, desc }) => (
+          <div key={label} className="flex items-start gap-4">
+            <div className="flex-shrink-0 mt-0.5">
+              <Icon size={22} style={{ color }} />
             </div>
-          ))}
-        </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-[14px] font-medium leading-tight mb-1" style={{ color: 'var(--text-primary)' }}>{label}</p>
+              <p className="text-[12px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{desc}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* CTA */}
-      <div className="px-4 pt-4 pb-5">
+      <div className="px-6 pt-8 pb-6">
         <button
           onClick={onComplete}
-          className="btn-apple w-full gap-2"
+          className="w-full flex items-center justify-center gap-2 rounded-xl transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
           style={{
             height: 48,
             background: 'var(--accent)',
-            color: '#fff',
+            color: 'var(--bg)', // Use dark text for contrast against the bright accent
             fontSize: 15,
             fontWeight: 600,
-            boxShadow: '0 0 24px rgba(10,132,255,0.35)',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 32px rgba(10,132,255,0.5)'; }}
-          onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 0 24px rgba(10,132,255,0.35)'; }}>
+          }}>
           Get Started
-          <ChevronRight size={15} />
+          <ChevronRight size={16} />
         </button>
-        <p className="text-[11px] text-center mt-2.5" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-[11px] text-center mt-3" style={{ color: 'var(--text-muted)' }}>
           Requires BACHAM Desktop App
         </p>
       </div>

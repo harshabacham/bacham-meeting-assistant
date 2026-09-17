@@ -111,7 +111,7 @@ export function ComingUpCalendarWidget() {
     </div>
 
     {/* Main Agenda Card matching Granola */}
-      <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col divide-y divide-[var(--border)]/40 relative">
+      <div className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col divide-y divide-dashed divide-[var(--border)] relative">
         {!isConnected ? (
           <div className="py-8 text-center text-xs text-[var(--text-muted)] flex flex-col items-center gap-3">
             <p>Connect Google Calendar to sync your real meetings, study sessions, and events.</p>
@@ -127,7 +127,7 @@ export function ComingUpCalendarWidget() {
             No upcoming events scheduled in your calendar.
           </div>
         ) : (
-          currentEvents.map((evt) => (
+          currentEvents.map((evt, index) => (
             <div 
               key={evt.id} 
               draggable={true}
@@ -140,33 +140,39 @@ export function ComingUpCalendarWidget() {
                 }));
                 e.dataTransfer.effectAllowed = 'copyMove';
               }}
-              className="py-3.5 first:pt-1 last:pb-1 flex items-center gap-6 group hover:bg-[var(--surface-hover)]/50 rounded-xl px-2 transition-colors cursor-pointer relative"
+              className="py-3.5 flex items-start group hover:bg-[var(--surface-hover)]/30 transition-colors cursor-pointer relative -mx-2 px-2 rounded-xl"
               onClick={() => handleOpenEventNote(evt)}
             >
-              {/* Date Column */}
-              <div className="flex items-baseline gap-2 shrink-0 min-w-[110px]">
-                <span className="text-2xl font-mono font-bold text-[var(--text-primary)]">
+              {/* Date Column (Fixed Width to guarantee divider alignment) */}
+              <div className="w-[115px] shrink-0 flex items-start gap-2.5 overflow-hidden">
+                <span className="text-2xl font-serif font-medium leading-[0.8] text-[var(--text-primary)] tracking-tight mt-0.5">
                   {evt.dayNum}
                 </span>
-                <div className="flex items-center gap-1 text-xs text-[var(--text-muted)] font-medium">
-                  <span>{evt.monthStr}</span>
-                  <span>{evt.dayOfWeek}</span>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--text-primary)] leading-none">
+                    <span className="truncate">{evt.monthStr}</span>
+                    {/* Add a red dot for the first item on the first page as a stand-in for 'Today' if not explicitly defined */}
+                    {(evt.isToday || (index === 0 && pageIndex === 0)) && (
+                      <div className="w-1 h-1 rounded-full bg-[#E5483B] shrink-0" />
+                    )}
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] leading-none mt-0.5 truncate">{evt.dayOfWeek}</span>
                 </div>
               </div>
 
               {/* Event Content with Vertical Line */}
-              <div className="flex-1 flex items-center gap-4 min-w-0">
+              <div className="flex-1 flex items-start gap-5 min-w-0 pl-1">
                 <div
-                  className="w-[2px] h-8 rounded-full shrink-0"
-                  style={{ backgroundColor: evt.color || '#ef4444' }}
+                  className="w-[2px] h-[28px] rounded-full shrink-0"
+                  style={{ backgroundColor: evt.color || (evt.title === 'No events today' ? '#D1D5DB' : '#E5483B') }}
                 />
 
-                <div className="min-w-0 flex-1 flex items-baseline justify-between gap-4">
-                  <span className="text-xs text-[var(--text-primary)] font-medium truncate">
-                    {evt.title}
+                <div className="min-w-0 flex-1 flex flex-col justify-center mt-[-2px]">
+                  <span className={`text-[13px] truncate ${evt.title === 'No events today' ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)] font-medium'}`}>
+                    {evt.title || 'No events today'}
                   </span>
                   {evt.timeRange && (
-                    <span className="text-[11px] font-mono text-[var(--text-muted)] shrink-0">
+                    <span className="text-[12px] text-[var(--text-muted)] mt-0.5 shrink-0">
                       {evt.timeRange}
                     </span>
                   )}
@@ -174,7 +180,7 @@ export function ComingUpCalendarWidget() {
               </div>
 
               {/* Add to Folder Action Pill */}
-              <div className="shrink-0 relative">
+              <div className="shrink-0 relative mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

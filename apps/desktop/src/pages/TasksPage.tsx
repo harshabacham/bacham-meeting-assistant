@@ -123,6 +123,9 @@ export const TasksPage: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
+    const handler = () => fetchTasks();
+    window.addEventListener('bacham_tasks_updated', handler);
+    return () => window.removeEventListener('bacham_tasks_updated', handler);
   }, []);
 
   useEffect(() => {
@@ -168,6 +171,7 @@ export const TasksPage: React.FC = () => {
       const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
       const updatedCustom = customTasks.map(t => t.id === task.id ? { ...t, status: newStatus as 'todo' | 'done' } : t);
       localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustom));
+      window.dispatchEvent(new Event('bacham_tasks_updated'));
     }
 
     const updated = tasks.map(t => t.id === task.id ? { ...t, status: newStatus as 'todo' | 'done' } : t);
@@ -179,6 +183,7 @@ export const TasksPage: React.FC = () => {
     const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
     const updatedCustom = customTasks.filter(t => t.id !== taskId);
     localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustom));
+    window.dispatchEvent(new Event('bacham_tasks_updated'));
 
     const updated = tasks.filter(t => t.id !== taskId);
     setTasks(updated);
@@ -236,6 +241,7 @@ export const TasksPage: React.FC = () => {
     const customTasks: GlobalActionItem[] = localCustomRaw ? JSON.parse(localCustomRaw) : [];
     const updatedCustomTasks = [newTask, ...customTasks];
     localStorage.setItem('bacham_custom_global_tasks', JSON.stringify(updatedCustomTasks));
+    window.dispatchEvent(new Event('bacham_tasks_updated'));
 
     setTasks(prev => [newTask, ...prev]);
     setNewTaskText('');

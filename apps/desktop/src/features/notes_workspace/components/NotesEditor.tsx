@@ -948,16 +948,17 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('summary')}
                         className={cn(
-                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "relative flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'summary'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                         title="AI Summary"
                     >
-                        <Sparkles size={12} className={cn("shrink-0", viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70")} />
-                        <span className={cn(viewMode === 'summary' ? "inline" : "hidden xl:inline")}>Summary</span>
-                        {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />}
+                        <div className="absolute inset-0 z-10" />
+                        <Sparkles size={12} className={cn("shrink-0 relative z-0", viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn("relative z-0", viewMode === 'summary' ? "inline" : "hidden xl:inline")}>Summary</span>
+                        {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0 relative z-0" />}
                     </button>
 
                     {/* 2. Notes Button */}
@@ -966,15 +967,16 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('notes')}
                         className={cn(
-                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "relative flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'notes'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                         title="Editor Notes"
                     >
-                        <FileText size={12} className={cn("shrink-0", viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70")} />
-                        <span className={cn(viewMode === 'notes' ? "inline" : "hidden xl:inline")}>Notes</span>
+                        <div className="absolute inset-0 z-10" />
+                        <FileText size={12} className={cn("shrink-0 relative z-0", viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn("relative z-0", viewMode === 'notes' ? "inline" : "hidden xl:inline")}>Notes</span>
                     </button>
 
                     {/* 3. Transcript Button */}
@@ -983,16 +985,17 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('transcript')}
                         className={cn(
-                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "relative flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'transcript'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                         title="Verbatim Transcript"
                     >
-                        <Mic size={12} className={cn("shrink-0", viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70")} />
-                        <span className={cn(viewMode === 'transcript' ? "inline" : "hidden xl:inline")}>Transcript</span>
-                        {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0" />}
+                        <div className="absolute inset-0 z-10" />
+                        <Mic size={12} className={cn("shrink-0 relative z-0", viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn("relative z-0", viewMode === 'transcript' ? "inline" : "hidden xl:inline")}>Transcript</span>
+                        {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0 relative z-0" />}
                     </button>
 
                     {/* 4. Study / Flashcards Button - only available if transcript or notes exist */}
@@ -1002,17 +1005,18 @@ Return only the polished transcript text:`;
                             type="button"
                             onClick={() => setViewMode('study')}
                             className={cn(
-                                "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                                "relative flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                                 viewMode === 'study'
                                     ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                             )}
                             title="Flashcards & Active Recall"
                         >
-                            <Zap size={12} className={cn("shrink-0", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
-                            <span className={cn(viewMode === 'study' ? "inline" : "hidden xl:inline")}>Study</span>
+                            <div className="absolute inset-0 z-10" />
+                            <Zap size={12} className={cn("shrink-0 relative z-0", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
+                            <span className={cn("relative z-0", viewMode === 'study' ? "inline" : "hidden xl:inline")}>Study</span>
                             {(flashcardCount > 0 || quizCount > 0) && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0 relative z-0" />
                             )}
                         </button>
                     )}
@@ -1023,20 +1027,21 @@ Return only the polished transcript text:`;
                         type="button"
                         onClick={() => setViewMode('chat')}
                         className={cn(
-                            "flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
+                            "relative flex items-center gap-1.5 px-2 sm:px-2.5 xl:px-3 py-1.5 rounded-md text-xs transition-all cursor-pointer",
                             viewMode === 'chat'
                                 ? "bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-xs border border-[var(--border)] font-semibold"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] font-medium"
                         )}
                         title="AI Chat"
                     >
-                        <Sparkles size={12} className={cn("shrink-0", viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70")} />
-                        <span className={cn(viewMode === 'chat' ? "inline" : "hidden xl:inline")}>Chat</span>
+                        <div className="absolute inset-0 z-10" />
+                        <Sparkles size={12} className={cn("shrink-0 relative z-0", viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <span className={cn("relative z-0", viewMode === 'chat' ? "inline" : "hidden xl:inline")}>Chat</span>
                     </button>
                 </div>
 
                 {/* Right Action Controls */}
-                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-36 sm:pr-40 min-w-0 shrink-0">
+                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-[100px] min-w-0 shrink-0">
                     {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
                         data-tauri-drag-region="false"

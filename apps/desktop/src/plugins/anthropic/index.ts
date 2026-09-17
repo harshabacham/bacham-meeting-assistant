@@ -37,6 +37,18 @@ const AnthropicPlugin: BachamPlugin = {
         throw new Error('Invalid Anthropic API Key format. Must start with sk-ant-');
       }
       
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'GET',
+          headers: { 'x-api-key': trimmed, 'anthropic-version': '2023-06-01' }
+        });
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Invalid Anthropic API Key. Please check your credentials.');
+        }
+      } catch (e: any) {
+        throw new Error(e.message || 'Invalid API Key');
+      }
+      
       await AuthManager.setToken(PLUGIN_ID, trimmed);
     },
     disconnect: async () => {
