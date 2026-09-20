@@ -68,7 +68,7 @@ jobs:
 
       - name: Build Tauri App (macOS)
         if: matrix.platform == 'macos-latest'
-        run: pnpm --filter appsdesktop exec tauri build --target universal-apple-darwin
+        run: pnpm --filter appsdesktop exec tauri build
 
       - name: Build Tauri App (Windows & Ubuntu)
         if: matrix.platform != 'macos-latest'
@@ -80,8 +80,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
-            apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz
+            apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            apps/desktop/src-tauri/target/release/bundle/macos/*.app.tar.gz
 
       - name: Upload Windows Release Assets
         if: matrix.platform == 'windows-latest'
