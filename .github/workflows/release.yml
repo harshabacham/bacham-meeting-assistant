@@ -63,15 +63,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Copy pnpm-lock.yaml to desktop app for tauri-action detection
-        run: cp pnpm-lock.yaml apps/desktop/
-
       - name: Build and Package Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: 'apps/desktop'
+          tauriScript: 'pnpm tauri'
           tagName: ${{ github.ref_name }} # Uses the pushed tag
           releaseName: 'Bacham ${{ github.ref_name }}'
           releaseBody: 'See the assets to download this version and install.'
