@@ -561,7 +561,11 @@ ${transcript || '*(No transcript recorded)*'}
                                     {query ? `No lectures match "${query}"` : 
                                      selectedFolderId ? 'Add existing meetings or recordings to this folder to organize them.' :
                                      ['pinned', 'collections'].includes(currentView || '') ? `The ${currentView} feature is scheduled for Phase 2.` : 
-                                     currentView === 'bookmarks' ? 'Star a lecture to see it here' : 'Start recording from the Chrome extension'}
+                                     currentView === 'bookmarks' ? 'Star a lecture to see it here' : (
+                                        <>
+                                            Start recording from the <a href="https://chromewebstore.google.com/detail/kfngjfenfpaladmjnogmihilchiednfl?utm_source=item-share-cb" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:text-primary/80 transition-colors">Chrome extension</a>
+                                        </>
+                                     )}
                                 </p>
                                 {selectedFolderId && !query && (
                                     <Button 

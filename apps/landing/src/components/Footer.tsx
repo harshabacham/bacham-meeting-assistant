@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Star, ShieldCheck } from "lucide-react";
 
 export default function Footer() {
-  const releasesUrl = "https://github.com/harshabacham/bacham-meeting-assistant/releases";
+  const releasesUrl = "/downloads/bacham-desktop.dmg";
   const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
 
   return (

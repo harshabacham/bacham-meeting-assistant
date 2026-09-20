@@ -51,7 +51,7 @@ export default function Hero() {
 
   const getDownloadLink = () => {
     if (os === "windows") return "/downloads/bacham-setup.exe";
-    if (os === "mac") return "https://github.com/harshabacham/bacham-meeting-assistant/releases";
+    if (os === "mac") return "/downloads/bacham-desktop.dmg";
     return "#downloads";
   };
 
@@ -129,6 +129,15 @@ export default function Hero() {
               >
                 <span>{getDownloadText()}</span>
                 <ArrowDown size={16} strokeWidth={2.6} />
+              </a>
+
+              <a
+                href="https://chromewebstore.google.com/detail/kfngjfenfpaladmjnogmihilchiednfl?utm_source=item-share-cb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium text-[14.5px] border border-white/20 transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <span>Add to Chrome</span>
               </a>
 
               <a

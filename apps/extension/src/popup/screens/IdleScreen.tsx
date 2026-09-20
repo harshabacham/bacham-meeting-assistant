@@ -298,7 +298,7 @@ export function IdleScreen({ onStart, isLoading, onOpenApp, onReturnToRecording 
                 </p>
                 <div className="flex items-center gap-2 pt-0.5">
                   <a
-                    href="https://github.com/harshabacham/bacham-meeting-assistant/releases"
+                    href="https://bacham.vercel.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 py-1.5 px-3 rounded-lg bg-[#BAFF29] text-[#0A0A0C] text-[11px] font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-all cursor-pointer shadow-xs"
