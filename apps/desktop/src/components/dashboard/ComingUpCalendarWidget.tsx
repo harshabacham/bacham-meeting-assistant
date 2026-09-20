@@ -151,8 +151,8 @@ export function ComingUpCalendarWidget() {
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <div className="flex items-center gap-1.5 text-[12.5px] text-[var(--text-primary)] leading-none">
                     <span className="truncate">{evt.monthStr}</span>
-                    {/* Add a red dot for the first item on the first page as a stand-in for 'Today' if not explicitly defined */}
-                    {(evt.isToday || (index === 0 && pageIndex === 0)) && (
+                    {/* Add a red dot for the first item on the first page as a stand-in for 'Today' */}
+                    {((index === 0 && pageIndex === 0)) && (
                       <div className="w-1 h-1 rounded-full bg-[#E5483B] shrink-0" />
                     )}
                   </div>

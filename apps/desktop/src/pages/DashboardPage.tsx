@@ -89,13 +89,6 @@ function LectureCard({ lecture, onClick }: { lecture: Lecture; onClick: () => vo
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
-function getTimeOfDay(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "morning";
-  if (h < 17) return "afternoon";
-  return "evening";
-}
-
 function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString);
   const diffMins = Math.round((Date.now() - date.getTime()) / 60000);
@@ -260,8 +253,6 @@ export function DashboardPage() {
         .slice(0, 10),
     [lectures]
   );
-
-  const firstName = user?.displayName?.split(" ")[0] || "there";
 
 
   const fadeUp = shouldReduceMotion
