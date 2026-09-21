@@ -412,7 +412,7 @@ export function AppLayout() {
 
             {/* Floating Re-open Button when Sidebar is Closed */}
             {!isSidebarOpen && (
-                <div className="absolute top-0 left-0 h-16 w-16 flex items-center justify-start pl-4 z-[100]">
+                <div className="absolute top-8 left-0 h-16 w-16 flex items-center justify-start pl-4 z-[100]">
                     <button
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm"
                         onClick={() => setIsSidebarOpen(true)}
@@ -424,7 +424,7 @@ export function AppLayout() {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10 transition-all duration-300">
+            <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10 transition-all duration-300 pt-8">
                 <Outlet />
             </main>
 
