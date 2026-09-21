@@ -177,10 +177,11 @@ export function AppLayout() {
                         className="bg-[var(--sidebar-bg)] shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full"
                     >
                         {/* Sidebar close button aligned with window controls */}
-                        <div className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-[99999] [.os-mac_&]:right-auto [.os-mac_&]:left-[70px]">
+                        <div data-tauri-drag-region="false" className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-[99999] [.os-mac_&]:right-auto [.os-mac_&]:left-[70px]">
                             <button 
+                                data-tauri-drag-region="false"
                                 onClick={() => setIsSidebarOpen(false)}
-                                className="p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors"
+                                className="p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors flex items-center justify-center cursor-pointer"
                                 title="Close Sidebar"
                             >
                                 <Sidebar size={13} strokeWidth={2} className="pointer-events-none" />
@@ -410,9 +411,10 @@ export function AppLayout() {
 
             {/* Floating Re-open Button when Sidebar is Closed */}
             {!isSidebarOpen && (
-                <div className="absolute top-[4px] left-[10px] h-[32px] w-[40px] flex items-center justify-center z-[99999] [.os-mac_&]:left-[80px]">
+                <div data-tauri-drag-region="false" className="absolute top-[4px] left-[10px] h-[32px] w-[40px] flex items-center justify-center z-[99999] [.os-mac_&]:left-[80px]">
                     <button
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm"
+                        data-tauri-drag-region="false"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm flex items-center justify-center cursor-pointer"
                         onClick={() => setIsSidebarOpen(true)}
                         title="Open Sidebar"
                     >
