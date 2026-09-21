@@ -174,7 +174,7 @@ export function AppLayout() {
                         animate={{ width: 200, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 350, damping: 38, mass: 0.8 }}
-                        className="bg-[var(--sidebar-bg)] shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full"
+                        className="bg-[var(--sidebar-bg)] shrink-0 flex flex-col z-[99999] relative overflow-hidden border-r border-border h-full"
                     >
                         {/* Sidebar close button aligned with window controls */}
                         <div data-tauri-drag-region="false" className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-[99999] [.os-mac_&]:right-auto [.os-mac_&]:left-[70px]">

@@ -100,8 +100,9 @@ export function Titlebar() {
                 }`}
             />
 
+            {/* Interactive window controls (always on top of Sidebar) */}
             {isMac ? (
-                <div data-tauri-drag-region="false" className="no-drag fixed top-0 left-0 z-[99999] flex items-center gap-2 h-8 px-3.5 pointer-events-auto select-none group">
+                <div data-tauri-drag-region="false" className="no-drag fixed top-0 left-0 z-[100000] flex items-center gap-2 h-8 px-3.5 pointer-events-auto select-none group">
                     <div 
                         data-tauri-drag-region="false"
                         onClick={handleClose}
@@ -122,7 +123,7 @@ export function Titlebar() {
                     />
                 </div>
             ) : (
-                <div data-tauri-drag-region="false" className="no-drag fixed top-0 right-0 z-[99999] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]">
+                <div data-tauri-drag-region="false" className="no-drag fixed top-0 right-0 z-[100000] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]">
                     
                     <div 
                         data-tauri-drag-region="false"
