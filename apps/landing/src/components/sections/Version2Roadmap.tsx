@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
   Camera,
@@ -9,13 +10,52 @@ import {
   CalendarCheck,
   Blocks,
   BrainCircuit,
-  ArrowUpRight,
-  GitBranch,
+  MessageSquare,
+  Send,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { WashiTape, StarburstSticker } from "@/components/ui/CartoonStickers";
 
 export default function Version2Roadmap() {
-  const repoUrl = "https://github.com/harshabacham/bacham-meeting-assistant";
+  const [feedback, setFeedback] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedback.trim()) return;
+
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedback, email }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to send feedback");
+      }
+
+      setIsSuccess(true);
+      setFeedback("");
+      setEmail("");
+      
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 5000);
+    } catch (error) {
+      setErrorMsg("Failed to send to Discord. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const roadmapItems = [
     {
@@ -139,33 +179,80 @@ export default function Version2Roadmap() {
         </div>
 
         {/* Community Contribution Box */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-[#121214] border-2 border-[#D1E043]/30 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#121214] border-2 border-[#D1E043]/30 flex flex-col items-center gap-6 shadow-xl relative overflow-hidden">
           <WashiTape color="pink" className="absolute -top-2 left-14 rotate-[-2deg] z-20" />
 
-          <div className="space-y-2 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <GitBranch size={16} className="text-[#D1E043]" />
+          <div className="space-y-2 text-center w-full">
+            <div className="flex items-center justify-center gap-2">
+              <MessageSquare size={16} className="text-[#D1E043]" />
               <span className="text-xs font-bold uppercase tracking-wider text-[#D1E043]">
                 Help Shape Version 2.0.0
               </span>
             </div>
             <h3 className="font-serif text-xl sm:text-2xl font-normal text-white">
-              Have an idea or feature request for v2.0.0?
+              Have an idea or feature request?
             </h3>
-            <p className="text-sm text-[#A1A1A6] max-w-xl">
-              Bacham is driven by community feedback. Propose RFCs, submit PRs, and vote on upcoming features on GitHub Discussions.
+            <p className="text-sm text-[#A1A1A6] max-w-xl mx-auto">
+              Bacham is driven by community feedback. Send your ideas directly to our Discord server.
             </p>
           </div>
 
-          <a
-            href={`${repoUrl}/discussions`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-xs flex items-center gap-2 transition-all shadow-md shrink-0 cursor-pointer"
-          >
-            <span>Open GitHub Discussions</span>
-            <ArrowUpRight size={14} />
-          </a>
+          <form onSubmit={handleSubmitFeedback} className="w-full max-w-2xl relative z-10 mt-2">
+            <div className="space-y-3">
+              <textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="What features would you love to see in the next update?"
+                className="w-full h-24 p-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#D1E043]/50 focus:bg-white/10 resize-none transition-all text-sm"
+                required
+              />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email or Discord Username (optional)"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#D1E043]/50 focus:bg-white/10 transition-all text-sm"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !feedback.trim()}
+                  className="px-6 py-3 rounded-2xl bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  <span>Send to Discord</span>
+                </button>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {isSuccess && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-4 flex items-center justify-center gap-2 text-emerald-400 text-sm font-medium"
+                >
+                  <CheckCircle2 size={16} />
+                  <span>Feedback sent successfully! Thank you.</span>
+                </motion.div>
+              )}
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-4 text-red-400 text-sm font-medium text-center"
+                >
+                  {errorMsg}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
         </div>
 
       </div>
