@@ -230,7 +230,10 @@ pub fn open_file_path(path: String) -> AppResult<()> {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = open::that(&path);
+        #[cfg(target_os = "macos")]
+        let _ = std::process::Command::new("open").arg(&path).spawn();
+        #[cfg(target_os = "linux")]
+        let _ = std::process::Command::new("xdg-open").arg(&path).spawn();
     }
     Ok(())
 }

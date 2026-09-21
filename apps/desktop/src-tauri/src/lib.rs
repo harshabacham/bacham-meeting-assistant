@@ -39,7 +39,6 @@ pub fn run() {
             .title("BACHAM")
             .inner_size(1200.0, 800.0)
             .decorations(false)
-            .transparent(true)
             .visible(true)
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .build();
