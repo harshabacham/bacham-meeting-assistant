@@ -92,10 +92,10 @@ export function Titlebar() {
 
     return (
         <>
-            {/* Draggable Titlebar Region */}
+            {/* Draggable Titlebar Region — pointer-events:none so buttons beneath are clickable */}
             <div
                 data-tauri-drag-region
-                className={`fixed top-0 h-8 z-[99998] pointer-events-auto select-none ${
+                className={`fixed top-0 h-8 z-[99998] pointer-events-none select-none ${
                     isMac ? 'left-20 right-0' : 'left-0 right-36'
                 }`}
             />
