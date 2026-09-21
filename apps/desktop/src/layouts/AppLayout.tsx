@@ -177,16 +177,19 @@ export function AppLayout() {
                         className="bg-[var(--sidebar-bg)] shrink-0 flex flex-col z-[99999] relative overflow-hidden border-r border-border h-full"
                     >
                         {/* Sidebar close button aligned with window controls */}
-                        <div data-tauri-drag-region="false" className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-[99999] [.os-mac_&]:right-auto [.os-mac_&]:left-[70px]">
+                        <div 
+                            data-tauri-drag-region="false" 
+                            className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-[99999] [.os-mac_&]:right-auto [.os-mac_&]:left-[70px]"
+                        >
                             <button 
                                 data-tauri-drag-region="false"
-                                onClick={() => setIsSidebarOpen(false)}
-                                className="no-drag relative p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors flex items-center justify-center cursor-pointer overflow-hidden"
+                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(false); }}
+                                className="no-drag relative p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors flex items-center justify-center cursor-pointer"
                                 title="Close Sidebar"
+                                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                             >
-                                {/* Invisible overlay to fix Windows WebView2 SVG drag hit-testing bug */}
-                                <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
-                                <Sidebar size={13} strokeWidth={2} className="relative z-0 pointer-events-none" />
+                                <Sidebar size={13} strokeWidth={2} style={{ pointerEvents: 'none' }} />
                             </button>
                         </div>
 
@@ -413,16 +416,19 @@ export function AppLayout() {
 
             {/* Floating Re-open Button when Sidebar is Closed */}
             {!isSidebarOpen && (
-                <div data-tauri-drag-region="false" className="absolute top-[4px] left-[10px] h-[32px] w-[40px] flex items-center justify-center z-[99999] [.os-mac_&]:left-[80px]">
+                <div 
+                    data-tauri-drag-region="false" 
+                    className="absolute top-[4px] left-[10px] h-[32px] w-[40px] flex items-center justify-center z-[100000] [.os-mac_&]:left-[80px]"
+                >
                     <button
                         data-tauri-drag-region="false"
-                        className="no-drag relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm flex items-center justify-center cursor-pointer overflow-hidden"
-                        onClick={() => setIsSidebarOpen(true)}
+                        className="no-drag relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm flex items-center justify-center cursor-pointer"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.stopPropagation(); setIsSidebarOpen(true); }}
                         title="Open Sidebar"
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
-                        {/* Invisible overlay to fix Windows WebView2 SVG drag hit-testing bug */}
-                        <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
-                        <Sidebar size={14} strokeWidth={2.5} className="relative z-0 pointer-events-none" />
+                        <Sidebar size={14} strokeWidth={2.5} style={{ pointerEvents: 'none' }} />
                     </button>
                 </div>
             )}

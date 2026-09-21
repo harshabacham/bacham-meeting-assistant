@@ -123,36 +123,39 @@ export function Titlebar() {
                     />
                 </div>
             ) : (
-                <div data-tauri-drag-region="false" className="no-drag fixed top-0 right-0 z-[100000] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]">
+                <div data-tauri-drag-region="false" className="no-drag fixed top-0 right-0 z-[100000] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     
                     <div 
                         data-tauri-drag-region="false"
-                        onClick={handleMinimize}
-                        className="no-drag relative h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors overflow-hidden"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.stopPropagation(); handleMinimize(); }}
+                        className="no-drag h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                         title="Minimize"
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
-                        <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
-                        <Minus size={16} strokeWidth={2} className="relative z-0 pointer-events-none" />
+                        <Minus size={16} strokeWidth={2} style={{ pointerEvents: 'none' }} />
                     </div>
 
                     <div 
                         data-tauri-drag-region="false"
-                        onClick={handleToggleMaximize}
-                        className="no-drag relative h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors overflow-hidden"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.stopPropagation(); handleToggleMaximize(); }}
+                        className="no-drag h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                         title={isMaximized ? "Restore" : "Maximize"}
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
-                        <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
-                        <Square size={14} strokeWidth={2} className="relative z-0 pointer-events-none" />
+                        <Square size={14} strokeWidth={2} style={{ pointerEvents: 'none' }} />
                     </div>
                     
                     <div 
                         data-tauri-drag-region="false"
-                        onClick={handleClose}
-                        className="no-drag relative h-full w-12 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:text-white transition-colors overflow-hidden"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                        className="no-drag h-full w-12 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:text-white transition-colors"
                         title="Close"
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
-                        <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
-                        <X size={16} strokeWidth={2} className="relative z-0 pointer-events-none" />
+                        <X size={16} strokeWidth={2} style={{ pointerEvents: 'none' }} />
                     </div>
 
                 </div>
