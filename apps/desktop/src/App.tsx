@@ -10,6 +10,8 @@ import { AnimatePresence } from "framer-motion";
 import { ToastProvider } from './components/ui/ToastProvider';
 import { ConfirmProvider } from './components/ui/ConfirmProvider';
 import { Titlebar } from './components/layout/Titlebar';
+import i18n from './i18n/config';
+import { listen } from '@tauri-apps/api/event';
 
 // Lazy loaded routes (Tier 1 Startup Optimization)
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
@@ -65,14 +67,14 @@ function TauriNavigationListener() {
   const navigate = useNavigate();
   useEffect(() => {
     let isMounted = true;
-    import('@tauri-apps/api/event').then(({ listen }) => {
+    
+    listen<string>('navigate_route', (event) => {
       if (!isMounted) return;
-      listen<string>('navigate_route', (event) => {
-        if (event.payload) {
-          navigate(event.payload);
-        }
-      });
-    });
+      if (event.payload) {
+        navigate(event.payload);
+      }
+    }).catch(console.error);
+
     return () => {
       isMounted = false;
     };
@@ -98,9 +100,7 @@ function App() {
 
   useEffect(() => {
     if (language) {
-      import('./i18n/config').then(({ default: i18n }) => {
-        i18n.changeLanguage(language);
-      });
+      i18n.changeLanguage(language);
     }
   }, [language]);
 

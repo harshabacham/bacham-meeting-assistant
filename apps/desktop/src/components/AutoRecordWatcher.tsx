@@ -4,6 +4,7 @@ import { useCalendarStore } from '@/shared/stores/calendarStore';
 import { useSettingsStore } from '@/shared/stores/settingsStore';
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { useToast } from '@/components/ui/ToastProvider';
+import { useAppStore } from '@/shared/stores/appStore';
 
 export function AutoRecordWatcher() {
     const events = useCalendarStore(state => state.events);
@@ -26,7 +27,6 @@ export function AutoRecordWatcher() {
 
             showToast("Meeting detected! Auto-starting recording...", "success");
             try {
-                const { useAppStore } = await import('@/shared/stores/appStore');
                 emit('force_start_recording', { lectureId: useAppStore.getState().activeMeetingId || Math.random().toString(36).substr(2, 9) });
 
             } catch (e) {
