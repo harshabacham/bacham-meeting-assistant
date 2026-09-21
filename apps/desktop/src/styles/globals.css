@@ -944,3 +944,9 @@ html, body, #root {
     animation:     none;
     mix-blend-mode:     normal;
 }
+/* OS-specific padding for seamless titlebars */
+.os-windows .titlebar-safe-padding { padding-right: 155px; }
+.os-mac .titlebar-safe-padding { padding-left: 90px; }
+
+.os-mac .titlebar-safe-padding { padding-right: 24px; }
+.os-windows .titlebar-safe-padding { padding-left: 24px; }

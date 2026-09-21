@@ -355,7 +355,7 @@ ${transcript || '*(No transcript recorded)*'}
     return (
         <div className="flex flex-col h-full w-full min-w-0" style={{ background: 'var(--bg)' }}>
             {/* Toolbar */}
-            <div className="flex items-center gap-3 pl-6 pr-[100px] py-4 shrink-0 relative z-[99999] pointer-events-none">
+            <div className="flex items-center gap-3 pl-6 py-4 shrink-0 relative z-[99999] pointer-events-none titlebar-safe-padding">
                 <div className="flex items-center gap-2 mr-2">
                     {selectedFolderId && (
                         <div className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-foreground mr-1 pointer-events-auto">
