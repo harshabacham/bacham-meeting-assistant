@@ -31,7 +31,7 @@ export default function DownloadCTA() {
     {
       name: "Chrome Extension",
       icon: ChromeIcon,
-      format: "Packed CRX / ZIP Package",
+      format: "Chrome Web Store",
       badge: "Google Meet & Tab Audio",
       href: "https://chromewebstore.google.com/detail/bacham-%E2%80%94-ai-meeting-lectu/kfngjfenfpaladmjnogmihilchiednfl",
       download: undefined,
@@ -134,14 +134,25 @@ export default function DownloadCTA() {
                       <a
                         href={p.href}
                         download={p.download}
+                        target={p.name.includes("Extension") ? "_blank" : undefined}
+                        rel={p.name.includes("Extension") ? "noopener noreferrer" : undefined}
                         className={`w-full py-2.5 px-4 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                           p.recommended
                             ? "bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] shadow-sm"
                             : "bg-white/10 hover:bg-white/15 text-[#FFFFFF] border border-white/15"
                         }`}
                       >
-                        <Download size={13} strokeWidth={2.4} />
-                        <span>Download {p.name.includes("Windows") ? "EXE" : p.name.includes("macOS") ? "DMG" : "ZIP"}</span>
+                        {p.name.includes("Extension") ? (
+                          <>
+                            <ExternalLink size={13} strokeWidth={2.4} />
+                            <span>Add to Chrome</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download size={13} strokeWidth={2.4} />
+                            <span>Download {p.name.includes("Windows") ? "EXE" : p.name.includes("macOS") ? "DMG" : "ZIP"}</span>
+                          </>
+                        )}
                       </a>
                       {p.altHref && (
                         <div className="mt-2 text-center">
