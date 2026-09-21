@@ -150,10 +150,8 @@ export function AppLayout() {
     };
     
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 relative z-0">
+        <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 relative z-0 pt-8">
             <AutoRecordWatcher />
-            {/* Invisible Drag Region across the very top */}
-            <div data-tauri-drag-region className="absolute top-0 left-0 right-0 h-8 z-[5] pointer-events-auto" />
 
             {/* Global Ambient Background Effects (Dark Mode Only) */}
             <div className="hidden dark:block absolute inset-0 bg-gradient-to-br from-transparent to-surface-raised/50 z-[-1] pointer-events-none" />
@@ -412,7 +410,7 @@ export function AppLayout() {
 
             {/* Floating Re-open Button when Sidebar is Closed */}
             {!isSidebarOpen && (
-                <div className="absolute top-8 left-0 h-16 w-16 flex items-center justify-start pl-4 z-[100]">
+                <div className="absolute top-2 left-0 h-12 w-14 flex items-center justify-start pl-4 z-[100]">
                     <button
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm"
                         onClick={() => setIsSidebarOpen(true)}
@@ -424,7 +422,7 @@ export function AppLayout() {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10 transition-all duration-300 pt-8">
+            <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10 transition-all duration-300">
                 <Outlet />
             </main>
 
