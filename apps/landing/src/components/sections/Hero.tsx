@@ -51,13 +51,13 @@ export default function Hero() {
 
   const getDownloadLink = () => {
     if (os === "windows") return "/downloads/bacham-setup.exe";
-    if (os === "mac") return "https://github.com/harshabacham/bacham-meeting-assistant/releases";
+    if (os === "mac") return "/downloads/bacham-desktop.dmg";
     return "#downloads";
   };
 
   const getDownloadText = () => {
     if (os === "windows") return "Download for Windows";
-    if (os === "mac") return "View Mac Releases";
+    if (os === "mac") return "Download for Mac";
     return "Download for free";
   };
 
