@@ -181,10 +181,12 @@ export function AppLayout() {
                             <button 
                                 data-tauri-drag-region="false"
                                 onClick={() => setIsSidebarOpen(false)}
-                                className="no-drag p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors flex items-center justify-center cursor-pointer"
+                                className="no-drag relative p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors flex items-center justify-center cursor-pointer overflow-hidden"
                                 title="Close Sidebar"
                             >
-                                <Sidebar size={13} strokeWidth={2} className="pointer-events-none" />
+                                {/* Invisible overlay to fix Windows WebView2 SVG drag hit-testing bug */}
+                                <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
+                                <Sidebar size={13} strokeWidth={2} className="relative z-0 pointer-events-none" />
                             </button>
                         </div>
 
@@ -414,11 +416,13 @@ export function AppLayout() {
                 <div data-tauri-drag-region="false" className="absolute top-[4px] left-[10px] h-[32px] w-[40px] flex items-center justify-center z-[99999] [.os-mac_&]:left-[80px]">
                     <button
                         data-tauri-drag-region="false"
-                        className="no-drag p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm flex items-center justify-center cursor-pointer"
+                        className="no-drag relative p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm flex items-center justify-center cursor-pointer overflow-hidden"
                         onClick={() => setIsSidebarOpen(true)}
                         title="Open Sidebar"
                     >
-                        <Sidebar size={14} strokeWidth={2.5} className="pointer-events-none" />
+                        {/* Invisible overlay to fix Windows WebView2 SVG drag hit-testing bug */}
+                        <div className="absolute inset-0 z-10 no-drag pointer-events-auto" data-tauri-drag-region="false" />
+                        <Sidebar size={14} strokeWidth={2.5} className="relative z-0 pointer-events-none" />
                     </button>
                 </div>
             )}
