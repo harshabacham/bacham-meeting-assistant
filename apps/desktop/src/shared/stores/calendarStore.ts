@@ -225,11 +225,10 @@ export const useCalendarStore = create<CalendarState>()(
               reject(new Error("Google sign-in timed out. Please try again."));
             }, 120000);
 
-            // Open user's default system browser
-            try {
-              await openUrl(authUrl);
-            } catch {
-              window.open(authUrl, '_blank');
+            // Open user's default system browser synchronously to preserve WebKit gesture
+            const popup = window.open(authUrl, '_blank');
+            if (!popup) {
+              openUrl(authUrl).catch(console.error);
             }
           } catch (err: any) {
             cleanup();

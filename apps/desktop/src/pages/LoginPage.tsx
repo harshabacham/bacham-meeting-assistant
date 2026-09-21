@@ -342,14 +342,13 @@ export const LoginPage = () => {
       }, 120000);
 
       // Launch default system browser
-      try {
-        await openUrl(authUrl);
-      } catch {
-        try {
-          await open(authUrl);
-        } catch {
-          window.open(authUrl, '_blank');
-        }
+      // Attempt window.open synchronously to preserve user gesture for macOS WebKit
+      const popup = window.open(authUrl, '_blank');
+      if (!popup) {
+        // Fallback to Tauri API if popup blocker prevented window.open
+        openUrl(authUrl).catch(() => {
+          open(authUrl).catch(console.error);
+        });
       }
     } catch (err: any) {
       console.error("Google Auth Error:", err);
