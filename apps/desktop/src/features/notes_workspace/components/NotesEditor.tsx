@@ -935,7 +935,7 @@ Return only the polished transcript text:`;
                         className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md bg-[var(--surface)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)] text-xs font-medium shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] shrink-0"
                         title="Back to Notes"
                     >
-                        <ArrowLeft size={13} className="shrink-0" />
+                        <ArrowLeft size={13} className="shrink-0 pointer-events-none" />
                         <span className="hidden sm:inline">Notes</span>
                     </button>
                 </div>
@@ -956,7 +956,7 @@ Return only the polished transcript text:`;
                         title="AI Summary"
                     >
                         <div className="absolute inset-0 z-10" />
-                        <Sparkles size={12} className={cn("shrink-0 relative z-0", viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <Sparkles size={12} className={cn("shrink-0 relative z-0 pointer-events-none", viewMode === 'summary' ? "text-[var(--accent)]" : "opacity-70")} />
                         <span className={cn("relative z-0", viewMode === 'summary' ? "inline" : "hidden xl:inline")}>Summary</span>
                         {aiSummary && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0 relative z-0" />}
                     </button>
@@ -975,7 +975,7 @@ Return only the polished transcript text:`;
                         title="Editor Notes"
                     >
                         <div className="absolute inset-0 z-10" />
-                        <FileText size={12} className={cn("shrink-0 relative z-0", viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <FileText size={12} className={cn("shrink-0 relative z-0 pointer-events-none", viewMode === 'notes' ? "text-[var(--accent)]" : "opacity-70")} />
                         <span className={cn("relative z-0", viewMode === 'notes' ? "inline" : "hidden xl:inline")}>Notes</span>
                     </button>
 
@@ -993,7 +993,7 @@ Return only the polished transcript text:`;
                         title="Verbatim Transcript"
                     >
                         <div className="absolute inset-0 z-10" />
-                        <Mic size={12} className={cn("shrink-0 relative z-0", viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <Mic size={12} className={cn("shrink-0 relative z-0 pointer-events-none", viewMode === 'transcript' ? "text-[var(--accent)]" : "opacity-70")} />
                         <span className={cn("relative z-0", viewMode === 'transcript' ? "inline" : "hidden xl:inline")}>Transcript</span>
                         {rawTranscript && <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shrink-0 relative z-0" />}
                     </button>
@@ -1013,7 +1013,7 @@ Return only the polished transcript text:`;
                             title="Flashcards & Active Recall"
                         >
                             <div className="absolute inset-0 z-10" />
-                            <Zap size={12} className={cn("shrink-0 relative z-0", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
+                            <Zap size={12} className={cn("shrink-0 relative z-0 pointer-events-none", viewMode === 'study' ? "text-yellow-400" : "opacity-70")} />
                             <span className={cn("relative z-0", viewMode === 'study' ? "inline" : "hidden xl:inline")}>Study</span>
                             {(flashcardCount > 0 || quizCount > 0) && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0 relative z-0" />
@@ -1035,7 +1035,7 @@ Return only the polished transcript text:`;
                         title="AI Chat"
                     >
                         <div className="absolute inset-0 z-10" />
-                        <Sparkles size={12} className={cn("shrink-0 relative z-0", viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70")} />
+                        <Sparkles size={12} className={cn("shrink-0 relative z-0 pointer-events-none", viewMode === 'chat' ? "text-[var(--accent)]" : "opacity-70")} />
                         <span className={cn("relative z-0", viewMode === 'chat' ? "inline" : "hidden xl:inline")}>Chat</span>
                     </button>
                 </div>
@@ -1057,7 +1057,7 @@ Return only the polished transcript text:`;
                         className="px-2 sm:px-3.5 py-1.5 text-xs font-semibold rounded-md shadow-sm hover:shadow-md hover:-translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] bg-[var(--text-primary)] hover:bg-[var(--text-secondary)] text-[var(--bg)] shrink-0"
                         title="Record Meeting in Browser Extension"
                     >
-                        <Mic size={13} className="shrink-0" />
+                        <Mic size={13} className="shrink-0 pointer-events-none" />
                         <span className="hidden sm:inline">Record</span>
                     </button>
 
@@ -1071,7 +1071,7 @@ Return only the polished transcript text:`;
                             className="hidden md:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Refresh note, transcript & summary"
                         >
-                            <RefreshCw size={14} className={cn(isRefreshing && "animate-spin text-[var(--accent)]")} />
+                            <RefreshCw size={14} className={cn("pointer-events-none", isRefreshing && "animate-spin text-[var(--accent)]")} />
                         </button>
                         <button
                             type="button"
@@ -1079,7 +1079,7 @@ Return only the polished transcript text:`;
                             className="hidden md:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Copy note markdown"
                         >
-                            {copied ? <Check size={14} className="text-[var(--accent)]" /> : <Copy size={14} />}
+                            {copied ? <Check size={14} className="text-[var(--accent)] pointer-events-none" /> : <Copy size={14} className="pointer-events-none" />}
                         </button>
                         <button
                             type="button"
@@ -1087,7 +1087,7 @@ Return only the polished transcript text:`;
                             className="hidden lg:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Export as PDF"
                         >
-                            <Download size={14} />
+                            <Download size={14} className="pointer-events-none" />
                         </button>
                         <button
                             type="button"
@@ -1095,7 +1095,7 @@ Return only the polished transcript text:`;
                             className="hidden lg:flex p-1.5 rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border)] cursor-pointer shrink-0"
                             title="Push to Integrations (Slack, Notion, Local Folder, Email)"
                         >
-                            <Share2 size={14} />
+                            <Share2 size={14} className="pointer-events-none" />
                         </button>
 
                         <div className="relative" ref={moreMenuRef}>
@@ -1108,7 +1108,7 @@ Return only the polished transcript text:`;
                                 )}
                                 title="More options"
                             >
-                                <MoreHorizontal size={14} />
+                                <MoreHorizontal size={14} className="pointer-events-none" />
                             </button>
                             {moreMenuOpen && (
                                 <div className="absolute top-9 right-0 z-50 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-xl py-1.5 w-48">

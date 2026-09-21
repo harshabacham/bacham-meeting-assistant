@@ -183,7 +183,7 @@ export function AppLayout() {
                                 className="p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors"
                                 title="Close Sidebar"
                             >
-                                <Sidebar size={13} strokeWidth={2} />
+                                <Sidebar size={13} strokeWidth={2} className="pointer-events-none" />
                             </button>
                         </div>
 
@@ -416,7 +416,7 @@ export function AppLayout() {
                         onClick={() => setIsSidebarOpen(true)}
                         title="Open Sidebar"
                     >
-                        <Sidebar size={14} strokeWidth={2.5} />
+                        <Sidebar size={14} strokeWidth={2.5} className="pointer-events-none" />
                     </button>
                 </div>
             )}
