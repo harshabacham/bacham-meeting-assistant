@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, status) VALUES (?, ?, 'action_items', ?, ?, 'gemini-2.0-flash-lite', 'done') ON CONFLICT(id) DO UPDATE SET status = 'done', content_json = excluded.content_json",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "4aca270e647545cca2443bceccd89d0f035acf76395519eb9956d7a5bc0bbe0a"
+}

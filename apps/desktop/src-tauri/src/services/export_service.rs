@@ -180,7 +180,7 @@ impl ExportService {
         .unwrap_or(None)
         .map(|r| r.content);
 
-        let notes = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
+        let notes: Option<String> = sqlx::query!("SELECT content FROM notes WHERE lecture_id = ? ORDER BY updated_at DESC LIMIT 1", lecture_id)
             .fetch_optional(pool).await.unwrap_or(None)
             .map(|r| r.content);
 
@@ -196,9 +196,9 @@ impl ExportService {
             md.push_str("\n\n");
         }
 
-        if let Some(n) = notes {
+        if let Some(ref n) = notes {
             md.push_str("## Notes\n\n");
-            md.push_str(&n);
+            md.push_str(n);
             md.push_str("\n\n");
         }
 

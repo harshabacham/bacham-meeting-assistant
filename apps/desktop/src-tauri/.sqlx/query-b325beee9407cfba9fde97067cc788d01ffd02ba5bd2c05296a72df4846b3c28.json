@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lectures (id, title, duration_ms, source, created_at, updated_at) VALUES (?, 'Desktop Recording', 0, 'desktop', ?, ?)\n         ON CONFLICT(id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "b325beee9407cfba9fde97067cc788d01ffd02ba5bd2c05296a72df4846b3c28"
+}

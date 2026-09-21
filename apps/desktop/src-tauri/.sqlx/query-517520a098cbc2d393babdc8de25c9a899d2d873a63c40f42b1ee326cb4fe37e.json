@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lecture_artifacts SET content_json = ? WHERE lecture_id = ? AND artifact_type = 'lecture_intelligence'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "517520a098cbc2d393babdc8de25c9a899d2d873a63c40f42b1ee326cb4fe37e"
+}

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT a.lecture_id, a.content_json, l.title, a.artifact_type \n         FROM lecture_artifacts a \n         JOIN lectures l ON a.lecture_id = l.id \n         WHERE a.status = 'done' AND a.artifact_type IN ('lecture_intelligence', 'action_items')",
+  "describe": {
+    "columns": [
+      {
+        "name": "lecture_id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "content_json",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "artifact_type",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ecada33c892f3e9e7ad51973bbd239e7b648e8f98f93008e2058e7fd79089424"
+}

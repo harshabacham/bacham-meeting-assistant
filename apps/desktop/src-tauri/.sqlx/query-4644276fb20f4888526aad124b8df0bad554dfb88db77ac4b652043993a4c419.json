@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO transcripts (id, lecture_id, content, model_used) VALUES (?, ?, ?, 'gemini-3.5-flash-lite')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "4644276fb20f4888526aad124b8df0bad554dfb88db77ac4b652043993a4c419"
+}

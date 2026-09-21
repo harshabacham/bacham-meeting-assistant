@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'transcript_blocks' AND status = 'done'",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_json",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6892e8ac8f3f935b583b51ebb8802d8ebf079154308c475a0dd4abd0eeec6c2b"
+}

@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT file_path, captured_at, is_key_frame FROM screenshots WHERE lecture_id = ? ORDER BY captured_at ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "file_path",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "captured_at",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_key_frame",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "cccb21a3f4e30b1127a6f2b411d868cfe237cd56d5a3ac222f00530d94369957"
+}

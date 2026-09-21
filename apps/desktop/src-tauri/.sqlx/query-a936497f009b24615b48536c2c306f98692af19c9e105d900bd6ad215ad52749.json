@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id FROM notes WHERE lecture_id = ?",
+  "query": "SELECT id FROM lectures ORDER BY created_at DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 0
     },
     "nullable": [
       true
     ]
   },
-  "hash": "6037060c535fdb2b5de7b36134acd7c2b6ed51de36296533c266ad55958b3221"
+  "hash": "a936497f009b24615b48536c2c306f98692af19c9e105d900bd6ad215ad52749"
 }

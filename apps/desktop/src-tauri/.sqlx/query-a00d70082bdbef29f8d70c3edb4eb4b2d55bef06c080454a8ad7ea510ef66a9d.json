@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, version, status) VALUES (?, ?, ?, ?, ?, 'gemini-2.0-flash-lite', ?, 'done')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "a00d70082bdbef29f8d70c3edb4eb4b2d55bef06c080454a8ad7ea510ef66a9d"
+}

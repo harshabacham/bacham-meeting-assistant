@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT content_json FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'live_scratchpad'",
+  "describe": {
+    "columns": [
+      {
+        "name": "content_json",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ee784e98089a6db5033dadbad3c7973e0d51be1fa689f399624ba53128b436d2"
+}

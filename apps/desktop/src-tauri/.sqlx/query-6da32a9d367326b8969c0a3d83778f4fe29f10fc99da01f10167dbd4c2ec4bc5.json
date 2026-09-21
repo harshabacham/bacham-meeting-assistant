@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE lecture_artifacts SET content_json = ? WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6da32a9d367326b8969c0a3d83778f4fe29f10fc99da01f10167dbd4c2ec4bc5"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM lecture_artifacts WHERE lecture_id = ? AND artifact_type = 'live_scratchpad'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "65df0a2d7e4debef1c2c913191aa4ecf6bfe9dce926d507e4ffd6d2c8cda1942"
+}

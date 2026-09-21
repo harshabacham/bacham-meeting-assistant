@@ -1,10 +1,10 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT content FROM notes WHERE lecture_id = ?",
+  "query": "SELECT file_path FROM screenshots WHERE lecture_id = ? ORDER BY captured_at ASC",
   "describe": {
     "columns": [
       {
-        "name": "content",
+        "name": "file_path",
         "ordinal": 0,
         "type_info": "Text"
       }
@@ -16,5 +16,5 @@
       false
     ]
   },
-  "hash": "6b3f3f2b172731ae81525ca56d56cca4974cdb39e8c0b613cc04494dea9326b4"
+  "hash": "267afee031f3b26b3b789836d87a2f164a1f05ca7cb779a4b37e0c1180f1a681"
 }

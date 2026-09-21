@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lectures (id, title, course_label, duration_ms, source, created_at, updated_at) VALUES (?, ?, ?, 0, 'extension', ?, ?)\n                             ON CONFLICT(id) DO UPDATE SET updated_at = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "ca901dd7007c5b6b19319e176405dcb566552bc52e623c1894cae582e22c6a54"
+}

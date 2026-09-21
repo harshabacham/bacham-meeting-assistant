@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO ai_provider_configs (id, provider, enabled, default_model) VALUES (?, 'gemini', 1, 'gemini-2.0-flash-lite')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "06dd74d01bf58fe1d9f0aa916eaa2a0d5770ace1047c03b59873dab1ee1dfa8b"
+}

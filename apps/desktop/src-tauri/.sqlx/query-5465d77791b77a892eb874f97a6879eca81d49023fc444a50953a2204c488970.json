@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, status) VALUES (?, ?, ?, ?, ?, 'gemini-2.0-flash-lite', ?) ON CONFLICT(id) DO UPDATE SET status = excluded.status",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "5465d77791b77a892eb874f97a6879eca81d49023fc444a50953a2204c488970"
+}

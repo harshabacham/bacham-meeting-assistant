@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT l.id, l.title, a.content_json\n         FROM lectures l\n         JOIN lecture_artifacts a ON l.id = a.lecture_id\n         JOIN lectures_fts f ON l.rowid = f.rowid\n         WHERE a.artifact_type = 'transcript_blocks' AND a.status = 'done'\n           AND lectures_fts MATCH ?\n         ORDER BY rank LIMIT 5",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "content_json",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "97f3d349c8cd60689d2d81488177725a5a578ca8df073d7c18052d9014a35b05"
+}

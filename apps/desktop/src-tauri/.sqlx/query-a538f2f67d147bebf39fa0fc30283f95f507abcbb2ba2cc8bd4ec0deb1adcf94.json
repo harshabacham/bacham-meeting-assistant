@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO conversations (id, title, scope_type, scope_ref_json, provider, model, created_at, updated_at)\n         VALUES (?, ?, ?, ?, 'gemini', 'gemini-2.0-flash-lite', ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "a538f2f67d147bebf39fa0fc30283f95f507abcbb2ba2cc8bd4ec0deb1adcf94"
+}

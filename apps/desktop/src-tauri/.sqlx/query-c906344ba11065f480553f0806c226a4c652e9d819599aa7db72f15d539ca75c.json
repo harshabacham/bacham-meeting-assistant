@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO lecture_artifacts (id, lecture_id, artifact_type, content_json, generated_at, model_used, version, status) \n             VALUES (?, ?, 'action_items', ?, ?, 'live_decision', 1, 'done')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "c906344ba11065f480553f0806c226a4c652e9d819599aa7db72f15d539ca75c"
+}

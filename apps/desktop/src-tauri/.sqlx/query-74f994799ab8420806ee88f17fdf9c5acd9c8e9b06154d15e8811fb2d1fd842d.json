@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id, name, parent_id, color, icon, cover_image_path, description, subject, semester, sort_order, is_locked, is_favorite, is_pinned, is_archived, trashed_at, created_at, updated_at \n         FROM folders ORDER BY sort_order ASC, name ASC",
+  "query": "SELECT id, name, parent_id, color, icon, cover_image_path, description, subject, semester, sort_order, is_locked, is_favorite, is_pinned, is_archived, trashed_at, created_at, updated_at \n         FROM folders WHERE trashed_at IS NULL ORDER BY sort_order ASC, name ASC",
   "describe": {
     "columns": [
       {
@@ -112,5 +112,5 @@
       true
     ]
   },
-  "hash": "b32fb6324956d2533149996f7418cc49842e8291253ad934799a81c5d8c0a7db"
+  "hash": "74f994799ab8420806ee88f17fdf9c5acd9c8e9b06154d15e8811fb2d1fd842d"
 }
