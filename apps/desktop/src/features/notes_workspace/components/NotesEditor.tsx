@@ -923,8 +923,8 @@ Return only the polished transcript text:`;
         <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden relative text-[var(--text-primary)] font-sans">
 
             {/* ── Top Navigation Bar (Matches Dashboard Header Bar Aesthetic) ────── */}
-            <div data-tauri-drag-region="false" className="w-full h-14 shrink-0 flex items-center justify-between px-2 sm:px-3 sticky top-0 bg-[var(--bg)] z-[100] border-b border-[var(--border)] pointer-events-auto select-none gap-2">
-                <div data-tauri-drag-region="false" className="flex items-center justify-start gap-2 pl-10 sm:pl-12 shrink-0 min-w-0">
+            <div data-tauri-drag-region="false" className="w-full h-14 shrink-0 flex items-center justify-between px-2 sm:px-3 sticky top-0 bg-[var(--bg)] z-[99999] pointer-events-none select-none gap-2">
+                <div data-tauri-drag-region="false" className="flex items-center justify-start gap-2 pl-10 sm:pl-12 shrink-0 min-w-0 pointer-events-auto">
                     <button
                         data-tauri-drag-region="false"
                         type="button"
@@ -1041,7 +1041,7 @@ Return only the polished transcript text:`;
                 </div>
 
                 {/* Right Action Controls */}
-                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-[100px] min-w-0 shrink-0">
+                <div data-tauri-drag-region="false" className="flex items-center justify-end gap-1 sm:gap-1.5 pr-[100px] min-w-0 shrink-0 pointer-events-auto">
                     {/* Primary Record Button (Matches Dashboard Start Recording CTA) */}
                     <button
                         data-tauri-drag-region="false"

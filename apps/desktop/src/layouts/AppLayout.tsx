@@ -150,7 +150,7 @@ export function AppLayout() {
     };
     
     return (
-        <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 relative z-0 pt-8">
+        <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans selection:bg-primary/20 relative z-0">
             <AutoRecordWatcher />
 
             {/* Global Ambient Background Effects (Dark Mode Only) */}
@@ -177,7 +177,7 @@ export function AppLayout() {
                         className="bg-[var(--sidebar-bg)] shrink-0 flex flex-col z-[100] relative overflow-hidden border-r border-border h-full"
                     >
                         {/* Sidebar close button aligned with window controls */}
-                        <div className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-50">
+                        <div className="absolute top-0 right-0 h-12 w-14 flex items-center justify-end pr-3 z-[99999]">
                             <button 
                                 onClick={() => setIsSidebarOpen(false)}
                                 className="p-1 rounded text-muted-foreground/50 hover:text-foreground hover:bg-surface-hover transition-colors"
@@ -410,7 +410,7 @@ export function AppLayout() {
 
             {/* Floating Re-open Button when Sidebar is Closed */}
             {!isSidebarOpen && (
-                <div className="absolute top-2 left-0 h-12 w-14 flex items-center justify-start pl-4 z-[100]">
+                <div className="absolute top-[4px] left-[10px] h-[32px] w-[40px] flex items-center justify-center z-[99999]">
                     <button
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors border border-border/50 bg-[var(--surface)]/50 backdrop-blur-md shadow-sm"
                         onClick={() => setIsSidebarOpen(true)}

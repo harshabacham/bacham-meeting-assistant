@@ -355,10 +355,10 @@ ${transcript || '*(No transcript recorded)*'}
     return (
         <div className="flex flex-col h-full w-full min-w-0" style={{ background: 'var(--bg)' }}>
             {/* Toolbar */}
-            <div className="flex items-center gap-3 pl-6 pr-[100px] py-4 border-b border-border/50 shrink-0">
+            <div className="flex items-center gap-3 pl-6 pr-[100px] py-4 shrink-0 relative z-[99999] pointer-events-none">
                 <div className="flex items-center gap-2 mr-2">
                     {selectedFolderId && (
-                        <div className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-foreground mr-1">
+                        <div className="flex items-center gap-1.5 bg-surface px-2.5 py-1 rounded-lg border border-border text-xs font-medium text-foreground mr-1 pointer-events-auto">
                             <Folder size={12} className="text-primary" />
                             <span>{folders.find(f => f.id === selectedFolderId)?.name || 'Folder'}</span>
                             <button 
@@ -376,7 +376,7 @@ ${transcript || '*(No transcript recorded)*'}
                 </div>
 
                 {/* Search */}
-                <div className="flex-1 max-w-md relative">
+                <div className="flex-1 max-w-md relative pointer-events-auto">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                         className="input-field pl-9"
@@ -386,7 +386,7 @@ ${transcript || '*(No transcript recorded)*'}
                     />
                 </div>
 
-                <div className="flex items-center gap-2 ml-auto">
+                <div className="flex items-center gap-2 ml-auto pointer-events-auto">
                     {/* Refresh Button */}
                     <button
                         type="button"
