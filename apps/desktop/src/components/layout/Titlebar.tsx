@@ -126,7 +126,7 @@ export function Titlebar() {
                         className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                         title="Minimize"
                     >
-                        <Minus size={16} strokeWidth={2} />
+                        <Minus size={16} strokeWidth={2} className="pointer-events-none" />
                     </div>
 
                     <div 
@@ -134,7 +134,7 @@ export function Titlebar() {
                         className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                         title={isMaximized ? "Restore" : "Maximize"}
                     >
-                        <Square size={14} strokeWidth={2} />
+                        <Square size={14} strokeWidth={2} className="pointer-events-none" />
                     </div>
                     
                     <div 
@@ -142,7 +142,7 @@ export function Titlebar() {
                         className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:text-white transition-colors"
                         title="Close"
                     >
-                        <X size={16} strokeWidth={2} />
+                        <X size={16} strokeWidth={2} className="pointer-events-none" />
                     </div>
 
                 </div>
