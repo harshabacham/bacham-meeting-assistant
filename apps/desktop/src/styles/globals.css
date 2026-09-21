@@ -950,3 +950,6 @@ html, body, #root {
 
 .os-mac .titlebar-safe-padding { padding-right: 24px; }
 .os-windows .titlebar-safe-padding { padding-left: 24px; }
+
+.no-drag { -webkit-app-region: no-drag !important; }
+.no-drag * { -webkit-app-region: no-drag !important; }
