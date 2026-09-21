@@ -385,18 +385,7 @@ export const LoginPage = () => {
 
   if (showProfileSetup) {
     return (
-      <div className="relative flex h-screen w-full items-center justify-center p-4 overflow-hidden select-none">
-        {/* Background Video */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none select-none"
-        >
-          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
-        </video>
+      <div className="relative flex h-screen w-full items-center justify-center p-4 overflow-hidden select-none bg-black">
 
         {/* Draggable Titlebar Region */}
         <div className="absolute top-0 left-0 right-36 h-10 z-50 pointer-events-auto">
@@ -423,18 +412,7 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-neutral-900 selection:text-white overflow-y-auto">
-      {/* Background Video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none select-none"
-      >
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260801_001207_ec20d138-aa45-4b2b-ab8c-bdc71607f240.mp4" type="video/mp4" />
-      </video>
+    <div className="relative flex min-h-screen w-full items-center justify-center p-4 selection:bg-neutral-900 selection:text-white overflow-y-auto bg-black">
 
       {/* Draggable Titlebar Region */}
       <div className="absolute top-0 left-0 right-0 h-10 z-50 pointer-events-auto">
