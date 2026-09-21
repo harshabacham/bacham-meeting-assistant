@@ -101,48 +101,54 @@ export function Titlebar() {
             />
 
             {isMac ? (
-                <div className="fixed top-0 left-0 z-[99999] flex items-center gap-2 h-8 px-3.5 pointer-events-auto select-none group">
+                <div data-tauri-drag-region="false" className="no-drag fixed top-0 left-0 z-[99999] flex items-center gap-2 h-8 px-3.5 pointer-events-auto select-none group">
                     <div 
+                        data-tauri-drag-region="false"
                         onClick={handleClose}
-                        className="w-[11.5px] h-[11.5px] rounded-full bg-[#FF5F57] border border-[#e0443e]/50 cursor-pointer transition-colors hover:brightness-110"
+                        className="no-drag w-[11.5px] h-[11.5px] rounded-full bg-[#FF5F57] border border-[#e0443e]/50 cursor-pointer transition-colors hover:brightness-110"
                         title="Close"
                     />
                     <div 
+                        data-tauri-drag-region="false"
                         onClick={handleMinimize}
-                        className="w-[11.5px] h-[11.5px] rounded-full bg-[#FFBD2E] border border-[#dea123]/50 cursor-pointer transition-colors hover:brightness-110"
+                        className="no-drag w-[11.5px] h-[11.5px] rounded-full bg-[#FFBD2E] border border-[#dea123]/50 cursor-pointer transition-colors hover:brightness-110"
                         title="Minimize"
                     />
                     <div 
+                        data-tauri-drag-region="false"
                         onClick={handleToggleMaximize}
-                        className="w-[11.5px] h-[11.5px] rounded-full bg-[#28C840] border border-[#1aab29]/50 cursor-pointer transition-colors hover:brightness-110"
+                        className="no-drag w-[11.5px] h-[11.5px] rounded-full bg-[#28C840] border border-[#1aab29]/50 cursor-pointer transition-colors hover:brightness-110"
                         title={isMaximized ? "Restore" : "Maximize"}
                     />
                 </div>
             ) : (
-                <div className="fixed top-0 right-0 z-[99999] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]">
+                <div data-tauri-drag-region="false" className="no-drag fixed top-0 right-0 z-[99999] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]">
                     
                     <div 
+                        data-tauri-drag-region="false"
                         onClick={handleMinimize}
-                        className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
+                        className="no-drag h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                         title="Minimize"
                     >
-                        <Minus size={16} strokeWidth={2} />
+                        <Minus size={16} strokeWidth={2} className="pointer-events-none" />
                     </div>
 
                     <div 
+                        data-tauri-drag-region="false"
                         onClick={handleToggleMaximize}
-                        className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
+                        className="no-drag h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                         title={isMaximized ? "Restore" : "Maximize"}
                     >
-                        <Square size={14} strokeWidth={2} />
+                        <Square size={14} strokeWidth={2} className="pointer-events-none" />
                     </div>
                     
                     <div 
+                        data-tauri-drag-region="false"
                         onClick={handleClose}
-                        className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:text-white transition-colors"
+                        className="no-drag h-full w-12 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:text-white transition-colors"
                         title="Close"
                     >
-                        <X size={16} strokeWidth={2} />
+                        <X size={16} strokeWidth={2} className="pointer-events-none" />
                     </div>
 
                 </div>
