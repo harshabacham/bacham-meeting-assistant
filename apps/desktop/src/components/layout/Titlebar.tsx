@@ -2,6 +2,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Minus, Square, X } from 'lucide-react';
 
 export function Titlebar() {
     const [isMaximized, setIsMaximized] = useState(false);
@@ -94,31 +95,31 @@ export function Titlebar() {
                 className="fixed top-0 left-0 right-24 h-8 z-[99998] pointer-events-auto select-none"
             />
 
-            {/* Mac-style Window Controls (Right Aligned) */}
-            <div className="fixed top-0 right-0 z-[99999] flex items-center gap-1.5 h-8 px-3 pointer-events-auto select-none">
+            {/* Windows-style Window Controls (Right Aligned) */}
+            <div className="fixed top-0 right-0 z-[99999] flex items-center h-8 pointer-events-auto select-none text-[#A1A1A6]">
                 
                 <div 
                     onClick={handleMinimize}
-                    className="h-full px-1 flex items-center justify-center cursor-pointer"
+                    className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                     title="Minimize"
                 >
-                    <div className="w-[13px] h-[13px] rounded-full bg-[#FFBD2E] border border-[#dea123]/50 transition-colors hover:brightness-110"></div>
+                    <Minus size={16} strokeWidth={2} />
                 </div>
 
                 <div 
                     onClick={handleToggleMaximize}
-                    className="h-full px-1 flex items-center justify-center cursor-pointer"
+                    className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-white transition-colors"
                     title={isMaximized ? "Restore" : "Maximize"}
                 >
-                    <div className="w-[13px] h-[13px] rounded-full bg-[#28C840] border border-[#1aab29]/50 transition-colors hover:brightness-110"></div>
+                    <Square size={14} strokeWidth={2} />
                 </div>
                 
                 <div 
                     onClick={handleClose}
-                    className="h-full px-1 flex items-center justify-center cursor-pointer"
+                    className="h-full w-12 flex items-center justify-center cursor-pointer hover:bg-red-500 hover:text-white transition-colors"
                     title="Close"
                 >
-                    <div className="w-[13px] h-[13px] rounded-full bg-[#FF5F57] border border-[#e0443e]/50 transition-colors hover:brightness-110"></div>
+                    <X size={16} strokeWidth={2} />
                 </div>
 
             </div>
