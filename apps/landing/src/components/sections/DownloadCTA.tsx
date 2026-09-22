@@ -178,7 +178,7 @@ export default function DownloadCTA() {
         </div>
 
         {/* Windows SmartScreen Notice */}
-        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-[#121214] border border-amber-500/30 max-w-4xl mx-auto shadow-lg relative overflow-hidden">
+        <div className="mb-4 p-4 sm:p-5 rounded-2xl bg-[#121214] border border-amber-500/30 max-w-4xl mx-auto shadow-lg relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
             <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400 shadow-inner">
               <Info size={18} />
@@ -186,6 +186,19 @@ export default function DownloadCTA() {
             <div className="flex-1 text-xs sm:text-[13px] text-[#A1A1A6] leading-relaxed">
               <span className="font-bold text-white block sm:inline mr-1.5">Windows SmartScreen Note:</span>
               If Windows displays <span className="text-white font-medium">&quot;Windows protected your PC&quot;</span> on first launch, click <span className="text-[#D1E043] font-bold underline decoration-dotted">&quot;More info&quot;</span> and then select <span className="text-[#D1E043] font-bold">&quot;Run anyway&quot;</span>. This is standard for newly released open-source software until reputation is established.
+            </div>
+          </div>
+        </div>
+
+        {/* Mac Gatekeeper Notice */}
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-[#121214] border border-[#0A84FF]/30 max-w-4xl mx-auto shadow-lg relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-[#0A84FF]/15 border border-[#0A84FF]/30 flex items-center justify-center shrink-0 text-[#0A84FF] shadow-inner">
+              <Terminal size={18} />
+            </div>
+            <div className="flex-1 text-xs sm:text-[13px] text-[#A1A1A6] leading-relaxed">
+              <span className="font-bold text-white block sm:inline mr-1.5">Mac Apple Silicon Note (Beta):</span>
+              If macOS says the app is <span className="text-white font-medium">&quot;damaged&quot;</span>, it is just Apple Gatekeeper blocking unsigned beta software. Drag the app to Applications, open your <span className="text-white font-medium">Terminal</span>, run <code className="bg-[#1C1C1E] px-1.5 py-0.5 rounded text-[#D1E043] border border-white/10 select-all">xattr -cr /Applications/BACHAM.app</code>, and press Enter to allow it.
             </div>
           </div>
         </div>
