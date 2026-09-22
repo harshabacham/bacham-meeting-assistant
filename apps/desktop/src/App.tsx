@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { HashRouter as BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "./layouts/AppLayout";
 import { ThemeProvider } from './shared/contexts/ThemeContext';
 import { ErrorBoundary } from './shared/contexts/ErrorBoundary';
