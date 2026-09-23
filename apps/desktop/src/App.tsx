@@ -12,6 +12,7 @@ import { ConfirmProvider } from './components/ui/ConfirmProvider';
 import { Titlebar } from './components/layout/Titlebar';
 import i18n from './i18n/config';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 // Lazy loaded routes (Tier 1 Startup Optimization)
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
@@ -97,6 +98,18 @@ function App() {
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  useEffect(() => {
+    // Show window once React has mounted to prevent white/black flash
+    const showWindow = async () => {
+      try {
+        await getCurrentWindow().show();
+      } catch (e) {
+        console.error('Failed to show window:', e);
+      }
+    };
+    showWindow();
+  }, []);
 
   useEffect(() => {
     if (language) {

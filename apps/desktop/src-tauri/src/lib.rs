@@ -125,14 +125,15 @@ pub fn run() {
             let _ = crate::storage::initialize_layout(bacham_dir.clone());
             let db_path = bacham_dir.join("Data").join("bacham.sqlite");
             
-            // Show main window immediately only if not starting minimized in background
+            // We do not show the main window immediately here anymore.
+            // It will be shown by the frontend once React has mounted (App.tsx)
+            // to avoid a blank white/black screen during startup.
             if !start_minimized {
                 if let Some(main_window) = app.get_webview_window("main") {
-                    let _ = main_window.show();
-                    let _ = main_window.unminimize();
-                    let _ = main_window.set_focus();
+                    // Do not show immediately
+                    // let _ = main_window.show();
                 } else {
-                    let main_window = tauri::webview::WebviewWindowBuilder::new(
+                    let _main_window = tauri::webview::WebviewWindowBuilder::new(
                         app,
                         "main",
                         tauri::WebviewUrl::default()
@@ -140,17 +141,13 @@ pub fn run() {
                     .title("BACHAM")
                     .inner_size(1200.0, 800.0)
                     .decorations(false)
-                    .visible(true)
+                    .visible(false) // Frontend will make it visible
                     .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                     .on_new_window(move |_url, _features| {
                         tauri::webview::NewWindowResponse::Allow
                     })
                     .build()
                     .expect("Failed to build main window");
-                    
-                    let _ = main_window.show();
-                    let _ = main_window.unminimize();
-                    let _ = main_window.set_focus();
                 }
             }
 
