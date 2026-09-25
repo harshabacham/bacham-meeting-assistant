@@ -21,11 +21,11 @@ export default function DownloadCTA() {
       icon: Laptop,
       format: ".exe / .msi (64-bit)",
       badge: "Desktop Shortcut & Tray Autostart",
-      href: "/downloads/bacham-setup.exe",
+      href: "/downloads/bacham-setup.exe?v=1.0.10",
       download: "bacham-setup.exe",
       recommended: true,
       direct: true,
-      altHref: "/downloads/bacham-setup.msi",
+      altHref: "/downloads/bacham-setup.msi?v=1.0.10",
       altText: "MSI Installer (.msi)",
     },
     {
