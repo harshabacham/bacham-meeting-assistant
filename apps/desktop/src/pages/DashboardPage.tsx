@@ -213,7 +213,7 @@ export function DashboardPage() {
   };
 
   const handleOpenExtensionLink = async () => {
-    const url = 'https://github.com/harshabacham/bacham-meeting-assistant#browser-extension';
+    const url = 'https://chromewebstore.google.com/detail/bacham-%E2%80%94-ai-meeting-lectu/kfngjfenfpaladmjnogmihilchiednfl?utm_source=item-share-cb';
     try {
       const { open } = await import('@tauri-apps/plugin-shell');
       await open(url);
