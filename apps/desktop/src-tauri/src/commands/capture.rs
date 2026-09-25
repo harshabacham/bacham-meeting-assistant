@@ -343,10 +343,17 @@ pub async fn save_keyframe(app: AppHandle, input: SaveKeyframeInput, state: taur
 }
 
 #[tauri::command]
-pub async fn trigger_extension_recording() -> AppResult<()> {
+pub async fn trigger_extension_recording(app: tauri::AppHandle) -> AppResult<()> {
     let sent = crate::ws_server::broadcast_to_extension("{\"type\":\"OPEN_RECORD_POPUP\"}".to_string()).await;
     if !sent {
-        return Err(crate::error::AppError::Internal("Extension not connected".to_string()));
+        // Fallback: If extension service worker is asleep (WS disconnected), 
+        // force open the popup page via the OS default browser.
+        let url = "chrome-extension://kfngjfenfpaladmjnogmihilchiednfl/src/popup/index.html";
+        use tauri_plugin_opener::OpenerExt;
+        if let Err(e) = app.opener().open_url(url, None::<&str>) {
+            eprintln!("Failed to open extension popup URL fallback: {}", e);
+            return Err(crate::error::AppError::Internal("Extension is asleep and we could not wake it. Please click the BACHAM extension icon in your browser to record.".to_string()));
+        }
     }
     Ok(())
 }

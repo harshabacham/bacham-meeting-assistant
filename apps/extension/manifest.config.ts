@@ -78,4 +78,11 @@ export default defineManifest({
     'http://localhost/*',
     'https://generativelanguage.googleapis.com/*',
   ],
+
+  web_accessible_resources: [
+    {
+      resources: ['src/popup/index.html'],
+      matches: ['<all_urls>'],
+    }
+  ],
 });
