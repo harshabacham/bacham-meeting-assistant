@@ -166,7 +166,18 @@ void reconciliationService.reconcile();
 messagingClient.onMessage((msg) => {
   if (msg.type === 'OPEN_RECORD_POPUP') {
     logger.info(MODULE, 'Received OPEN_RECORD_POPUP from Desktop App, opening extension UI');
-    chrome.tabs.create({ url: chrome.runtime.getURL('src/popup/index.html') });
+    const popupUrl = chrome.runtime.getURL('src/popup/index.html');
+    chrome.tabs.query({ url: popupUrl }, (tabs) => {
+      if (tabs.length > 0) {
+        const tab = tabs[0];
+        if (tab.id) chrome.tabs.update(tab.id, { active: true });
+        if (tab.windowId) chrome.windows.update(tab.windowId, { focused: true });
+      } else {
+        chrome.tabs.create({ url: popupUrl, active: true }, (tab) => {
+          if (tab.windowId) chrome.windows.update(tab.windowId, { focused: true });
+        });
+      }
+    });
   }
 });
 
