@@ -46,8 +46,8 @@ export default function DownloadCTA() {
       href: "/downloads/bacham-desktop.dmg",
       download: "bacham-desktop.dmg",
       recommended: false,
-      direct: true,
-      comingSoon: false,
+      direct: false,
+      comingSoon: true,
     },
     {
       name: "Linux",
