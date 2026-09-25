@@ -163,10 +163,15 @@ function AppInner(): React.ReactElement {
   };
 
   return (
-    <div className="relative overflow-hidden shadow-2xl flex w-full h-full" style={{ width: '100vw', height: '100vh', background: 'var(--bg)' }}>
-      <SidebarLayout>
-        {renderScreen()}
-      </SidebarLayout>
+    <div className="w-screen h-screen flex items-center justify-center sm:bg-[#0a0a0a]">
+      <div 
+        className="relative overflow-hidden flex flex-col w-full h-full sm:max-w-[420px] sm:max-h-[650px] sm:rounded-2xl sm:border sm:border-white/10 sm:shadow-2xl" 
+        style={{ background: 'var(--bg)' }}
+      >
+        <SidebarLayout>
+          {renderScreen()}
+        </SidebarLayout>
+      </div>
     </div>
   );
 }
