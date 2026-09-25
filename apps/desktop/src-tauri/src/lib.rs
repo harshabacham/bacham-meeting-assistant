@@ -129,9 +129,9 @@ pub fn run() {
             // It will be shown by the frontend once React has mounted (App.tsx)
             // to avoid a blank white/black screen during startup.
             if !start_minimized {
-                if let Some(main_window) = app.get_webview_window("main") {
+                if let Some(_main_window) = app.get_webview_window("main") {
                     // Do not show immediately
-                    // let _ = main_window.show();
+                    // let _ = _main_window.show();
                 } else {
                     let _main_window = tauri::webview::WebviewWindowBuilder::new(
                         app,
