@@ -83,7 +83,7 @@ export default function Hero() {
               className="flex items-center gap-3 mb-6"
             >
               <span className="text-xs sm:text-[13px] text-[#A1A1A6] font-normal tracking-wide">
-                v1.0.10
+                v1.0.8
               </span>
 
               <NoBotsSticker className="rotate-2" />
@@ -180,7 +180,7 @@ export default function Hero() {
               <div className="absolute -left-6 top-8 w-44 sm:w-52 h-72 sm:h-80 rounded-2xl bg-[#CCD948] overflow-hidden shadow-2xl -rotate-6 transform -z-10 border border-[#b8c63b]/60">
                 <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#1E1E1E_1px,transparent_1px)] [background-size:12px_12px]" />
                 <div className="absolute bottom-4 left-4 font-mono text-[11px] text-[#1E1E1E]/70 uppercase tracking-widest font-bold">
-                  Bacham / v1.0.10
+                  Bacham / v1.0.8
                 </div>
                 <div className="absolute top-6 -right-6 w-24 h-24 rounded-full border-2 border-[#1E1E1E]/15" />
               </div>
