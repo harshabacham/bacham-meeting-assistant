@@ -84,6 +84,14 @@ export function FullCalendarView() {
       if (!grouped[dStr]) grouped[dStr] = [];
       grouped[dStr].push(evt);
     });
+    // Sort events within each day by start time
+    Object.keys(grouped).forEach(dStr => {
+      grouped[dStr].sort((a, b) => {
+        const timeA = a.startTime ? parseTimeToHours(a.startTime) : 0;
+        const timeB = b.startTime ? parseTimeToHours(b.startTime) : 0;
+        return timeA - timeB;
+      });
+    });
     return grouped;
   }, [events]);
 

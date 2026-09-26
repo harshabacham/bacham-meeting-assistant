@@ -234,6 +234,12 @@ async fn handle_auth_callback(
                     if let Err(e) = state.app_handle.emit("oauth_id_token", payload.to_string()) {
                         eprintln!("Failed to emit oauth_id_token event: {}", e);
                     }
+                    
+                    if let Some(w) = state.app_handle.get_webview_window("main") {
+                        let _ = w.show();
+                        let _ = w.unminimize();
+                        let _ = w.set_focus();
+                    }
 
                     return Html(
                         "<html><head><title>BACHAM - Authenticated</title><style>
@@ -322,6 +328,11 @@ async fn handle_auth_token_post(
         eprintln!("Failed to emit oauth_id_token from bridge: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     } else {
+        if let Some(w) = state.app_handle.get_webview_window("main") {
+            let _ = w.show();
+            let _ = w.unminimize();
+            let _ = w.set_focus();
+        }
         StatusCode::OK
     }
 }

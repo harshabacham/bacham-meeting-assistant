@@ -36,9 +36,31 @@ export function ComingUpCalendarWidget() {
   }, [openFolderEvtId]);
 
   // Strictly use real calendar events (no synthetic mock offset shifting)
+  const upcomingEvents = events.filter(evt => {
+    if (!evt.dateStr) return false;
+    // Check if event is today or in the future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const evtDateStr = evt.dateStr.includes('T') ? evt.dateStr.split('T')[0] : evt.dateStr;
+    const evtDate = new Date(evtDateStr);
+    evtDate.setHours(0, 0, 0, 0);
+    return evtDate.getTime() >= today.getTime();
+  }).sort((a, b) => {
+    // Sort chronologically
+    const dateA = a.dateStr.includes('T') ? a.dateStr.split('T')[0] : a.dateStr;
+    const dateB = b.dateStr.includes('T') ? b.dateStr.split('T')[0] : b.dateStr;
+    if (dateA !== dateB) {
+      return new Date(dateA).getTime() - new Date(dateB).getTime();
+    }
+    // Same day, try to sort by time if available
+    const timeA = a.startTime ? new Date(`1970/01/01 ${a.startTime}`).getTime() : 0;
+    const timeB = b.startTime ? new Date(`1970/01/01 ${b.startTime}`).getTime() : 0;
+    return timeA - timeB;
+  });
+
   const pageSize = 3;
-  const totalPages = Math.ceil(events.length / pageSize) || 1;
-  const currentEvents = events.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+  const totalPages = Math.ceil(upcomingEvents.length / pageSize) || 1;
+  const currentEvents = upcomingEvents.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const handlePrev = () => setPageIndex((prev) => Math.max(0, prev - 1));
   const handleNext = () => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1));

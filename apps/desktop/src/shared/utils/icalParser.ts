@@ -187,10 +187,11 @@ export function parseGCalEvents(gcalItems: any[]): CalendarEvent[] {
 
 export async function fetchLiveGoogleCalendarEventsOAuth(accessToken: string): Promise<CalendarEvent[]> {
   try {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const timeMin = startOfToday.toISOString();
-    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&singleEvents=true&orderBy=startTime&maxResults=30`;
+    // Fetch events starting from 3 months ago to cover recent past history, up to 2500 events
+    const pastDate = new Date();
+    pastDate.setMonth(pastDate.getMonth() - 3);
+    const timeMin = pastDate.toISOString();
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&singleEvents=true&orderBy=startTime&maxResults=2500`;
     
     const jsonText = await invoke<string>('fetch_url_with_auth', { url, token: accessToken });
     const response = JSON.parse(jsonText);
