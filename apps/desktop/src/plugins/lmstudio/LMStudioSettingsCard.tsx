@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { Loader2, ChevronDown } from 'lucide-react';
@@ -32,9 +33,12 @@ export function LMStudioSettingsCard() {
         let baseUrl = token || 'http://localhost:1234/v1';
         baseUrl = baseUrl.replace(/\/chat\/completions$/, ''); // Just in case user pasted full endpoint
 
-        const res = await fetch(`${baseUrl}/models`);
-        if (!res.ok) throw new Error('Failed to fetch from LM Studio API');
-        const data = await res.json();
+        const res = await invoke<any>('fetch_custom', {
+          url: `${baseUrl}/models`,
+          options: { method: 'GET', headers: {} }
+        });
+        if (res.status < 200 || res.status >= 300) throw new Error('Failed to fetch from LM Studio API');
+        const data = JSON.parse(res.text);
         
         // OpenAI compatible /v1/models response
         const modelNames = data.data.map((m: any) => m.id);

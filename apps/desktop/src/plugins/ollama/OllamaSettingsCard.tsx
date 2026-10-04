@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 import { TauriClient } from '@/infrastructure/tauri-client';
 import { Loader2, ChevronDown } from 'lucide-react';
@@ -30,9 +31,12 @@ export function OllamaSettingsCard() {
       // but inside Tauri it often works. If it fails, we fall back to generic list.
       try {
         const url = 'http://localhost:11434'; // We could parse from config if we had a generic way
-        const res = await fetch(`${url}/api/tags`);
-        if (!res.ok) throw new Error('Failed to fetch from Ollama API');
-        const data = await res.json();
+        const res = await invoke<any>('fetch_custom', {
+          url: `${url}/api/tags`,
+          options: { method: 'GET', headers: {} }
+        });
+        if (res.status < 200 || res.status >= 300) throw new Error('Failed to fetch from Ollama API');
+        const data = JSON.parse(res.text);
         const modelNames = data.models.map((m: any) => m.name);
         setModels(modelNames);
         

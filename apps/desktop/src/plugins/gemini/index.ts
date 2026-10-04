@@ -1,5 +1,6 @@
 import { BachamPlugin } from '@/core/integrations/types';
 import { AuthManager } from '@/core/integrations/AuthManager';
+import { invoke } from '@tauri-apps/api/core';
 
 const PLUGIN_ID = 'bacham.gemini';
 
@@ -38,8 +39,14 @@ const GeminiPlugin: BachamPlugin = {
       }
       
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${trimmed}`);
-        if (!response.ok) {
+        const response = await invoke<any>('fetch_custom', {
+          url: `https://generativelanguage.googleapis.com/v1beta/models?key=${trimmed}`,
+          options: {
+            method: 'GET',
+            headers: {}
+          }
+        });
+        if (response.status < 200 || response.status >= 300) {
           throw new Error('Invalid Google Gemini API Key. Please check your credentials.');
         }
       } catch (e: any) {

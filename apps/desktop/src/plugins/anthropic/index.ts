@@ -1,5 +1,6 @@
 import { BachamPlugin } from '@/core/integrations/types';
 import { AuthManager } from '@/core/integrations/AuthManager';
+import { invoke } from '@tauri-apps/api/core';
 
 const PLUGIN_ID = 'bacham.anthropic';
 
@@ -38,9 +39,12 @@ const AnthropicPlugin: BachamPlugin = {
       }
       
       try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'GET',
-          headers: { 'x-api-key': trimmed, 'anthropic-version': '2023-06-01' }
+        const response = await invoke<any>('fetch_custom', {
+          url: 'https://api.anthropic.com/v1/messages',
+          options: {
+            method: 'GET',
+            headers: { 'x-api-key': trimmed, 'anthropic-version': '2023-06-01' }
+          }
         });
         if (response.status === 401 || response.status === 403) {
           throw new Error('Invalid Anthropic API Key. Please check your credentials.');

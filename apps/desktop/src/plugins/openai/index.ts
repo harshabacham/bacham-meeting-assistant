@@ -1,5 +1,6 @@
 import { BachamPlugin } from '@/core/integrations/types';
 import { AuthManager } from '@/core/integrations/AuthManager';
+import { invoke } from '@tauri-apps/api/core';
 
 const PLUGIN_ID = 'bacham.openai';
 
@@ -38,10 +39,14 @@ const OpenAIPlugin: BachamPlugin = {
       }
       
       try {
-        const response = await fetch('https://api.openai.com/v1/models', {
-          headers: { 'Authorization': `Bearer ${trimmed}` }
+        const response = await invoke<any>('fetch_custom', {
+          url: 'https://api.openai.com/v1/models',
+          options: {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${trimmed}` }
+          }
         });
-        if (!response.ok) {
+        if (response.status < 200 || response.status >= 300) {
           throw new Error('Invalid OpenAI API Key. Please check your credentials.');
         }
       } catch (e: any) {

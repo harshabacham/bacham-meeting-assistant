@@ -78,7 +78,7 @@ export const ConnectIntegrationModal: React.FC<ConnectIntegrationModalProps> = (
       }, 1200);
     } catch (err: any) {
       console.error(err);
-      const msg = err?.message || typeof err === 'string' ? err : 'Connection failed. Please check your credentials.';
+      const msg = typeof err === 'string' ? err : (err?.message || 'Connection failed. Please check your credentials.');
       setAuthError(msg);
       showToast(msg, 'error');
     } finally {

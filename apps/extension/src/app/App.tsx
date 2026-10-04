@@ -126,15 +126,23 @@ function AppInner(): React.ReactElement {
           />
         );
 
-      case 'error':
+      case 'error': {
+        let msg = 'An unexpected error occurred.';
+        if (session?.errorMessage) {
+          msg = typeof session.errorMessage === 'string' ? session.errorMessage : (session.errorMessage as any).message || String(session.errorMessage);
+        } else if (error) {
+          msg = typeof error === 'string' ? error : (error as any).message || String(error);
+        }
+
         return (
           <ErrorScreen
-            errorMessage={session?.errorMessage ?? error ?? 'An unexpected error occurred.'}
+            errorMessage={msg}
             onReset={handleReset}
             onDiscard={handleDiscard}
             isLoading={isLoading}
           />
         );
+      }
 
       case 'settings':
         return <SettingsScreen version={version} onBack={goBack} onOpenApp={openDesktopApp} />;

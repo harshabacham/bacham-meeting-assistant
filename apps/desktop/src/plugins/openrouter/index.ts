@@ -1,5 +1,6 @@
 import { BachamPlugin } from '@/core/integrations/types';
 import { AuthManager } from '@/core/integrations/AuthManager';
+import { invoke } from '@tauri-apps/api/core';
 
 const PLUGIN_ID = 'bacham.openrouter';
 
@@ -38,10 +39,14 @@ const OpenRouterPlugin: BachamPlugin = {
       }
 
       try {
-        const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-          headers: { 'Authorization': `Bearer ${trimmed}` }
+        const response = await invoke<any>('fetch_custom', {
+          url: 'https://openrouter.ai/api/v1/auth/key',
+          options: {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${trimmed}` }
+          }
         });
-        if (!response.ok) {
+        if (response.status < 200 || response.status >= 300) {
           throw new Error('Invalid OpenRouter API Key. Please check your credentials.');
         }
       } catch (e: any) {
