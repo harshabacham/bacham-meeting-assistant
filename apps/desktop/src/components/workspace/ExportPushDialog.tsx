@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Copy, Check, Mail, Loader2, FileText, Eye, Download, ChevronLeft, Sparkles } from 'lucide-react';
+import { X, Copy, Check, Mail, Loader2, FileText, Eye, Download, ChevronLeft, Sparkles, Code } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastProvider';
 import jsPDF from 'jspdf';
 import { TauriClient } from '@/infrastructure/tauri-client';
@@ -172,15 +172,24 @@ function PreviewPanel({
   onExport: () => void;
   isLoading?: boolean;
 }) {
+  const [htmlSubTab, setHtmlSubTab] = useState<'preview' | 'source'>('preview');
+  const [copiedCode, setCopiedCode] = useState(false);
+
   const formatLabel: Record<PreviewFormat, string> = {
     markdown: 'Markdown (.md)',
     pdf: 'PDF Document',
-    html: 'HTML Page',
+    html: 'HTML Webpage',
     json: 'JSON Data',
     magic_link: 'Interactive Magic Link',
   };
 
   const previewHtml = useMemo(() => format !== 'magic_link' ? markdownToHtml(content) : '', [content, format]);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(content);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -218,13 +227,13 @@ function PreviewPanel({
           <>
             <div className="flex border-b border-border/40 bg-surface shrink-0">
               <span className="px-4 py-2 text-xs font-medium text-primary border-b-2 border-primary">
-                {format === 'pdf' ? 'PDF Preview' : 'Rendered Preview'}
+                {format === 'pdf' ? 'PDF Document Preview' : 'Rendered Markdown Preview'}
               </span>
             </div>
             {format === 'pdf' ? (
-              <div className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-900 p-4 flex justify-center">
+              <div className="flex-1 overflow-y-auto bg-zinc-100 dark:bg-zinc-950 p-4 sm:p-6 flex justify-center">
                 <div
-                  className="bg-white dark:bg-zinc-800 shadow-xl rounded-sm w-full max-w-md p-8"
+                  className="bg-white dark:bg-zinc-900 shadow-xl rounded-xl w-full max-w-xl p-8 border border-border/40"
                   style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a', minHeight: 500 }}
                 >
                   <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
@@ -235,22 +244,104 @@ function PreviewPanel({
               </div>
             ) : (
               <div
-                className="flex-1 overflow-y-auto p-5"
+                className="flex-1 overflow-y-auto p-6 max-w-2xl mx-auto w-full"
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
               />
             )}
           </>
         )}
 
-        {(format === 'html' || format === 'json') && (
+        {format === 'html' && (
           <>
-            <div className="flex border-b border-border/40 bg-surface shrink-0">
-              <span className="px-4 py-2 text-xs font-medium text-primary border-b-2 border-primary">
-                {format === 'html' ? 'HTML Source' : 'JSON Structure'}
-              </span>
+            <div className="flex items-center justify-between border-b border-border/40 bg-surface px-4 py-2 shrink-0">
+              <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-xl border border-border/50">
+                <button
+                  type="button"
+                  onClick={() => setHtmlSubTab('preview')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                    htmlSubTab === 'preview'
+                      ? 'bg-surface text-foreground shadow-xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Eye size={12} />
+                  Live Preview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHtmlSubTab('source')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                    htmlSubTab === 'source'
+                      ? 'bg-surface text-foreground shadow-xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Code size={12} />
+                  HTML Source
+                </button>
+              </div>
+
+              {htmlSubTab === 'source' && (
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-hover hover:bg-surface-raised border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {copiedCode ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                  <span>{copiedCode ? 'Copied' : 'Copy HTML'}</span>
+                </button>
+              )}
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <pre className="text-[11px] font-mono text-foreground/80 whitespace-pre-wrap break-all leading-relaxed bg-surface-hover border border-border/40 rounded-xl p-4">
+
+            {htmlSubTab === 'preview' ? (
+              <div className="flex-1 bg-zinc-100 dark:bg-zinc-950 p-3 sm:p-5 flex flex-col items-center justify-center overflow-hidden">
+                <div className="w-full h-full max-w-2xl bg-surface border border-border/60 rounded-2xl shadow-xl overflow-hidden flex flex-col">
+                  <div className="px-4 py-2 bg-surface-raised border-b border-border/50 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-400/80" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                      </div>
+                      <span className="font-mono text-[11px] text-muted-foreground ml-2">export.html</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Rendered Page</span>
+                  </div>
+                  <iframe
+                    srcDoc={content}
+                    className="w-full flex-1 border-0 bg-transparent"
+                    sandbox="allow-same-origin"
+                    title="HTML Preview"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-4 bg-zinc-950">
+                <pre className="text-xs font-mono text-zinc-300 whitespace-pre-wrap break-all leading-relaxed p-4 bg-zinc-900/90 rounded-xl border border-white/10 overflow-x-auto">
+                  {content}
+                </pre>
+              </div>
+            )}
+          </>
+        )}
+
+        {format === 'json' && (
+          <>
+            <div className="flex items-center justify-between border-b border-border/40 bg-surface px-4 py-2 shrink-0">
+              <span className="text-xs font-medium text-primary">
+                JSON Structure
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-hover hover:bg-surface-raised border border-border/50 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {copiedCode ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                <span>{copiedCode ? 'Copied' : 'Copy JSON'}</span>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-zinc-950">
+              <pre className="text-xs font-mono text-emerald-400/90 whitespace-pre-wrap break-all leading-relaxed bg-zinc-900/90 border border-white/10 rounded-xl p-4 overflow-x-auto">
                 {content}
               </pre>
             </div>
@@ -296,15 +387,122 @@ export function ExportPushDialog({ isOpen, onClose, lectureId, lectureTitle, sum
 
   const markdownContent = buildMarkdownExport(lectureTitle, summary, artifacts, transcript);
 
+  const escapedTitle = lectureTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${lectureTitle}</title>
-  <style>body{font-family:sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#1a1a1a}h1{font-size:1.8rem;margin-bottom:4px}h2{font-size:1.1rem;border-bottom:1px solid #eee;padding-bottom:6px;margin-top:24px}ul{padding-left:20px}li{margin:4px 0}.meta{color:#888;font-size:.85rem}</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapedTitle}</title>
+  <style>
+    :root {
+      --bg: #faf9f6;
+      --card-bg: #ffffff;
+      --foreground: #1c1c1a;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --surface-hover: #f4f4f5;
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #09090b;
+        --card-bg: #141416;
+        --foreground: #f4f4f5;
+        --muted-foreground: #a1a1aa;
+        --border: #27272a;
+        --surface-hover: #1f1f23;
+        --primary: #818cf8;
+        --primary-light: rgba(99, 102, 241, 0.15);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--foreground);
+      line-height: 1.6;
+      padding: 32px 16px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+    .page-container {
+      width: 100%;
+      max-width: 760px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 40px;
+      box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 6px;
+      color: var(--foreground);
+    }
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 22px 0 8px;
+      color: var(--foreground);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+    p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+      color: var(--foreground);
+      line-height: 1.65;
+    }
+    ul {
+      padding-left: 20px;
+      margin: 6px 0;
+    }
+    li {
+      margin: 4px 0;
+      font-size: 0.9rem;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85em;
+      background: var(--surface-hover);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    .footer {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted-foreground);
+    }
+  </style>
 </head>
 <body>
-${markdownToHtml(markdownContent)}
+  <div class="page-container">
+    <div class="badge">Generated by Bacham</div>
+    ${markdownToHtml(markdownContent)}
+    <div class="footer">Exported from Bacham • Private AI Meeting & Lecture Assistant</div>
+  </div>
 </body>
 </html>`;
 
@@ -470,8 +668,9 @@ ${markdownToHtml(markdownContent)}
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 dark:bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
       <div
-        className="relative bg-[var(--surface)] border border-border/60 rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden"
-        style={{ height: view === 'preview' ? '80vh' : 'auto', maxHeight: '85vh' }}
+        className={`relative bg-[var(--surface)] border border-border/60 rounded-3xl shadow-2xl w-full flex flex-col overflow-hidden transition-all duration-200 ${
+          view === 'preview' ? 'max-w-3xl h-[85vh]' : 'max-w-md max-h-[85vh]'
+        }`}
         onClick={e => e.stopPropagation()}
       >
         {view === 'preview' ? (

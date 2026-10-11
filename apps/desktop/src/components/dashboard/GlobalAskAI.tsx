@@ -533,7 +533,7 @@ Best regards,`;
                                 setIsExpanded(false);
                                 navigate('/tasks?view=calendar');
                               }}
-                              className="text-[11px] font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-zinc-950 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                              className="text-[11px] font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] px-2.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                             >
                               <Calendar size={11} />
                               Calendar
@@ -569,7 +569,7 @@ Best regards,`;
 
                         <button
                           onClick={() => handleCopyFollowupDraft(concludedMeeting.event)}
-                          className="text-[11px] font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-zinc-950 px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                          className="text-[11px] font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                         >
                           {copiedDraft ? <Check size={11} /> : <Copy size={11} />}
                           {copiedDraft ? 'Copied!' : 'Copy Follow-up Draft'}
@@ -623,7 +623,7 @@ Best regards,`;
                           setActiveTab('focus');
                           startSession(25, 'focus');
                         }}
-                        className="mt-1 text-xs font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-zinc-950 px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                        className="mt-1 text-xs font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
                       >
                         <Play size={11} />
                         Start 25m Focus Block
@@ -675,7 +675,7 @@ Best regards,`;
                             <button
                               onClick={(e) => handleMarkAsDone(t, e)}
                               disabled={isMarking}
-                              className="px-2 py-1 rounded text-[10.5px] font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-zinc-950 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              className="px-2 py-1 rounded text-[10.5px] font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
                               title="Mark as completed"
                             >
                               <Check size={10} strokeWidth={3} />
@@ -751,7 +751,7 @@ Best regards,`;
                           if (focusTimeLeft > 0 && focusTimeLeft < focusTotalDuration) resumeSession();
                           else startSession(25, focusMode);
                         }}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-zinc-950 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] transition-all cursor-pointer flex items-center gap-1 shadow-sm"
                       >
                         <Play size={11} />
                         {focusTimeLeft > 0 && focusTimeLeft < focusTotalDuration ? 'Resume' : 'Start 25m Focus'}

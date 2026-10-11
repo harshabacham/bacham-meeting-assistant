@@ -183,7 +183,7 @@ export const InlineStudyQuiz: React.FC<Props> = ({ lectureId: _lectureId }) => {
               </button>
               <button 
                 onClick={() => handleGenerate('quiz')}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--accent)] text-white text-[12px] font-bold hover:opacity-90 shadow-sm hover:shadow transition-all"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] text-[12px] font-bold hover:opacity-90 shadow-sm hover:shadow transition-all"
               >
                 Take a Quiz <ChevronRight size={14} />
               </button>
@@ -281,7 +281,7 @@ export const InlineStudyQuiz: React.FC<Props> = ({ lectureId: _lectureId }) => {
                   >
                     <button
                       onClick={handleNextQuestion}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--accent)] text-white text-[13px] font-bold shadow-md hover:shadow-lg transition-all"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] text-[13px] font-bold shadow-md hover:shadow-lg transition-all"
                     >
                       {currentIndex < questions.length - 1 ? 'Next Question' : 'View Results'}
                       <ChevronRight size={16} />
@@ -356,7 +356,7 @@ export const InlineStudyQuiz: React.FC<Props> = ({ lectureId: _lectureId }) => {
                   >
                     <button
                       onClick={handleNextCard}
-                      className="px-6 py-2.5 rounded-xl bg-[var(--accent)] text-white text-[13px] font-bold shadow-md hover:shadow-lg transition-all"
+                      className="px-6 py-2.5 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] text-[13px] font-bold shadow-md hover:shadow-lg transition-all"
                     >
                       {currentIndex < flashcards.length - 1 ? 'Next Card' : 'Finish'}
                     </button>

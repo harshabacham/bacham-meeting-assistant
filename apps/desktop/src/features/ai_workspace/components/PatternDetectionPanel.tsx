@@ -66,7 +66,7 @@ export function PatternDetectionPanel({ scope }: { scope: any }) {
                         </div>
                         <button
                             onClick={handleRunAnalysis}
-                            className="px-4 py-2 rounded-xl bg-[var(--accent)] text-foreground text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
+                            className="px-4 py-2 rounded-xl bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
                         >
                             Start Analysis
                         </button>

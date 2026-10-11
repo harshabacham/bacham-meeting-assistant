@@ -254,7 +254,7 @@ export const LoginPage = () => {
 
       // 2. Fallback: 1-Click System Browser OAuth via local upload_server
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "15417749463-hqib9o5nf3fgpcvu1f9bv0gbm6jt06rf.apps.googleusercontent.com";
-      const redirectUri = encodeURIComponent("http://localhost:1422/auth/callback");
+      const redirectUri = encodeURIComponent("http://127.0.0.1:1422/auth/callback");
       const scope = encodeURIComponent("openid email profile");
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=select_account`;
 

@@ -88,7 +88,7 @@ export function ProviderSettings() {
                                     {config.provider}
                                 </h3>
                                 {config.enabled && (
-                                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--accent)] text-foreground px-2 py-0.5 rounded-full">
+                                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--accent)] text-[var(--accent-foreground)] px-2 py-0.5 rounded-full">
                                         <CheckCircle2 size={10} /> Active
                                     </span>
                                 )}
@@ -124,7 +124,7 @@ export function ProviderSettings() {
                                     <button
                                         onClick={() => handleSave(config.provider, config.enabled)}
                                         disabled={saving === config.provider || !apiKeys[config.provider]}
-                                        className="px-4 py-1.5 bg-[var(--accent)] text-foreground text-sm font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
+                                        className="px-4 py-1.5 bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
                                     >
                                         {saving === config.provider ? <Loader2 size={14} className="animate-spin" /> : 'Save Key'}
                                     </button>

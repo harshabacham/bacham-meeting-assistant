@@ -484,7 +484,7 @@ export function AgenticAiChat({
                                         className={cn(
                                             "w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer",
                                             inputText.trim() 
-                                                ? "bg-[var(--accent)] text-white hover:scale-105 shadow-[0_0_15px_rgba(var(--accent-rgb),0.4)]" 
+                                                ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:scale-105 shadow-[0_0_15px_rgba(var(--accent-rgb),0.4)]" 
                                                 : "bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
                                         )}
                                     >

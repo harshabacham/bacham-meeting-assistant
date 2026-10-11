@@ -56,6 +56,7 @@ html, body, #root {
   --text-muted:      rgba(248, 249, 250, 0.5);
   
   --accent:          var(--color-lime);
+  --accent-foreground: var(--color-black);
   --accent-hover:    #a3e622;
   --accent-dim:      rgba(186, 255, 41, 0.12);
   --accent-glow:     rgba(186, 255, 41, 0.25);
@@ -140,6 +141,7 @@ html, body, #root {
   --text-muted:      #8A8981; /* Soft stone gray */
 
   --accent:          #1C1C1A;
+  --accent-foreground: #FFFFFF;
   --accent-hover:    #353430;
   --accent-dim:      rgba(28, 28, 26, 0.06);
   --accent-glow:     rgba(28, 28, 26, 0.12);

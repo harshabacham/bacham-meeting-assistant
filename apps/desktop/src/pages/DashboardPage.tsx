@@ -364,7 +364,7 @@ export function DashboardPage() {
                     <button
                       type="button"
                       onClick={handleOpenExtensionLink}
-                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0A0A0C] text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <span>Install Extension</span>
                       <ArrowRight size={13} />
@@ -417,7 +417,7 @@ export function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => navigate('/settings?tab=integrations')}
-                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[#0A0A0C] text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-[12px] font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <span>Connect API</span>
                       <ArrowRight size={13} />

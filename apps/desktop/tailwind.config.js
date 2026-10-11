@@ -65,7 +65,7 @@ module.exports = {
         accent: {
           DEFAULT:    "var(--accent)",
           dim:        "var(--accent-dim)",
-          foreground: "var(--color-black)",
+          foreground: "var(--accent-foreground)",
         },
         card: {
           DEFAULT:    "var(--card)",

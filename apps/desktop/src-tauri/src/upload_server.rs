@@ -47,7 +47,7 @@ pub async fn start_upload_server(app_handle: AppHandle) {
         .layer(cors)
         .with_state(state);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 1422));
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 1422));
     
     // Spawn the server using axum 0.7 style
     if let Ok(listener) = tokio::net::TcpListener::bind(addr).await {
@@ -174,7 +174,7 @@ async fn handle_auth_callback(
         let host = headers
             .get("host")
             .and_then(|h| h.to_str().ok())
-            .unwrap_or("localhost:1422");
+            .unwrap_or("127.0.0.1:1422");
         let redirect_uri = format!("http://{}/auth/callback", host);
 
         let mut form_params: Vec<(&str, &str)> = vec![

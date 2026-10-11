@@ -125,7 +125,7 @@ export function PromptLibrary({ onClose, onSelectPrompt }: PromptLibraryProps) {
                         <div className="p-4 border-b border-[var(--border)]">
                             <button
                                 onClick={startCreating}
-                                className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--accent)] text-foreground rounded-lg hover:bg-[var(--accent-hover)] transition-colors text-sm font-medium"
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--accent)] text-[var(--accent-foreground)] rounded-lg hover:bg-[var(--accent-hover)] transition-colors text-sm font-medium"
                             >
                                 <Plus size={16} />
                                 New Prompt
@@ -241,7 +241,7 @@ export function PromptLibrary({ onClose, onSelectPrompt }: PromptLibraryProps) {
                                         <button
                                             onClick={handleSave}
                                             disabled={!formName.trim() || !formBody.trim()}
-                                            className="px-4 py-2 rounded-lg bg-[var(--accent)] text-foreground text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            className="px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                         >
                                             <Save size={16} />
                                             Save

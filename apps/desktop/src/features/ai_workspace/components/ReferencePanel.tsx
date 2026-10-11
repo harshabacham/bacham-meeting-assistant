@@ -59,7 +59,7 @@ export function ReferencePanel({ reference, onClose }: ReferencePanelProps) {
                         </div>
                         <button 
                             onClick={handleJumpToVideo}
-                            className="flex items-center justify-center gap-2 w-full py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-foreground rounded-lg text-sm font-medium transition-colors shadow-sm"
+                            className="flex items-center justify-center gap-2 w-full py-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] rounded-lg text-sm font-medium transition-colors shadow-sm"
                         >
                             <Play size={14} />
                             Jump to Video ({formatTime(reference.timestampSeconds || 0)})

@@ -310,7 +310,7 @@ export function QuizRunner({ questions, mode, timeLimitSeconds, onSubmit, onClos
             {/* Footer Action */}
             <div className="mt-8 flex justify-end">
                 <button
-                    className="px-8 py-4 bg-[var(--accent)] hover:bg-[#bbf045] disabled:opacity-50 disabled:hover:bg-[var(--accent)] text-black font-bold rounded-2xl transition-all flex items-center gap-3 text-lg"
+                    className="px-8 py-4 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50 text-[var(--accent-foreground)] font-bold rounded-2xl transition-all flex items-center gap-3 text-lg"
                     onClick={handleNext}
                     disabled={!selectedAnswer && options.length > 0}
                 >
