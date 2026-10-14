@@ -22,7 +22,7 @@ Bacham uses a standard Tauri architecture:
 ## Development Setup
 
 1. **Install Prerequisites**: You will need Node.js, `pnpm`, and Rust installed. On Windows, you also need the C++ build tools. Follow the [Tauri Prerequisites Guide](https://tauri.app/v1/guides/getting-started/prerequisites).
-2. **Clone the repository**: `git clone https://github.com/your-username/bacham.git`
+2. **Clone the repository**: `git clone https://github.com/harshabacham/bacham-meeting-assistant.git`
 3. **Install Dependencies**: `pnpm install`
 4. **Run the Development Server**: `pnpm tauri dev`
    - This command will compile the Rust backend and spin up the Vite dev server for the frontend. Hot-reloading is supported for the frontend!
