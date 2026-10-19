@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="apps/landing/public/bacham-logo.png" width="128" height="128" alt="BACHAM Logo" />
+  <img src="apps/landing/public/logo.png" width="128" height="128" alt="BACHAM Logo" />
 
   # BACHAM
 
