@@ -50,7 +50,7 @@ export default function Hero() {
   }, []);
 
   const getDownloadLink = () => {
-    if (os === "windows") return "/downloads/bacham-setup.exe";
+    if (os === "windows") return "/downloads/bacham-setup.exe?v=1.0.10";
     if (os === "mac") return "/downloads/bacham-desktop.dmg";
     return "#downloads";
   };
