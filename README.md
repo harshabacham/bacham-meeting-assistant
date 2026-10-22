@@ -72,15 +72,6 @@ Your data never leaves your machine. Everything stored locally in SQLite. Zero c
 
 <br/>
 
-## 📸 Product Showcase
-
-<p align="center">
-  <img src="apps/landing/public/mockups/bacham_hero_meeting.jpg" width="800" alt="BACHAM - The Open-Source Meeting Assistant with AI Built In" />
-</p>
-
-<p align="center">
-  <img src="apps/landing/public/mockups/bacham_qa_actions.jpg" width="800" alt="BACHAM - Automated Action Items & Meeting Intelligence" />
-</p>
 
 <details>
 <summary><b>🖥️ App Interface & Feature Screenshots</b></summary>
