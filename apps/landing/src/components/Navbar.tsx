@@ -58,10 +58,10 @@ export default function Navbar() {
 
   const navLinks = [
     { label: "What is Bacham", href: "#what-is-bacham" },
+    { label: "Desktop vs Extension", href: "#desktop-vs-extension" },
     { label: "How to Use", href: "#how-to-use" },
     { label: "Live Demo", href: "#demo" },
     { label: "Features", href: "#features" },
-    { label: "Instructions", href: "#instructions" },
   ];
 
   return (

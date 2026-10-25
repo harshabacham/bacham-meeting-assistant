@@ -28,7 +28,11 @@ import {
   StarburstSticker,
 } from "@/components/ui/CartoonStickers";
 
-export default function Hero() {
+interface HeroProps {
+  onOpenSmartScreen?: () => void;
+}
+
+export default function Hero({ onOpenSmartScreen }: HeroProps) {
   const [activeTab, setActiveTab] = useState<"notes" | "transcript" | "flashcards">("notes");
   const [revealedAnswer, setRevealedAnswer] = useState(false);
   const [actionItemChecked, setActionItemChecked] = useState<Record<number, boolean>>({
@@ -127,6 +131,12 @@ export default function Hero() {
             >
               <a
                 href={getDownloadLink()}
+                download={os === "windows" ? "BACHAM_1.0.10_x64-setup.exe" : undefined}
+                onClick={() => {
+                  if (os === "windows" || os === "unknown") {
+                    onOpenSmartScreen?.();
+                  }
+                }}
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] font-bold text-[15.5px] shadow-lg hover:shadow-xl transition-all active:scale-[0.98] cursor-pointer"
               >
                 <span>{getDownloadText()}</span>

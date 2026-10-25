@@ -12,7 +12,11 @@ import {
   DoodleAnnotation,
 } from "@/components/ui/CartoonStickers";
 
-export default function DownloadCTA() {
+interface DownloadCTAProps {
+  onOpenSmartScreen?: () => void;
+}
+
+export default function DownloadCTA({ onOpenSmartScreen }: DownloadCTAProps) {
   const releasesUrl = "https://github.com/harshabacham/bacham-meeting-assistant/releases";
 
   const platforms = [
@@ -136,6 +140,9 @@ export default function DownloadCTA() {
                         download={p.download}
                         target={p.name.includes("Extension") ? "_blank" : undefined}
                         rel={p.name.includes("Extension") ? "noopener noreferrer" : undefined}
+                        onClick={() => {
+                          if (p.name.includes("Windows")) onOpenSmartScreen?.();
+                        }}
                         className={`w-full py-2.5 px-4 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                           p.recommended
                             ? "bg-[#D1E043] hover:bg-[#c4d436] text-[#1E1E1E] shadow-sm"
@@ -158,8 +165,9 @@ export default function DownloadCTA() {
                         <div className="mt-2 text-center">
                           <a
                             href={p.altHref}
-                            download="bacham-setup.msi"
-                            className="text-[11px] text-[#A1A1A6] hover:text-[#D1E043] transition-colors"
+                            download="BACHAM_1.0.10_x64_en-US.msi"
+                            onClick={() => onOpenSmartScreen?.()}
+                            className="text-[11px] text-[#A1A1A6] hover:text-[#D1E043] transition-colors cursor-pointer"
                           >
                             or download {p.altText}
                           </a>
