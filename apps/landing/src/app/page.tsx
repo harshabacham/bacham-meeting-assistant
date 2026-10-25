@@ -1,4 +1,6 @@
 import Hero from "@/components/sections/Hero";
+import WhatIsBacham from "@/components/sections/WhatIsBacham";
+import HowToUse from "@/components/sections/HowToUse";
 import NotepadIntro from "@/components/sections/NotepadIntro";
 import { EcosystemBar } from "@/components/sections/EcosystemBar";
 import WhyItExists from "@/components/sections/WhyItExists";
@@ -15,6 +17,8 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full min-h-screen bg-[#000000]">
       <Hero />
+      <WhatIsBacham />
+      <HowToUse />
       <NotepadIntro />
       <WhyItExists />
       <FeaturesGrid />

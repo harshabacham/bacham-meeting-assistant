@@ -57,11 +57,11 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
+    { label: "What is Bacham", href: "#what-is-bacham" },
+    { label: "How to Use", href: "#how-to-use" },
+    { label: "Live Demo", href: "#demo" },
     { label: "Features", href: "#features" },
-    { label: "How It Works", href: "#how-it-works" },
     { label: "Instructions", href: "#instructions" },
-    { label: "v2.0 Roadmap", href: "#roadmap" },
-    { label: "FAQ", href: "#faq" },
   ];
 
   return (
@@ -130,7 +130,7 @@ export default function Navbar() {
               ) : (
                 <WindowsIcon className="w-3.5 h-3.5" />
               )}
-              <span>Download</span>
+              <span>Download v1.0.10</span>
             </Link>
 
             {/* Mobile Menu Button */}

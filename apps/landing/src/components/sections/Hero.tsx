@@ -82,9 +82,11 @@ export default function Hero() {
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               className="flex items-center gap-3 mb-6"
             >
-              <span className="text-xs sm:text-[13px] text-[#A1A1A6] font-normal tracking-wide">
-                v1.0.10
-              </span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs text-[#EAEAEA]">
+                <span className="w-2 h-2 rounded-full bg-[#D1E043] animate-pulse" />
+                <span className="font-mono font-semibold text-[#D1E043]">v1.0.10</span>
+                <span className="text-white/70">· Latest Build Ready</span>
+              </div>
 
               <NoBotsSticker className="rotate-2" />
             </motion.div>
@@ -154,10 +156,22 @@ export default function Hero() {
               <LocalSsdSticker className="-rotate-2" />
             </motion.div>
 
-            {/* Platform availability note */}
-            <div className="flex items-center gap-2 text-[13px] text-[#A1A1A6] pt-1">
-              <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
-              <span>Available for macOS, Windows 10/11 &amp; Chrome Extension</span>
+            {/* Platform availability note + Quick Guide Links for New Users */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 text-[13px] text-[#A1A1A6] pt-1">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-[#D1E043] shrink-0" />
+                <span>Available for Windows 10/11 &amp; Chrome</span>
+              </div>
+              <span className="hidden sm:inline text-white/30">•</span>
+              <div className="flex items-center gap-2">
+                <span className="text-white/60">New user?</span>
+                <a href="#what-is-bacham" className="text-[#D1E043] hover:underline font-medium">
+                  What is this? →
+                </a>
+                <a href="#how-to-use" className="text-white hover:text-[#D1E043] hover:underline font-medium ml-1">
+                  How to use →
+                </a>
+              </div>
             </div>
 
           </div>

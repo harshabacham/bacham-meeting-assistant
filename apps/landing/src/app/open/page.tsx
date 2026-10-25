@@ -53,12 +53,12 @@ export default function OpenAppPage() {
               It looks like Bacham isn&apos;t running or installed on your system. Download the desktop app to get started.
             </p>
             <a 
-              href="/downloads/bacham-setup.exe"
-              download="bacham-setup.exe"
+              href="/downloads/bacham-setup.exe?v=1.0.10"
+              download="BACHAM_1.0.10_x64-setup.exe"
               className="w-full bg-[#BAFF29] hover:bg-[#a3e622] text-[#0A0A0C] font-black py-3.5 px-6 rounded-xl transition-all shadow-[0_4px_20px_rgba(186,255,41,0.2)] flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download size={18} strokeWidth={2.5} />
-              <span>Download Bacham (.exe)</span>
+              <span>Download Bacham v1.0.10 (.exe)</span>
             </a>
             <button 
               type="button"
